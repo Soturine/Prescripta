@@ -3,10 +3,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import require_roles
+from app.database.models import UserModel
 from app.database.session import get_db
 from app.domain.medication import Medication
 from app.domain.patient import Patient
 from app.domain.prescription import PrescriptionInput
+from app.domain.user import UserRole
 from app.repositories.medication_repository import MedicationRepository
 from app.repositories.patient_repository import PatientRepository
 from app.schemas.prescription_schema import (
@@ -19,11 +22,17 @@ from app.services.risk_engine import RiskEngine
 
 router = APIRouter(prefix="/prescriptions", tags=["prescriptions"])
 DbSession = Annotated[Session, Depends(get_db)]
+PrescriptionChecker = Annotated[
+    UserModel,
+    Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.ENFERMAGEM)),
+]
 
 
 @router.post("/check", response_model=PrescriptionCheckResponse)
 def check_prescription(
-    payload: PrescriptionCheckRequest, db: DbSession
+    payload: PrescriptionCheckRequest,
+    db: DbSession,
+    current_user: PrescriptionChecker,
 ) -> PrescriptionCheckResponse:
     patient_record = PatientRepository(db).get(payload.patient_id)
     if patient_record is None:
@@ -45,7 +54,7 @@ def check_prescription(
         route=payload.route,
     )
     result = RiskEngine().evaluate(patient, medication, prescription)
-    audit = AuditService(db).record_check(patient, medication, prescription, result)
+    audit = AuditService(db).record_check(patient, medication, prescription, result, current_user)
 
     return PrescriptionCheckResponse(
         status=result.status.value,

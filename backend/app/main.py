@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import audit, dashboard, medications, patients, prescriptions
+from app.api.routes import audit, auth, dashboard, medications, patients, prescriptions, users
 from app.core.config import settings
 from app.database.seed import seed_demo_data
 from app.database.session import SessionLocal, init_db
@@ -24,7 +24,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.1.0",
+    version="0.2.0",
     description="API educacional para apoio demonstrativo a prescricao segura.",
     lifespan=lifespan,
 )
@@ -37,11 +37,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router, prefix=settings.api_prefix)
 app.include_router(patients.router, prefix=settings.api_prefix)
 app.include_router(medications.router, prefix=settings.api_prefix)
 app.include_router(prescriptions.router, prefix=settings.api_prefix)
 app.include_router(dashboard.router, prefix=settings.api_prefix)
 app.include_router(audit.router, prefix=settings.api_prefix)
+app.include_router(users.router, prefix=settings.api_prefix)
 
 
 @app.get("/health", tags=["health"])
