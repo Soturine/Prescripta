@@ -23,3 +23,15 @@ Motivo: evita divergência entre interface e backend. A UI coleta entradas, cham
 Decisão: autenticação fica fora do MVP.
 
 Motivo: o foco inicial é motor de risco, auditoria, documentação e experiência demonstrável.
+
+## ADR 005 — Autorização Centralizada no Backend
+
+Decisão: a partir da `v0.2.0`, rotas sensíveis são protegidas por dependências FastAPI baseadas em JWT e perfil.
+
+Motivo: o frontend pode esconder menus por ergonomia, mas a proteção real precisa estar no backend.
+
+## ADR 006 — Token em LocalStorage no MVP
+
+Decisão: o frontend usa `localStorage` para manter o token JWT na `v0.2.0`.
+
+Motivo: simplifica a demonstração local. Essa escolha é documentada como limitação e deve ser revista antes de produção.

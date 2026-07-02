@@ -1,6 +1,6 @@
 # Privacidade e LGPD
 
-Prescripta `v0.1.0` usa apenas dados fictícios e locais.
+Prescripta usa dados fictícios e locais no MVP. A versão `v0.2.0` adiciona autenticação e auditoria com usuário responsável, ainda em contexto educacional.
 
 ## Dados
 
@@ -8,16 +8,18 @@ Prescripta `v0.1.0` usa apenas dados fictícios e locais.
 - Não versionar banco local.
 - Não versionar `.env`.
 - Seeds e testes devem permanecer fictícios.
+- Credenciais demonstrativas não devem ser reutilizadas fora do ambiente local.
 
 ## Princípios
 
 - Minimização de dados.
 - Separação entre demonstração e uso real.
 - Auditoria de ações sensíveis de checagem.
+- Auditoria de criação/edição de pacientes, medicamentos e usuários.
+- Senhas nunca devem ser armazenadas em texto puro.
 
 ## Próximos Passos
 
-- Autenticação.
-- Controle de acesso.
+- Cookies seguros ou estratégia equivalente para produção.
 - Política de retenção.
 - Criptografia e revisão de logs em versões futuras.
