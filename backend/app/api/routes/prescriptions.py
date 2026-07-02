@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.auth import require_roles
+from app.core.config import settings
 from app.database.models import UserModel
 from app.database.session import get_db
 from app.domain.medication import Medication
@@ -16,7 +17,10 @@ from app.schemas.prescription_schema import (
     AlertRead,
     PrescriptionCheckRequest,
     PrescriptionCheckResponse,
+    PrescriptionExplainRequest,
+    PrescriptionExplainResponse,
 )
+from app.services.ai_explainer import AIExplainer
 from app.services.audit_service import AuditService
 from app.services.risk_engine import RiskEngine
 
@@ -64,3 +68,28 @@ def check_prescription(
         human_review_required=result.human_review_required,
         audit_id=audit.id,
     )
+
+
+@router.post("/explain", response_model=PrescriptionExplainResponse)
+def explain_prescription(
+    payload: PrescriptionExplainRequest,
+    db: DbSession,
+    current_user: PrescriptionChecker,
+) -> PrescriptionExplainResponse:
+    explanation = AIExplainer(settings).explain(payload, requester_role=current_user.role)
+    AuditService(db).record_action(
+        user=current_user,
+        action="prescription.explain",
+        resource_type="prescription",
+        resource_id=str(payload.audit_id) if payload.audit_id else None,
+        status=payload.status,
+        risk_level=payload.risk_level,
+        details={
+            "audit_id": payload.audit_id,
+            "alerts_count": len(payload.alerts),
+            "critical_alert_codes": explanation.critical_alert_codes,
+            "provider": explanation.provider,
+            "used_fallback": explanation.used_fallback,
+        },
+    )
+    return explanation

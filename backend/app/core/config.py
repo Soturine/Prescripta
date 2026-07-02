@@ -19,6 +19,9 @@ class Settings:
         os.getenv("PRESCRIPTA_ACCESS_TOKEN_EXPIRE_MINUTES", "60")
     )
     jwt_algorithm: str = "HS256"
+    ai_provider: str = os.getenv("PRESCRIPTA_AI_PROVIDER", "fallback")
+    ai_api_key: str = os.getenv("PRESCRIPTA_AI_API_KEY", "")
+    ai_model: str = os.getenv("PRESCRIPTA_AI_MODEL", "gpt-5.5")
     cors_origins: list[str] = field(
         default_factory=lambda: _split_origins(
             os.getenv(
