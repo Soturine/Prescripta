@@ -34,12 +34,29 @@ class MedicationModel(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
+class UserModel(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    email: Mapped[str] = mapped_column(String(220), nullable=False, unique=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(512), nullable=False)
+    role: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
 class PrescriptionAuditModel(Base):
     __tablename__ = "prescription_audits"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     patient_id: Mapped[int | None] = mapped_column(ForeignKey("patients.id"), nullable=True)
     medication_id: Mapped[int | None] = mapped_column(ForeignKey("medications.id"), nullable=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    user_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    user_email: Mapped[str | None] = mapped_column(String(220), nullable=True)
     patient_name: Mapped[str] = mapped_column(String(160), nullable=False)
     medication_name: Mapped[str] = mapped_column(String(160), nullable=False)
     dose_mg: Mapped[float] = mapped_column(Float, nullable=False)
@@ -51,3 +68,22 @@ class PrescriptionAuditModel(Base):
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
     alerts: Mapped[list[dict]] = mapped_column(JSON, default=list)
+
+
+class AuditEventModel(Base):
+    __tablename__ = "audit_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    user_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    user_email: Mapped[str | None] = mapped_column(String(220), nullable=True)
+    user_role: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    action: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    resource_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    resource_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    risk_level: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    details: Mapped[dict] = mapped_column(JSON, default=dict)
