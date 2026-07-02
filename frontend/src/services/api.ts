@@ -7,6 +7,8 @@ import type { Patient, PatientPayload } from "../types/patient";
 import type {
   PrescriptionCheckPayload,
   PrescriptionCheckResult,
+  PrescriptionExplanationPayload,
+  PrescriptionExplanationResult,
 } from "../types/prescription";
 import type { User, UserCreatePayload, UserRole } from "../types/user";
 
@@ -98,6 +100,14 @@ export async function updateMedication(id: number, payload: MedicationPayload) {
 
 export async function checkPrescription(payload: PrescriptionCheckPayload) {
   const response = await api.post<PrescriptionCheckResult>("/prescriptions/check", payload);
+  return response.data;
+}
+
+export async function explainPrescription(payload: PrescriptionExplanationPayload) {
+  const response = await api.post<PrescriptionExplanationResult>(
+    "/prescriptions/explain",
+    payload,
+  );
   return response.data;
 }
 
