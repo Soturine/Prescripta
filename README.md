@@ -1,35 +1,31 @@
 # Prescripta
 
-![Version](https://img.shields.io/badge/version-v0.2.0--dev-blue)
+![Version](https://img.shields.io/badge/version-v0.3.0-blue)
 ![Backend](https://img.shields.io/badge/backend-FastAPI-009688)
 ![Frontend](https://img.shields.io/badge/frontend-React-155E75)
 ![License](https://img.shields.io/badge/license-Apache--2.0-slate)
 
-Prescripta é um sistema web educacional de apoio à prescrição segura. O MVP demonstra como identificar riscos antes de uma prescrição usando regras determinísticas para alergias, interações medicamentosas, dose máxima, polifarmácia, contraindicações, vias inválidas e fatores de risco do paciente.
+Prescripta é um sistema web educacional de apoio à prescrição segura. O projeto demonstra como identificar riscos antes de uma prescrição usando regras determinísticas para alergias, interações medicamentosas, dose máxima, polifarmácia, contraindicações, vias inválidas e fatores do paciente.
 
 > Uso educacional/demonstrativo: Prescripta não é dispositivo médico, não substitui avaliação profissional e não deve ser usado para decisões clínicas reais.
 
-## Preview
-
-### Dashboard
-
-![Dashboard do Prescripta](docs/assets/dashboard.png)
-
-### Checagem de prescrição
-
-![Tela de checagem de prescrição](docs/assets/prescription-check.png)
-
-### Auditoria
-
-![Tela de auditoria](docs/assets/audit.png)
+## Preview v0.3.0
 
 ### Fluxo demonstrativo
 
-![GIF demonstrativo do Prescripta](docs/assets/prescripta-demo.gif)
+![GIF demonstrativo do Prescripta v0.3.0](docs/assets/v0.3.0/prescripta-v0.3-demo.gif)
 
-## Problema
+### Telas principais
 
-Prescrições podem concentrar riscos em vários pontos: histórico do paciente, dose diária, via de administração, medicamentos contínuos e comorbidades. Prescripta organiza essas verificações em um fluxo web simples, auditável e testável.
+![Login](docs/assets/v0.3.0/login.png)
+
+![Dashboard](docs/assets/v0.3.0/dashboard.png)
+
+![Checagem com IA explicativa](docs/assets/v0.3.0/prescription-ai-explanation.png)
+
+![Auditoria](docs/assets/v0.3.0/audit.png)
+
+![Usuários](docs/assets/v0.3.0/users.png)
 
 ## Funcionalidades
 
@@ -39,17 +35,47 @@ Prescrições podem concentrar riscos em vários pontos: histórico do paciente,
 - CRUD básico de medicamentos protegido por perfil.
 - Checagem de prescrição com status, risco, alertas, recomendação e revisão humana.
 - Motor de risco determinístico para alergia, dose máxima, interação, polifarmácia, idade, contraindicação e via.
+- IA explicativa acionada manualmente para explicar alertas já calculados.
 - Auditoria automática com usuário responsável em ações relevantes.
 - Gestão de usuários para administradores.
 - Seed demonstrativo para facilitar avaliação local.
 
+## IA Explicativa
+
+A v0.3.0 adiciona o endpoint `POST /api/prescriptions/explain` e o botão "Explicar com IA" na tela de checagem.
+
+A IA:
+
+- explica em linguagem simples por que a prescrição foi bloqueada ou exige atenção;
+- gera resumo técnico;
+- sugere perguntas de revisão clínica;
+- informa o aviso educacional obrigatório;
+- funciona em fallback determinístico sem chave de API.
+
+A IA não:
+
+- libera prescrição;
+- calcula dose crítica sozinha;
+- altera status, risco ou recomendação final;
+- sobrescreve bloqueios críticos do motor determinístico.
+
+Configuração opcional:
+
+```powershell
+PRESCRIPTA_AI_PROVIDER=fallback
+PRESCRIPTA_AI_API_KEY=
+PRESCRIPTA_AI_MODEL=gpt-5.5
+```
+
+Detalhes: [docs/ai/ai-explainer.md](docs/ai/ai-explainer.md)
+
 ## Arquitetura
 
-O backend FastAPI concentra domínio, regras, autenticação, autorização, schemas, repositórios, banco SQLite e rotas. O frontend React consome a API real via Axios/React Query e não contém regra clínica. A auditoria é persistida para checagens e ações administrativas relevantes.
+O backend FastAPI concentra domínio, regras, autenticação, autorização, schemas, repositórios, banco SQLite e rotas. O frontend React consome a API real via Axios/React Query e não contém regra clínica.
 
 ```text
 backend/app/domain       Entidades e enums de domínio
-backend/app/services     Motor de risco e verificadores determinísticos
+backend/app/services     Motor de risco, verificadores e IA explicativa
 backend/app/repositories Persistência SQLAlchemy
 backend/app/api/routes   Endpoints FastAPI
 frontend/src/pages       Telas principais
@@ -60,25 +86,28 @@ docs                     Documentação modular
 ## Stack
 
 - Frontend: React, TypeScript, Vite, TailwindCSS, React Router, Axios, React Query, React Hook Form, Zod.
-- Backend: FastAPI, Pydantic, SQLAlchemy, SQLite, JWT, Argon2, Pytest, Ruff.
-- Qualidade: Conventional Commits, changelog, roadmap, GitHub Actions.
+- Backend: FastAPI, Pydantic, SQLAlchemy, SQLite, JWT, Argon2, OpenAI SDK opcional, Pytest, Ruff.
+- Qualidade: Conventional Commits, changelog, roadmap, GitHub Actions, releases versionadas.
 
 ## Como Rodar Backend
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python -m pip install -r backend\requirements.txt
-cd backend
-..\.venv\Scripts\python -m uvicorn app.main:app --reload
-```
-
-Ou da raiz:
-
-```powershell
 .\.venv\Scripts\python -m uvicorn app.main:app --reload --app-dir backend
 ```
 
 Swagger: `http://localhost:8000/docs`
+
+## Como Rodar Frontend
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend: `http://localhost:5173`
 
 ## Credenciais Demonstrativas
 
@@ -100,20 +129,11 @@ As credenciais abaixo são apenas para ambiente local e dados fictícios.
 
 ## Segurança
 
-- Senhas são armazenadas com hash Argon2 via `pwdlib`.
-- Tokens JWT usam `PRESCRIPTA_SECRET_KEY` e expiração configurável por `PRESCRIPTA_ACCESS_TOKEN_EXPIRE_MINUTES`.
-- O frontend armazena o token em `localStorage` nesta versão demonstrativa. Isso simplifica o MVP, mas não é a recomendação final para produção.
-- Backend é a fonte real de autorização; menus ocultos no frontend são apenas ergonomia.
-
-## Como Rodar Frontend
-
-```powershell
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend: `http://localhost:5173`
+- Senhas com hash Argon2 via `pwdlib`.
+- Tokens JWT com `PRESCRIPTA_SECRET_KEY` e expiração configurável.
+- Backend é a fonte real de autorização.
+- Frontend armazena token em `localStorage` nesta versão demonstrativa.
+- IA explicativa é protegida por perfil, acionada por clique e tem fallback local.
 
 ## Testes E Lint
 
@@ -121,8 +141,8 @@ Backend:
 
 ```powershell
 cd backend
-..\.venv\Scripts\python -m ruff check . --no-cache
-..\.venv\Scripts\python -m pytest
+ruff check . --no-cache
+pytest
 ```
 
 Frontend:
@@ -135,18 +155,18 @@ npm run build
 
 ## Release Atual
 
-- Publicada: `v0.1.0`
-- Notas: [docs/releases/v0.1.0.md](docs/releases/v0.1.0.md)
-- Em desenvolvimento local: `v0.2.0`
-- Notas planejadas: [docs/releases/v0.2.0.md](docs/releases/v0.2.0.md)
+- Publicada: `v0.3.0`
+- Notas: [docs/releases/v0.3.0.md](docs/releases/v0.3.0.md)
+- Comparação conceitual: [docs/benchmark/safedose-comparison.md](docs/benchmark/safedose-comparison.md)
+- Revisão de maturidade: [docs/product/maturity-review-v0.3.0.md](docs/product/maturity-review-v0.3.0.md)
 
 ## Roadmap Resumido
 
 - `v0.1.0`: MVP de prescrição segura.
 - `v0.2.0`: autenticação, perfis, segurança básica e auditoria com usuário.
-- `v0.3.0`: IA apenas para explicação de alertas.
-- `v0.4.0`: relatórios PDF e exportação.
-- `v0.5.0`: Docker, PostgreSQL e deploy.
+- `v0.3.0`: IA explicativa, benchmark, maturidade e apresentação visual.
+- `v0.4.0`: relatórios PDF, exportação, filtros de auditoria e testes end-to-end.
+- `v0.5.0`: Docker, PostgreSQL, migrações e deploy.
 - `v1.0.0`: versão demonstrável completa.
 
 ## Documentação
@@ -157,9 +177,12 @@ npm run build
 - [Roadmap de produto](docs/product/roadmap.md)
 - [User stories](docs/product/user-stories.md)
 - [Motor de risco](docs/clinical-rules/risk-engine.md)
-- [Notas do seed de medicamentos](docs/clinical-rules/medication-seed-notes.md)
+- [IA explicativa](docs/ai/ai-explainer.md)
+- [Comparação conceitual com SafeDose](docs/benchmark/safedose-comparison.md)
+- [Revisão de maturidade v0.3.0](docs/product/maturity-review-v0.3.0.md)
 - [Privacidade e LGPD](docs/security/privacy-and-lgpd.md)
 - [Autenticação e perfis](docs/security/authentication-and-roles.md)
 - [Threat model básico](docs/security/threat-model-basic.md)
 - [Release v0.1.0](docs/releases/v0.1.0.md)
 - [Release v0.2.0](docs/releases/v0.2.0.md)
+- [Release v0.3.0](docs/releases/v0.3.0.md)

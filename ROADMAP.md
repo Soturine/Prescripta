@@ -19,14 +19,17 @@
 ## v0.3.0 — IA explicativa
 
 - IA apenas para explicar alertas gerados por regras.
-- Registro explícito de explicações.
-- Prompts versionados e avaliáveis.
+- Endpoint protegido e fallback determinístico sem chave.
+- Painel "Explicar com IA" na checagem.
+- Benchmark SafeDose, revisão de maturidade, screenshots e GIF.
 
 ## v0.4.0 — Relatórios PDF e exportação
 
 - Exportação de auditoria.
 - Relatórios por paciente e período.
 - Layout imprimível.
+- Filtros avançados de auditoria.
+- Primeiros testes end-to-end.
 
 ## v0.5.0 — Docker, PostgreSQL e deploy
 

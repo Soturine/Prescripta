@@ -6,6 +6,7 @@ Guia para agentes e colaboradores que forem evoluir o Prescripta.
 
 - `backend/app/domain`: entidades, enums e objetos de resultado.
 - `backend/app/services`: regras determinísticas e serviços de aplicação.
+- `backend/app/services/ai_explainer.py`: camada explicativa; não decide risco.
 - `backend/app/core/auth.py`: dependências de autenticação e autorização.
 - `backend/app/core/security.py`: hash de senha e JWT.
 - `backend/app/repositories`: acesso a dados via SQLAlchemy.
@@ -58,7 +59,9 @@ npm run lint
 - Backend é a fonte real de autorização; frontend pode esconder menus, mas nunca substituir checagem de perfil.
 - Não registre senha em auditoria, log ou payload de resposta.
 - Ao alterar permissões, atualize testes e `docs/security/authentication-and-roles.md`.
-- Mantenha IA fora do MVP. Quando entrar no roadmap, IA deve apenas explicar alertas gerados por regras determinísticas.
+- IA deve apenas explicar alertas gerados por regras determinísticas.
+- Nunca permita que IA altere status, risco, bloqueio, dose crítica ou recomendação final.
+- Preserve fallback determinístico quando não houver chave de API ou provider externo falhar.
 - Atualize documentação quando alterar comportamento de produto, API, regra clínica ou segurança.
 - Atualize `CHANGELOG.md` em mudanças relevantes.
 - Não versionar `.env`, bancos locais, caches, `node_modules` ou `dist`.
