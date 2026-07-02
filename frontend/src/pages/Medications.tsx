@@ -5,11 +5,14 @@ import { useState } from "react";
 import EmptyState from "../components/EmptyState";
 import LoadingState from "../components/LoadingState";
 import MedicationForm from "../components/MedicationForm";
+import { useAuth } from "../context/AuthContext";
 import { createMedication, fetchMedications, updateMedication } from "../services/api";
 import type { Medication, MedicationPayload } from "../types/medication";
 import { formatDose, joinList } from "../utils/formatters";
 
 export default function Medications() {
+  const { canAccess } = useAuth();
+  const canManageMedication = canAccess(["admin"]);
   const [selectedMedication, setSelectedMedication] = useState<Medication | undefined>();
   const queryClient = useQueryClient();
   const { data: medications = [], isLoading } = useQuery({
@@ -46,33 +49,35 @@ export default function Medications() {
         <h1 className="text-3xl font-bold tracking-normal text-ink">Medicamentos</h1>
       </header>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-bold text-ink">
-          {selectedMedication ? "Editar medicamento" : "Novo medicamento"}
-        </h2>
-        <div className="mt-5">
-          <MedicationForm
-            key={selectedMedication?.id ?? "new"}
-            initialMedication={selectedMedication}
-            onSubmit={handleSubmit}
-            submitLabel={selectedMedication ? "Salvar medicamento" : "Criar medicamento"}
-          />
-        </div>
-        {selectedMedication ? (
-          <button
-            className="btn-secondary mt-3"
-            onClick={() => setSelectedMedication(undefined)}
-            type="button"
-          >
-            Cancelar edição
-          </button>
-        ) : null}
-        {createMutation.isError || updateMutation.isError ? (
-          <p className="mt-3 text-sm font-semibold text-danger">
-            Não foi possível salvar medicamento.
-          </p>
-        ) : null}
-      </section>
+      {canManageMedication ? (
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-bold text-ink">
+            {selectedMedication ? "Editar medicamento" : "Novo medicamento"}
+          </h2>
+          <div className="mt-5">
+            <MedicationForm
+              key={selectedMedication?.id ?? "new"}
+              initialMedication={selectedMedication}
+              onSubmit={handleSubmit}
+              submitLabel={selectedMedication ? "Salvar medicamento" : "Criar medicamento"}
+            />
+          </div>
+          {selectedMedication ? (
+            <button
+              className="btn-secondary mt-3"
+              onClick={() => setSelectedMedication(undefined)}
+              type="button"
+            >
+              Cancelar edição
+            </button>
+          ) : null}
+          {createMutation.isError || updateMutation.isError ? (
+            <p className="mt-3 text-sm font-semibold text-danger">
+              Não foi possível salvar medicamento.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="grid gap-3">
         <h2 className="text-lg font-bold text-ink">Lista de medicamentos</h2>
@@ -103,15 +108,19 @@ export default function Medications() {
                       <td className="px-4 py-3">{formatDose(medication.max_daily_dose_mg)}</td>
                       <td className="px-4 py-3">{joinList(medication.allowed_routes)}</td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          className="btn-secondary"
-                          onClick={() => setSelectedMedication(medication)}
-                          title={`Editar ${medication.brand_name}`}
-                          type="button"
-                        >
-                          <Pencil aria-hidden="true" className="h-4 w-4" />
-                          Editar
-                        </button>
+                        {canManageMedication ? (
+                          <button
+                            className="btn-secondary"
+                            onClick={() => setSelectedMedication(medication)}
+                            title={`Editar ${medication.brand_name}`}
+                            type="button"
+                          >
+                            <Pencil aria-hidden="true" className="h-4 w-4" />
+                            Editar
+                          </button>
+                        ) : (
+                          "-"
+                        )}
                       </td>
                     </tr>
                   ))}

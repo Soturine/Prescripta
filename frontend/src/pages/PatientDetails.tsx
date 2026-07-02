@@ -4,10 +4,13 @@ import { Link, useParams } from "react-router-dom";
 
 import LoadingState from "../components/LoadingState";
 import PatientForm from "../components/PatientForm";
+import { useAuth } from "../context/AuthContext";
 import { fetchPatient, updatePatient } from "../services/api";
 import type { PatientPayload } from "../types/patient";
 
 export default function PatientDetails() {
+  const { canAccess } = useAuth();
+  const canManagePatient = canAccess(["admin", "medico"]);
   const queryClient = useQueryClient();
   const params = useParams();
   const patientId = Number(params.patientId);
@@ -56,20 +59,53 @@ export default function PatientDetails() {
       </header>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <PatientForm
-          key={patient.id}
-          initialPatient={patient}
-          onSubmit={async (payload) => {
-            await updateMutation.mutateAsync(payload);
-          }}
-          submitLabel="Salvar paciente"
-        />
-        {updateMutation.isError ? (
-          <p className="mt-3 text-sm font-semibold text-danger">Não foi possível salvar.</p>
-        ) : null}
-        {updateMutation.isSuccess ? (
-          <p className="mt-3 text-sm font-semibold text-mint">Paciente atualizado.</p>
-        ) : null}
+        {canManagePatient ? (
+          <>
+            <PatientForm
+              key={patient.id}
+              initialPatient={patient}
+              onSubmit={async (payload) => {
+                await updateMutation.mutateAsync(payload);
+              }}
+              submitLabel="Salvar paciente"
+            />
+            {updateMutation.isError ? (
+              <p className="mt-3 text-sm font-semibold text-danger">Não foi possível salvar.</p>
+            ) : null}
+            {updateMutation.isSuccess ? (
+              <p className="mt-3 text-sm font-semibold text-mint">Paciente atualizado.</p>
+            ) : null}
+          </>
+        ) : (
+          <dl className="grid gap-4 text-sm md:grid-cols-2">
+            <div>
+              <dt className="label">Idade</dt>
+              <dd className="mt-1 font-semibold text-ink">{patient.age ?? "-"}</dd>
+            </div>
+            <div>
+              <dt className="label">Peso</dt>
+              <dd className="mt-1 font-semibold text-ink">{patient.weight_kg} kg</dd>
+            </div>
+            <div>
+              <dt className="label">Alergias</dt>
+              <dd className="mt-1 font-semibold text-ink">
+                {patient.allergies.join(", ") || "-"}
+              </dd>
+            </div>
+            <div>
+              <dt className="label">Comorbidades</dt>
+              <dd className="mt-1 font-semibold text-ink">
+                {patient.comorbidities.join(", ") || "-"}
+              </dd>
+            </div>
+            <div className="md:col-span-2">
+              <dt className="label">Medicamentos contínuos</dt>
+              <dd className="mt-1 font-semibold text-ink">
+                {patient.current_medications.join(", ") || "-"}
+              </dd>
+            </div>
+          </dl>
+        )}
       </section>
     </div>
   );

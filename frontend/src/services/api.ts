@@ -1,14 +1,17 @@
 import axios from "axios";
 
 import type { AuditRecord, DashboardSummary } from "../types/audit";
+import type { LoginPayload, LoginResponse } from "../types/auth";
 import type { Medication, MedicationPayload } from "../types/medication";
 import type { Patient, PatientPayload } from "../types/patient";
 import type {
   PrescriptionCheckPayload,
   PrescriptionCheckResult,
 } from "../types/prescription";
+import type { User, UserCreatePayload, UserRole } from "../types/user";
 
 const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+export const AUTH_TOKEN_KEY = "prescripta_access_token";
 
 export const api = axios.create({
   baseURL,
@@ -16,6 +19,42 @@ export const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+if (storedToken) {
+  api.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
+}
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      clearAuthToken();
+      window.dispatchEvent(new Event("prescripta:auth-expired"));
+    }
+    return Promise.reject(error);
+  },
+);
+
+export function setAuthToken(token: string) {
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+  api.defaults.headers.common.Authorization = `Bearer ${token}`;
+}
+
+export function clearAuthToken() {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  delete api.defaults.headers.common.Authorization;
+}
+
+export async function login(payload: LoginPayload) {
+  const response = await api.post<LoginResponse>("/auth/login", payload);
+  return response.data;
+}
+
+export async function fetchMe() {
+  const response = await api.get<User>("/auth/me");
+  return response.data;
+}
 
 export async function fetchDashboard() {
   const response = await api.get<DashboardSummary>("/dashboard");
@@ -64,5 +103,25 @@ export async function checkPrescription(payload: PrescriptionCheckPayload) {
 
 export async function fetchAudit() {
   const response = await api.get<AuditRecord[]>("/audit");
+  return response.data;
+}
+
+export async function fetchUsers() {
+  const response = await api.get<User[]>("/users");
+  return response.data;
+}
+
+export async function createUser(payload: UserCreatePayload) {
+  const response = await api.post<User>("/users", payload);
+  return response.data;
+}
+
+export async function updateUserStatus(id: number, is_active: boolean) {
+  const response = await api.patch<User>(`/users/${id}/status`, { is_active });
+  return response.data;
+}
+
+export async function updateUserRole(id: number, role: UserRole) {
+  const response = await api.patch<User>(`/users/${id}/role`, { role });
   return response.data;
 }

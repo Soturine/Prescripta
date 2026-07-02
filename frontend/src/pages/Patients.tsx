@@ -5,11 +5,14 @@ import { Link } from "react-router-dom";
 import EmptyState from "../components/EmptyState";
 import LoadingState from "../components/LoadingState";
 import PatientForm from "../components/PatientForm";
+import { useAuth } from "../context/AuthContext";
 import { createPatient, fetchPatients } from "../services/api";
 import type { PatientPayload } from "../types/patient";
 import { joinList } from "../utils/formatters";
 
 export default function Patients() {
+  const { canAccess } = useAuth();
+  const canManagePatients = canAccess(["admin", "medico"]);
   const queryClient = useQueryClient();
   const { data: patients = [], isLoading } = useQuery({
     queryKey: ["patients"],
@@ -33,15 +36,19 @@ export default function Patients() {
         <h1 className="text-3xl font-bold tracking-normal text-ink">Pacientes</h1>
       </header>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-bold text-ink">Novo paciente</h2>
-        <div className="mt-5">
-          <PatientForm onSubmit={handleCreate} submitLabel="Criar paciente" />
-        </div>
-        {createMutation.isError ? (
-          <p className="mt-3 text-sm font-semibold text-danger">Não foi possível criar paciente.</p>
-        ) : null}
-      </section>
+      {canManagePatients ? (
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-bold text-ink">Novo paciente</h2>
+          <div className="mt-5">
+            <PatientForm onSubmit={handleCreate} submitLabel="Criar paciente" />
+          </div>
+          {createMutation.isError ? (
+            <p className="mt-3 text-sm font-semibold text-danger">
+              Não foi possível criar paciente.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="grid gap-3">
         <h2 className="text-lg font-bold text-ink">Lista de pacientes</h2>

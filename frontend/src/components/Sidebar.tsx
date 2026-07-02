@@ -3,19 +3,47 @@ import {
   FileClock,
   LayoutDashboard,
   Pill,
+  ShieldCheck,
   Users,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
+import { useAuth } from "../context/AuthContext";
+import type { UserRole } from "../types/user";
+
 const links = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/patients", label: "Pacientes", icon: Users },
-  { to: "/medications", label: "Medicamentos", icon: Pill },
-  { to: "/prescription-check", label: "Checagem", icon: ClipboardCheck },
-  { to: "/audit", label: "Auditoria", icon: FileClock },
-];
+  {
+    to: "/",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    roles: ["admin", "medico", "enfermagem", "auditor"],
+  },
+  { to: "/patients", label: "Pacientes", icon: Users, roles: ["admin", "medico", "enfermagem"] },
+  {
+    to: "/medications",
+    label: "Medicamentos",
+    icon: Pill,
+    roles: ["admin", "medico", "enfermagem"],
+  },
+  {
+    to: "/prescription-check",
+    label: "Checagem",
+    icon: ClipboardCheck,
+    roles: ["admin", "medico", "enfermagem"],
+  },
+  { to: "/audit", label: "Auditoria", icon: FileClock, roles: ["admin", "auditor"] },
+  { to: "/users", label: "Usuários", icon: ShieldCheck, roles: ["admin"] },
+] satisfies Array<{
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  roles: UserRole[];
+}>;
 
 export default function Sidebar() {
+  const { canAccess } = useAuth();
+  const visibleLinks = links.filter((item) => canAccess(item.roles));
+
   return (
     <aside className="border-b border-slate-200 bg-white/95 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r">
       <div className="flex h-full flex-col gap-6 px-4 py-4 lg:px-6 lg:py-7">
@@ -25,7 +53,7 @@ export default function Sidebar() {
         </div>
 
         <nav className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
-          {links.map((item) => {
+          {visibleLinks.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
