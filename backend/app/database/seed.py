@@ -1,12 +1,15 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.database.models import MedicationModel, PatientModel
+from app.core.security import hash_password
+from app.database.models import MedicationModel, PatientModel, UserModel
+from app.domain.user import UserRole
 
 
 def seed_demo_data(db: Session) -> None:
     has_medications = db.scalar(select(MedicationModel.id).limit(1))
     has_patients = db.scalar(select(PatientModel.id).limit(1))
+    has_users = db.scalar(select(UserModel.id).limit(1))
 
     if not has_medications:
         db.add_all(
@@ -76,6 +79,40 @@ def seed_demo_data(db: Session) -> None:
                         "hidroclorotiazida",
                         "metoprolol",
                     ],
+                ),
+            ]
+        )
+
+    if not has_users:
+        db.add_all(
+            [
+                UserModel(
+                    name="Admin Prescripta",
+                    email="admin@prescripta.local",
+                    hashed_password=hash_password("Admin@12345"),
+                    role=UserRole.ADMIN.value,
+                    is_active=True,
+                ),
+                UserModel(
+                    name="Medico Demonstracao",
+                    email="medico@prescripta.local",
+                    hashed_password=hash_password("Medico@12345"),
+                    role=UserRole.MEDICO.value,
+                    is_active=True,
+                ),
+                UserModel(
+                    name="Enfermagem Demonstracao",
+                    email="enfermagem@prescripta.local",
+                    hashed_password=hash_password("Enfermagem@12345"),
+                    role=UserRole.ENFERMAGEM.value,
+                    is_active=True,
+                ),
+                UserModel(
+                    name="Auditor Demonstracao",
+                    email="auditor@prescripta.local",
+                    hashed_password=hash_password("Auditor@12345"),
+                    role=UserRole.AUDITOR.value,
+                    is_active=True,
                 ),
             ]
         )

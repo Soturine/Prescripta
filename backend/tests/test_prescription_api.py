@@ -1,41 +1,18 @@
-from collections.abc import Generator
-
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from app.database.session import Base, get_db
-from app.main import app
-
-engine = create_engine(
-    "sqlite://",
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from app.domain.user import UserRole
 
 
-def override_get_db() -> Generator[Session, None, None]:
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-
-
-def setup_function() -> None:
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
-
-
-def test_prescription_check_endpoint_blocks_allergy_and_writes_audit() -> None:
-    client = TestClient(app)
+def test_prescription_check_endpoint_blocks_allergy_and_writes_audit(
+    client: TestClient,
+    create_test_user,
+    auth_headers,
+) -> None:
+    create_test_user(email="admin@test.local", password="Admin@12345", role=UserRole.ADMIN)
+    headers = auth_headers("admin@test.local", "Admin@12345")
     patient_response = client.post(
         "/api/patients",
+        headers=headers,
         json={
             "name": "Paciente API",
             "age": 42,
@@ -48,6 +25,7 @@ def test_prescription_check_endpoint_blocks_allergy_and_writes_audit() -> None:
     )
     medication_response = client.post(
         "/api/medications",
+        headers=headers,
         json={
             "brand_name": "Ibuvida",
             "active_ingredient": "ibuprofeno",
@@ -61,6 +39,7 @@ def test_prescription_check_endpoint_blocks_allergy_and_writes_audit() -> None:
 
     response = client.post(
         "/api/prescriptions/check",
+        headers=headers,
         json={
             "patient_id": patient_response.json()["id"],
             "medication_id": medication_response.json()["id"],
@@ -77,6 +56,10 @@ def test_prescription_check_endpoint_blocks_allergy_and_writes_audit() -> None:
     assert payload["human_review_required"] is True
     assert payload["audit_id"] > 0
 
-    audit_response = client.get("/api/audit")
+    audit_response = client.get("/api/audit", headers=headers)
     assert audit_response.status_code == 200
-    assert len(audit_response.json()) == 1
+    prescription_events = [
+        event for event in audit_response.json() if event["action"] == "prescription.check"
+    ]
+    assert len(prescription_events) == 1
+    assert prescription_events[0]["user_email"] == "admin@test.local"

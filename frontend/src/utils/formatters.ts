@@ -1,4 +1,5 @@
 import type { PrescriptionStatus, RiskLevel } from "../types/prescription";
+import type { UserRole } from "../types/user";
 
 export function splitList(value: string) {
   return value
@@ -39,4 +40,28 @@ export function formatDateTime(value: string) {
 
 export function formatDose(value: number) {
   return `${value.toLocaleString("pt-BR")} mg`;
+}
+
+export function formatRole(role: UserRole | string | null | undefined) {
+  const labels: Record<string, string> = {
+    admin: "Admin",
+    medico: "Médico",
+    enfermagem: "Enfermagem",
+    auditor: "Auditor",
+  };
+  return role ? (labels[role] ?? role) : "-";
+}
+
+export function formatAuditAction(action: string) {
+  const labels: Record<string, string> = {
+    "patient.create": "Criou paciente",
+    "patient.update": "Editou paciente",
+    "medication.create": "Criou medicamento",
+    "medication.update": "Editou medicamento",
+    "prescription.check": "Verificou prescrição",
+    "user.create": "Criou usuário",
+    "user.status_update": "Alterou status de usuário",
+    "user.role_update": "Alterou perfil de usuário",
+  };
+  return labels[action] ?? action;
 }

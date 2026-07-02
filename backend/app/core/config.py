@@ -11,6 +11,14 @@ class Settings:
     app_name: str = "Prescripta"
     api_prefix: str = "/api"
     database_url: str = os.getenv("PRESCRIPTA_DATABASE_URL", "sqlite:///./prescripta.db")
+    secret_key: str = os.getenv(
+        "PRESCRIPTA_SECRET_KEY",
+        "prescripta-local-demo-secret-change-before-production",
+    )
+    access_token_expire_minutes: int = int(
+        os.getenv("PRESCRIPTA_ACCESS_TOKEN_EXPIRE_MINUTES", "60")
+    )
+    jwt_algorithm: str = "HS256"
     cors_origins: list[str] = field(
         default_factory=lambda: _split_origins(
             os.getenv(

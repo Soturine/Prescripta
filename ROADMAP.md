@@ -10,10 +10,11 @@
 
 ## v0.2.0 — Autenticação, perfis e segurança
 
-- Login.
+- Login JWT.
 - Perfis de acesso.
-- Trilhas de auditoria expandidas.
-- Revisão de permissões.
+- Gestão de usuários para admin.
+- Trilhas de auditoria com usuário responsável.
+- Revisão de permissões no backend e frontend.
 
 ## v0.3.0 — IA explicativa
 

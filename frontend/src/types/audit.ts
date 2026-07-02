@@ -1,18 +1,18 @@
-import type { Alert, PrescriptionStatus, RiskLevel } from "./prescription";
+import type { RiskLevel } from "./prescription";
 
 export type AuditRecord = {
   id: number;
-  patient_id: number | null;
-  medication_id: number | null;
-  patient_name: string;
-  medication_name: string;
-  dose_mg: number;
-  frequency_per_day: number;
-  route: string;
-  status: PrescriptionStatus;
-  risk_level: RiskLevel;
-  checked_at: string;
-  alerts: Alert[];
+  user_id: number | null;
+  user_name: string | null;
+  user_email: string | null;
+  user_role: string | null;
+  action: string;
+  resource_type: string;
+  resource_id: string | null;
+  created_at: string;
+  status: string | null;
+  risk_level: RiskLevel | null;
+  details: Record<string, unknown>;
 };
 
 export type DashboardSummary = {

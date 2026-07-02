@@ -6,7 +6,7 @@ MVP com dashboard, pacientes, medicamentos, checagem, auditoria, testes e docume
 
 ## v0.2.0
 
-Autenticação, perfis de acesso e revisão de segurança.
+Autenticação JWT, perfis de acesso, gestão de usuários para admin, auditoria com usuário responsável e revisão de segurança básica.
 
 ## v0.3.0
 
