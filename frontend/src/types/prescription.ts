@@ -27,6 +27,29 @@ export type DoseSummary = {
   max_daily_dose_mg: number;
   max_duration_days: number | null;
   max_cumulative_dose_mg: number | null;
+  continuous_use: boolean;
+  monitoring_required: boolean;
+  monitoring_notes: string | null;
+  exposure_plan: {
+    dose_per_administration_mg: number;
+    administrations_per_day: number;
+    calculated_daily_dose_mg: number;
+    calculated_cumulative_dose_mg: number | null;
+    has_missing_duration_for_cumulative_dose: boolean;
+  };
+  mechanism_profile: {
+    mechanism_of_action: string | null;
+    absorption_notes: string | null;
+    distribution_notes: string | null;
+    metabolism_organs: string[];
+    elimination_organs: string[];
+    renal_elimination_level: string;
+    hepatic_metabolism_level: string;
+    cyp_interactions: string[];
+    pharmacodynamic_notes: string | null;
+    pharmacokinetic_notes: string | null;
+    clinical_interpretation: string | null;
+  };
   condition_specific_limits: Record<string, number>;
 };
 

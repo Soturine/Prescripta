@@ -65,6 +65,35 @@ export const pregnancyOptions: VocabularyOption[] = [
   { value: "possibilidade_a_confirmar", label: "Possibilidade a confirmar" },
 ];
 
+export const mentalHealthOptions: VocabularyOption[] = [
+  { value: "depressao", label: "Depressao" },
+  { value: "ansiedade", label: "Ansiedade" },
+  { value: "transtorno_bipolar", label: "Transtorno bipolar" },
+  { value: "epilepsia_convulsoes", label: "Epilepsia/convulsoes" },
+  { value: "risco_sedacao", label: "Risco de sedacao" },
+  { value: "risco_serotoninergico", label: "Risco serotoninergico" },
+  { value: "uso_isrs", label: "Uso de ISRS" },
+  { value: "uso_imao", label: "Uso de IMAO" },
+  { value: "uso_antipsicotico", label: "Uso de antipsicotico" },
+  { value: "uso_estabilizador_humor", label: "Uso de estabilizador de humor" },
+  { value: "risco_neuropsiquiatrico_a_revisar", label: "Risco neuropsiquiatrico a revisar" },
+];
+
+export const reproductiveGynecologicOptions: VocabularyOption[] = [
+  { value: "gestante", label: "Gestante" },
+  { value: "lactante", label: "Lactante" },
+  { value: "tentando_engravidar", label: "Tentando engravidar" },
+  { value: "uso_anticoncepcional_hormonal", label: "Uso de anticoncepcional hormonal" },
+  { value: "diu_hormonal", label: "DIU hormonal" },
+  { value: "diu_nao_hormonal", label: "DIU nao hormonal" },
+  { value: "endometriose", label: "Endometriose" },
+  { value: "sop", label: "Sindrome dos ovarios policisticos" },
+  { value: "ciclo_irregular", label: "Ciclo irregular" },
+  { value: "tratamento_hormonal", label: "Tratamento hormonal" },
+  { value: "risco_trombotico", label: "Risco trombotico" },
+  { value: "quadro_ginecologico_a_revisar", label: "Quadro ginecologico a revisar" },
+];
+
 export const clinicalVocabularyLabels = Object.fromEntries(
   [
     ...renalOptions,
@@ -72,6 +101,8 @@ export const clinicalVocabularyLabels = Object.fromEntries(
     ...cardiacOptions,
     ...gastrointestinalOptions,
     ...pregnancyOptions,
+    ...mentalHealthOptions,
+    ...reproductiveGynecologicOptions,
   ].map((option) => [option.value, option.label]),
 );
 

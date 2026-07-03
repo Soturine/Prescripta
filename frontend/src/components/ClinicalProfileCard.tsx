@@ -20,6 +20,11 @@ export default function ClinicalProfileCard({ patient }: ClinicalProfileCardProp
       "Gravidez/lactacao",
       patient.pregnancy_or_lactation === null ? "-" : patient.pregnancy_or_lactation ? "Sim" : "Nao",
     ],
+    ["Saude mental", formatClinicalList(patient.mental_health_factors ?? [])],
+    [
+      "Reprodutivo/ginecologico",
+      formatClinicalList(patient.reproductive_gynecologic_factors ?? []),
+    ],
     ["Reacoes adversas", joinList(patient.adverse_reactions) || "-"],
   ];
 
@@ -46,6 +51,23 @@ export default function ClinicalProfileCard({ patient }: ClinicalProfileCardProp
           </div>
         ))}
       </dl>
+      <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 p-3">
+        <h3 className="text-sm font-bold text-ink">Identificadores mascarados</h3>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {patient.identifiers.length ? (
+            patient.identifiers.map((identifier) => (
+              <span
+                className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                key={identifier.id}
+              >
+                {identifier.display_masked}
+              </span>
+            ))
+          ) : (
+            <span className="text-sm text-slate-500">Nenhum identificador cadastrado.</span>
+          )}
+        </div>
+      </div>
       <p className="mt-3 text-xs font-medium text-slate-500">
         Ultima revisao:{" "}
         {patient.clinical_profile_reviewed_at
@@ -54,4 +76,8 @@ export default function ClinicalProfileCard({ patient }: ClinicalProfileCardProp
       </p>
     </section>
   );
+}
+
+function formatClinicalList(values: string[]) {
+  return values.map((value) => formatClinicalValue(value)).join(", ") || "-";
 }

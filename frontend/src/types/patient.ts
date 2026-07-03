@@ -5,6 +5,9 @@ export type Patient = {
   age: number | null;
   weight_kg: number;
   height_cm: number | null;
+  phone: string | null;
+  email: string | null;
+  mother_name: string | null;
   allergies: string[];
   comorbidities: string[];
   current_medications: string[];
@@ -15,11 +18,15 @@ export type Patient = {
   hypertension: boolean;
   diabetes: boolean;
   pregnancy_or_lactation: boolean | null;
+  mental_health_factors?: string[];
+  reproductive_gynecologic_factors?: string[];
   adverse_reactions: string[];
   clinical_notes: string | null;
   clinical_profile_reviewed_at: string | null;
   clinical_profile_completeness_score: number;
   clinical_profile_badge: string;
+  identifiers: PatientIdentifier[];
+  possible_duplicate_matches: Array<Record<string, unknown>>;
 };
 
 export type PatientPayload = Omit<
@@ -28,7 +35,25 @@ export type PatientPayload = Omit<
   | "clinical_profile_reviewed_at"
   | "clinical_profile_completeness_score"
   | "clinical_profile_badge"
+  | "identifiers"
+  | "possible_duplicate_matches"
 >;
+
+export type PatientIdentifier = {
+  id: number;
+  patient_id: number;
+  identifier_type: string;
+  issuing_system: string | null;
+  display_masked: string;
+  is_primary: boolean;
+};
+
+export type PatientIdentifierPayload = {
+  identifier_type: string;
+  identifier_value: string;
+  issuing_system: string | null;
+  is_primary: boolean;
+};
 
 export type QuickTriagePayload = {
   renal_condition?: boolean | string | null;
@@ -38,6 +63,8 @@ export type QuickTriagePayload = {
   hypertension?: boolean | null;
   diabetes?: boolean | null;
   pregnancy_or_lactation?: boolean | null;
+  mental_health_factors?: string[];
+  reproductive_gynecologic_factors?: string[];
   allergies: string[];
   current_medications: string[];
   adverse_reactions: string[];
