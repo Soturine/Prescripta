@@ -7,7 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import (
     audit,
     auth,
+    cds,
     dashboard,
+    integrations,
     medication_catalog,
     medications,
     patients,
@@ -33,7 +35,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.5.0",
+    version="0.6.0",
     description="API educacional para apoio demonstrativo à prescrição segura.",
     lifespan=lifespan,
 )
@@ -51,9 +53,11 @@ app.include_router(patients.router, prefix=settings.api_prefix)
 app.include_router(medications.router, prefix=settings.api_prefix)
 app.include_router(medication_catalog.router, prefix=settings.api_prefix)
 app.include_router(prescriptions.router, prefix=settings.api_prefix)
+app.include_router(cds.router, prefix=settings.api_prefix)
 app.include_router(dashboard.router, prefix=settings.api_prefix)
 app.include_router(audit.router, prefix=settings.api_prefix)
 app.include_router(users.router, prefix=settings.api_prefix)
+app.include_router(integrations.router, prefix=settings.api_prefix)
 
 
 @app.get("/health", tags=["health"])
