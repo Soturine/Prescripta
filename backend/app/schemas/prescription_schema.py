@@ -62,9 +62,18 @@ class PrescriptionExplainPatient(BaseModel):
 
 class PrescriptionExplainMedication(BaseModel):
     id: int | None = Field(default=None, gt=0)
+    active_ingredient_id: int | None = Field(default=None, gt=0)
     brand_name: str = Field(min_length=2, max_length=160)
     active_ingredient: str = Field(min_length=2, max_length=160)
+    commercial_aliases: list[str] = Field(default_factory=list)
     therapeutic_class: str = Field(min_length=2, max_length=160)
+    therapeutic_classes: list[str] = Field(default_factory=list)
+    source_jurisdiction: str = "BR"
+    evidence_source_type: str = "demo_seed"
+    validation_status: str = "demo"
+    concentration: str | None = None
+    pharmaceutical_form: str | None = None
+    evidence_source_url: str | None = None
     max_daily_dose_mg: float = Field(gt=0)
     max_duration_days: int | None = None
     max_cumulative_dose_mg: float | None = None

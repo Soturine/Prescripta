@@ -3,6 +3,7 @@ from __future__ import annotations
 from app.domain.medication import Medication
 from app.domain.patient import Patient
 from app.domain.prescription import PrescriptionInput
+from app.services.controlled_vocabulary import label_for_code
 
 
 def build_clinical_context_graph(
@@ -34,10 +35,10 @@ def build_clinical_context_graph(
     patient_factors = [
         factor
         for factor in [
-            patient.renal_condition,
-            patient.hepatic_condition,
-            patient.cardiac_condition,
-            patient.gastrointestinal_history,
+            label_for_code(patient.renal_condition),
+            label_for_code(patient.hepatic_condition),
+            label_for_code(patient.cardiac_condition),
+            label_for_code(patient.gastrointestinal_history),
             "hipertensao" if patient.hypertension else None,
             "diabetes" if patient.diabetes else None,
         ]
@@ -51,6 +52,8 @@ def build_clinical_context_graph(
             "cautela cardiaca" if medication.cardiac_caution else None,
             "cautela gastrointestinal" if medication.gastrointestinal_caution else None,
             "cautela em idosos" if medication.elderly_caution else None,
+            f"principio ativo: {medication.active_ingredient}",
+            f"jurisdicao: {medication.source_jurisdiction}",
             *(medication.organs_involved or []),
         ]
         if factor

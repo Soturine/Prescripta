@@ -29,14 +29,32 @@ class Medication:
     alternative_group: str | None = None
     related_medications: list[str] | None = None
     knowledge_source: str | None = None
+    active_ingredient_id: int | None = None
+    commercial_aliases: list[str] | None = None
+    therapeutic_classes: list[str] | None = None
+    source_jurisdiction: str = "BR"
+    evidence_source_type: str = "demo_seed"
+    validation_status: str = "demo"
+    concentration: str | None = None
+    pharmaceutical_form: str | None = None
+    evidence_source_url: str | None = None
 
     @classmethod
     def from_record(cls, record: Any) -> "Medication":
         return cls(
             id=record.id,
+            active_ingredient_id=record.active_ingredient_id,
             brand_name=record.brand_name,
             active_ingredient=record.active_ingredient,
+            commercial_aliases=list(record.commercial_aliases or []),
             therapeutic_class=record.therapeutic_class,
+            therapeutic_classes=list(record.therapeutic_classes or []),
+            source_jurisdiction=record.source_jurisdiction,
+            evidence_source_type=record.evidence_source_type,
+            validation_status=record.validation_status,
+            concentration=record.concentration,
+            pharmaceutical_form=record.pharmaceutical_form,
+            evidence_source_url=record.evidence_source_url,
             max_daily_dose_mg=record.max_daily_dose_mg,
             max_duration_days=record.max_duration_days,
             max_cumulative_dose_mg=record.max_cumulative_dose_mg,

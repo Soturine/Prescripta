@@ -20,6 +20,7 @@ from app.services.clinical_profile import (
     normalize_patient_payload,
     reviewed_now,
 )
+from app.services.controlled_vocabulary import label_for_code
 from app.services.normalizer import merge_terms
 
 router = APIRouter(prefix="/patients", tags=["patients"])
@@ -127,13 +128,25 @@ def quick_triage_patient(
     conflicts: list[str] = []
 
     values = {
-        "renal_condition": "renal" if payload.renal_condition else patient.renal_condition,
-        "hepatic_condition": "hepatico" if payload.hepatic_condition else patient.hepatic_condition,
-        "cardiac_condition": "cardiaco" if payload.cardiac_condition else patient.cardiac_condition,
-        "gastrointestinal_history": (
-            "gastrointestinal"
-            if payload.gastrointestinal_history
-            else patient.gastrointestinal_history
+        "renal_condition": _triage_value(
+            payload.renal_condition,
+            patient.renal_condition,
+            "funcao_renal_a_revisar",
+        ),
+        "hepatic_condition": _triage_value(
+            payload.hepatic_condition,
+            patient.hepatic_condition,
+            "funcao_hepatica_a_revisar",
+        ),
+        "cardiac_condition": _triage_value(
+            payload.cardiac_condition,
+            patient.cardiac_condition,
+            "risco_cardiovascular_a_revisar",
+        ),
+        "gastrointestinal_history": _triage_value(
+            payload.gastrointestinal_history,
+            patient.gastrointestinal_history,
+            "historico_gastrointestinal_a_revisar",
         ),
         "hypertension": (
             patient.hypertension if payload.hypertension is None else payload.hypertension
@@ -197,10 +210,10 @@ def patient_clinical_context(
     factors = [
         factor
         for factor in [
-            patient.renal_condition,
-            patient.hepatic_condition,
-            patient.cardiac_condition,
-            patient.gastrointestinal_history,
+            label_for_code(patient.renal_condition),
+            label_for_code(patient.hepatic_condition),
+            label_for_code(patient.cardiac_condition),
+            label_for_code(patient.gastrointestinal_history),
             "hipertensão" if patient.hypertension else None,
             "diabetes" if patient.diabetes else None,
             *(patient.allergies or []),
@@ -226,3 +239,15 @@ def patient_clinical_context(
         "clinical_profile_completeness_score": patient.clinical_profile_completeness_score or 0,
         "educational_notice": "Mapa lógico demonstrativo; não é grafo clínico validado.",
     }
+
+
+def _triage_value(
+    incoming: bool | str | None,
+    existing: str | None,
+    default_code: str,
+) -> str | None:
+    if isinstance(incoming, str):
+        return incoming or existing
+    if incoming:
+        return default_code
+    return existing

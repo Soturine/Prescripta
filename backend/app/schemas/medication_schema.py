@@ -2,9 +2,18 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class MedicationBase(BaseModel):
+    active_ingredient_id: int | None = Field(default=None, gt=0)
     brand_name: str = Field(min_length=2, max_length=160)
     active_ingredient: str = Field(min_length=2, max_length=160)
+    commercial_aliases: list[str] = Field(default_factory=list)
     therapeutic_class: str = Field(min_length=2, max_length=160)
+    therapeutic_classes: list[str] = Field(default_factory=list)
+    source_jurisdiction: str = Field(default="BR", max_length=20)
+    evidence_source_type: str = Field(default="demo_seed", max_length=80)
+    validation_status: str = Field(default="demo", max_length=40)
+    concentration: str | None = Field(default=None, max_length=120)
+    pharmaceutical_form: str | None = Field(default=None, max_length=120)
+    evidence_source_url: str | None = Field(default=None, max_length=500)
     max_daily_dose_mg: float = Field(gt=0)
     max_duration_days: int | None = Field(default=None, gt=0, le=365)
     max_cumulative_dose_mg: float | None = Field(default=None, gt=0)
@@ -33,9 +42,18 @@ class MedicationCreate(MedicationBase):
 
 
 class MedicationUpdate(BaseModel):
+    active_ingredient_id: int | None = Field(default=None, gt=0)
     brand_name: str | None = Field(default=None, min_length=2, max_length=160)
     active_ingredient: str | None = Field(default=None, min_length=2, max_length=160)
+    commercial_aliases: list[str] | None = None
     therapeutic_class: str | None = Field(default=None, min_length=2, max_length=160)
+    therapeutic_classes: list[str] | None = None
+    source_jurisdiction: str | None = Field(default=None, max_length=20)
+    evidence_source_type: str | None = Field(default=None, max_length=80)
+    validation_status: str | None = Field(default=None, max_length=40)
+    concentration: str | None = Field(default=None, max_length=120)
+    pharmaceutical_form: str | None = Field(default=None, max_length=120)
+    evidence_source_url: str | None = Field(default=None, max_length=500)
     max_daily_dose_mg: float | None = Field(default=None, gt=0)
     max_duration_days: int | None = Field(default=None, gt=0, le=365)
     max_cumulative_dose_mg: float | None = Field(default=None, gt=0)

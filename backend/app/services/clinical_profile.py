@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from app.services.normalizer import dedupe_terms, normalize_text
+from app.services.controlled_vocabulary import normalize_patient_clinical_fields
+from app.services.normalizer import dedupe_terms
 
 REQUIRED_PROFILE_ITEMS = (
     "allergies",
@@ -39,19 +40,10 @@ def clinical_profile_badge(score: float) -> str:
 
 
 def normalize_patient_payload(values: dict) -> dict:
-    normalized = dict(values)
+    normalized = normalize_patient_clinical_fields(values)
     for field in ("allergies", "comorbidities", "current_medications", "adverse_reactions"):
         if field in normalized and normalized[field] is not None:
             normalized[field] = dedupe_terms(normalized[field])
-
-    for field in (
-        "renal_condition",
-        "hepatic_condition",
-        "cardiac_condition",
-        "gastrointestinal_history",
-    ):
-        if field in normalized and normalized[field]:
-            normalized[field] = normalize_text(normalized[field])
 
     score_values = {
         "allergies": normalized.get("allergies", []),

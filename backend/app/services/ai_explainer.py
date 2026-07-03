@@ -44,6 +44,9 @@ SYSTEM_INSTRUCTIONS = """
 Você é uma camada explicativa educacional do Prescripta.
 Explique apenas alertas já gerados por regras determinísticas.
 Não libere prescrição, não reduza risco, não calcule dose crítica e não substitua revisão humana.
+Priorize fontes brasileiras quando o contexto for BR.
+Trate fontes internacionais como apoio secundário.
+Informe quando uma evidência for demonstrativa, externa ou pendente de revisão.
 Responda em JSON com as chaves: simple_explanation, technical_summary,
 review_questions, educational_notice.
 Use português claro, técnico quando necessário, e preserve todo bloqueio crítico.
@@ -179,9 +182,21 @@ class AIExplainer:
         )
         if payload.rag_evidence:
             sources = ", ".join(
-                str(item.get("source")) for item in payload.rag_evidence[:3] if item.get("source")
+                self._rag_source_label(item)
+                for item in payload.rag_evidence[:3]
+                if item.get("source")
             )
-            technical_summary = f"{technical_summary} Contexto RAG interno: {sources}."
+            technical_summary = (
+                f"{technical_summary} Contexto RAG interno com fonte/jurisdição: {sources}."
+            )
+            if any(
+                str(item.get("jurisdiction", "")).upper() not in {"BR", "GLOBAL"}
+                for item in payload.rag_evidence
+            ):
+                technical_summary = (
+                    f"{technical_summary} Fontes internacionais são apoio secundário "
+                    "e não substituem a prioridade brasileira Anvisa/DCB no contexto BR."
+                )
         if fallback_reason:
             technical_summary = f"{technical_summary} {fallback_reason}"
 
@@ -255,7 +270,9 @@ class AIExplainer:
         ]
         missing_patient_data = self._missing_patient_data(payload)
         rag_sources = [
-            str(item.get("source")) for item in payload.rag_evidence if item.get("source")
+            self._rag_source_label(item)
+            for item in payload.rag_evidence
+            if item.get("source")
         ]
         return PrescriptionExplainResponse(
             provider=provider,
@@ -272,6 +289,13 @@ class AIExplainer:
             missing_patient_data=missing_patient_data,
             rag_sources=rag_sources,
         )
+
+    def _rag_source_label(self, item: dict) -> str:
+        source = str(item.get("source_name") or item.get("source") or "fonte interna")
+        jurisdiction = str(item.get("jurisdiction") or "GLOBAL").upper()
+        status = str(item.get("validation_status") or "demo")
+        evidence_type = str(item.get("evidence_type") or "demo_seed")
+        return f"{source} [{jurisdiction}, {evidence_type}, {status}]"
 
     def _missing_patient_data(self, payload: PrescriptionExplainRequest) -> list[str]:
         missing: list[str] = []
