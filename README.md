@@ -1,27 +1,27 @@
 # Prescripta
 
-![Version](https://img.shields.io/badge/version-v0.5.0-blue)
+![Version](https://img.shields.io/badge/version-v0.6.0-blue)
 ![Backend](https://img.shields.io/badge/backend-FastAPI-009688)
 ![Frontend](https://img.shields.io/badge/frontend-React-155E75)
 ![License](https://img.shields.io/badge/license-Apache--2.0-slate)
 
-Prescripta e um sistema web educacional de apoio a prescricao segura. A v0.5.0 profissionaliza a base farmacologica e clinica: principio ativo primeiro, aliases comerciais, fonte Brasil/Anvisa/DCB, vocabulario clinico controlado, RAG com metadados de fonte e IA apenas explicativa.
+Prescripta e um sistema web educacional de apoio a prescricao segura. A v0.6.0 amplia seguranca clinica e cria uma camada de interoperabilidade demonstrativa por Ports & Adapters, com importacoes pendentes, consentimento, auditoria e CDS API.
 
 > Uso educacional/demonstrativo: Prescripta nao e dispositivo medico, nao substitui avaliacao profissional e nao deve ser usado para decisoes clinicas reais.
 
 Prescripta e um motor de apoio a prescricao segura, preparado para integracao com sistemas clinicos via arquitetura de interoperabilidade, FHIR-like imports, adapters hospitalares, auditoria, consentimento e motor deterministico de risco.
 
-## Preview v0.5.0
+## Preview v0.6.0
 
-![GIF demonstrativo do Prescripta v0.5.0](docs/assets/v0.5.0/prescripta-v0.5-demo.gif)
+![GIF demonstrativo do Prescripta v0.6.0](docs/assets/v0.6.0/prescripta-v0.6-demo.gif)
 
-![Busca por principio ativo ou alias](docs/assets/v0.5.0/medication-active-ingredient-search.png)
+![Importacoes clinicas](docs/assets/v0.6.0/clinical-imports-list.png)
 
-![Catalogo de principio ativo](docs/assets/v0.5.0/active-ingredient-catalog.png)
+![Plano de exposicao medicamentosa](docs/assets/v0.6.0/medication-exposure-plan.png)
 
-![Perfil clinico controlado](docs/assets/v0.5.0/controlled-clinical-profile.png)
+![Painel CDS API](docs/assets/v0.6.0/cds-api-panel.png)
 
-![Evidencia com fonte](docs/assets/v0.5.0/prescription-source-evidence.png)
+![Identificadores do paciente](docs/assets/v0.6.0/patient-identifiers.png)
 
 ## Funcionalidades
 
@@ -34,6 +34,12 @@ Prescripta e um motor de apoio a prescricao segura, preparado para integracao co
 - Fonte e jurisdicao: `BR`, `US`, `EU`, `GLOBAL`.
 - Lookup assistido Anvisa/DCB sem scraping agressivo.
 - Motor deterministico de risco para alergia, dose, duracao, dose acumulada, cautelas, interacoes, comorbidades e contexto clinico.
+- Exposicao medicamentosa com dose diaria, dose acumulada, uso continuo e monitoramento.
+- Perfil farmacocinetico/farmacodinamico com mecanismo, metabolismo, eliminacao e CYP.
+- Alertas neuropsiquiatricos e reprodutivo/ginecologicos como revisao profissional.
+- Identificadores de paciente com hash/mascara e matching sem merge automatico inseguro.
+- Importacoes clinicas FHIR/JSON/CSV/mock com consentimento, pending_review e aceite/rejeicao.
+- Endpoint demonstrativo `POST /api/cds/prescription-check`.
 - RAG interno com `jurisdiction`, `source_name`, `source_url`, `evidence_type` e `validation_status`.
 - IA explicativa multi-provider com fallback deterministico, sem poder de alterar decisao.
 - Auditoria automatica de acoes relevantes.
@@ -103,16 +109,15 @@ npm run build
 
 ## Release Atual
 
-- Publicada: `v0.5.0`
-- Notas: [docs/releases/v0.5.0.md](docs/releases/v0.5.0.md)
+- Publicada: `v0.6.0`
+- Notas: [docs/releases/v0.6.0.md](docs/releases/v0.6.0.md)
 - Auditoria de profissionalizacao: [docs/product/professionalization-audit-v0.5.0.md](docs/product/professionalization-audit-v0.5.0.md)
 - Fontes brasileiras: [docs/clinical-rules/brazilian-medication-sources.md](docs/clinical-rules/brazilian-medication-sources.md)
 
 ## Roadmap Resumido
 
-- `v0.5.0`: Catalogo Brasil/Anvisa + principio ativo + vocabulario controlado.
-- `v0.6.0`: Camada de Interoperabilidade Clinica / Ports & Adapters.
-- `v0.7.0`: Importacao clinica assistida + FHIR Bundle + JSON/CSV.
+- `v0.6.0`: Seguranca clinica ampliada + interoperabilidade clinica demonstrativa.
+- `v0.7.0`: Importacao clinica assistida aprimorada + revisao humana avancada.
 - `v0.8.0`: Relatorios, exportacao e auditoria avancada.
 - `v0.9.0`: Docker/PostgreSQL/deploy.
 - `v1.0.0`: versao final de portfolio.
@@ -125,6 +130,10 @@ npm run build
 - [Fontes brasileiras de medicamentos](docs/clinical-rules/brazilian-medication-sources.md)
 - [Vocabulario clinico controlado](docs/clinical-rules/controlled-clinical-vocabulary.md)
 - [Motor de risco](docs/clinical-rules/risk-engine.md)
+- [Exposicao e uso continuo](docs/clinical-rules/medication-exposure-and-continuous-use.md)
+- [Arquitetura de interoperabilidade](docs/interoperability/architecture.md)
+- [CDS API](docs/interoperability/cds-api.md)
+- [Consentimento e LGPD](docs/security/consent-and-lgpd.md)
 - [Estrategia Anvisa/DCB](docs/data/anvisa-dcb-import-strategy.md)
 - [Politica de conflito de fontes](docs/data/source-conflict-policy.md)
 - [IA explicativa](docs/ai/ai-explainer.md)

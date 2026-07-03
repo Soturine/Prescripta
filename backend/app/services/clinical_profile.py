@@ -15,6 +15,8 @@ REQUIRED_PROFILE_ITEMS = (
     "gastrointestinal_history",
     "hypertension",
     "diabetes",
+    "mental_health_factors",
+    "reproductive_gynecologic_factors",
 )
 
 
@@ -41,7 +43,12 @@ def clinical_profile_badge(score: float) -> str:
 
 def normalize_patient_payload(values: dict) -> dict:
     normalized = normalize_patient_clinical_fields(values)
-    for field in ("allergies", "comorbidities", "current_medications", "adverse_reactions"):
+    for field in (
+        "allergies",
+        "comorbidities",
+        "current_medications",
+        "adverse_reactions",
+    ):
         if field in normalized and normalized[field] is not None:
             normalized[field] = dedupe_terms(normalized[field])
 
@@ -55,6 +62,10 @@ def normalize_patient_payload(values: dict) -> dict:
         "gastrointestinal_history": normalized.get("gastrointestinal_history"),
         "hypertension": bool(normalized.get("hypertension", False)),
         "diabetes": bool(normalized.get("diabetes", False)),
+        "mental_health_factors": normalized.get("mental_health_factors", []),
+        "reproductive_gynecologic_factors": normalized.get(
+            "reproductive_gynecologic_factors", []
+        ),
     }
     normalized["clinical_profile_completeness_score"] = clinical_profile_score(score_values)
     return normalized

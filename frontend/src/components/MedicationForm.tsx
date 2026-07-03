@@ -26,6 +26,9 @@ const medicationSchema = z.object({
   max_daily_dose_mg: z.number().positive("Informe a dose maxima."),
   max_duration_days: z.number().positive().optional(),
   max_cumulative_dose_mg: z.number().positive().optional(),
+  continuous_use: z.boolean(),
+  monitoring_required: z.boolean(),
+  monitoring_notes: z.string().optional(),
   condition_specific_limits: z.string().optional(),
   allowed_routes: z.string().min(2, "Informe ao menos uma via."),
   contraindications: z.string().optional(),
@@ -34,8 +37,19 @@ const medicationSchema = z.object({
   cardiac_caution: z.boolean(),
   gastrointestinal_caution: z.boolean(),
   elderly_caution: z.boolean(),
+  mechanism_of_action: z.string().optional(),
+  absorption_notes: z.string().optional(),
+  distribution_notes: z.string().optional(),
   metabolism_organs: z.string().optional(),
   elimination_organs: z.string().optional(),
+  renal_elimination_level: z.string().optional(),
+  hepatic_metabolism_level: z.string().optional(),
+  cyp_interactions: z.string().optional(),
+  pharmacodynamic_notes: z.string().optional(),
+  pharmacokinetic_notes: z.string().optional(),
+  clinical_interpretation: z.string().optional(),
+  neuropsychiatric_cautions: z.string().optional(),
+  reproductive_cautions: z.string().optional(),
   organs_involved: z.string().optional(),
   relevant_adverse_effects: z.string().optional(),
   structured_contraindications: z.string().optional(),
@@ -84,6 +98,9 @@ export default function MedicationForm({
       max_daily_dose_mg: initialMedication?.max_daily_dose_mg ?? 1000,
       max_duration_days: initialMedication?.max_duration_days ?? undefined,
       max_cumulative_dose_mg: initialMedication?.max_cumulative_dose_mg ?? undefined,
+      continuous_use: initialMedication?.continuous_use ?? false,
+      monitoring_required: initialMedication?.monitoring_required ?? false,
+      monitoring_notes: initialMedication?.monitoring_notes ?? "",
       condition_specific_limits: formatLimits(initialMedication?.condition_specific_limits),
       allowed_routes: joinList(initialMedication?.allowed_routes),
       contraindications: joinList(initialMedication?.contraindications),
@@ -92,8 +109,19 @@ export default function MedicationForm({
       cardiac_caution: initialMedication?.cardiac_caution ?? false,
       gastrointestinal_caution: initialMedication?.gastrointestinal_caution ?? false,
       elderly_caution: initialMedication?.elderly_caution ?? false,
+      mechanism_of_action: initialMedication?.mechanism_of_action ?? "",
+      absorption_notes: initialMedication?.absorption_notes ?? "",
+      distribution_notes: initialMedication?.distribution_notes ?? "",
       metabolism_organs: joinList(initialMedication?.metabolism_organs),
       elimination_organs: joinList(initialMedication?.elimination_organs),
+      renal_elimination_level: initialMedication?.renal_elimination_level ?? "nao_informado",
+      hepatic_metabolism_level: initialMedication?.hepatic_metabolism_level ?? "nao_informado",
+      cyp_interactions: joinList(initialMedication?.cyp_interactions),
+      pharmacodynamic_notes: initialMedication?.pharmacodynamic_notes ?? "",
+      pharmacokinetic_notes: initialMedication?.pharmacokinetic_notes ?? "",
+      clinical_interpretation: initialMedication?.clinical_interpretation ?? "",
+      neuropsychiatric_cautions: joinList(initialMedication?.neuropsychiatric_cautions),
+      reproductive_cautions: joinList(initialMedication?.reproductive_cautions),
       organs_involved: joinList(initialMedication?.organs_involved),
       relevant_adverse_effects: joinList(initialMedication?.relevant_adverse_effects),
       structured_contraindications: joinList(initialMedication?.structured_contraindications),
@@ -128,6 +156,9 @@ export default function MedicationForm({
       max_daily_dose_mg: values.max_daily_dose_mg,
       max_duration_days: values.max_duration_days ?? null,
       max_cumulative_dose_mg: values.max_cumulative_dose_mg ?? null,
+      continuous_use: values.continuous_use,
+      monitoring_required: values.monitoring_required,
+      monitoring_notes: values.monitoring_notes || null,
       condition_specific_limits: parseLimits(values.condition_specific_limits ?? ""),
       allowed_routes: splitList(values.allowed_routes),
       contraindications: splitList(values.contraindications ?? ""),
@@ -136,8 +167,19 @@ export default function MedicationForm({
       cardiac_caution: values.cardiac_caution,
       gastrointestinal_caution: values.gastrointestinal_caution,
       elderly_caution: values.elderly_caution,
+      mechanism_of_action: values.mechanism_of_action || null,
+      absorption_notes: values.absorption_notes || null,
+      distribution_notes: values.distribution_notes || null,
       metabolism_organs: splitList(values.metabolism_organs ?? ""),
       elimination_organs: splitList(values.elimination_organs ?? ""),
+      renal_elimination_level: values.renal_elimination_level || "nao_informado",
+      hepatic_metabolism_level: values.hepatic_metabolism_level || "nao_informado",
+      cyp_interactions: splitList(values.cyp_interactions ?? ""),
+      pharmacodynamic_notes: values.pharmacodynamic_notes || null,
+      pharmacokinetic_notes: values.pharmacokinetic_notes || null,
+      clinical_interpretation: values.clinical_interpretation || null,
+      neuropsychiatric_cautions: splitList(values.neuropsychiatric_cautions ?? ""),
+      reproductive_cautions: splitList(values.reproductive_cautions ?? ""),
       organs_involved: splitList(values.organs_involved ?? ""),
       relevant_adverse_effects: splitList(values.relevant_adverse_effects ?? ""),
       structured_contraindications: splitList(values.structured_contraindications ?? ""),
@@ -165,6 +207,9 @@ export default function MedicationForm({
         max_daily_dose_mg: 1000,
         max_duration_days: undefined,
         max_cumulative_dose_mg: undefined,
+        continuous_use: false,
+        monitoring_required: false,
+        monitoring_notes: "",
         condition_specific_limits: "",
         allowed_routes: "",
         contraindications: "",
@@ -173,8 +218,19 @@ export default function MedicationForm({
         cardiac_caution: false,
         gastrointestinal_caution: false,
         elderly_caution: false,
+        mechanism_of_action: "",
+        absorption_notes: "",
+        distribution_notes: "",
         metabolism_organs: "",
         elimination_organs: "",
+        renal_elimination_level: "nao_informado",
+        hepatic_metabolism_level: "nao_informado",
+        cyp_interactions: "",
+        pharmacodynamic_notes: "",
+        pharmacokinetic_notes: "",
+        clinical_interpretation: "",
+        neuropsychiatric_cautions: "",
+        reproductive_cautions: "",
         organs_involved: "",
         relevant_adverse_effects: "",
         structured_contraindications: "",
@@ -361,6 +417,30 @@ export default function MedicationForm({
         ))}
       </div>
 
+      <div className="grid gap-3 md:grid-cols-2">
+        <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
+          <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("continuous_use")} />
+          Uso continuo
+        </label>
+        <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
+          <input
+            className="h-4 w-4 accent-ocean"
+            type="checkbox"
+            {...register("monitoring_required")}
+          />
+          Monitoramento necessario
+        </label>
+      </div>
+
+      <label className="grid gap-1.5">
+        <span className="label">Notas de monitoramento</span>
+        <input
+          className="field"
+          placeholder="revisar funcao renal/hepatica, sinais clinicos"
+          {...register("monitoring_notes")}
+        />
+      </label>
+
       <TagInput label="Vias permitidas" placeholder="oral, intravenosa" {...register("allowed_routes")} />
       {errors.allowed_routes ? (
         <span className="text-xs text-danger">{errors.allowed_routes.message}</span>
@@ -373,8 +453,57 @@ export default function MedicationForm({
       />
 
       <div className="grid gap-4 md:grid-cols-2">
+        <label className="grid gap-1.5">
+          <span className="label">Mecanismo de acao</span>
+          <input className="field" {...register("mechanism_of_action")} />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="label">Interpretacao clinica</span>
+          <input className="field" {...register("clinical_interpretation")} />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="label">Absorcao</span>
+          <input className="field" {...register("absorption_notes")} />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="label">Distribuicao</span>
+          <input className="field" {...register("distribution_notes")} />
+        </label>
         <TagInput label="Metabolizacao/processamento" placeholder="hepatico" {...register("metabolism_organs")} />
         <TagInput label="Eliminacao principal" placeholder="renal" {...register("elimination_organs")} />
+        <ControlledSelect
+          label="Nivel de eliminacao renal"
+          options={[
+            { value: "nao_informado", label: "Nao informado" },
+            { value: "baixo", label: "Baixo" },
+            { value: "moderado", label: "Moderado" },
+            { value: "alto", label: "Alto" },
+            { value: "critico_revisar", label: "Critico/revisar" },
+          ]}
+          {...register("renal_elimination_level")}
+        />
+        <ControlledSelect
+          label="Nivel de metabolismo hepatico"
+          options={[
+            { value: "nao_informado", label: "Nao informado" },
+            { value: "baixo", label: "Baixo" },
+            { value: "moderado", label: "Moderado" },
+            { value: "alto", label: "Alto" },
+            { value: "critico_revisar", label: "Critico/revisar" },
+          ]}
+          {...register("hepatic_metabolism_level")}
+        />
+        <TagInput label="Interacoes CYP" placeholder="cyp2c9_a_revisar" {...register("cyp_interactions")} />
+        <TagInput
+          label="Cautelas neuropsiquiatricas"
+          placeholder="risco_serotoninergico, limiar_convulsivo"
+          {...register("neuropsychiatric_cautions")}
+        />
+        <TagInput
+          label="Cautelas reprodutivas/ginecologicas"
+          placeholder="uso_anticoncepcional_hormonal, gestante"
+          {...register("reproductive_cautions")}
+        />
         <TagInput label="Orgaos envolvidos" placeholder="renal, gastrointestinal" {...register("organs_involved")} />
         <TagInput
           label="Efeitos adversos relevantes"
@@ -395,6 +524,17 @@ export default function MedicationForm({
           <input className="field" placeholder="analgesia" {...register("alternative_group")} />
         </label>
         <TagInput label="Medicamentos relacionados" placeholder="paracetamol, ibuprofeno" {...register("related_medications")} />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="grid gap-1.5">
+          <span className="label">Notas farmacodinamicas</span>
+          <textarea className="field min-h-20 resize-y" {...register("pharmacodynamic_notes")} />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="label">Notas farmacocineticas</span>
+          <textarea className="field min-h-20 resize-y" {...register("pharmacokinetic_notes")} />
+        </label>
       </div>
 
       <label className="grid gap-1.5">

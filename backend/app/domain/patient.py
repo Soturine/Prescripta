@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
 
@@ -11,9 +11,12 @@ class Patient:
     age: int | None
     weight_kg: float
     height_cm: float | None
-    allergies: list[str]
-    comorbidities: list[str]
-    current_medications: list[str]
+    phone: str | None = None
+    email: str | None = None
+    mother_name: str | None = None
+    allergies: list[str] = field(default_factory=list)
+    comorbidities: list[str] = field(default_factory=list)
+    current_medications: list[str] = field(default_factory=list)
     renal_condition: str | None = None
     hepatic_condition: str | None = None
     cardiac_condition: str | None = None
@@ -21,6 +24,8 @@ class Patient:
     hypertension: bool = False
     diabetes: bool = False
     pregnancy_or_lactation: bool | None = None
+    mental_health_factors: list[str] | None = None
+    reproductive_gynecologic_factors: list[str] | None = None
     adverse_reactions: list[str] | None = None
     clinical_notes: str | None = None
     clinical_profile_reviewed_at: datetime | None = None
@@ -48,6 +53,9 @@ class Patient:
             age=record.age,
             weight_kg=record.weight_kg,
             height_cm=record.height_cm,
+            phone=getattr(record, "phone", None),
+            email=getattr(record, "email", None),
+            mother_name=getattr(record, "mother_name", None),
             allergies=list(record.allergies or []),
             comorbidities=list(record.comorbidities or []),
             current_medications=list(record.current_medications or []),
@@ -58,6 +66,10 @@ class Patient:
             hypertension=record.hypertension,
             diabetes=record.diabetes,
             pregnancy_or_lactation=record.pregnancy_or_lactation,
+            mental_health_factors=list(getattr(record, "mental_health_factors", []) or []),
+            reproductive_gynecologic_factors=list(
+                getattr(record, "reproductive_gynecologic_factors", []) or []
+            ),
             adverse_reactions=list(record.adverse_reactions or []),
             clinical_notes=record.clinical_notes,
             clinical_profile_reviewed_at=record.clinical_profile_reviewed_at,

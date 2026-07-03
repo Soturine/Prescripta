@@ -1,5 +1,19 @@
 # IA Explicativa
 
+## Atualizacao v0.6.0
+
+A IA pode explicar, quando o backend ja tiver calculado:
+
+- dose diaria, dose acumulada, duracao e uso continuo;
+- necessidade de monitoramento;
+- mecanismo, metabolismo, eliminacao, CYP e perfil ADME;
+- alertas neuropsiquiatricos;
+- alertas reprodutivos/ginecologicos;
+- dados importados pendentes de revisao;
+- por que revisao humana e necessaria.
+
+A IA continua proibida de liberar prescricao bloqueada, reduzir severidade, inventar fonte, generalizar antibioticos/anticoncepcionais ou transformar regra demonstrativa em decisao clinica definitiva.
+
 ## Atualizacao v0.5.0
 
 Na v0.5.0, a IA continua apenas explicativa. A mudanca principal e que o payload agora pode incluir fonte, jurisdicao, tipo de evidencia, status de validacao, principio ativo e aliases comerciais vindos do RAG.

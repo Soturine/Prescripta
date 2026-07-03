@@ -11,6 +11,9 @@ def normalize_medication_payload(values: dict) -> dict:
         "therapeutic_classes",
         "metabolism_organs",
         "elimination_organs",
+        "cyp_interactions",
+        "neuropsychiatric_cautions",
+        "reproductive_cautions",
         "organs_involved",
         "relevant_adverse_effects",
         "structured_contraindications",
@@ -42,6 +45,10 @@ def normalize_medication_payload(values: dict) -> dict:
         normalized["source_jurisdiction"] = str(normalized["source_jurisdiction"]).upper()
 
     for field in ("evidence_source_type", "validation_status"):
+        if field in normalized and normalized[field]:
+            normalized[field] = normalize_text(str(normalized[field])).replace(" ", "_")
+
+    for field in ("renal_elimination_level", "hepatic_metabolism_level"):
         if field in normalized and normalized[field]:
             normalized[field] = normalize_text(str(normalized[field])).replace(" ", "_")
 

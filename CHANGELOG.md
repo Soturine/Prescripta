@@ -6,10 +6,28 @@ Todas as mudancas relevantes deste projeto sao documentadas aqui.
 
 ### Planned
 
-- v0.6.0: Camada de Interoperabilidade Clinica / Ports & Adapters.
-- v0.7.0: Importacao clinica assistida + FHIR Bundle + JSON/CSV.
+- v0.7.0: Importacao clinica assistida aprimorada + revisao humana avancada.
 - v0.8.0: Relatorios, exportacao e auditoria avancada.
 - v0.9.0: Docker/PostgreSQL/deploy.
+
+## [0.6.0] - 2026-07-03
+
+### Added
+
+- Plano de exposicao medicamentosa com dose diaria, dose acumulada, duracao, uso continuo e monitoramento.
+- Perfil ADME/farmacocinetico/farmacodinamico e cautelas renal/hepatica por nivel.
+- Vocabulario `mental_health` e `reproductive_gynecologic`.
+- Regra demonstrativa rifampicina/rifabutina + contraceptivo hormonal.
+- Identificadores de paciente com hash/mascara e matching com revisao humana.
+- Camada `backend/app/integrations` com ports, adapters FHIR/JSON/CSV/mock e mappers.
+- Fluxo de importacoes clinicas `pending_review`, aceite/rejeicao, consentimento e auditoria.
+- Endpoint `POST /api/cds/prescription-check`.
+- Tela de Importacoes Clinicas e painel CDS API.
+
+### Security
+
+- Sem scraping, sem credenciais de portais e sem integracao hospitalar real.
+- IA permanece apenas explicativa e nao altera decisao deterministica.
 
 ## [0.5.0] - 2026-07-03
 

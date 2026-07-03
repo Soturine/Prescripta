@@ -1,5 +1,6 @@
 import {
   ClipboardCheck,
+  DatabaseZap,
   FileClock,
   LayoutDashboard,
   Pill,
@@ -30,6 +31,12 @@ const links = [
     label: "Checagem",
     icon: ClipboardCheck,
     roles: ["admin", "medico", "enfermagem"],
+  },
+  {
+    to: "/clinical-imports",
+    label: "Importacoes",
+    icon: DatabaseZap,
+    roles: ["admin", "medico", "enfermagem", "auditor"],
   },
   { to: "/audit", label: "Auditoria", icon: FileClock, roles: ["admin", "auditor"] },
   { to: "/users", label: "Usuários", icon: ShieldCheck, roles: ["admin"] },

@@ -91,9 +91,9 @@ export default function Dashboard() {
       </section>
 
       <section className="rounded-lg border border-cyan-200 bg-cyan-50 p-4 text-sm leading-6 text-cyan-900">
-        Prescripta v0.5.0 prioriza catalogo farmacologico Brasil/Anvisa/DCB, principio ativo
-        primeiro, aliases comerciais e vocabulario clinico controlado. As decisoes criticas
-        continuam vindo de regras deterministicas cadastradas no backend.
+        Prescripta v0.6.0 amplia dose acumulada, uso continuo, perfis ADME,
+        neuropsiquiatria, ginecologia/reproducao e interoperabilidade demonstrativa por
+        adapters. Decisoes criticas continuam vindo de regras deterministicas no backend.
       </section>
     </div>
   );

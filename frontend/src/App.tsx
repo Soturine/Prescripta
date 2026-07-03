@@ -4,6 +4,7 @@ import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AccessDenied from "./pages/AccessDenied";
 import Audit from "./pages/Audit";
+import ClinicalImports from "./pages/ClinicalImports";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Medications from "./pages/Medications";
@@ -26,6 +27,10 @@ export default function App() {
             <Route path="patients/:patientId" element={<PatientDetails />} />
             <Route path="medications" element={<Medications />} />
             <Route path="prescription-check" element={<PrescriptionCheck />} />
+          </Route>
+
+          <Route element={<ProtectedRoute roles={["admin", "medico", "enfermagem", "auditor"]} />}>
+            <Route path="clinical-imports" element={<ClinicalImports />} />
           </Route>
 
           <Route element={<ProtectedRoute roles={["admin", "auditor"]} />}>

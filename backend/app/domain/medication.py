@@ -14,14 +14,28 @@ class Medication:
     notes: str | None = None
     max_duration_days: int | None = None
     max_cumulative_dose_mg: float | None = None
+    continuous_use: bool = False
+    monitoring_required: bool = False
+    monitoring_notes: str | None = None
     condition_specific_limits: dict | None = None
     renal_caution: bool = False
     hepatic_caution: bool = False
     cardiac_caution: bool = False
     gastrointestinal_caution: bool = False
     elderly_caution: bool = False
+    mechanism_of_action: str | None = None
+    absorption_notes: str | None = None
+    distribution_notes: str | None = None
     metabolism_organs: list[str] | None = None
     elimination_organs: list[str] | None = None
+    renal_elimination_level: str = "nao_informado"
+    hepatic_metabolism_level: str = "nao_informado"
+    cyp_interactions: list[str] | None = None
+    pharmacodynamic_notes: str | None = None
+    pharmacokinetic_notes: str | None = None
+    clinical_interpretation: str | None = None
+    neuropsychiatric_cautions: list[str] | None = None
+    reproductive_cautions: list[str] | None = None
     organs_involved: list[str] | None = None
     relevant_adverse_effects: list[str] | None = None
     structured_contraindications: list[str] | None = None
@@ -58,6 +72,9 @@ class Medication:
             max_daily_dose_mg=record.max_daily_dose_mg,
             max_duration_days=record.max_duration_days,
             max_cumulative_dose_mg=record.max_cumulative_dose_mg,
+            continuous_use=getattr(record, "continuous_use", False),
+            monitoring_required=getattr(record, "monitoring_required", False),
+            monitoring_notes=getattr(record, "monitoring_notes", None),
             condition_specific_limits=dict(record.condition_specific_limits or {}),
             allowed_routes=list(record.allowed_routes or []),
             contraindications=list(record.contraindications or []),
@@ -66,8 +83,23 @@ class Medication:
             cardiac_caution=record.cardiac_caution,
             gastrointestinal_caution=record.gastrointestinal_caution,
             elderly_caution=record.elderly_caution,
+            mechanism_of_action=getattr(record, "mechanism_of_action", None),
+            absorption_notes=getattr(record, "absorption_notes", None),
+            distribution_notes=getattr(record, "distribution_notes", None),
             metabolism_organs=list(record.metabolism_organs or []),
             elimination_organs=list(record.elimination_organs or []),
+            renal_elimination_level=getattr(record, "renal_elimination_level", "nao_informado"),
+            hepatic_metabolism_level=getattr(
+                record, "hepatic_metabolism_level", "nao_informado"
+            ),
+            cyp_interactions=list(getattr(record, "cyp_interactions", []) or []),
+            pharmacodynamic_notes=getattr(record, "pharmacodynamic_notes", None),
+            pharmacokinetic_notes=getattr(record, "pharmacokinetic_notes", None),
+            clinical_interpretation=getattr(record, "clinical_interpretation", None),
+            neuropsychiatric_cautions=list(
+                getattr(record, "neuropsychiatric_cautions", []) or []
+            ),
+            reproductive_cautions=list(getattr(record, "reproductive_cautions", []) or []),
             organs_involved=list(record.organs_involved or []),
             relevant_adverse_effects=list(record.relevant_adverse_effects or []),
             structured_contraindications=list(record.structured_contraindications or []),

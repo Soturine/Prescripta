@@ -150,3 +150,10 @@ Saida futura:
 - RNDS/FHIR e roadmap futuro.
 - Hospitais privados podem usar APIs proprias.
 - Prescripta deve estar preparado por adapters, nao por scraping.
+# Atualizacao v0.6.0
+
+Prescripta agora possui a base demonstrativa de Ports & Adapters em `backend/app/integrations`.
+
+Essa base prepara integracoes futuras por API oficial, mas nao implementa integracao real com hospitais, RNDS, HL7 v2 completo ou DICOM. Hospitais privados exigem contrato, credenciais oficiais, seguranca, governanca e conformidade LGPD.
+
+Nao usar scraping, credenciais de portais ou dados reais na demo publica.

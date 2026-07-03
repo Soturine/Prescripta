@@ -12,9 +12,17 @@ import type { Medication, MedicationPayload } from "../types/medication";
 import type {
   ClinicalContextGraph,
   Patient,
+  PatientIdentifier,
+  PatientIdentifierPayload,
   PatientPayload,
   QuickTriagePayload,
 } from "../types/patient";
+import type {
+  CdsCheckPayload,
+  CdsCheckResult,
+  ClinicalImportBatch,
+  ImportConsentPayload,
+} from "../types/integration";
 import type {
   PrescriptionCheckPayload,
   PrescriptionCheckResult,
@@ -99,6 +107,16 @@ export async function updatePatient(id: number, payload: PatientPayload) {
   return response.data;
 }
 
+export async function fetchPatientIdentifiers(id: number) {
+  const response = await api.get<PatientIdentifier[]>(`/patients/${id}/identifiers`);
+  return response.data;
+}
+
+export async function createPatientIdentifier(id: number, payload: PatientIdentifierPayload) {
+  const response = await api.post<PatientIdentifier>(`/patients/${id}/identifiers`, payload);
+  return response.data;
+}
+
 export async function quickTriagePatient(id: number, payload: QuickTriagePayload) {
   const response = await api.patch<Patient>(`/patients/${id}/quick-triage`, payload);
   return response.data;
@@ -160,6 +178,63 @@ export async function explainPrescription(payload: PrescriptionExplanationPayloa
 
 export async function fetchAudit() {
   const response = await api.get<AuditRecord[]>("/audit");
+  return response.data;
+}
+
+export async function fetchClinicalImports() {
+  const response = await api.get<ClinicalImportBatch[]>("/integrations/imports");
+  return response.data;
+}
+
+export async function fetchClinicalImport(id: number) {
+  const response = await api.get<ClinicalImportBatch>(`/integrations/imports/${id}`);
+  return response.data;
+}
+
+export async function importClinicalJson(
+  consent: ImportConsentPayload,
+  payload: Record<string, unknown>,
+) {
+  const response = await api.post<ClinicalImportBatch>("/integrations/json/import", {
+    ...consent,
+    payload,
+  });
+  return response.data;
+}
+
+export async function importClinicalFhir(
+  consent: ImportConsentPayload,
+  bundle: Record<string, unknown>,
+) {
+  const response = await api.post<ClinicalImportBatch>("/integrations/fhir/import-bundle", {
+    ...consent,
+    bundle,
+  });
+  return response.data;
+}
+
+export async function importClinicalCsv(consent: ImportConsentPayload, csv_text: string) {
+  const response = await api.post<ClinicalImportBatch>("/integrations/csv/import", {
+    ...consent,
+    csv_text,
+  });
+  return response.data;
+}
+
+export async function acceptClinicalImport(id: number) {
+  const response = await api.post<ClinicalImportBatch>(`/integrations/imports/${id}/accept`);
+  return response.data;
+}
+
+export async function rejectClinicalImport(id: number, reason: string | null) {
+  const response = await api.post<ClinicalImportBatch>(`/integrations/imports/${id}/reject`, {
+    reason,
+  });
+  return response.data;
+}
+
+export async function checkCdsPrescription(payload: CdsCheckPayload) {
+  const response = await api.post<CdsCheckResult>("/cds/prescription-check", payload);
   return response.data;
 }
 

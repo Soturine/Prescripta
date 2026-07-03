@@ -20,6 +20,9 @@ const patientSchema = z
     age: z.number().min(0).max(130).optional(),
     weight_kg: z.number().positive("Informe o peso."),
     height_cm: z.number().min(1).max(260).optional(),
+    phone: z.string().optional(),
+    email: z.string().optional(),
+    mother_name: z.string().optional(),
     allergies: z.string().optional(),
     comorbidities: z.string().optional(),
     current_medications: z.string().optional(),
@@ -30,6 +33,8 @@ const patientSchema = z
     hypertension: z.boolean(),
     diabetes: z.boolean(),
     pregnancy_or_lactation: z.boolean(),
+    mental_health_factors: z.string().optional(),
+    reproductive_gynecologic_factors: z.string().optional(),
     adverse_reactions: z.string().optional(),
     clinical_notes: z.string().optional(),
   })
@@ -60,6 +65,9 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       age: initialPatient?.age ?? undefined,
       weight_kg: initialPatient?.weight_kg ?? 70,
       height_cm: initialPatient?.height_cm ?? undefined,
+      phone: initialPatient?.phone ?? "",
+      email: initialPatient?.email ?? "",
+      mother_name: initialPatient?.mother_name ?? "",
       allergies: joinList(initialPatient?.allergies),
       comorbidities: joinList(initialPatient?.comorbidities),
       current_medications: joinList(initialPatient?.current_medications),
@@ -70,6 +78,10 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       hypertension: initialPatient?.hypertension ?? false,
       diabetes: initialPatient?.diabetes ?? false,
       pregnancy_or_lactation: initialPatient?.pregnancy_or_lactation ?? false,
+      mental_health_factors: joinList(initialPatient?.mental_health_factors),
+      reproductive_gynecologic_factors: joinList(
+        initialPatient?.reproductive_gynecologic_factors,
+      ),
       adverse_reactions: joinList(initialPatient?.adverse_reactions),
       clinical_notes: initialPatient?.clinical_notes ?? "",
     },
@@ -84,6 +96,9 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       age: values.age ?? null,
       weight_kg: values.weight_kg,
       height_cm: values.height_cm ?? null,
+      phone: values.phone || null,
+      email: values.email || null,
+      mother_name: values.mother_name || null,
       allergies: splitList(values.allergies ?? ""),
       comorbidities: splitList(values.comorbidities ?? ""),
       current_medications: splitList(values.current_medications ?? ""),
@@ -94,6 +109,10 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       hypertension: values.hypertension,
       diabetes: values.diabetes,
       pregnancy_or_lactation: values.pregnancy_or_lactation,
+      mental_health_factors: splitList(values.mental_health_factors ?? ""),
+      reproductive_gynecologic_factors: splitList(
+        values.reproductive_gynecologic_factors ?? "",
+      ),
       adverse_reactions: splitList(values.adverse_reactions ?? ""),
       clinical_notes: values.clinical_notes || null,
     });
@@ -105,6 +124,9 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
         age: undefined,
         weight_kg: 70,
         height_cm: undefined,
+        phone: "",
+        email: "",
+        mother_name: "",
         allergies: "",
         comorbidities: "",
         current_medications: "",
@@ -115,6 +137,8 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
         hypertension: false,
         diabetes: false,
         pregnancy_or_lactation: false,
+        mental_health_factors: "",
+        reproductive_gynecologic_factors: "",
         adverse_reactions: "",
         clinical_notes: "",
       });
@@ -176,6 +200,21 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
         </label>
 
         <label className="grid gap-1.5">
+          <span className="label">Telefone</span>
+          <input className="field" placeholder="demo sem dado real" {...register("phone")} />
+        </label>
+
+        <label className="grid gap-1.5">
+          <span className="label">E-mail</span>
+          <input className="field" placeholder="paciente@demo.local" {...register("email")} />
+        </label>
+
+        <label className="grid gap-1.5">
+          <span className="label">Nome da mae</span>
+          <input className="field" placeholder="apoio a matching" {...register("mother_name")} />
+        </label>
+
+        <label className="grid gap-1.5">
           <span className="label">Alergias</span>
           <input className="field" placeholder="dipirona" {...register("allergies")} />
         </label>
@@ -190,6 +229,26 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
         <span className="label">Medicamentos continuos</span>
         <input className="field" {...register("current_medications")} />
       </label>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="grid gap-1.5">
+          <span className="label">Perfil neuropsiquiatrico</span>
+          <input
+            className="field"
+            placeholder="uso_isrs, epilepsia_convulsoes"
+            {...register("mental_health_factors")}
+          />
+        </label>
+
+        <label className="grid gap-1.5">
+          <span className="label">Perfil reprodutivo/ginecologico</span>
+          <input
+            className="field"
+            placeholder="uso_anticoncepcional_hormonal, gestante"
+            {...register("reproductive_gynecologic_factors")}
+          />
+        </label>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <ControlledSelect label="Condicao renal" options={renalOptions} {...register("renal_condition")} />
