@@ -1,5 +1,25 @@
 # IA Explicativa
 
+## Atualizacao v0.5.0
+
+Na v0.5.0, a IA continua apenas explicativa. A mudanca principal e que o payload agora pode incluir fonte, jurisdicao, tipo de evidencia, status de validacao, principio ativo e aliases comerciais vindos do RAG.
+
+A IA pode explicar:
+
+- se a evidencia e demonstrativa, manual, Anvisa/DCB ou externa;
+- se a fonte tem `jurisdiction = BR`;
+- quando uma fonte externa e apenas secundaria no contexto brasileiro;
+- quando um dado esta `pending_review`;
+- por que dipirona/metamizol pode ter diferenca regulatoria entre paises.
+
+A IA nao pode:
+
+- alterar status final;
+- rebaixar risco critico;
+- liberar prescricao bloqueada;
+- decidir dose;
+- usar fonte estrangeira como regra primaria brasileira sem aviso.
+
 Prescripta v0.4.0 mantém a IA como camada explicativa responsável. Ela apoia a compreensão dos alertas gerados pelo motor determinístico e do contexto clínico demonstrativo, mas não decide a prescrição.
 
 Esta camada não calcula risco, não libera prescrição, não recalcula dose crítica e não substitui revisão profissional. O backend continua sendo a fonte das regras clínicas demonstrativas.

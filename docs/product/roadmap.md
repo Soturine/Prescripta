@@ -1,29 +1,18 @@
 # Roadmap de Produto
 
-## v0.1.0
+Prescripta e um motor de apoio a prescricao segura, preparado para integracao com sistemas clinicos via arquitetura de interoperabilidade, FHIR-like imports, adapters hospitalares, auditoria, consentimento e motor deterministico de risco.
 
-MVP com dashboard, pacientes, medicamentos, checagem, auditoria, testes e documentação.
+## Sequencia
 
-## v0.2.0
-
-Autenticação JWT, perfis de acesso, gestão de usuários para admin, auditoria com usuário responsável e revisão de segurança básica.
-
-## v0.3.0
-
-IA explicativa para alertas gerados por regras determinísticas, fallback sem chave, painel no frontend, benchmark conceitual, revisão de maturidade e assets reais de apresentação.
-
-## v0.4.0
-
-Perfil clínico inteligente, triagem rápida, dose acumulada, duração, compatibilidade paciente-medicação, RAG clínico demonstrativo, alternativas avaliadas e script Windows.
-
-## v0.5.0
-
-Relatórios PDF demonstrativos, exportação de auditoria, filtros avançados e testes end-to-end automatizados.
+- `v0.5.0` - Catalogo Brasil/Anvisa + principio ativo + vocabulario controlado.
+- `v0.6.0` - Camada de Interoperabilidade Clinica / Ports & Adapters.
+- `v0.7.0` - Importacao clinica assistida + FHIR Bundle + JSON/CSV.
+- `v0.8.0` - Relatorios, exportacao e auditoria avancada.
+- `v0.9.0` - Docker/PostgreSQL/deploy.
+- `v1.0.0` - versao final de portfolio.
 
 ## v0.6.0
 
-Docker, PostgreSQL, migrações e deploy demonstrativo.
+Proxima versao. Deve criar a camada `backend/app/integrations/` com portas, adapters FHIR/JSON/CSV/mock, matching de paciente, deduplicacao, consentimento, auditoria de importacao e endpoint futuro `/api/cds/prescription-check`.
 
-## v1.0.0
-
-Versão demonstrável completa, estável e documentada.
+Nao deve fazer scraping de hospitais, nao deve guardar credenciais de portais e nao deve prometer integracao real sem parceria/API oficial.

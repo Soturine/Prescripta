@@ -1,55 +1,48 @@
 # Roadmap
 
-## v0.1.0 - MVP de prescrição segura
+## v0.5.0 - Catalogo Brasil/Anvisa + principio ativo + vocabulario controlado
 
-- Backend FastAPI com regras determinísticas.
-- Frontend React consumindo API real.
-- CRUD básico de pacientes e medicamentos.
-- Checagem de prescrição e auditoria.
-- Testes, docs e CI básico.
+- ActiveIngredient e DrugProduct.
+- Aliases comerciais resolvendo para principio ativo.
+- Fonte/jurisdicao/status de validacao.
+- Vocabulario clinico controlado.
+- RAG rastreavel por fonte.
 
-## v0.2.0 - Autenticação, perfis e segurança
+## v0.6.0 - Camada de Interoperabilidade Clinica / Ports & Adapters
 
-- Login JWT.
-- Perfis de acesso.
-- Gestão de usuários para admin.
-- Trilhas de auditoria com usuário responsável.
-- Revisão de permissões no backend e frontend.
+- `backend/app/integrations/ports/`.
+- Adapters FHIR/JSON/CSV/mock.
+- `PatientMatchingService`.
+- `ClinicalDeduplicationService`.
+- `ConsentService`.
+- `IntegrationAuditService`.
+- Endpoint futuro `/api/cds/prescription-check`.
+- Sem scraping de hospitais.
 
-## v0.3.0 - IA explicativa
+## v0.7.0 - Importacao clinica assistida + FHIR Bundle + JSON/CSV
 
-- IA apenas para explicar alertas gerados por regras.
-- Endpoint protegido e fallback determinístico sem chave.
-- Painel "Explicar com IA" na checagem.
-- Benchmark SafeDose, revisão de maturidade, screenshots e GIF.
+- Importacao assistida.
+- FHIR Bundle demonstrativo.
+- Importacao JSON/CSV.
+- Validacao e aceite pelo usuario.
 
-## v0.4.0 - Contexto clínico, dose acumulada e RAG
+## v0.8.0 - Relatorios, exportacao e auditoria avancada
 
-- Perfil clínico inteligente do paciente.
-- Triagem rápida com auditoria.
-- Dose diária, dose acumulada e duração.
-- Compatibilidade paciente-medicação.
-- RAG clínico demonstrativo com base interna.
-- Alternativas para avaliação profissional.
-- Script PowerShell para execução local.
+- Relatorios demonstrativos.
+- Exportacao.
+- Filtros avancados de auditoria.
+- Trilhas de revisao mais completas.
 
-## v0.5.0 - Relatórios, exportação e E2E
-
-- Relatórios PDF demonstrativos.
-- Exportação de auditoria.
-- Filtros avançados de auditoria.
-- Testes end-to-end automatizados.
-
-## v0.6.0 - Infraestrutura demonstrativa
+## v0.9.0 - Docker/PostgreSQL/deploy
 
 - Docker Compose.
 - PostgreSQL.
-- Migrações.
+- Migracoes.
 - Deploy demonstrativo.
 
-## v1.0.0 - Versão demonstrável completa
+## v1.0.0 - Versao final de portfolio
 
-- Fluxos estáveis.
-- Documentação completa.
+- Fluxos estaveis.
+- Documentacao completa.
 - Dados demonstrativos revisados.
-- Release pronta para portfólio.
+- Release pronta para portfolio.

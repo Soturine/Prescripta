@@ -6,6 +6,9 @@ Guia para agentes e colaboradores que forem evoluir o Prescripta.
 
 - `backend/app/domain`: entidades, enums e objetos de resultado.
 - `backend/app/services`: regras determinísticas, contexto clínico, alternativas e serviços de aplicação.
+- `backend/app/services/medication_catalog.py`: busca por princípio ativo DCB e aliases comerciais.
+- `backend/app/services/anvisa_lookup_service.py`: consulta assistida Anvisa/DCB sem scraping agressivo.
+- `backend/app/services/controlled_vocabulary.py`: vocabulário clínico controlado e normalização de campos legados.
 - `backend/app/services/ai_explainer.py`: camada explicativa; não decide risco.
 - `backend/app/knowledge`: RAG demonstrativo com busca textual e normalização.
 - `backend/app/data/knowledge_base`: base interna demonstrativa em Markdown.
@@ -67,6 +70,10 @@ npm run lint
 - Nunca permita que IA altere status, risco, bloqueio, dose crítica ou recomendação final.
 - Preserve fallback determinístico quando não houver chave de API ou provider externo falhar.
 - RAG interno não decide risco, não substitui bula validada e deve permanecer marcado como demonstrativo.
+- Para contexto brasileiro, priorize Anvisa/Bulário/DCB e marque fonte, jurisdição e status de validação.
+- Fontes internacionais são secundárias no contexto BR e devem ser explicitamente identificadas.
+- Não implemente scraping agressivo de Anvisa, hospitais ou portais.
+- Não implemente integração hospitalar real sem API oficial, contrato, segurança e LGPD.
 - Alternativas terapêuticas devem vir da base cadastrada e passar pelo motor de risco antes de aparecerem.
 - Triagem rápida não deve apagar histórico clínico existente sem auditoria.
 - Atualize documentação quando alterar comportamento de produto, API, regra clínica ou segurança.
