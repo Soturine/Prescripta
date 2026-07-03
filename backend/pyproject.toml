@@ -1,6 +1,6 @@
 [project]
 name = "prescripta-backend"
-version = "0.4.0"
+version = "0.6.0"
 description = "Educational prescription safety API for Prescripta."
 requires-python = ">=3.12"
 

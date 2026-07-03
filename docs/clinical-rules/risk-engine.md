@@ -1,5 +1,20 @@
 # Motor de Risco
 
+## Atualizacao v0.6.0
+
+O motor passa a considerar, quando os dados existem:
+
+- plano de exposicao, dose acumulada, duracao e uso continuo;
+- monitoramento necessario;
+- perfil ADME, metabolismo, eliminacao e CYP;
+- cautela renal/hepatica por nivel de eliminacao/metabolismo;
+- fatores neuropsiquiatricos;
+- fatores reprodutivos/ginecologicos;
+- regra especifica rifampicina/rifabutina + contraceptivo hormonal;
+- identificadores apenas para matching/deduplicacao, nunca para decisao clinica.
+
+Alertas novos sao de revisao profissional. O motor nao afirma que todo antibiotico corta anticoncepcional e nao cria contraindicao psiquiatrica generica sem fonte.
+
 ## Atualizacao v0.5.0
 
 O motor passa a considerar metadados de medicamento e paciente mais estruturados:

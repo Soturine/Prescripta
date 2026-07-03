@@ -8,23 +8,20 @@
 - Vocabulario clinico controlado.
 - RAG rastreavel por fonte.
 
-## v0.6.0 - Camada de Interoperabilidade Clinica / Ports & Adapters
+## v0.6.0 - Seguranca clinica ampliada + interoperabilidade clinica demonstrativa
 
-- `backend/app/integrations/ports/`.
-- Adapters FHIR/JSON/CSV/mock.
-- `PatientMatchingService`.
-- `ClinicalDeduplicationService`.
-- `ConsentService`.
-- `IntegrationAuditService`.
-- Endpoint futuro `/api/cds/prescription-check`.
+- Entregue: dose acumulada, uso continuo, monitoramento, ADME, neuropsiquiatria e ginecologia/reproducao.
+- Entregue: `backend/app/integrations/ports/`.
+- Entregue: adapters FHIR/JSON/CSV/mock.
+- Entregue: `PatientMatchingService`, `ClinicalDeduplicationService`, `ConsentService`, `IntegrationAuditService`.
+- Entregue: endpoint `/api/cds/prescription-check`.
 - Sem scraping de hospitais.
 
-## v0.7.0 - Importacao clinica assistida + FHIR Bundle + JSON/CSV
+## v0.7.0 - Importacao clinica assistida aprimorada + revisao humana avancada
 
-- Importacao assistida.
-- FHIR Bundle demonstrativo.
-- Importacao JSON/CSV.
-- Validacao e aceite pelo usuario.
+- Reconciliacao avancada de campos aceitos/rejeitados.
+- Melhor visualizacao de diferencas e duplicidades.
+- Mais cenarios FHIR Bundle demonstrativos.
 
 ## v0.8.0 - Relatorios, exportacao e auditoria avancada
 

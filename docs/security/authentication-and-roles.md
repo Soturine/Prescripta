@@ -44,3 +44,12 @@ Essas contas existem apenas para demonstração local.
 - Revogação de tokens.
 - Rate limit para login.
 - Migrações formais de banco.
+# Atualizacao v0.6.0
+
+Endpoints de integracao clinica:
+
+- `admin` e `medico`: podem importar, aceitar e rejeitar lotes.
+- `enfermagem`: pode visualizar importacoes e executar CDS demonstrativo.
+- `auditor`: pode visualizar importacoes, mas nao aceitar/rejeitar.
+
+Aceite e rejeicao registram auditoria. Importacao exige consentimento ou base legal aplicavel no payload.

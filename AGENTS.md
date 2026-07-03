@@ -10,6 +10,9 @@ Guia para agentes e colaboradores que forem evoluir o Prescripta.
 - `backend/app/services/anvisa_lookup_service.py`: consulta assistida Anvisa/DCB sem scraping agressivo.
 - `backend/app/services/controlled_vocabulary.py`: vocabulário clínico controlado e normalização de campos legados.
 - `backend/app/services/ai_explainer.py`: camada explicativa; não decide risco.
+- `backend/app/integrations`: portas, adapters demonstrativos, mapeamento, consentimento e auditoria de importações clínicas.
+- `backend/app/integrations/adapters`: FHIR/JSON/CSV/mock demonstrativos; não conectam sistemas reais.
+- `backend/app/integrations/services`: matching, deduplicação, consentimento e orquestração de importação pendente.
 - `backend/app/knowledge`: RAG demonstrativo com busca textual e normalização.
 - `backend/app/data/knowledge_base`: base interna demonstrativa em Markdown.
 - `backend/app/core/auth.py`: dependências de autenticação e autorização.
