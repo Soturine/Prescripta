@@ -17,6 +17,9 @@ class MedicationBase(BaseModel):
     max_daily_dose_mg: float = Field(gt=0)
     max_duration_days: int | None = Field(default=None, gt=0, le=365)
     max_cumulative_dose_mg: float | None = Field(default=None, gt=0)
+    continuous_use: bool = False
+    monitoring_required: bool = False
+    monitoring_notes: str | None = None
     condition_specific_limits: dict[str, float] = Field(default_factory=dict)
     allowed_routes: list[str] = Field(default_factory=list, min_length=1)
     contraindications: list[str] = Field(default_factory=list)
@@ -25,8 +28,19 @@ class MedicationBase(BaseModel):
     cardiac_caution: bool = False
     gastrointestinal_caution: bool = False
     elderly_caution: bool = False
+    mechanism_of_action: str | None = None
+    absorption_notes: str | None = None
+    distribution_notes: str | None = None
     metabolism_organs: list[str] = Field(default_factory=list)
     elimination_organs: list[str] = Field(default_factory=list)
+    renal_elimination_level: str = Field(default="nao_informado", max_length=40)
+    hepatic_metabolism_level: str = Field(default="nao_informado", max_length=40)
+    cyp_interactions: list[str] = Field(default_factory=list)
+    pharmacodynamic_notes: str | None = None
+    pharmacokinetic_notes: str | None = None
+    clinical_interpretation: str | None = None
+    neuropsychiatric_cautions: list[str] = Field(default_factory=list)
+    reproductive_cautions: list[str] = Field(default_factory=list)
     organs_involved: list[str] = Field(default_factory=list)
     relevant_adverse_effects: list[str] = Field(default_factory=list)
     structured_contraindications: list[str] = Field(default_factory=list)
@@ -57,6 +71,9 @@ class MedicationUpdate(BaseModel):
     max_daily_dose_mg: float | None = Field(default=None, gt=0)
     max_duration_days: int | None = Field(default=None, gt=0, le=365)
     max_cumulative_dose_mg: float | None = Field(default=None, gt=0)
+    continuous_use: bool | None = None
+    monitoring_required: bool | None = None
+    monitoring_notes: str | None = None
     condition_specific_limits: dict[str, float] | None = None
     allowed_routes: list[str] | None = None
     contraindications: list[str] | None = None
@@ -65,8 +82,19 @@ class MedicationUpdate(BaseModel):
     cardiac_caution: bool | None = None
     gastrointestinal_caution: bool | None = None
     elderly_caution: bool | None = None
+    mechanism_of_action: str | None = None
+    absorption_notes: str | None = None
+    distribution_notes: str | None = None
     metabolism_organs: list[str] | None = None
     elimination_organs: list[str] | None = None
+    renal_elimination_level: str | None = Field(default=None, max_length=40)
+    hepatic_metabolism_level: str | None = Field(default=None, max_length=40)
+    cyp_interactions: list[str] | None = None
+    pharmacodynamic_notes: str | None = None
+    pharmacokinetic_notes: str | None = None
+    clinical_interpretation: str | None = None
+    neuropsychiatric_cautions: list[str] | None = None
+    reproductive_cautions: list[str] | None = None
     organs_involved: list[str] | None = None
     relevant_adverse_effects: list[str] | None = None
     structured_contraindications: list[str] | None = None

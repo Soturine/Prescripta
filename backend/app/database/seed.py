@@ -10,6 +10,7 @@ from app.database.models import (
     DrugProductModel,
     MedicationKnowledgeSourceModel,
     MedicationModel,
+    PatientIdentifierModel,
     PatientModel,
     UserModel,
 )
@@ -17,6 +18,7 @@ from app.domain.user import UserRole
 from app.services.clinical_profile import normalize_patient_payload
 from app.services.controlled_vocabulary import VOCABULARY
 from app.services.normalizer import normalize_text
+from app.services.patient_identifier_service import hash_identifier, mask_identifier
 
 BULARIO_URL = "https://consultas.anvisa.gov.br/#/bulario/"
 DCB_URL = "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/dcb"
@@ -29,6 +31,7 @@ def seed_demo_data(db: Session) -> None:
     _seed_clinical_vocabulary(db)
     _seed_medications(db, ingredients)
     _seed_patients(db)
+    _seed_patient_identifiers(db)
     _normalize_existing_patients(db)
     _link_existing_medications(db, ingredients)
     _seed_users(db)
@@ -71,6 +74,24 @@ def _seed_active_ingredients(db: Session) -> dict[str, ActiveIngredientModel]:
             "common_brands": ["Paracetamol Demo"],
             "jurisdiction": "BR",
             "source": "demo_seed",
+            "validation_status": "demo",
+        },
+        {
+            "dcb_name": "rifampicina",
+            "synonyms": ["rifampin"],
+            "therapeutic_classes": ["antimicrobiano rifamicina"],
+            "common_brands": ["Rifampicina Demo"],
+            "jurisdiction": "BR",
+            "source": "manual_curated",
+            "validation_status": "demo",
+        },
+        {
+            "dcb_name": "rifabutina",
+            "synonyms": [],
+            "therapeutic_classes": ["antimicrobiano rifamicina"],
+            "common_brands": ["Rifabutina Demo"],
+            "jurisdiction": "BR",
+            "source": "manual_curated",
             "validation_status": "demo",
         },
     ]
@@ -300,13 +321,23 @@ def _seed_medications(
                 max_daily_dose_mg=4000,
                 max_duration_days=5,
                 max_cumulative_dose_mg=12000,
+                continuous_use=False,
+                monitoring_required=False,
                 condition_specific_limits={"hepatico": 2000},
                 allowed_routes=["oral"],
                 contraindications=["alergia a dipirona"],
                 hepatic_caution=True,
                 elderly_caution=True,
+                mechanism_of_action="Inibicao demonstrativa de vias de dor/febre.",
+                absorption_notes="Absorcao oral demonstrativa.",
+                distribution_notes="Distribuicao sistemica demonstrativa.",
                 metabolism_organs=["hepatico"],
                 elimination_organs=["renal"],
+                renal_elimination_level="moderado",
+                hepatic_metabolism_level="moderado",
+                pharmacodynamic_notes="Analgesia e antitermia demonstrativas.",
+                pharmacokinetic_notes="Metabolismo hepatico e eliminacao renal demonstrativos.",
+                clinical_interpretation="Revisar funcao hepatica/renal em uso prolongado.",
                 organs_involved=["hepatico", "renal"],
                 relevant_adverse_effects=["reacao alergica demonstrativa"],
                 structured_contraindications=["alergia"],
@@ -332,14 +363,28 @@ def _seed_medications(
                 max_daily_dose_mg=2400,
                 max_duration_days=5,
                 max_cumulative_dose_mg=7200,
+                continuous_use=False,
+                monitoring_required=True,
+                monitoring_notes=(
+                    "Revisar funcao renal e sinais gastrointestinais se uso prolongado."
+                ),
                 condition_specific_limits={"renal": 1200, "gastrointestinal": 1200},
                 allowed_routes=["oral"],
                 contraindications=["ulcera ativa", "doenca renal grave"],
                 renal_caution=True,
                 gastrointestinal_caution=True,
                 elderly_caution=True,
+                mechanism_of_action="Inibicao de COX demonstrativa.",
+                absorption_notes="Absorcao oral demonstrativa.",
+                distribution_notes="Ligacao proteica demonstrativa.",
                 metabolism_organs=["hepatico"],
                 elimination_organs=["renal"],
+                renal_elimination_level="moderado",
+                hepatic_metabolism_level="moderado",
+                cyp_interactions=["cyp2c9_a_revisar"],
+                pharmacodynamic_notes="Efeito anti-inflamatorio e analgesico demonstrativo.",
+                pharmacokinetic_notes="Metabolismo hepatico e eliminacao renal demonstrativos.",
+                clinical_interpretation="Cautela renal/gastrointestinal em perfis de risco.",
                 organs_involved=["renal", "gastrointestinal"],
                 relevant_adverse_effects=["sangramento gastrointestinal", "gastrite"],
                 structured_contraindications=["renal", "gastrointestinal"],
@@ -364,6 +409,9 @@ def _seed_medications(
                 max_daily_dose_mg=200,
                 max_duration_days=5,
                 max_cumulative_dose_mg=1000,
+                continuous_use=False,
+                monitoring_required=True,
+                monitoring_notes="Revisar funcao hepatica antes de uso prolongado.",
                 condition_specific_limits={"hepatico": 100},
                 allowed_routes=["oral"],
                 contraindications=["doenca hepatica"],
@@ -371,8 +419,14 @@ def _seed_medications(
                 hepatic_caution=True,
                 gastrointestinal_caution=True,
                 elderly_caution=True,
+                mechanism_of_action="Acao anti-inflamatoria demonstrativa.",
                 metabolism_organs=["hepatico"],
                 elimination_organs=["renal"],
+                renal_elimination_level="moderado",
+                hepatic_metabolism_level="alto",
+                pharmacodynamic_notes="Efeito anti-inflamatorio demonstrativo.",
+                pharmacokinetic_notes="Metabolismo hepatico relevante demonstrativo.",
+                clinical_interpretation="Cautela hepatica e revisao profissional.",
                 organs_involved=["renal", "hepatico", "gastrointestinal"],
                 relevant_adverse_effects=["hepatotoxicidade demonstrativa", "dispepsia"],
                 structured_contraindications=["hepatico"],
@@ -395,12 +449,21 @@ def _seed_medications(
                 max_daily_dose_mg=3000,
                 max_duration_days=7,
                 max_cumulative_dose_mg=12000,
+                continuous_use=False,
+                monitoring_required=True,
+                monitoring_notes="Revisar funcao hepatica quando houver risco ou uso prolongado.",
                 condition_specific_limits={"hepatico": 1500},
                 allowed_routes=["oral"],
                 contraindications=["doenca hepatica grave"],
                 hepatic_caution=True,
+                mechanism_of_action="Analgesia central demonstrativa.",
                 metabolism_organs=["hepatico"],
                 elimination_organs=["renal"],
+                renal_elimination_level="baixo",
+                hepatic_metabolism_level="alto",
+                pharmacodynamic_notes="Analgesia e antitermia demonstrativas.",
+                pharmacokinetic_notes="Metabolismo hepatico relevante demonstrativo.",
+                clinical_interpretation="Cautela hepatica em dose acumulada.",
                 organs_involved=["hepatico"],
                 relevant_adverse_effects=["hepatotoxicidade demonstrativa"],
                 structured_contraindications=["hepatico"],
@@ -433,9 +496,73 @@ def _seed_medications(
                 active_ingredient="sertralina",
                 therapeutic_class="inibidor seletivo da recaptacao de serotonina",
                 max_daily_dose_mg=200,
+                max_duration_days=365,
+                max_cumulative_dose_mg=73000,
+                continuous_use=True,
+                monitoring_required=True,
+                monitoring_notes=(
+                    "Monitorar resposta, eventos adversos e associacoes serotoninergicas."
+                ),
                 allowed_routes=["oral"],
                 contraindications=["uso de imao"],
+                mechanism_of_action="Inibicao seletiva da recaptacao de serotonina demonstrativa.",
+                hepatic_metabolism_level="moderado",
+                neuropsychiatric_cautions=["risco_serotoninergico", "uso_imao"],
                 notes="Seed educacional para interacoes demonstrativas.",
+            ),
+            MedicationModel(
+                active_ingredient_id=ingredients["rifampicina"].id,
+                brand_name="Rifampicina Demo",
+                active_ingredient="rifampicina",
+                commercial_aliases=["Rifampicina Demo"],
+                therapeutic_class="antimicrobiano rifamicina",
+                therapeutic_classes=["antimicrobiano rifamicina"],
+                source_jurisdiction="BR",
+                evidence_source_type="manual_curated",
+                validation_status="demo",
+                max_daily_dose_mg=600,
+                max_duration_days=180,
+                max_cumulative_dose_mg=108000,
+                monitoring_required=True,
+                monitoring_notes="Regra demonstrativa: revisar interacoes e contracepcao hormonal.",
+                allowed_routes=["oral"],
+                contraindications=[],
+                hepatic_caution=True,
+                mechanism_of_action="Rifamicina com inducao enzimatica demonstrativa.",
+                metabolism_organs=["hepatico"],
+                elimination_organs=["biliar fecal"],
+                hepatic_metabolism_level="alto",
+                cyp_interactions=["inducao_enzimatica_a_revisar"],
+                reproductive_cautions=["uso_anticoncepcional_hormonal"],
+                knowledge_source="Base interna demonstrativa v0.6.0",
+                notes="Nao generalizar para todos os antibioticos.",
+            ),
+            MedicationModel(
+                active_ingredient_id=ingredients["rifabutina"].id,
+                brand_name="Rifabutina Demo",
+                active_ingredient="rifabutina",
+                commercial_aliases=["Rifabutina Demo"],
+                therapeutic_class="antimicrobiano rifamicina",
+                therapeutic_classes=["antimicrobiano rifamicina"],
+                source_jurisdiction="BR",
+                evidence_source_type="manual_curated",
+                validation_status="demo",
+                max_daily_dose_mg=300,
+                max_duration_days=180,
+                max_cumulative_dose_mg=54000,
+                monitoring_required=True,
+                monitoring_notes="Regra demonstrativa: revisar interacoes e contracepcao hormonal.",
+                allowed_routes=["oral"],
+                contraindications=[],
+                hepatic_caution=True,
+                mechanism_of_action="Rifamicina com inducao enzimatica demonstrativa.",
+                metabolism_organs=["hepatico"],
+                elimination_organs=["biliar fecal"],
+                hepatic_metabolism_level="alto",
+                cyp_interactions=["inducao_enzimatica_a_revisar"],
+                reproductive_cautions=["uso_anticoncepcional_hormonal"],
+                knowledge_source="Base interna demonstrativa v0.6.0",
+                notes="Nao generalizar para todos os antibioticos.",
             ),
         ]
     )
@@ -456,6 +583,8 @@ def _seed_patients(db: Session) -> None:
                 allergies=["dipirona"],
                 comorbidities=["asma"],
                 current_medications=["losartana"],
+                mental_health_factors=[],
+                reproductive_gynecologic_factors=["uso_anticoncepcional_hormonal"],
             ),
             PatientModel(
                 name="Carlos Demonstracao",
@@ -476,12 +605,32 @@ def _seed_patients(db: Session) -> None:
                 gastrointestinal_history="historico_gastrointestinal_a_revisar",
                 hypertension=True,
                 diabetes=False,
+                mental_health_factors=["uso_isrs"],
+                reproductive_gynecologic_factors=[],
                 adverse_reactions=["sangramento gastrointestinal"],
                 clinical_notes="Perfil demonstrativo para triagem rapida e cautela renal.",
                 clinical_profile_completeness_score=89,
             ),
         ]
     )
+
+
+def _seed_patient_identifiers(db: Session) -> None:
+    if db.scalar(select(PatientIdentifierModel.id).limit(1)):
+        return
+    patients = list(db.scalars(select(PatientModel).order_by(PatientModel.id)))
+    for patient in patients:
+        value = f"DEMO-{patient.id:05d}"
+        db.add(
+            PatientIdentifierModel(
+                patient_id=patient.id,
+                identifier_type="internal_record_number",
+                identifier_value_hash=hash_identifier("internal_record_number", value),
+                issuing_system="prescripta_demo",
+                display_masked=mask_identifier("internal_record_number", value),
+                is_primary=True,
+            )
+        )
 
 
 def _normalize_existing_patients(db: Session) -> None:

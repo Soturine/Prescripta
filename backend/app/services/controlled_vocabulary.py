@@ -93,6 +93,59 @@ VOCABULARY: tuple[VocabularyEntry, ...] = (
         "Possibilidade a confirmar",
         1,
     ),
+    VocabularyEntry("mental_health", "depressao", "DepressÃ£o", 1),
+    VocabularyEntry("mental_health", "ansiedade", "Ansiedade", 1),
+    VocabularyEntry("mental_health", "transtorno_bipolar", "Transtorno bipolar", 2),
+    VocabularyEntry("mental_health", "epilepsia_convulsoes", "Epilepsia/convulsÃµes", 2),
+    VocabularyEntry("mental_health", "risco_sedacao", "Risco de sedaÃ§Ã£o", 1),
+    VocabularyEntry("mental_health", "risco_serotoninergico", "Risco serotoninÃ©rgico", 2),
+    VocabularyEntry("mental_health", "uso_isrs", "Uso de ISRS", 1),
+    VocabularyEntry("mental_health", "uso_imao", "Uso de IMAO", 3),
+    VocabularyEntry("mental_health", "uso_antipsicotico", "Uso de antipsicÃ³tico", 1),
+    VocabularyEntry(
+        "mental_health",
+        "uso_estabilizador_humor",
+        "Uso de estabilizador de humor",
+        1,
+    ),
+    VocabularyEntry(
+        "mental_health",
+        "risco_neuropsiquiatrico_a_revisar",
+        "Risco neuropsiquiÃ¡trico a revisar",
+        1,
+    ),
+    VocabularyEntry("reproductive_gynecologic", "gestante", "Gestante", 2),
+    VocabularyEntry("reproductive_gynecologic", "lactante", "Lactante", 2),
+    VocabularyEntry(
+        "reproductive_gynecologic",
+        "tentando_engravidar",
+        "Tentando engravidar",
+        1,
+    ),
+    VocabularyEntry(
+        "reproductive_gynecologic",
+        "uso_anticoncepcional_hormonal",
+        "Uso de anticoncepcional hormonal",
+        1,
+    ),
+    VocabularyEntry("reproductive_gynecologic", "diu_hormonal", "DIU hormonal", 1),
+    VocabularyEntry("reproductive_gynecologic", "diu_nao_hormonal", "DIU nÃ£o hormonal", 0),
+    VocabularyEntry("reproductive_gynecologic", "endometriose", "Endometriose", 1),
+    VocabularyEntry("reproductive_gynecologic", "sop", "SÃ­ndrome dos ovÃ¡rios policÃ­sticos", 1),
+    VocabularyEntry("reproductive_gynecologic", "ciclo_irregular", "Ciclo irregular", 1),
+    VocabularyEntry(
+        "reproductive_gynecologic",
+        "tratamento_hormonal",
+        "Tratamento hormonal",
+        1,
+    ),
+    VocabularyEntry("reproductive_gynecologic", "risco_trombotico", "Risco trombÃ³tico", 2),
+    VocabularyEntry(
+        "reproductive_gynecologic",
+        "quadro_ginecologico_a_revisar",
+        "Quadro ginecolÃ³gico a revisar",
+        1,
+    ),
 )
 
 ENTRY_BY_CATEGORY_CODE = {(entry.category, entry.code): entry for entry in VOCABULARY}
@@ -113,6 +166,23 @@ GENERIC_VALUE_MAP = {
     ("gastrointestinal", "gastrointestinal"): "historico_gastrointestinal_a_revisar",
     ("gastrointestinal", "estomago"): "historico_gastrointestinal_a_revisar",
     ("gastrointestinal", "sangramento gastrointestinal"): "sangramento_gastrointestinal",
+    ("mental_health", "isrs"): "uso_isrs",
+    ("mental_health", "uso de isrs"): "uso_isrs",
+    ("mental_health", "imao"): "uso_imao",
+    ("mental_health", "uso de imao"): "uso_imao",
+    ("mental_health", "convulsao"): "epilepsia_convulsoes",
+    ("mental_health", "convulsoes"): "epilepsia_convulsoes",
+    ("mental_health", "epilepsia"): "epilepsia_convulsoes",
+    ("mental_health", "sedacao"): "risco_sedacao",
+    ("mental_health", "serotoninergico"): "risco_serotoninergico",
+    ("reproductive_gynecologic", "anticoncepcional"): "uso_anticoncepcional_hormonal",
+    ("reproductive_gynecologic", "contraceptivo hormonal"): "uso_anticoncepcional_hormonal",
+    ("reproductive_gynecologic", "anticoncepcional hormonal"): "uso_anticoncepcional_hormonal",
+    ("reproductive_gynecologic", "gravida"): "gestante",
+    ("reproductive_gynecologic", "gestacao"): "gestante",
+    ("reproductive_gynecologic", "amamentando"): "lactante",
+    ("reproductive_gynecologic", "sindrome dos ovarios policisticos"): "sop",
+    ("reproductive_gynecologic", "trombose"): "risco_trombotico",
 }
 
 CATEGORY_FIELD_MAP = {
@@ -144,11 +214,35 @@ def normalize_clinical_code(category: str, value: str | None) -> str | None:
     return "sem_informacao"
 
 
+def normalize_clinical_terms(category: str, values: list[str] | None) -> list[str]:
+    normalized_terms: list[str] = []
+    seen: set[str] = set()
+    for value in values or []:
+        code = normalize_clinical_code(category, value)
+        if not code or code == "sem_informacao" or code in seen:
+            continue
+        seen.add(code)
+        normalized_terms.append(code)
+    return normalized_terms
+
+
 def normalize_patient_clinical_fields(values: dict) -> dict:
     normalized = dict(values)
     for field, category in CATEGORY_FIELD_MAP.items():
         if field in normalized:
             normalized[field] = normalize_clinical_code(category, normalized[field])
+    if "mental_health_factors" in normalized and normalized["mental_health_factors"] is not None:
+        normalized["mental_health_factors"] = normalize_clinical_terms(
+            "mental_health", normalized["mental_health_factors"]
+        )
+    if (
+        "reproductive_gynecologic_factors" in normalized
+        and normalized["reproductive_gynecologic_factors"] is not None
+    ):
+        normalized["reproductive_gynecologic_factors"] = normalize_clinical_terms(
+            "reproductive_gynecologic",
+            normalized["reproductive_gynecologic_factors"],
+        )
     return normalized
 
 

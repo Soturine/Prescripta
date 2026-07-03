@@ -60,8 +60,12 @@ class RiskEngine:
         alerts.extend(self._check_contraindications(patient, medication))
         alerts.extend(self._check_route(medication, prescription))
         alerts.extend(self._check_duration_and_cumulative_dose(medication, prescription))
+        alerts.extend(self._check_exposure_and_monitoring(medication, prescription))
         alerts.extend(self._check_condition_specific_limits(patient, medication, prescription))
         alerts.extend(self._check_patient_medication_context(patient, medication))
+        alerts.extend(self._check_pharmacokinetic_profile(patient, medication))
+        alerts.extend(self._check_neuropsychiatric_context(patient, medication))
+        alerts.extend(self._check_reproductive_gynecologic_context(patient, medication))
         alerts.extend(self._check_adverse_history(patient, medication))
         alerts.extend(self._check_profile_completeness(patient))
 
@@ -201,6 +205,57 @@ class RiskEngine:
             )
         return alerts
 
+    def _check_exposure_and_monitoring(
+        self, medication: Medication, prescription: PrescriptionInput
+    ) -> list[Alert]:
+        alerts: list[Alert] = []
+        if medication.continuous_use and prescription.duration_days is None:
+            alerts.append(
+                Alert(
+                    code="CONTINUOUS_USE_REVIEW",
+                    title="Uso contÃ­nuo exige plano de revisÃ£o",
+                    description=(
+                        "Medicamento marcado como uso contÃ­nuo ou prolongado sem duraÃ§Ã£o "
+                        "planejada informada."
+                    ),
+                    severity=RiskLevel.LOW,
+                    recommendation="Confirmar plano terapÃªutico, reavaliaÃ§Ã£o e monitoramento.",
+                )
+            )
+        if medication.monitoring_required:
+            alerts.append(
+                Alert(
+                    code="MONITORING_REQUIRED",
+                    title="Monitoramento laboratorial ou clÃ­nico necessÃ¡rio",
+                    description=(
+                        medication.monitoring_notes
+                        or "Medicamento possui monitoramento demonstrativo cadastrado."
+                    ),
+                    severity=RiskLevel.MODERATE,
+                    recommendation=(
+                        "Registrar parametros de monitoramento antes de uso prolongado."
+                    ),
+                )
+            )
+        if (
+            prescription.duration_days is not None
+            and prescription.duration_days > 30
+            and (medication.monitoring_required or medication.continuous_use)
+        ):
+            alerts.append(
+                Alert(
+                    code="PROLONGED_USE_REVIEW",
+                    title="Uso prolongado a revisar",
+                    description=(
+                        f"DuraÃ§Ã£o planejada: {prescription.duration_days} dias. "
+                        "Uso prolongado pode exigir seguimento mesmo com dose diÃ¡ria baixa."
+                    ),
+                    severity=RiskLevel.MODERATE,
+                    recommendation="Revisar duraÃ§Ã£o, benefÃ­cio, risco acumulado e seguimento.",
+                )
+            )
+        return alerts
+
     def _check_condition_specific_limits(
         self, patient: Patient, medication: Medication, prescription: PrescriptionInput
     ) -> list[Alert]:
@@ -283,6 +338,255 @@ class RiskEngine:
                 )
         return alerts
 
+    def _check_pharmacokinetic_profile(
+        self, patient: Patient, medication: Medication
+    ) -> list[Alert]:
+        alerts: list[Alert] = []
+        renal_level = normalize_text(medication.renal_elimination_level).replace(" ", "_")
+        hepatic_level = normalize_text(medication.hepatic_metabolism_level).replace(" ", "_")
+        high_levels = {"alto", "critico_revisar", "critico"}
+        if patient.renal_condition and renal_level in high_levels:
+            alerts.append(
+                Alert(
+                    code="RENAL_ELIMINATION_REVIEW",
+                    title="EliminaÃ§Ã£o renal relevante",
+                    description=(
+                        "Perfil farmacocinÃ©tico indica eliminaÃ§Ã£o renal relevante e o "
+                        "paciente possui fator renal cadastrado."
+                    ),
+                    severity=RiskLevel.HIGH,
+                    recommendation="Revisar funÃ§Ã£o renal, dose, intervalo e monitoramento.",
+                )
+            )
+        if patient.hepatic_condition and hepatic_level in high_levels:
+            alerts.append(
+                Alert(
+                    code="HEPATIC_METABOLISM_REVIEW",
+                    title="MetabolizaÃ§Ã£o hepÃ¡tica relevante",
+                    description=(
+                        "Perfil farmacocinÃ©tico indica metabolismo hepÃ¡tico relevante e o "
+                        "paciente possui fator hepÃ¡tico cadastrado."
+                    ),
+                    severity=RiskLevel.HIGH,
+                    recommendation=(
+                        "Revisar funcao hepatica, dose, interacoes e monitoramento."
+                    ),
+                )
+            )
+        return alerts
+
+    def _check_neuropsychiatric_context(
+        self, patient: Patient, medication: Medication
+    ) -> list[Alert]:
+        alerts: list[Alert] = []
+        cautions = set(normalize_terms(medication.neuropsychiatric_cautions or []))
+        patient_factors = set(normalize_terms(patient.mental_health_factors or []))
+        patient_terms = set(normalize_terms(patient.comorbidities or []))
+        current = set(normalize_terms(patient.current_medications or []))
+        therapeutic_terms = set(
+            normalize_terms([medication.therapeutic_class, *(medication.therapeutic_classes or [])])
+        )
+        active = normalize_text(medication.active_ingredient)
+        is_serotonergic = bool(
+            cautions & {"risco serotoninergico", "uso isrs"}
+            or active in {"sertralina", "fluoxetina", "paroxetina", "escitalopram"}
+            or "serotonina" in normalize_text(medication.therapeutic_class)
+            or "inibidor seletivo da recaptacao de serotonina" in therapeutic_terms
+        )
+        patient_serotonergic = bool(
+            patient_factors & {"uso isrs", "risco serotoninergico"}
+            or current
+            & {
+                "sertralina",
+                "fluoxetina",
+                "paroxetina",
+                "escitalopram",
+                "citalopram",
+                "venlafaxina",
+                "duloxetina",
+            }
+        )
+        if is_serotonergic and patient_serotonergic:
+            alerts.append(
+                Alert(
+                    code="SEROTONERGIC_REVIEW",
+                    title="Risco serotoninÃ©rgico demonstrativo",
+                    description=(
+                        "Paciente jÃ¡ possui fator ou medicamento serotoninÃ©rgico e a nova "
+                        "prescriÃ§Ã£o tambÃ©m tem cautela cadastrada."
+                    ),
+                    severity=RiskLevel.MODERATE,
+                    recommendation="Revisar associaÃ§Ã£o, dose, sinais de alerta e alternativas.",
+                )
+            )
+
+        patient_uses_imao = bool(
+            "uso imao" in patient_factors
+            or current & {"imao", "fenelzina", "tranilcipromina", "selegilina"}
+        )
+        if patient_uses_imao and (
+            is_serotonergic or bool(cautions & {"uso imao", "interacao imao"})
+        ):
+            alerts.append(
+                Alert(
+                    code="IMAO_INTERACTION_REVIEW",
+                    title="Uso de IMAO exige revisÃ£o",
+                    description=(
+                        "Paciente possui uso de IMAO e o medicamento novo tem cautela "
+                        "demonstrativa de interaÃ§Ã£o."
+                    ),
+                    severity=RiskLevel.HIGH,
+                    recommendation="Revisar interaÃ§Ã£o em fonte validada antes de prosseguir.",
+                )
+            )
+
+        seizure_history = bool(
+            "epilepsia convulsoes" in patient_factors
+            or patient_terms & {"epilepsia", "convulsao", "convulsoes"}
+        )
+        if seizure_history and bool(cautions & {"limiar convulsivo", "epilepsia convulsoes"}):
+            alerts.append(
+                Alert(
+                    code="SEIZURE_THRESHOLD_REVIEW",
+                    title="HistÃ³rico convulsivo a revisar",
+                    description=(
+                        "Paciente possui histÃ³rico de convulsÃµes e o medicamento tem cautela "
+                        "demonstrativa de limiar convulsivo."
+                    ),
+                    severity=RiskLevel.MODERATE,
+                    recommendation="Revisar risco neuropsiquiÃ¡trico com fonte validada.",
+                )
+            )
+
+        central_depressants = {
+            "benzodiazepinico",
+            "diazepam",
+            "clonazepam",
+            "alprazolam",
+            "zolpidem",
+            "opioide",
+            "morfina",
+            "tramadol",
+        }
+        if bool(cautions & {"risco sedacao"}) and bool(current & central_depressants):
+            alerts.append(
+                Alert(
+                    code="SEDATION_REVIEW",
+                    title="SedaÃ§Ã£o/depressÃ£o do SNC a revisar",
+                    description=(
+                        "Medicamento possui cautela de sedaÃ§Ã£o e o paciente usa depressor do "
+                        "SNC demonstrativo."
+                    ),
+                    severity=RiskLevel.MODERATE,
+                    recommendation=(
+                        "Revisar risco de sedacao, quedas e orientacoes ao paciente."
+                    ),
+                )
+            )
+
+        if patient_factors and cautions and not {
+            "SEROTONERGIC_REVIEW",
+            "IMAO_INTERACTION_REVIEW",
+            "SEIZURE_THRESHOLD_REVIEW",
+            "SEDATION_REVIEW",
+        }.intersection({alert.code for alert in alerts}):
+            alerts.append(
+                Alert(
+                    code="NEUROPSYCHIATRIC_REVIEW",
+                    title="Fator neuropsiquiÃ¡trico a revisar",
+                    description=(
+                        "Paciente possui fator de saÃºde mental e o medicamento tem cautela "
+                        "neuropsiquiÃ¡trica cadastrada."
+                    ),
+                    severity=RiskLevel.LOW,
+                    recommendation=(
+                        "Revisar contexto neuropsiquiatrico sem assumir contraindicacao."
+                    ),
+                )
+            )
+        return alerts
+
+    def _check_reproductive_gynecologic_context(
+        self, patient: Patient, medication: Medication
+    ) -> list[Alert]:
+        alerts: list[Alert] = []
+        patient_factors = set(normalize_terms(patient.reproductive_gynecologic_factors or []))
+        cautions = set(normalize_terms(medication.reproductive_cautions or []))
+        active = normalize_text(medication.active_ingredient)
+        uses_hormonal_contraceptive = bool(
+            patient_factors
+            & {"uso anticoncepcional hormonal", "diu hormonal", "tratamento hormonal"}
+        )
+        if active in {"rifampicina", "rifabutina"} and uses_hormonal_contraceptive:
+            alerts.append(
+                Alert(
+                    code="RIFAMYCIN_HORMONAL_CONTRACEPTIVE_REVIEW",
+                    title="Rifamicina e contraceptivo hormonal",
+                    description=(
+                        "Regra demonstrativa especÃ­fica para rifampicina/rifabutina: pode haver "
+                        "reduÃ§Ã£o da eficÃ¡cia contraceptiva hormonal. NÃ£o se aplica a todo "
+                        "antibiÃ³tico."
+                    ),
+                    severity=RiskLevel.HIGH,
+                    recommendation="Recomendar revisÃ£o profissional e orientaÃ§Ã£o contraceptiva.",
+                )
+            )
+
+        pregnancy_lactation = bool(
+            patient.pregnancy_or_lactation
+            or patient_factors & {"gestante", "lactante", "tentando engravidar"}
+        )
+        if pregnancy_lactation and bool(
+            cautions & {"gestante", "lactante", "cautela reprodutiva", "tentando engravidar"}
+        ):
+            alerts.append(
+                Alert(
+                    code="REPRODUCTIVE_REVIEW",
+                    title="Gestacao/lactacao a revisar",
+                    description=(
+                        "Paciente possui fator gestacional, lactacional ou reprodutivo e o "
+                        "medicamento tem cautela reprodutiva cadastrada."
+                    ),
+                    severity=RiskLevel.HIGH,
+                    recommendation="Revisar fonte validada, trimestre/lactacao e alternativas.",
+                )
+            )
+
+        if "risco trombotico" in patient_factors and "risco trombotico" in cautions:
+            alerts.append(
+                Alert(
+                    code="THROMBOTIC_REVIEW",
+                    title="Risco trombÃ³tico a revisar",
+                    description=(
+                        "Paciente possui fator trombÃ³tico e medicamento tem cautela trombÃ³tica "
+                        "cadastrada."
+                    ),
+                    severity=RiskLevel.MODERATE,
+                    recommendation="Revisar risco individual e fonte validada antes de prosseguir.",
+                )
+            )
+
+        gynecologic_factors = {
+            "endometriose",
+            "sop",
+            "ciclo irregular",
+            "quadro ginecologico a revisar",
+        }
+        if bool(patient_factors & gynecologic_factors) and bool(cautions):
+            alerts.append(
+                Alert(
+                    code="GYNECOLOGIC_REVIEW",
+                    title="Quadro ginecolÃ³gico a revisar",
+                    description=(
+                        "Paciente possui fator ginecolÃ³gico e medicamento tem cautela "
+                        "relacionada cadastrada."
+                    ),
+                    severity=RiskLevel.LOW,
+                    recommendation="Revisar contexto ginecolÃ³gico sem assumir contraindicaÃ§Ã£o.",
+                )
+            )
+        return alerts
+
     def _check_adverse_history(self, patient: Patient, medication: Medication) -> list[Alert]:
         adverse_reactions = patient.adverse_reactions or []
         medication_terms = [
@@ -315,6 +619,8 @@ class RiskEngine:
                 label_for_code(patient.gastrointestinal_history),
                 patient.hypertension,
                 patient.diabetes,
+                patient.mental_health_factors,
+                patient.reproductive_gynecologic_factors,
                 patient.adverse_reactions,
             ]
         )
@@ -341,6 +647,32 @@ class RiskEngine:
             "max_daily_dose_mg": medication.max_daily_dose_mg,
             "max_duration_days": medication.max_duration_days,
             "max_cumulative_dose_mg": medication.max_cumulative_dose_mg,
+            "continuous_use": medication.continuous_use,
+            "monitoring_required": medication.monitoring_required,
+            "monitoring_notes": medication.monitoring_notes,
+            "exposure_plan": {
+                "dose_per_administration_mg": prescription.dose_mg,
+                "administrations_per_day": prescription.frequency_per_day,
+                "calculated_daily_dose_mg": prescription.daily_total_mg,
+                "calculated_cumulative_dose_mg": cumulative,
+                "has_missing_duration_for_cumulative_dose": (
+                    prescription.duration_days is None
+                    and bool(medication.max_cumulative_dose_mg or medication.max_duration_days)
+                ),
+            },
+            "mechanism_profile": {
+                "mechanism_of_action": medication.mechanism_of_action,
+                "absorption_notes": medication.absorption_notes,
+                "distribution_notes": medication.distribution_notes,
+                "metabolism_organs": medication.metabolism_organs or [],
+                "elimination_organs": medication.elimination_organs or [],
+                "renal_elimination_level": medication.renal_elimination_level,
+                "hepatic_metabolism_level": medication.hepatic_metabolism_level,
+                "cyp_interactions": medication.cyp_interactions or [],
+                "pharmacodynamic_notes": medication.pharmacodynamic_notes,
+                "pharmacokinetic_notes": medication.pharmacokinetic_notes,
+                "clinical_interpretation": medication.clinical_interpretation,
+            },
             "condition_specific_limits": medication.condition_specific_limits or {},
         }
 
@@ -379,6 +711,8 @@ class RiskEngine:
                 patient.gastrointestinal_history,
                 "hipertensão" if patient.hypertension else None,
                 "diabetes" if patient.diabetes else None,
+                *(patient.mental_health_factors or []),
+                *(patient.reproductive_gynecologic_factors or []),
                 *(patient.adverse_reactions or []),
             ]
             if factor
@@ -395,6 +729,14 @@ class RiskEngine:
                 f"jurisdição da fonte: {medication.source_jurisdiction}",
                 f"fonte: {medication.evidence_source_type}",
                 f"validação: {medication.validation_status}",
+                "uso continuo" if medication.continuous_use else None,
+                "monitoramento necessario" if medication.monitoring_required else None,
+                medication.mechanism_of_action,
+                f"eliminacao renal: {medication.renal_elimination_level}",
+                f"metabolizacao hepatica: {medication.hepatic_metabolism_level}",
+                *(medication.cyp_interactions or []),
+                *(medication.neuropsychiatric_cautions or []),
+                *(medication.reproductive_cautions or []),
                 *(medication.organs_involved or []),
             ]
             if factor

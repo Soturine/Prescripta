@@ -16,6 +16,9 @@ class PatientModel(Base):
     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
     weight_kg: Mapped[float] = mapped_column(Float, nullable=False)
     height_cm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(220), nullable=True)
+    mother_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
     allergies: Mapped[list[str]] = mapped_column(JSON, default=list)
     comorbidities: Mapped[list[str]] = mapped_column(JSON, default=list)
     current_medications: Mapped[list[str]] = mapped_column(JSON, default=list)
@@ -26,6 +29,8 @@ class PatientModel(Base):
     hypertension: Mapped[bool] = mapped_column(default=False, nullable=False)
     diabetes: Mapped[bool] = mapped_column(default=False, nullable=False)
     pregnancy_or_lactation: Mapped[bool | None] = mapped_column(default=None, nullable=True)
+    mental_health_factors: Mapped[list[str]] = mapped_column(JSON, default=list)
+    reproductive_gynecologic_factors: Mapped[list[str]] = mapped_column(JSON, default=list)
     adverse_reactions: Mapped[list[str]] = mapped_column(JSON, default=list)
     clinical_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     clinical_profile_reviewed_at: Mapped[datetime | None] = mapped_column(
@@ -162,6 +167,9 @@ class MedicationModel(Base):
     max_daily_dose_mg: Mapped[float] = mapped_column(Float, nullable=False)
     max_duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_cumulative_dose_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    continuous_use: Mapped[bool] = mapped_column(default=False, nullable=False)
+    monitoring_required: Mapped[bool] = mapped_column(default=False, nullable=False)
+    monitoring_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     condition_specific_limits: Mapped[dict] = mapped_column(JSON, default=dict)
     allowed_routes: Mapped[list[str]] = mapped_column(JSON, default=list)
     contraindications: Mapped[list[str]] = mapped_column(JSON, default=list)
@@ -170,8 +178,23 @@ class MedicationModel(Base):
     cardiac_caution: Mapped[bool] = mapped_column(default=False, nullable=False)
     gastrointestinal_caution: Mapped[bool] = mapped_column(default=False, nullable=False)
     elderly_caution: Mapped[bool] = mapped_column(default=False, nullable=False)
+    mechanism_of_action: Mapped[str | None] = mapped_column(Text, nullable=True)
+    absorption_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    distribution_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     metabolism_organs: Mapped[list[str]] = mapped_column(JSON, default=list)
     elimination_organs: Mapped[list[str]] = mapped_column(JSON, default=list)
+    renal_elimination_level: Mapped[str] = mapped_column(
+        String(40), default="nao_informado", nullable=False
+    )
+    hepatic_metabolism_level: Mapped[str] = mapped_column(
+        String(40), default="nao_informado", nullable=False
+    )
+    cyp_interactions: Mapped[list[str]] = mapped_column(JSON, default=list)
+    pharmacodynamic_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    pharmacokinetic_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    clinical_interpretation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    neuropsychiatric_cautions: Mapped[list[str]] = mapped_column(JSON, default=list)
+    reproductive_cautions: Mapped[list[str]] = mapped_column(JSON, default=list)
     organs_involved: Mapped[list[str]] = mapped_column(JSON, default=list)
     relevant_adverse_effects: Mapped[list[str]] = mapped_column(JSON, default=list)
     structured_contraindications: Mapped[list[str]] = mapped_column(JSON, default=list)
@@ -180,6 +203,185 @@ class MedicationModel(Base):
     related_medications: Mapped[list[str]] = mapped_column(JSON, default=list)
     knowledge_source: Mapped[str | None] = mapped_column(String(220), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class MedicationExposurePlanModel(Base):
+    __tablename__ = "medication_exposure_plans"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    patient_id: Mapped[int | None] = mapped_column(ForeignKey("patients.id"), nullable=True)
+    medication_id: Mapped[int | None] = mapped_column(ForeignKey("medications.id"), nullable=True)
+    active_ingredient_id: Mapped[int | None] = mapped_column(
+        ForeignKey("active_ingredients.id"), nullable=True
+    )
+    dose_per_administration_mg: Mapped[float] = mapped_column(Float, nullable=False)
+    administrations_per_day: Mapped[int] = mapped_column(Integer, nullable=False)
+    duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    calculated_daily_dose_mg: Mapped[float] = mapped_column(Float, nullable=False)
+    calculated_cumulative_dose_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_daily_dose_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_cumulative_dose_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    continuous_use: Mapped[bool] = mapped_column(default=False, nullable=False)
+    monitoring_required: Mapped[bool] = mapped_column(default=False, nullable=False)
+    monitoring_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
+class MedicationMechanismProfileModel(Base):
+    __tablename__ = "medication_mechanism_profiles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    active_ingredient_id: Mapped[int | None] = mapped_column(
+        ForeignKey("active_ingredients.id"), nullable=True, index=True
+    )
+    mechanism_of_action: Mapped[str | None] = mapped_column(Text, nullable=True)
+    absorption_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    distribution_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metabolism_organs: Mapped[list[str]] = mapped_column(JSON, default=list)
+    elimination_organs: Mapped[list[str]] = mapped_column(JSON, default=list)
+    renal_elimination_level: Mapped[str] = mapped_column(
+        String(40), default="nao_informado", nullable=False
+    )
+    hepatic_metabolism_level: Mapped[str] = mapped_column(
+        String(40), default="nao_informado", nullable=False
+    )
+    cyp_interactions: Mapped[list[str]] = mapped_column(JSON, default=list)
+    pharmacodynamic_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    pharmacokinetic_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    monitoring_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    clinical_interpretation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_id: Mapped[int | None] = mapped_column(
+        ForeignKey("medication_knowledge_sources.id"), nullable=True
+    )
+    validation_status: Mapped[str] = mapped_column(String(40), default="demo", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
+class PatientIdentifierModel(Base):
+    __tablename__ = "patient_identifiers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), nullable=False, index=True)
+    identifier_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    identifier_value_hash: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    issuing_system: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    display_masked: Mapped[str] = mapped_column(String(80), nullable=False)
+    is_primary: Mapped[bool] = mapped_column(default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
+class ExternalPatientIdentityModel(Base):
+    __tablename__ = "external_patient_identities"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    patient_id: Mapped[int | None] = mapped_column(ForeignKey("patients.id"), nullable=True)
+    external_system: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    external_patient_id: Mapped[str] = mapped_column(String(180), nullable=False, index=True)
+    hospital_name: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    document_hash: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
+class ClinicalImportBatchModel(Base):
+    __tablename__ = "clinical_import_batches"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    source_system: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    source_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    imported_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    patient_id: Mapped[int | None] = mapped_column(ForeignKey("patients.id"), nullable=True)
+    consent_id: Mapped[int | None] = mapped_column(ForeignKey("consent_records.id"), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False, index=True
+    )
+    imported_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    errors: Mapped[list[str]] = mapped_column(JSON, default=list)
+
+
+class ClinicalSourceRecordModel(Base):
+    __tablename__ = "clinical_source_records"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    batch_id: Mapped[int] = mapped_column(
+        ForeignKey("clinical_import_batches.id"), nullable=False, index=True
+    )
+    record_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    source_payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    mapped_payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    confidence: Mapped[float] = mapped_column(Float, default=0, nullable=False)
+    accepted_by_user: Mapped[bool] = mapped_column(default=False, nullable=False)
+    rejected_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class ConsentRecordModel(Base):
+    __tablename__ = "consent_records"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    patient_id: Mapped[int | None] = mapped_column(ForeignKey("patients.id"), nullable=True)
+    authorized_by: Mapped[str] = mapped_column(String(160), nullable=False)
+    purpose: Mapped[str] = mapped_column(String(240), nullable=False)
+    source_system: Mapped[str] = mapped_column(String(120), nullable=False)
+    valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class IntegrationAuditLogModel(Base):
+    __tablename__ = "integration_audit_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    patient_id: Mapped[int | None] = mapped_column(ForeignKey("patients.id"), nullable=True)
+    batch_id: Mapped[int | None] = mapped_column(
+        ForeignKey("clinical_import_batches.id"), nullable=True
+    )
+    action: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    source_system: Mapped[str] = mapped_column(String(120), nullable=False)
+    details: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
 
 
 class UserModel(Base):

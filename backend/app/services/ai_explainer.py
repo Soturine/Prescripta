@@ -28,6 +28,24 @@ ALERT_EXPLANATIONS = {
     "INVALID_ROUTE": "A via informada não consta nas vias permitidas do medicamento.",
 }
 
+ALERT_EXPLANATIONS.update(
+    {
+        "CONTINUOUS_USE_REVIEW": "Uso continuo ou prolongado exige plano de revisao.",
+        "MONITORING_REQUIRED": "O medicamento possui monitoramento cadastrado.",
+        "PROLONGED_USE_REVIEW": "A duracao sugere revisao por uso prolongado.",
+        "RENAL_ELIMINATION_REVIEW": "O perfil ADME indica eliminacao renal relevante.",
+        "HEPATIC_METABOLISM_REVIEW": "O perfil ADME indica metabolismo hepatico relevante.",
+        "SEROTONERGIC_REVIEW": "Ha sobreposicao demonstrativa de fatores serotoninergicos.",
+        "IMAO_INTERACTION_REVIEW": "Uso de IMAO exige revisao de interacao em fonte validada.",
+        "SEIZURE_THRESHOLD_REVIEW": "Historico convulsivo coincide com cautela cadastrada.",
+        "SEDATION_REVIEW": "Ha cautela demonstrativa de sedacao/depressor do SNC.",
+        "RIFAMYCIN_HORMONAL_CONTRACEPTIVE_REVIEW": (
+            "Regra demonstrativa especifica para rifampicina/rifabutina e contraceptivo hormonal."
+        ),
+        "REPRODUCTIVE_REVIEW": "Fator gestacional/lactacional/reprodutivo exige revisao.",
+    }
+)
+
 ALERT_QUESTIONS = {
     "ALLERGY_BLOCK": "Existe alternativa terapêutica sem relação com a alergia registrada?",
     "MAX_DAILY_DOSE_EXCEEDED": (
@@ -39,6 +57,24 @@ ALERT_QUESTIONS = {
     "CONTRAINDICATION": "A comorbidade contraindica o uso ou exige protocolo de monitoramento?",
     "INVALID_ROUTE": "A via de administração deve ser corrigida antes de prosseguir?",
 }
+
+ALERT_QUESTIONS.update(
+    {
+        "MONITORING_REQUIRED": (
+            "Quais exames, sinais clinicos ou prazos de retorno devem ser definidos?"
+        ),
+        "RENAL_ELIMINATION_REVIEW": "A funcao renal recente permite esta dose e intervalo?",
+        "HEPATIC_METABOLISM_REVIEW": (
+            "A funcao hepatica recente muda dose, intervalo ou alternativa?"
+        ),
+        "SEROTONERGIC_REVIEW": "A associacao serotoninergica e necessaria e monitoravel?",
+        "IMAO_INTERACTION_REVIEW": "Ha intervalo seguro e fonte validada para esta associacao?",
+        "SEIZURE_THRESHOLD_REVIEW": "O historico convulsivo muda escolha ou monitoramento?",
+        "RIFAMYCIN_HORMONAL_CONTRACEPTIVE_REVIEW": (
+            "A paciente precisa de orientacao contraceptiva adicional validada?"
+        ),
+    }
+)
 
 SYSTEM_INSTRUCTIONS = """
 Você é uma camada explicativa educacional do Prescripta.
@@ -197,6 +233,25 @@ class AIExplainer:
                     f"{technical_summary} Fontes internacionais são apoio secundário "
                     "e não substituem a prioridade brasileira Anvisa/DCB no contexto BR."
                 )
+        mechanism = payload.dose_summary.get("mechanism_profile") or {}
+        exposure = payload.dose_summary.get("exposure_plan") or {}
+        if mechanism:
+            technical_summary = (
+                f"{technical_summary} Perfil ADME/mecanismo: "
+                f"metabolizacao={mechanism.get('metabolism_organs')}, "
+                f"eliminacao={mechanism.get('elimination_organs')}, "
+                f"renal={mechanism.get('renal_elimination_level')}, "
+                f"hepatico={mechanism.get('hepatic_metabolism_level')}."
+            )
+        if payload.dose_summary.get("monitoring_required"):
+            technical_summary = (
+                f"{technical_summary} Monitoramento cadastrado: "
+                f"{payload.dose_summary.get('monitoring_notes') or 'revisao profissional'}."
+            )
+        if exposure.get("has_missing_duration_for_cumulative_dose"):
+            technical_summary = (
+                f"{technical_summary} Duracao ausente limita interpretacao da exposicao acumulada."
+            )
         if fallback_reason:
             technical_summary = f"{technical_summary} {fallback_reason}"
 

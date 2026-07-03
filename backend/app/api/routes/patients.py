@@ -10,6 +10,8 @@ from app.domain.user import UserRole
 from app.repositories.patient_repository import PatientRepository
 from app.schemas.patient_schema import (
     PatientCreate,
+    PatientIdentifierCreate,
+    PatientIdentifierRead,
     PatientRead,
     PatientUpdate,
     QuickTriageRequest,
@@ -22,6 +24,7 @@ from app.services.clinical_profile import (
 )
 from app.services.controlled_vocabulary import label_for_code
 from app.services.normalizer import merge_terms
+from app.services.patient_identifier_service import PatientIdentifierService
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 DbSession = Annotated[Session, Depends(get_db)]
@@ -35,9 +38,7 @@ PatientManager = Annotated[UserModel, Depends(require_roles(UserRole.ADMIN, User
 def list_patients(db: DbSession, _current_user: PatientReader) -> list[PatientRead]:
     patients = PatientRepository(db).list()
     for patient in patients:
-        patient.clinical_profile_badge = clinical_profile_badge(
-            patient.clinical_profile_completeness_score or 0
-        )
+        _attach_patient_metadata(db, patient)
     return patients
 
 
@@ -55,6 +56,7 @@ def create_patient(
             detail="Paciente possivelmente duplicado. Revise o cadastro existente.",
         )
     patient = repository.create(payload)
+    _attach_patient_metadata(db, patient)
     AuditService(db).record_action(
         user=current_user,
         action="patient.create",
@@ -75,6 +77,7 @@ def get_patient(patient_id: int, db: DbSession, _current_user: PatientReader) ->
     patient.clinical_profile_badge = clinical_profile_badge(
         patient.clinical_profile_completeness_score or 0
     )
+    _attach_patient_metadata(db, patient)
     return patient
 
 
@@ -92,6 +95,7 @@ def update_patient(
             status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
         )
     updated = repository.update(patient, payload)
+    _attach_patient_metadata(db, updated)
     AuditService(db).record_action(
         user=current_user,
         action="patient.update",
@@ -162,6 +166,14 @@ def quick_triage_patient(
             patient.current_medications,
             payload.current_medications,
         ),
+        "mental_health_factors": merge_terms(
+            patient.mental_health_factors,
+            payload.mental_health_factors,
+        ),
+        "reproductive_gynecologic_factors": merge_terms(
+            patient.reproductive_gynecologic_factors,
+            payload.reproductive_gynecologic_factors,
+        ),
         "adverse_reactions": merge_terms(patient.adverse_reactions, payload.adverse_reactions),
         "clinical_notes": payload.clinical_notes or patient.clinical_notes,
         "clinical_profile_reviewed_at": reviewed_now(),
@@ -181,6 +193,7 @@ def quick_triage_patient(
     patient.clinical_profile_badge = clinical_profile_badge(
         patient.clinical_profile_completeness_score or 0
     )
+    _attach_patient_metadata(db, patient)
     AuditService(db).record_action(
         user=current_user,
         action="patient.quick_triage",
@@ -194,6 +207,60 @@ def quick_triage_patient(
         },
     )
     return patient
+
+
+@router.get("/{patient_id}/identifiers", response_model=list[PatientIdentifierRead])
+def list_patient_identifiers(
+    patient_id: int,
+    db: DbSession,
+    _current_user: PatientReader,
+) -> list[PatientIdentifierRead]:
+    patient = PatientRepository(db).get(patient_id)
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nÃ£o encontrado."
+        )
+    return PatientIdentifierService(db).list_for_patient(patient_id)
+
+
+@router.post(
+    "/{patient_id}/identifiers",
+    response_model=PatientIdentifierRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_patient_identifier(
+    patient_id: int,
+    payload: PatientIdentifierCreate,
+    db: DbSession,
+    current_user: PatientManager,
+) -> PatientIdentifierRead:
+    patient = PatientRepository(db).get(patient_id)
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nÃ£o encontrado."
+        )
+    try:
+        identifier = PatientIdentifierService(db).create(
+            patient_id=patient_id,
+            identifier_type=payload.identifier_type,
+            identifier_value=payload.identifier_value,
+            issuing_system=payload.issuing_system,
+            is_primary=payload.is_primary,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    AuditService(db).record_action(
+        user=current_user,
+        action="patient.identifier.create",
+        resource_type="patient",
+        resource_id=str(patient_id),
+        details={
+            "identifier_type": identifier.identifier_type,
+            "issuing_system": identifier.issuing_system,
+            "display_masked": identifier.display_masked,
+        },
+    )
+    return identifier
 
 
 @router.get("/{patient_id}/clinical-context", response_model=dict)
@@ -251,3 +318,11 @@ def _triage_value(
     if incoming:
         return default_code
     return existing
+
+
+def _attach_patient_metadata(db: Session, patient) -> None:
+    patient.clinical_profile_badge = clinical_profile_badge(
+        patient.clinical_profile_completeness_score or 0
+    )
+    patient.identifiers = PatientIdentifierService(db).list_for_patient(patient.id)
+    patient.possible_duplicate_matches = []
