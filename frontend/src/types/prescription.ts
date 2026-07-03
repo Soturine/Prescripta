@@ -15,6 +15,56 @@ export type PrescriptionCheckPayload = {
   dose_mg: number;
   frequency_per_day: number;
   route: string;
+  duration_days: number | null;
+  indication: string | null;
+  professional_notes: string | null;
+};
+
+export type DoseSummary = {
+  daily_total_mg: number;
+  duration_days: number | null;
+  estimated_cumulative_dose_mg: number | null;
+  max_daily_dose_mg: number;
+  max_duration_days: number | null;
+  max_cumulative_dose_mg: number | null;
+  condition_specific_limits: Record<string, number>;
+};
+
+export type Compatibility = {
+  level: "alta" | "moderada" | "baixa";
+  score: number;
+  patient_factors_considered: string[];
+  medication_factors_considered: string[];
+  reasons: string[];
+  review_required: boolean;
+  educational_notice: string;
+};
+
+export type RagEvidence = {
+  source: string;
+  excerpt: string;
+  score: number;
+  matched_terms: string[];
+  educational_notice: string;
+};
+
+export type AlternativeMedication = {
+  medication_id: number;
+  name: string;
+  active_ingredient: string;
+  therapeutic_class: string;
+  similarity_reason: string;
+  status: PrescriptionStatus;
+  risk_level: RiskLevel;
+  top_alerts: Alert[];
+  observation: string;
+};
+
+export type ClinicalContextGraph = {
+  nodes: Array<{ id: string; label: string; type: string }>;
+  edges: Array<{ from: string; to: string; label: string }>;
+  patient_factors: string[];
+  medication_factors: string[];
 };
 
 export type PrescriptionCheckResult = {
@@ -24,6 +74,13 @@ export type PrescriptionCheckResult = {
   recommendation: string;
   human_review_required: boolean;
   audit_id: number;
+  dose_summary: DoseSummary;
+  compatibility: Compatibility;
+  patient_factors_considered: string[];
+  medication_factors_considered: string[];
+  rag_evidence: RagEvidence[];
+  clinical_context_graph: ClinicalContextGraph;
+  alternatives: AlternativeMedication[];
 };
 
 export type PrescriptionExplanationPayload = PrescriptionCheckResult & {
@@ -51,7 +108,17 @@ export type PrescriptionExplanationPayload = PrescriptionCheckResult & {
   dose_mg: number;
   frequency_per_day: number;
   route: string;
+  duration_days: number | null;
+  indication: string | null;
+  professional_notes: string | null;
   user_profile: string;
+  dose_summary: DoseSummary;
+  compatibility: Compatibility;
+  patient_factors_considered: string[];
+  medication_factors_considered: string[];
+  rag_evidence: RagEvidence[];
+  clinical_context_graph: ClinicalContextGraph;
+  alternatives: AlternativeMedication[];
 };
 
 export type PrescriptionExplanationResult = {
@@ -65,4 +132,6 @@ export type PrescriptionExplanationResult = {
   prescription_status: PrescriptionStatus;
   risk_level: RiskLevel;
   critical_alert_codes: string[];
+  missing_patient_data: string[];
+  rag_sources: string[];
 };

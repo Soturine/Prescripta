@@ -16,6 +16,15 @@ const patientSchema = z
     allergies: z.string().optional(),
     comorbidities: z.string().optional(),
     current_medications: z.string().optional(),
+    renal_condition: z.string().optional(),
+    hepatic_condition: z.string().optional(),
+    cardiac_condition: z.string().optional(),
+    gastrointestinal_history: z.string().optional(),
+    hypertension: z.boolean(),
+    diabetes: z.boolean(),
+    pregnancy_or_lactation: z.boolean(),
+    adverse_reactions: z.string().optional(),
+    clinical_notes: z.string().optional(),
   })
   .refine((data) => data.age !== undefined || Boolean(data.birth_date), {
     message: "Informe idade ou data de nascimento.",
@@ -47,6 +56,15 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       allergies: joinList(initialPatient?.allergies),
       comorbidities: joinList(initialPatient?.comorbidities),
       current_medications: joinList(initialPatient?.current_medications),
+      renal_condition: initialPatient?.renal_condition ?? "",
+      hepatic_condition: initialPatient?.hepatic_condition ?? "",
+      cardiac_condition: initialPatient?.cardiac_condition ?? "",
+      gastrointestinal_history: initialPatient?.gastrointestinal_history ?? "",
+      hypertension: initialPatient?.hypertension ?? false,
+      diabetes: initialPatient?.diabetes ?? false,
+      pregnancy_or_lactation: initialPatient?.pregnancy_or_lactation ?? false,
+      adverse_reactions: joinList(initialPatient?.adverse_reactions),
+      clinical_notes: initialPatient?.clinical_notes ?? "",
     },
   });
 
@@ -62,6 +80,15 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       allergies: splitList(values.allergies ?? ""),
       comorbidities: splitList(values.comorbidities ?? ""),
       current_medications: splitList(values.current_medications ?? ""),
+      renal_condition: values.renal_condition || null,
+      hepatic_condition: values.hepatic_condition || null,
+      cardiac_condition: values.cardiac_condition || null,
+      gastrointestinal_history: values.gastrointestinal_history || null,
+      hypertension: values.hypertension,
+      diabetes: values.diabetes,
+      pregnancy_or_lactation: values.pregnancy_or_lactation,
+      adverse_reactions: splitList(values.adverse_reactions ?? ""),
+      clinical_notes: values.clinical_notes || null,
     });
 
     if (!initialPatient) {
@@ -74,6 +101,15 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
         allergies: "",
         comorbidities: "",
         current_medications: "",
+        renal_condition: "",
+        hepatic_condition: "",
+        cardiac_condition: "",
+        gastrointestinal_history: "",
+        hypertension: false,
+        diabetes: false,
+        pregnancy_or_lactation: false,
+        adverse_reactions: "",
+        clinical_notes: "",
       });
     }
   }
@@ -146,6 +182,50 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       <label className="grid gap-1.5">
         <span className="label">Medicamentos contínuos</span>
         <input className="field" {...register("current_medications")} />
+      </label>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="grid gap-1.5">
+          <span className="label">Condição renal</span>
+          <input className="field" {...register("renal_condition")} />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="label">Condição hepática</span>
+          <input className="field" {...register("hepatic_condition")} />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="label">Condição cardíaca</span>
+          <input className="field" {...register("cardiac_condition")} />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="label">Histórico gastrointestinal</span>
+          <input className="field" {...register("gastrointestinal_history")} />
+        </label>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
+          <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("hypertension")} />
+          Hipertensão
+        </label>
+        <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
+          <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("diabetes")} />
+          Diabetes
+        </label>
+        <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
+          <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("pregnancy_or_lactation")} />
+          Gravidez/lactação
+        </label>
+      </div>
+
+      <label className="grid gap-1.5">
+        <span className="label">Reações adversas anteriores</span>
+        <input className="field" {...register("adverse_reactions")} />
+      </label>
+
+      <label className="grid gap-1.5">
+        <span className="label">Observações clínicas</span>
+        <textarea className="field min-h-20 resize-y" {...register("clinical_notes")} />
       </label>
 
       <div className="flex justify-end">

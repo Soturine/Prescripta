@@ -3,9 +3,16 @@ import { FileText, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import AlertCard from "../components/AlertCard";
+import AlternativeMedicationsCard from "../components/AlternativeMedicationsCard";
+import ClinicalContextGraphCard from "../components/ClinicalContextGraphCard";
+import CompatibilityBadge from "../components/CompatibilityBadge";
+import DoseAccumulationCard from "../components/DoseAccumulationCard";
 import EmptyState from "../components/EmptyState";
 import LoadingState from "../components/LoadingState";
+import MedicationOrganProcessingCard from "../components/MedicationOrganProcessingCard";
+import PatientRiskFactorsCard from "../components/PatientRiskFactorsCard";
 import PrescriptionForm from "../components/PrescriptionForm";
+import RagEvidencePanel from "../components/RagEvidencePanel";
 import RiskBadge from "../components/RiskBadge";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -73,6 +80,9 @@ export default function PrescriptionCheck() {
       dose_mg: lastPayload.dose_mg,
       frequency_per_day: lastPayload.frequency_per_day,
       route: lastPayload.route,
+      duration_days: lastPayload.duration_days,
+      indication: lastPayload.indication,
+      professional_notes: lastPayload.professional_notes,
       user_profile: user.role,
     };
   }
@@ -124,6 +134,7 @@ export default function PrescriptionCheck() {
               <div className="flex flex-wrap gap-2">
                 <RiskBadge status={checkMutation.data.status} />
                 <RiskBadge level={checkMutation.data.risk_level} />
+                <CompatibilityBadge level={checkMutation.data.compatibility.level} />
               </div>
             </div>
             <div className="mt-4 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
@@ -163,6 +174,39 @@ export default function PrescriptionCheck() {
               ) : null}
             </div>
           </div>
+
+          <DoseAccumulationCard summary={checkMutation.data.dose_summary} />
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-bold text-ink">Compatibilidade paciente–medicação</h2>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <CompatibilityBadge level={checkMutation.data.compatibility.level} />
+              <span className="text-sm font-semibold text-slate-600">
+                Score demonstrativo: {checkMutation.data.compatibility.score}
+              </span>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              {checkMutation.data.compatibility.educational_notice}
+            </p>
+            {checkMutation.data.compatibility.reasons.length ? (
+              <ul className="mt-3 grid gap-2 text-sm text-slate-600">
+                {checkMutation.data.compatibility.reasons.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+            ) : null}
+          </section>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <PatientRiskFactorsCard factors={checkMutation.data.patient_factors_considered} />
+            <MedicationOrganProcessingCard factors={checkMutation.data.medication_factors_considered} />
+          </div>
+
+          <RagEvidencePanel evidence={checkMutation.data.rag_evidence} />
+
+          <AlternativeMedicationsCard alternatives={checkMutation.data.alternatives} />
+
+          <ClinicalContextGraphCard graph={checkMutation.data.clinical_context_graph} />
 
           {checkMutation.data.alerts.length > 0 ? (
             <div className="grid gap-3">
@@ -209,6 +253,14 @@ export default function PrescriptionCheck() {
               <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-medium leading-6 text-amber-900">
                 {explanationMutation.data.educational_notice}
               </p>
+              {explanationMutation.data.missing_patient_data.length ? (
+                <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <h3 className="text-sm font-bold text-ink">Dados ainda faltantes</h3>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {explanationMutation.data.missing_patient_data.join(", ")}
+                  </p>
+                </div>
+              ) : null}
             </section>
           ) : null}
         </section>
