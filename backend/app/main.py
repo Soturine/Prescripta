@@ -24,8 +24,8 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.3.0",
-    description="API educacional para apoio demonstrativo a prescricao segura.",
+    version="0.4.0",
+    description="API educacional para apoio demonstrativo à prescrição segura.",
     lifespan=lifespan,
 )
 

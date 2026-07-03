@@ -51,7 +51,7 @@ def get_medication(
     medication = MedicationRepository(db).get(medication_id)
     if medication is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento nao encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento não encontrado."
         )
     return medication
 
@@ -67,7 +67,7 @@ def update_medication(
     medication = repository.get(medication_id)
     if medication is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento nao encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento não encontrado."
         )
     updated = repository.update(medication, payload)
     AuditService(db).record_action(

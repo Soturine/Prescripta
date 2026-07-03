@@ -30,6 +30,8 @@ class AuditService:
             dose_mg=prescription.dose_mg,
             frequency_per_day=prescription.frequency_per_day,
             route=prescription.route,
+            duration_days=prescription.duration_days,
+            indication=prescription.indication,
             status=result.status.value,
             risk_level=result.risk_level.value,
             alerts=[alert.to_dict() for alert in result.alerts],
@@ -49,7 +51,10 @@ class AuditService:
                 "dose_mg": prescription.dose_mg,
                 "frequency_per_day": prescription.frequency_per_day,
                 "route": prescription.route,
+                "duration_days": prescription.duration_days,
+                "indication": prescription.indication,
                 "alerts_count": len(result.alerts),
+                "compatibility": result.compatibility.get("level"),
             },
         )
         return prescription_audit

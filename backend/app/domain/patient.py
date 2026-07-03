@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
 
@@ -14,6 +14,17 @@ class Patient:
     allergies: list[str]
     comorbidities: list[str]
     current_medications: list[str]
+    renal_condition: str | None = None
+    hepatic_condition: str | None = None
+    cardiac_condition: str | None = None
+    gastrointestinal_history: str | None = None
+    hypertension: bool = False
+    diabetes: bool = False
+    pregnancy_or_lactation: bool | None = None
+    adverse_reactions: list[str] | None = None
+    clinical_notes: str | None = None
+    clinical_profile_reviewed_at: datetime | None = None
+    clinical_profile_completeness_score: float = 0
 
     @property
     def computed_age(self) -> int | None:
@@ -40,4 +51,15 @@ class Patient:
             allergies=list(record.allergies or []),
             comorbidities=list(record.comorbidities or []),
             current_medications=list(record.current_medications or []),
+            renal_condition=record.renal_condition,
+            hepatic_condition=record.hepatic_condition,
+            cardiac_condition=record.cardiac_condition,
+            gastrointestinal_history=record.gastrointestinal_history,
+            hypertension=record.hypertension,
+            diabetes=record.diabetes,
+            pregnancy_or_lactation=record.pregnancy_or_lactation,
+            adverse_reactions=list(record.adverse_reactions or []),
+            clinical_notes=record.clinical_notes,
+            clinical_profile_reviewed_at=record.clinical_profile_reviewed_at,
+            clinical_profile_completeness_score=record.clinical_profile_completeness_score or 0,
         )
