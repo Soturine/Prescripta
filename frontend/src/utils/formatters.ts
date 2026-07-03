@@ -56,6 +56,7 @@ export function formatAuditAction(action: string) {
   const labels: Record<string, string> = {
     "patient.create": "Criou paciente",
     "patient.update": "Editou paciente",
+    "patient.quick_triage": "Atualizou triagem clínica",
     "medication.create": "Criou medicamento",
     "medication.update": "Editou medicamento",
     "prescription.check": "Verificou prescrição",

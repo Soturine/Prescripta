@@ -8,8 +8,29 @@ O formato segue Keep a Changelog e o versionamento segue SemVer quando aplicáve
 
 ### Planned
 
-- Exportação de relatórios.
 - Docker, PostgreSQL, migrações e deploy demonstrativo.
+
+## [0.4.0] - 2026-07-02
+
+### Added
+
+- Perfil clínico inteligente do paciente com condições renal, hepática, cardíaca, gastrointestinal, hipertensão, diabetes, gravidez/lactação, reações adversas e completude.
+- Triagem rápida com preservação de histórico e auditoria.
+- Metadados clínicos de medicamento: duração máxima, dose acumulada máxima, limites por condição, cautelas por órgão/sistema, efeitos adversos e grupo de alternativas.
+- Regras determinísticas para dose acumulada, duração, cautela renal/hepática/gastrointestinal/cardiaca, cautela em idosos, reação adversa e perfil incompleto.
+- Compatibilidade paciente–medicação com score demonstrativo, fatores considerados e justificativas.
+- RAG clínico demonstrativo com base interna em Markdown e busca textual normalizada.
+- Clinical Context Graph lógico em JSON e card no frontend.
+- Alternativas terapêuticas avaliadas pelo motor de risco antes de aparecerem como opções para avaliação profissional.
+- IA explicativa multi-provider com OpenAI/OpenAI-compatible/local configurável e fallback determinístico.
+- Script Windows `scripts/start-prescripta.ps1`.
+- Documentação clínica, RAG, dados, arquitetura, maturidade e release v0.4.0.
+
+### Security
+
+- A IA continua sem poder de alterar status, risco, bloqueio, dose, recomendação final ou auditoria.
+- Base RAG marcada como demonstrativa e não clínica real.
+- Auditoria registra triagem rápida e alterações relevantes de perfil clínico.
 
 ## [0.3.0] - 2026-07-02
 

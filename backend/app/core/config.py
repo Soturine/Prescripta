@@ -22,6 +22,7 @@ class Settings:
     ai_provider: str = os.getenv("PRESCRIPTA_AI_PROVIDER", "fallback")
     ai_api_key: str = os.getenv("PRESCRIPTA_AI_API_KEY", "")
     ai_model: str = os.getenv("PRESCRIPTA_AI_MODEL", "gpt-5.5")
+    ai_base_url: str = os.getenv("PRESCRIPTA_AI_BASE_URL", "")
     cors_origins: list[str] = field(
         default_factory=lambda: _split_origins(
             os.getenv(

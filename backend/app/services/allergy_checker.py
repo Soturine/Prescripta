@@ -19,10 +19,10 @@ def check_allergies(patient: Patient, medication: Medication) -> list[Alert]:
             code="ALLERGY_BLOCK",
             title="Alergia relevante identificada",
             description=(
-                "A alergia registrada coincide com o medicamento, principio ativo "
-                "ou classe terapeutica."
+                "A alergia registrada coincide com o medicamento, princípio ativo "
+                "ou classe terapêutica."
             ),
             severity=RiskLevel.CRITICAL,
-            recommendation="Bloquear a prescricao e revisar alternativa terapeutica.",
+            recommendation="Bloquear a prescrição e revisar alternativa terapêutica.",
         )
     ]

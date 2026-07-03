@@ -11,6 +11,7 @@ from app.domain.medication import Medication
 from app.domain.patient import Patient
 from app.domain.prescription import PrescriptionInput
 from app.domain.user import UserRole
+from app.knowledge.rag_service import ClinicalRAGService
 from app.repositories.medication_repository import MedicationRepository
 from app.repositories.patient_repository import PatientRepository
 from app.schemas.prescription_schema import (
@@ -21,7 +22,9 @@ from app.schemas.prescription_schema import (
     PrescriptionExplainResponse,
 )
 from app.services.ai_explainer import AIExplainer
+from app.services.alternative_service import AlternativeService
 from app.services.audit_service import AuditService
+from app.services.clinical_context_graph import build_clinical_context_graph
 from app.services.risk_engine import RiskEngine
 
 router = APIRouter(prefix="/prescriptions", tags=["prescriptions"])
@@ -41,13 +44,13 @@ def check_prescription(
     patient_record = PatientRepository(db).get(payload.patient_id)
     if patient_record is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nao encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
         )
 
     medication_record = MedicationRepository(db).get(payload.medication_id)
     if medication_record is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento nao encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento não encontrado."
         )
 
     patient = Patient.from_record(patient_record)
@@ -56,8 +59,30 @@ def check_prescription(
         dose_mg=payload.dose_mg,
         frequency_per_day=payload.frequency_per_day,
         route=payload.route,
+        duration_days=payload.duration_days,
+        indication=payload.indication,
+        professional_notes=payload.professional_notes,
     )
     result = RiskEngine().evaluate(patient, medication, prescription)
+    rag_evidence = ClinicalRAGService().retrieve_for_prescription(patient, medication, prescription)
+    result.clinical_context_graph.update(
+        build_clinical_context_graph(
+            patient,
+            medication,
+            prescription,
+            [alert.to_dict() for alert in result.alerts],
+            rag_evidence,
+        )
+    )
+    should_include_alternatives = (
+        result.compatibility["level"] == "baixa" or result.status.value == "bloqueado"
+    )
+    alternatives = AlternativeService(MedicationRepository(db)).evaluated_options(
+        patient,
+        medication,
+        prescription,
+        should_include=should_include_alternatives,
+    )
     audit = AuditService(db).record_check(patient, medication, prescription, result, current_user)
 
     return PrescriptionCheckResponse(
@@ -67,6 +92,13 @@ def check_prescription(
         recommendation=result.recommendation,
         human_review_required=result.human_review_required,
         audit_id=audit.id,
+        dose_summary=result.dose_summary,
+        compatibility=result.compatibility,
+        patient_factors_considered=result.compatibility["patient_factors_considered"],
+        medication_factors_considered=result.compatibility["medication_factors_considered"],
+        rag_evidence=rag_evidence,
+        clinical_context_graph=result.clinical_context_graph,
+        alternatives=alternatives,
     )
 
 

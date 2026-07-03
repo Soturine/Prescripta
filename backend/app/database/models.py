@@ -19,6 +19,21 @@ class PatientModel(Base):
     allergies: Mapped[list[str]] = mapped_column(JSON, default=list)
     comorbidities: Mapped[list[str]] = mapped_column(JSON, default=list)
     current_medications: Mapped[list[str]] = mapped_column(JSON, default=list)
+    renal_condition: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    hepatic_condition: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    cardiac_condition: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    gastrointestinal_history: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    hypertension: Mapped[bool] = mapped_column(default=False, nullable=False)
+    diabetes: Mapped[bool] = mapped_column(default=False, nullable=False)
+    pregnancy_or_lactation: Mapped[bool | None] = mapped_column(default=None, nullable=True)
+    adverse_reactions: Mapped[list[str]] = mapped_column(JSON, default=list)
+    clinical_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    clinical_profile_reviewed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    clinical_profile_completeness_score: Mapped[float] = mapped_column(
+        Float, default=0, nullable=False
+    )
 
 
 class MedicationModel(Base):
@@ -29,8 +44,25 @@ class MedicationModel(Base):
     active_ingredient: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
     therapeutic_class: Mapped[str] = mapped_column(String(160), nullable=False)
     max_daily_dose_mg: Mapped[float] = mapped_column(Float, nullable=False)
+    max_duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_cumulative_dose_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    condition_specific_limits: Mapped[dict] = mapped_column(JSON, default=dict)
     allowed_routes: Mapped[list[str]] = mapped_column(JSON, default=list)
     contraindications: Mapped[list[str]] = mapped_column(JSON, default=list)
+    renal_caution: Mapped[bool] = mapped_column(default=False, nullable=False)
+    hepatic_caution: Mapped[bool] = mapped_column(default=False, nullable=False)
+    cardiac_caution: Mapped[bool] = mapped_column(default=False, nullable=False)
+    gastrointestinal_caution: Mapped[bool] = mapped_column(default=False, nullable=False)
+    elderly_caution: Mapped[bool] = mapped_column(default=False, nullable=False)
+    metabolism_organs: Mapped[list[str]] = mapped_column(JSON, default=list)
+    elimination_organs: Mapped[list[str]] = mapped_column(JSON, default=list)
+    organs_involved: Mapped[list[str]] = mapped_column(JSON, default=list)
+    relevant_adverse_effects: Mapped[list[str]] = mapped_column(JSON, default=list)
+    structured_contraindications: Mapped[list[str]] = mapped_column(JSON, default=list)
+    therapeutic_action: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    alternative_group: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    related_medications: Mapped[list[str]] = mapped_column(JSON, default=list)
+    knowledge_source: Mapped[str | None] = mapped_column(String(220), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
@@ -62,6 +94,8 @@ class PrescriptionAuditModel(Base):
     dose_mg: Mapped[float] = mapped_column(Float, nullable=False)
     frequency_per_day: Mapped[int] = mapped_column(Integer, nullable=False)
     route: Mapped[str] = mapped_column(String(80), nullable=False)
+    duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    indication: Mapped[str | None] = mapped_column(String(180), nullable=True)
     status: Mapped[str] = mapped_column(String(40), nullable=False)
     risk_level: Mapped[str] = mapped_column(String(40), nullable=False)
     checked_at: Mapped[datetime] = mapped_column(

@@ -2,11 +2,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
+import ClinicalContextGraphCard from "../components/ClinicalContextGraphCard";
+import ClinicalProfileCard from "../components/ClinicalProfileCard";
 import LoadingState from "../components/LoadingState";
 import PatientForm from "../components/PatientForm";
+import QuickTriageForm from "../components/QuickTriageForm";
 import { useAuth } from "../context/AuthContext";
-import { fetchPatient, updatePatient } from "../services/api";
-import type { PatientPayload } from "../types/patient";
+import {
+  fetchPatient,
+  fetchPatientClinicalContext,
+  quickTriagePatient,
+  updatePatient,
+} from "../services/api";
+import type { PatientPayload, QuickTriagePayload } from "../types/patient";
 
 export default function PatientDetails() {
   const { canAccess } = useAuth();
@@ -19,11 +27,25 @@ export default function PatientDetails() {
     queryFn: () => fetchPatient(patientId),
     enabled: Number.isFinite(patientId),
   });
+  const { data: clinicalContext } = useQuery({
+    queryKey: ["patients", patientId, "clinical-context"],
+    queryFn: () => fetchPatientClinicalContext(patientId),
+    enabled: Number.isFinite(patientId),
+  });
   const updateMutation = useMutation({
     mutationFn: (payload: PatientPayload) => updatePatient(patientId, payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["patients"] });
       await queryClient.invalidateQueries({ queryKey: ["patients", patientId] });
+    },
+  });
+  const quickTriageMutation = useMutation({
+    mutationFn: (payload: QuickTriagePayload) => quickTriagePatient(patientId, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["patients"] });
+      await queryClient.invalidateQueries({ queryKey: ["patients", patientId] });
+      await queryClient.invalidateQueries({ queryKey: ["patients", patientId, "clinical-context"] });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
     },
   });
 
@@ -107,6 +129,26 @@ export default function PatientDetails() {
           </dl>
         )}
       </section>
+
+      <ClinicalProfileCard patient={patient} />
+
+      {canManagePatient ? (
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-bold text-ink">Triagem rápida</h2>
+          <div className="mt-5">
+            <QuickTriageForm
+              onSubmit={async (payload) => {
+                await quickTriageMutation.mutateAsync(payload);
+              }}
+            />
+          </div>
+          {quickTriageMutation.isSuccess ? (
+            <p className="mt-3 text-sm font-semibold text-mint">Triagem atualizada.</p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {clinicalContext ? <ClinicalContextGraphCard graph={clinicalContext} /> : null}
     </div>
   );
 }

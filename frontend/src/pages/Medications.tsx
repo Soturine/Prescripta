@@ -88,13 +88,15 @@ export default function Medications() {
         {!isLoading && medications.length > 0 ? (
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[880px] text-left text-sm">
+              <table className="w-full min-w-[1080px] text-left text-sm">
                 <thead className="bg-slate-50 text-xs font-bold uppercase tracking-normal text-slate-500">
                   <tr>
                     <th className="px-4 py-3">Nome</th>
                     <th className="px-4 py-3">Princípio ativo</th>
                     <th className="px-4 py-3">Classe</th>
                     <th className="px-4 py-3">Dose máxima</th>
+                    <th className="px-4 py-3">Duração</th>
+                    <th className="px-4 py-3">Cautelas</th>
                     <th className="px-4 py-3">Vias</th>
                     <th className="px-4 py-3 text-right">Ação</th>
                   </tr>
@@ -106,6 +108,19 @@ export default function Medications() {
                       <td className="px-4 py-3">{medication.active_ingredient}</td>
                       <td className="px-4 py-3">{medication.therapeutic_class}</td>
                       <td className="px-4 py-3">{formatDose(medication.max_daily_dose_mg)}</td>
+                      <td className="px-4 py-3">
+                        {medication.max_duration_days ? `${medication.max_duration_days} dias` : "-"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {[
+                          medication.renal_caution ? "renal" : "",
+                          medication.hepatic_caution ? "hepática" : "",
+                          medication.gastrointestinal_caution ? "gastrointestinal" : "",
+                          medication.elderly_caution ? "idosos" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(", ") || "-"}
+                      </td>
                       <td className="px-4 py-3">{joinList(medication.allowed_routes)}</td>
                       <td className="px-4 py-3 text-right">
                         {canManageMedication ? (

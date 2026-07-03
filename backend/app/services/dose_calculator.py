@@ -17,12 +17,12 @@ def check_max_daily_dose(
     return [
         Alert(
             code="MAX_DAILY_DOSE_EXCEEDED",
-            title="Dose diaria acima do limite",
+            title="Dose diária acima do limite",
             description=(
-                f"Dose diaria calculada: {daily_total:g} mg. "
+                f"Dose diária calculada: {daily_total:g} mg. "
                 f"Limite cadastrado: {medication.max_daily_dose_mg:g} mg."
             ),
             severity=RiskLevel.CRITICAL,
-            recommendation="Bloquear a prescricao e recalcular dose/frequencia.",
+            recommendation="Bloquear a prescrição e recalcular dose/frequência.",
         )
     ]

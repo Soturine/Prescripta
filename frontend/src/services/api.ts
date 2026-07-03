@@ -3,7 +3,12 @@ import axios from "axios";
 import type { AuditRecord, DashboardSummary } from "../types/audit";
 import type { LoginPayload, LoginResponse } from "../types/auth";
 import type { Medication, MedicationPayload } from "../types/medication";
-import type { Patient, PatientPayload } from "../types/patient";
+import type {
+  ClinicalContextGraph,
+  Patient,
+  PatientPayload,
+  QuickTriagePayload,
+} from "../types/patient";
 import type {
   PrescriptionCheckPayload,
   PrescriptionCheckResult,
@@ -73,6 +78,11 @@ export async function fetchPatient(id: number) {
   return response.data;
 }
 
+export async function fetchPatientClinicalContext(id: number) {
+  const response = await api.get<ClinicalContextGraph>(`/patients/${id}/clinical-context`);
+  return response.data;
+}
+
 export async function createPatient(payload: PatientPayload) {
   const response = await api.post<Patient>("/patients", payload);
   return response.data;
@@ -80,6 +90,11 @@ export async function createPatient(payload: PatientPayload) {
 
 export async function updatePatient(id: number, payload: PatientPayload) {
   const response = await api.put<Patient>(`/patients/${id}`, payload);
+  return response.data;
+}
+
+export async function quickTriagePatient(id: number, payload: QuickTriagePayload) {
+  const response = await api.patch<Patient>(`/patients/${id}/quick-triage`, payload);
   return response.data;
 }
 

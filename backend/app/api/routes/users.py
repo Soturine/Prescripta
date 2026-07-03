@@ -28,7 +28,7 @@ def create_user(payload: UserCreate, db: DbSession, current_user: AdminUser) -> 
     if repository.get_by_email(payload.email) is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="E-mail ja cadastrado.",
+            detail="E-mail já cadastrado.",
         )
     user = repository.create(
         name=payload.name,
@@ -57,7 +57,7 @@ def update_user_status(
     repository = UserRepository(db)
     user = repository.get(user_id)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario nao encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
     updated = repository.set_status(user, payload.is_active)
     AuditService(db).record_action(
         user=current_user,
@@ -79,7 +79,7 @@ def update_user_role(
     repository = UserRepository(db)
     user = repository.get(user_id)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario nao encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
     updated = repository.set_role(user, payload.role.value)
     AuditService(db).record_action(
         user=current_user,

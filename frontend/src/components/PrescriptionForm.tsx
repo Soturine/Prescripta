@@ -14,6 +14,9 @@ const prescriptionSchema = z.object({
   dose_mg: z.number().positive("Informe a dose."),
   frequency_per_day: z.number().int().positive().max(24),
   route: z.string().min(2, "Informe a via."),
+  duration_days: z.number().int().positive().max(365).optional(),
+  indication: z.string().optional(),
+  professional_notes: z.string().optional(),
 });
 
 type PrescriptionFormValues = z.infer<typeof prescriptionSchema>;
@@ -44,6 +47,9 @@ export default function PrescriptionForm({
       dose_mg: 100,
       frequency_per_day: 1,
       route: "oral",
+      duration_days: 3,
+      indication: "dor",
+      professional_notes: "",
     },
   });
 
@@ -55,8 +61,17 @@ export default function PrescriptionForm({
     }));
   }, [medications, patients, reset]);
 
+  async function submit(values: PrescriptionFormValues) {
+    await onSubmit({
+      ...values,
+      duration_days: values.duration_days ?? null,
+      indication: values.indication || null,
+      professional_notes: values.professional_notes || null,
+    });
+  }
+
   return (
-    <form className="grid gap-4" onSubmit={handleSubmit(onSubmit)}>
+    <form className="grid gap-4" onSubmit={handleSubmit(submit)}>
       <div className="grid gap-4 md:grid-cols-2">
         <label className="grid gap-1.5">
           <span className="label">Paciente</span>
@@ -122,6 +137,33 @@ export default function PrescriptionForm({
           {errors.route ? (
             <span className="text-xs text-danger">{errors.route.message}</span>
           ) : null}
+        </label>
+
+        <label className="grid gap-1.5">
+          <span className="label">Duração em dias</span>
+          <input
+            className="field"
+            disabled={disabled}
+            min="1"
+            type="number"
+            {...register("duration_days", {
+              setValueAs: (value) => (value === "" ? undefined : Number(value)),
+            })}
+          />
+        </label>
+
+        <label className="grid gap-1.5">
+          <span className="label">Indicação demonstrativa</span>
+          <input className="field" disabled={disabled} {...register("indication")} />
+        </label>
+
+        <label className="grid gap-1.5 md:col-span-2">
+          <span className="label">Observações do profissional</span>
+          <textarea
+            className="field min-h-20 resize-y"
+            disabled={disabled}
+            {...register("professional_notes")}
+          />
         </label>
       </div>
 
