@@ -91,8 +91,9 @@ export default function Dashboard() {
       </section>
 
       <section className="rounded-lg border border-cyan-200 bg-cyan-50 p-4 text-sm leading-6 text-cyan-900">
-        Prescripta é demonstrativo e educacional. As decisões críticas desta versão vêm de regras
-        determinísticas cadastradas no backend.
+        Prescripta v0.5.0 prioriza catalogo farmacologico Brasil/Anvisa/DCB, principio ativo
+        primeiro, aliases comerciais e vocabulario clinico controlado. As decisoes criticas
+        continuam vindo de regras deterministicas cadastradas no backend.
       </section>
     </div>
   );

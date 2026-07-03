@@ -31,10 +31,10 @@ export type PatientPayload = Omit<
 >;
 
 export type QuickTriagePayload = {
-  renal_condition?: boolean | null;
-  hepatic_condition?: boolean | null;
-  cardiac_condition?: boolean | null;
-  gastrointestinal_history?: boolean | null;
+  renal_condition?: boolean | string | null;
+  hepatic_condition?: boolean | string | null;
+  cardiac_condition?: boolean | string | null;
+  gastrointestinal_history?: boolean | string | null;
   hypertension?: boolean | null;
   diabetes?: boolean | null;
   pregnancy_or_lactation?: boolean | null;
