@@ -1,53 +1,55 @@
-# Revisao De Maturidade v0.3.0
+# Revisão De Maturidade v0.3.0
 
 Data: 2026-07-02.
 
+> Nota: a v0.4.0 supersede esta revisão ao adicionar perfil clínico inteligente, dose acumulada, RAG interno e alternativas avaliadas. Este documento permanece como registro histórico da release v0.3.0.
+
 ## Perguntas
 
-**O projeto parece maduro para portfolio?**
-Sim. A v0.3.0 tem dominio separado, backend real, frontend consumindo API, testes, CI, releases, screenshots, GIF, changelog, roadmap e documentacao de seguranca.
+**O projeto parece maduro para portfólio?**
+Sim. A v0.3.0 tem domínio separado, backend real, frontend consumindo API, testes, CI, releases, screenshots, GIF, changelog, roadmap e documentação de segurança.
 
-**Esta mais completo que um prototipo Streamlit monolitico?**
-Sim. Prescripta separa frontend, backend, services, schemas, repositories, dominio e documentacao. Isso deixa o projeto mais facil de testar, revisar e evoluir.
+**Está mais completo que um protótipo Streamlit monolítico?**
+Sim. Prescripta separa frontend, backend, services, schemas, repositories, domínio e documentação. Isso deixa o projeto mais fácil de testar, revisar e evoluir.
 
-**A arquitetura esta bem separada?**
-Sim. Regras ficam no backend, UI fica no React, persistencia fica em repositories e contratos ficam em schemas Pydantic/TypeScript.
+**A arquitetura está bem separada?**
+Sim. Regras ficam no backend, UI fica no React, persistência fica em repositories e contratos ficam em schemas Pydantic/TypeScript.
 
-**O backend e realmente a fonte das regras?**
-Sim. O motor de risco e os verificadores determinam status, risco, alertas e recomendacao. O frontend apenas apresenta o resultado.
+**O backend é realmente a fonte das regras?**
+Sim. O motor de risco e os verificadores determinam status, risco, alertas e recomendação. O frontend apenas apresenta o resultado.
 
-**O frontend esta consumindo API real?**
-Sim. Axios e React Query chamam endpoints reais para login, dashboard, pacientes, medicamentos, checagem, auditoria, usuarios e explicacao.
+**O frontend está consumindo API real?**
+Sim. Axios e React Query chamam endpoints reais para login, dashboard, pacientes, medicamentos, checagem, auditoria, usuários e explicação.
 
-**A auditoria esta boa?**
-Boa para MVP. Ela registra checagens, usuario responsavel, acoes administrativas e metadados da explicacao de IA. Para v1.0, faltam filtros avancados, exportacao e politicas de retencao.
+**A auditoria está boa?**
+Boa para MVP. Ela registra checagens, usuário responsável, ações administrativas e metadados da explicação de IA. Para v1.0, faltam filtros avançados, exportação e políticas de retenção.
 
-**Seguranca basica esta boa para MVP?**
-Sim. Ha hash Argon2, JWT, roles no backend, threat model e aviso sobre `localStorage`. Para producao, ainda faltam cookies seguros, rotacao de segredo, revogacao, rate limit e hardening.
+**Segurança básica está boa para MVP?**
+Sim. Há hash Argon2, JWT, roles no backend, threat model e aviso sobre `localStorage`. Para produção, ainda faltam cookies seguros, rotação de segredo, revogação, rate limit e hardening.
 
-**IA esta limitada corretamente?**
-Sim. Ela explica alertas existentes, funciona por clique, tem fallback deterministico, nao altera status/risco e preserva codigos criticos.
+**IA está limitada corretamente?**
+Sim. Ela explica alertas existentes, funciona por clique, tem fallback determinístico, não altera status/risco e preserva códigos críticos.
 
 **O README vende bem o projeto?**
 Sim. A v0.3.0 passa a destacar GIF, screenshots, IA explicativa, credenciais demonstrativas, links de maturidade e benchmark.
 
-**O projeto passa impressao de healthtech seria?**
-Sim, dentro do escopo educacional. A combinacao de motor deterministico, auditoria, seguranca, testes e avisos de uso responsavel comunica cuidado tecnico.
+**O projeto passa impressão de healthtech séria?**
+Sim, dentro do escopo educacional. A combinação de motor determinístico, auditoria, segurança, testes e avisos de uso responsável comunica cuidado técnico.
 
 **O que ainda falta para v1.0?**
 
 - Docker Compose;
-- PostgreSQL e migracoes;
-- filtros e exportacao de auditoria;
-- relatorios PDF;
+- PostgreSQL e migrações;
+- filtros e exportação de auditoria;
+- relatórios PDF;
 - logs estruturados;
 - observabilidade;
 - seeds revisados por especialista;
 - deploy demonstrativo;
-- politicas de privacidade e retencao mais detalhadas;
-- hardening de sessao e segredo;
+- políticas de privacidade e retenção mais detalhadas;
+- hardening de sessão e segredo;
 - testes end-to-end automatizados.
 
-## Conclusao
+## Conclusão
 
-Prescripta v0.3.0 esta pronto como projeto de portfolio tecnico: original, modular, testavel, documentado e apresentavel. Ainda nao e produto clinico e nao deve ser usado em decisoes reais, mas demonstra com clareza uma base profissional de healthtech educacional.
+Prescripta v0.3.0 está pronto como projeto de portfólio técnico: original, modular, testável, documentado e apresentável. Ainda não é produto clínico e não deve ser usado em decisões reais, mas demonstra com clareza uma base profissional de healthtech educacional.

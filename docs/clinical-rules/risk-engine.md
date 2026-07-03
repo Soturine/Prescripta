@@ -9,26 +9,48 @@ O motor de risco fica em `backend/app/services/risk_engine.py`.
 - Dose em mg.
 - Frequência por dia.
 - Via de administração.
+- Duração em dias.
+- Indicação ou quadro demonstrativo.
+- Observações do profissional.
 
 ## Regras
 
 - Alergia ao medicamento, princípio ativo ou classe: alerta crítico e bloqueio.
 - Dose diária acima da dose máxima: alerta crítico e bloqueio.
+- Duração planejada acima do limite demonstrativo: alerta alto.
+- Dose acumulada estimada acima do limite acumulado: alerta alto.
+- Limite por condição clínica: alerta quando o paciente possui condição com limite específico.
 - Interação medicamentosa demonstrativa: alerta alto ou crítico.
 - Cinco ou mais medicamentos contínuos: alerta moderado.
 - Idade maior ou igual a 65 anos: aumenta risco em um nível.
+- Cautela em idosos: alerta quando o medicamento possui esse marcador.
+- Condição renal, hepática, cardíaca ou gastrointestinal relacionada à cautela do medicamento: alerta alto ou moderado.
+- Reação adversa prévia relacionada ao medicamento, classe ou efeito: alerta alto.
 - Comorbidade contraindicada: alerta alto.
 - Via não permitida: alerta alto.
+- Perfil clínico incompleto: aviso de revisão quando há contexto clínico parcial.
 
-## Status
+## Saídas
 
-- `liberado`: risco baixo.
-- `atencao`: risco moderado ou alto.
-- `bloqueado`: risco crítico.
+- `prescription_status`: `liberado`, `atencao` ou `bloqueado`.
+- `risk_level`: baixo, moderado, alto ou crítico.
+- Alertas com severidade, código, mensagem e recomendação.
+- Resumo de dose diária, duração e dose acumulada.
+- Compatibilidade paciente-medicação.
+- Fatores do paciente e do medicamento considerados.
+- Clinical Context Graph lógico.
+
+## Compatibilidade
+
+- `alta`: sem riscos relevantes e perfil clínico suficientemente completo.
+- `moderada`: alertas altos ou múltiplos moderados.
+- `baixa`: bloqueio crítico ou alerta crítico.
+
+Compatibilidade não é liberação automática. Ela organiza sinais para revisão profissional.
 
 ## Revisão Humana
 
-Exigida quando o status não é `liberado`.
+Exigida quando o status não é `liberado`, quando a compatibilidade é baixa/moderada ou quando faltam dados relevantes do perfil clínico.
 
 ## Observação
 
