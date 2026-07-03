@@ -4,7 +4,14 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import type { Patient, PatientPayload } from "../types/patient";
+import {
+  cardiacOptions,
+  gastrointestinalOptions,
+  hepaticOptions,
+  renalOptions,
+} from "../utils/clinicalVocabulary";
 import { joinList, splitList } from "../utils/formatters";
+import ControlledSelect from "./ControlledSelect";
 
 const patientSchema = z
   .object({
@@ -170,7 +177,7 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
 
         <label className="grid gap-1.5">
           <span className="label">Alergias</span>
-          <input className="field" {...register("allergies")} />
+          <input className="field" placeholder="dipirona" {...register("allergies")} />
         </label>
       </div>
 
@@ -180,51 +187,47 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       </label>
 
       <label className="grid gap-1.5">
-        <span className="label">Medicamentos contínuos</span>
+        <span className="label">Medicamentos continuos</span>
         <input className="field" {...register("current_medications")} />
       </label>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="grid gap-1.5">
-          <span className="label">Condição renal</span>
-          <input className="field" {...register("renal_condition")} />
-        </label>
-        <label className="grid gap-1.5">
-          <span className="label">Condição hepática</span>
-          <input className="field" {...register("hepatic_condition")} />
-        </label>
-        <label className="grid gap-1.5">
-          <span className="label">Condição cardíaca</span>
-          <input className="field" {...register("cardiac_condition")} />
-        </label>
-        <label className="grid gap-1.5">
-          <span className="label">Histórico gastrointestinal</span>
-          <input className="field" {...register("gastrointestinal_history")} />
-        </label>
+        <ControlledSelect label="Condicao renal" options={renalOptions} {...register("renal_condition")} />
+        <ControlledSelect label="Condicao hepatica" options={hepaticOptions} {...register("hepatic_condition")} />
+        <ControlledSelect label="Risco cardiovascular" options={cardiacOptions} {...register("cardiac_condition")} />
+        <ControlledSelect
+          label="Historico gastrointestinal"
+          options={gastrointestinalOptions}
+          {...register("gastrointestinal_history")}
+        />
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
         <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
           <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("hypertension")} />
-          Hipertensão
+          Hipertensao
         </label>
         <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
           <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("diabetes")} />
           Diabetes
         </label>
         <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
-          <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("pregnancy_or_lactation")} />
-          Gravidez/lactação
+          <input
+            className="h-4 w-4 accent-ocean"
+            type="checkbox"
+            {...register("pregnancy_or_lactation")}
+          />
+          Gravidez/lactacao
         </label>
       </div>
 
       <label className="grid gap-1.5">
-        <span className="label">Reações adversas anteriores</span>
+        <span className="label">Reacoes adversas anteriores</span>
         <input className="field" {...register("adverse_reactions")} />
       </label>
 
       <label className="grid gap-1.5">
-        <span className="label">Observações clínicas</span>
+        <span className="label">Observacoes clinicas</span>
         <textarea className="field min-h-20 resize-y" {...register("clinical_notes")} />
       </label>
 

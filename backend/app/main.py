@@ -4,7 +4,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import audit, auth, dashboard, medications, patients, prescriptions, users
+from app.api.routes import (
+    audit,
+    auth,
+    dashboard,
+    medication_catalog,
+    medications,
+    patients,
+    prescriptions,
+    users,
+)
 from app.core.config import settings
 from app.database.seed import seed_demo_data
 from app.database.session import SessionLocal, init_db
@@ -24,7 +33,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.4.0",
+    version="0.5.0",
     description="API educacional para apoio demonstrativo à prescrição segura.",
     lifespan=lifespan,
 )
@@ -40,6 +49,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix=settings.api_prefix)
 app.include_router(patients.router, prefix=settings.api_prefix)
 app.include_router(medications.router, prefix=settings.api_prefix)
+app.include_router(medication_catalog.router, prefix=settings.api_prefix)
 app.include_router(prescriptions.router, prefix=settings.api_prefix)
 app.include_router(dashboard.router, prefix=settings.api_prefix)
 app.include_router(audit.router, prefix=settings.api_prefix)

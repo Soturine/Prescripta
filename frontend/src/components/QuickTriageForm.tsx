@@ -4,13 +4,20 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import type { QuickTriagePayload } from "../types/patient";
+import {
+  cardiacOptions,
+  gastrointestinalOptions,
+  hepaticOptions,
+  renalOptions,
+} from "../utils/clinicalVocabulary";
 import { splitList } from "../utils/formatters";
+import ControlledSelect from "./ControlledSelect";
 
 const triageSchema = z.object({
-  renal_condition: z.boolean(),
-  hepatic_condition: z.boolean(),
-  cardiac_condition: z.boolean(),
-  gastrointestinal_history: z.boolean(),
+  renal_condition: z.string().optional(),
+  hepatic_condition: z.string().optional(),
+  cardiac_condition: z.string().optional(),
+  gastrointestinal_history: z.string().optional(),
   hypertension: z.boolean(),
   diabetes: z.boolean(),
   pregnancy_or_lactation: z.boolean(),
@@ -36,10 +43,10 @@ export default function QuickTriageForm({ onSubmit }: QuickTriageFormProps) {
   } = useForm<QuickTriageValues>({
     resolver: zodResolver(triageSchema),
     defaultValues: {
-      renal_condition: false,
-      hepatic_condition: false,
-      cardiac_condition: false,
-      gastrointestinal_history: false,
+      renal_condition: "",
+      hepatic_condition: "",
+      cardiac_condition: "",
+      gastrointestinal_history: "",
       hypertension: false,
       diabetes: false,
       pregnancy_or_lactation: false,
@@ -53,10 +60,10 @@ export default function QuickTriageForm({ onSubmit }: QuickTriageFormProps) {
 
   async function submit(values: QuickTriageValues) {
     await onSubmit({
-      renal_condition: values.renal_condition,
-      hepatic_condition: values.hepatic_condition,
-      cardiac_condition: values.cardiac_condition,
-      gastrointestinal_history: values.gastrointestinal_history,
+      renal_condition: values.renal_condition || null,
+      hepatic_condition: values.hepatic_condition || null,
+      cardiac_condition: values.cardiac_condition || null,
+      gastrointestinal_history: values.gastrointestinal_history || null,
       hypertension: values.hypertension,
       diabetes: values.diabetes,
       pregnancy_or_lactation: values.pregnancy_or_lactation,
@@ -69,36 +76,45 @@ export default function QuickTriageForm({ onSubmit }: QuickTriageFormProps) {
     reset();
   }
 
-  const toggles = [
-    ["renal_condition", "Possui problema nos rins?"],
-    ["hepatic_condition", "Possui problema no fígado?"],
-    ["cardiac_condition", "Possui problema cardíaco?"],
-    ["gastrointestinal_history", "Histórico de gastrite, úlcera ou sangramento?"],
-    ["hypertension", "Possui pressão alta?"],
-    ["diabetes", "Possui diabetes?"],
-    ["pregnancy_or_lactation", "Está grávida ou amamentando?"],
-  ] as const;
-
   return (
     <form className="grid gap-4" onSubmit={handleSubmit(submit)}>
-      <div className="grid gap-3 md:grid-cols-2">
-        {toggles.map(([field, label]) => (
-          <label
-            className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700"
-            key={field}
-          >
-            <input className="h-4 w-4 accent-ocean" type="checkbox" {...register(field)} />
-            {label}
-          </label>
-        ))}
+      <div className="grid gap-4 md:grid-cols-2">
+        <ControlledSelect label="Condicao renal" options={renalOptions} {...register("renal_condition")} />
+        <ControlledSelect label="Condicao hepatica" options={hepaticOptions} {...register("hepatic_condition")} />
+        <ControlledSelect label="Risco cardiovascular" options={cardiacOptions} {...register("cardiac_condition")} />
+        <ControlledSelect
+          label="Historico gastrointestinal"
+          options={gastrointestinalOptions}
+          {...register("gastrointestinal_history")}
+        />
       </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
+          <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("hypertension")} />
+          Hipertensao
+        </label>
+        <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
+          <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("diabetes")} />
+          Diabetes
+        </label>
+        <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
+          <input
+            className="h-4 w-4 accent-ocean"
+            type="checkbox"
+            {...register("pregnancy_or_lactation")}
+          />
+          Gestante/lactante
+        </label>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
         <label className="grid gap-1.5">
-          <span className="label">Alergias ou reações ruins</span>
-          <input className="field" {...register("allergies")} />
+          <span className="label">Alergias ou reacoes ruins</span>
+          <input className="field" placeholder="dipirona" {...register("allergies")} />
         </label>
         <label className="grid gap-1.5">
-          <span className="label">Medicamentos contínuos</span>
+          <span className="label">Medicamentos continuos</span>
           <input className="field" {...register("current_medications")} />
         </label>
         <label className="grid gap-1.5">
@@ -106,18 +122,18 @@ export default function QuickTriageForm({ onSubmit }: QuickTriageFormProps) {
           <input className="field" {...register("adverse_reactions")} />
         </label>
         <label className="grid gap-1.5">
-          <span className="label">Condição para revisar</span>
-          <input className="field" {...register("condition_to_review")} />
+          <span className="label">Condicao para revisar</span>
+          <input className="field" placeholder="diabetes tipo 2" {...register("condition_to_review")} />
         </label>
       </div>
       <label className="grid gap-1.5">
-        <span className="label">Observações clínicas relevantes</span>
+        <span className="label">Observacoes clinicas relevantes</span>
         <textarea className="field min-h-20 resize-y" {...register("clinical_notes")} />
       </label>
       <div className="flex justify-end">
         <button className="btn-primary" disabled={isSubmitting} type="submit">
           <Save aria-hidden="true" className="h-4 w-4" />
-          Salvar triagem rápida
+          Salvar triagem rapida
         </button>
       </div>
     </form>

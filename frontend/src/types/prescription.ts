@@ -46,6 +46,16 @@ export type RagEvidence = {
   score: number;
   matched_terms: string[];
   educational_notice: string;
+  jurisdiction: string;
+  source_name: string;
+  source_url: string | null;
+  evidence_type: string;
+  validation_status: string;
+  active_ingredient: string | null;
+  commercial_names: string[];
+  extracted_sections: string[];
+  retrieved_at: string | null;
+  version: string;
 };
 
 export type AlternativeMedication = {
@@ -97,9 +107,18 @@ export type PrescriptionExplanationPayload = PrescriptionCheckResult & {
   };
   medication: {
     id: number;
+    active_ingredient_id?: number | null;
     brand_name: string;
     active_ingredient: string;
+    commercial_aliases?: string[];
     therapeutic_class: string;
+    therapeutic_classes?: string[];
+    source_jurisdiction?: string;
+    evidence_source_type?: string;
+    validation_status?: string;
+    concentration?: string | null;
+    pharmaceutical_form?: string | null;
+    evidence_source_url?: string | null;
     max_daily_dose_mg: number;
     allowed_routes: string[];
     contraindications: string[];

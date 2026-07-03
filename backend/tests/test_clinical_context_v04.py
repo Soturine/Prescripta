@@ -249,7 +249,7 @@ def test_quick_triage_preserves_existing_data_and_audits(
 
     payload = triage_response.json()
     assert triage_response.status_code == 200
-    assert payload["renal_condition"] == "renal"
+    assert payload["renal_condition"] == "funcao_renal_a_revisar"
     assert payload["allergies"] == ["dipirona"]
     assert payload["current_medications"] == ["losartana", "metformina"]
     assert any(event["action"] == "patient.quick_triage" for event in audit_response.json())

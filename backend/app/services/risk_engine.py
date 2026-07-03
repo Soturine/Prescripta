@@ -4,6 +4,7 @@ from app.domain.patient import Patient
 from app.domain.prescription import PrescriptionInput, PrescriptionResult
 from app.services.allergy_checker import check_allergies
 from app.services.clinical_context_graph import build_clinical_context_graph
+from app.services.controlled_vocabulary import label_for_code
 from app.services.dose_calculator import check_max_daily_dose
 from app.services.interaction_checker import check_interactions
 from app.services.normalizer import has_any_match, normalize_terms
@@ -308,10 +309,10 @@ class RiskEngine:
     def _check_profile_completeness(self, patient: Patient) -> list[Alert]:
         has_clinical_context = any(
             [
-                patient.renal_condition,
-                patient.hepatic_condition,
-                patient.cardiac_condition,
-                patient.gastrointestinal_history,
+                label_for_code(patient.renal_condition),
+                label_for_code(patient.hepatic_condition),
+                label_for_code(patient.cardiac_condition),
+                label_for_code(patient.gastrointestinal_history),
                 patient.hypertension,
                 patient.diabetes,
                 patient.adverse_reactions,
@@ -390,6 +391,10 @@ class RiskEngine:
                 "cautela cardíaca" if medication.cardiac_caution else None,
                 "cautela gastrointestinal" if medication.gastrointestinal_caution else None,
                 "cautela em idosos" if medication.elderly_caution else None,
+                f"princípio ativo: {medication.active_ingredient}",
+                f"jurisdição da fonte: {medication.source_jurisdiction}",
+                f"fonte: {medication.evidence_source_type}",
+                f"validação: {medication.validation_status}",
                 *(medication.organs_involved or []),
             ]
             if factor

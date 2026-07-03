@@ -63,13 +63,13 @@ class PatientRead(PatientBase):
 
 
 class QuickTriageRequest(BaseModel):
-    renal_condition: bool | None = None
-    hepatic_condition: bool | None = None
-    cardiac_condition: bool | None = None
+    renal_condition: bool | str | None = None
+    hepatic_condition: bool | str | None = None
+    cardiac_condition: bool | str | None = None
     hypertension: bool | None = None
     diabetes: bool | None = None
     pregnancy_or_lactation: bool | None = None
-    gastrointestinal_history: bool | None = None
+    gastrointestinal_history: bool | str | None = None
     adverse_reactions: list[str] = Field(default_factory=list)
     allergies: list[str] = Field(default_factory=list)
     current_medications: list[str] = Field(default_factory=list)

@@ -14,6 +14,7 @@ import PatientRiskFactorsCard from "../components/PatientRiskFactorsCard";
 import PrescriptionForm from "../components/PrescriptionForm";
 import RagEvidencePanel from "../components/RagEvidencePanel";
 import RiskBadge from "../components/RiskBadge";
+import SourceBadge from "../components/SourceBadge";
 import { useAuth } from "../context/AuthContext";
 import {
   checkPrescription,
@@ -54,6 +55,9 @@ export default function PrescriptionCheck() {
 
   const isLoading = loadingPatients || loadingMedications;
   const hasRequiredData = patients.length > 0 && medications.length > 0;
+  const selectedMedication = lastPayload
+    ? medications.find((item) => item.id === lastPayload.medication_id)
+    : undefined;
 
   async function handleSubmit(payload: PrescriptionCheckPayload) {
     setLastPayload(payload);
@@ -147,6 +151,18 @@ export default function PrescriptionCheck() {
               <div>
                 Auditoria:{" "}
                 <span className="font-semibold text-ink">#{checkMutation.data.audit_id}</span>
+              </div>
+              <div className="sm:col-span-2">
+                Fonte do medicamento:{" "}
+                {selectedMedication ? (
+                  <SourceBadge
+                    jurisdiction={selectedMedication.source_jurisdiction}
+                    source={selectedMedication.evidence_source_type}
+                    status={selectedMedication.validation_status}
+                  />
+                ) : (
+                  "-"
+                )}
               </div>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">

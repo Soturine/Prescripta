@@ -1,6 +1,7 @@
 import { ClipboardList } from "lucide-react";
 
 import type { Patient } from "../types/patient";
+import { formatClinicalValue } from "../utils/clinicalVocabulary";
 import { formatDateTime, joinList } from "../utils/formatters";
 
 type ClinicalProfileCardProps = {
@@ -9,14 +10,17 @@ type ClinicalProfileCardProps = {
 
 export default function ClinicalProfileCard({ patient }: ClinicalProfileCardProps) {
   const rows = [
-    ["Condição renal", patient.renal_condition],
-    ["Condição hepática", patient.hepatic_condition],
-    ["Condição cardíaca", patient.cardiac_condition],
-    ["Histórico gastrointestinal", patient.gastrointestinal_history],
-    ["Hipertensão", patient.hypertension ? "Sim" : "Não"],
-    ["Diabetes", patient.diabetes ? "Sim" : "Não"],
-    ["Gravidez/lactação", patient.pregnancy_or_lactation === null ? "-" : patient.pregnancy_or_lactation ? "Sim" : "Não"],
-    ["Reações adversas", joinList(patient.adverse_reactions) || "-"],
+    ["Condicao renal", formatClinicalValue(patient.renal_condition)],
+    ["Condicao hepatica", formatClinicalValue(patient.hepatic_condition)],
+    ["Risco cardiovascular", formatClinicalValue(patient.cardiac_condition)],
+    ["Historico gastrointestinal", formatClinicalValue(patient.gastrointestinal_history)],
+    ["Hipertensao", patient.hypertension ? "Sim" : "Nao"],
+    ["Diabetes", patient.diabetes ? "Sim" : "Nao"],
+    [
+      "Gravidez/lactacao",
+      patient.pregnancy_or_lactation === null ? "-" : patient.pregnancy_or_lactation ? "Sim" : "Nao",
+    ],
+    ["Reacoes adversas", joinList(patient.adverse_reactions) || "-"],
   ];
 
   return (
@@ -27,7 +31,7 @@ export default function ClinicalProfileCard({ patient }: ClinicalProfileCardProp
             <ClipboardList aria-hidden="true" className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-ink">Perfil clínico inteligente</h2>
+            <h2 className="text-lg font-bold text-ink">Perfil clinico inteligente</h2>
             <p className="mt-1 text-sm text-slate-600">
               {patient.clinical_profile_badge} · {patient.clinical_profile_completeness_score}%
             </p>
@@ -43,10 +47,10 @@ export default function ClinicalProfileCard({ patient }: ClinicalProfileCardProp
         ))}
       </dl>
       <p className="mt-3 text-xs font-medium text-slate-500">
-        Última revisão:{" "}
+        Ultima revisao:{" "}
         {patient.clinical_profile_reviewed_at
           ? formatDateTime(patient.clinical_profile_reviewed_at)
-          : "não registrada"}
+          : "nao registrada"}
       </p>
     </section>
   );

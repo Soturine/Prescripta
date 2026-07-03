@@ -1,8 +1,17 @@
 export type Medication = {
   id: number;
+  active_ingredient_id: number | null;
   brand_name: string;
   active_ingredient: string;
+  commercial_aliases: string[];
   therapeutic_class: string;
+  therapeutic_classes: string[];
+  source_jurisdiction: string;
+  evidence_source_type: string;
+  validation_status: string;
+  concentration: string | null;
+  pharmaceutical_form: string | null;
+  evidence_source_url: string | null;
   max_daily_dose_mg: number;
   max_duration_days: number | null;
   max_cumulative_dose_mg: number | null;

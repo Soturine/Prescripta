@@ -1,5 +1,19 @@
 # Motor de Risco
 
+## Atualizacao v0.5.0
+
+O motor passa a considerar metadados de medicamento e paciente mais estruturados:
+
+- principio ativo;
+- aliases comerciais;
+- fonte e jurisdicao;
+- status de validacao da evidencia;
+- vocabulario clinico controlado.
+
+Dados antigos ainda sao aceitos quando possivel, mas entradas genericas como `renal`, `cardiaco` e `gastrointestinal` sao normalizadas para codigos controlados, por exemplo `funcao_renal_a_revisar`.
+
+Na saida, o sistema exibe labels humanos em vez dos codigos internos.
+
 O motor de risco fica em `backend/app/services/risk_engine.py`.
 
 ## Entradas

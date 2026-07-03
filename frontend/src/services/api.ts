@@ -2,6 +2,12 @@ import axios from "axios";
 
 import type { AuditRecord, DashboardSummary } from "../types/audit";
 import type { LoginPayload, LoginResponse } from "../types/auth";
+import type {
+  ActiveIngredient,
+  AnvisaLookupResponse,
+  ClinicalVocabularyEntry,
+  MedicationCatalogSearchResult,
+} from "../types/catalog";
 import type { Medication, MedicationPayload } from "../types/medication";
 import type {
   ClinicalContextGraph,
@@ -100,6 +106,32 @@ export async function quickTriagePatient(id: number, payload: QuickTriagePayload
 
 export async function fetchMedications() {
   const response = await api.get<Medication[]>("/medications");
+  return response.data;
+}
+
+export async function fetchActiveIngredients() {
+  const response = await api.get<ActiveIngredient[]>("/medication-catalog/active-ingredients");
+  return response.data;
+}
+
+export async function searchMedicationCatalog(query: string) {
+  const response = await api.get<MedicationCatalogSearchResult[]>("/medication-catalog/search", {
+    params: { q: query },
+  });
+  return response.data;
+}
+
+export async function fetchClinicalVocabulary(category?: string) {
+  const response = await api.get<ClinicalVocabularyEntry[]>("/clinical-vocabulary", {
+    params: category ? { category } : undefined,
+  });
+  return response.data;
+}
+
+export async function lookupAnvisaSource(query: string) {
+  const response = await api.get<AnvisaLookupResponse>("/medication-sources/anvisa/search", {
+    params: { q: query },
+  });
   return response.data;
 }
 

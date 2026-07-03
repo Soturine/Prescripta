@@ -36,13 +36,129 @@ class PatientModel(Base):
     )
 
 
+class ActiveIngredientModel(Base):
+    __tablename__ = "active_ingredients"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    dcb_name: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
+    normalized_name: Mapped[str] = mapped_column(String(160), nullable=False, unique=True)
+    synonyms: Mapped[list[str]] = mapped_column(JSON, default=list)
+    therapeutic_classes: Mapped[list[str]] = mapped_column(JSON, default=list)
+    common_brands: Mapped[list[str]] = mapped_column(JSON, default=list)
+    jurisdiction: Mapped[str] = mapped_column(String(20), default="BR", nullable=False)
+    source: Mapped[str] = mapped_column(String(80), default="demo_seed", nullable=False)
+    validation_status: Mapped[str] = mapped_column(String(40), default="demo", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
+class DrugProductModel(Base):
+    __tablename__ = "drug_products"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    active_ingredient_id: Mapped[int] = mapped_column(
+        ForeignKey("active_ingredients.id"), nullable=False, index=True
+    )
+    commercial_name: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
+    manufacturer: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    concentration: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    pharmaceutical_form: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    allowed_routes: Mapped[list[str]] = mapped_column(JSON, default=list)
+    anvisa_registration_number: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    bula_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    source: Mapped[str] = mapped_column(String(80), default="demo_seed", nullable=False)
+    validation_status: Mapped[str] = mapped_column(String(40), default="demo", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
+class MedicationKnowledgeSourceModel(Base):
+    __tablename__ = "medication_knowledge_sources"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    active_ingredient_id: Mapped[int | None] = mapped_column(
+        ForeignKey("active_ingredients.id"), nullable=True, index=True
+    )
+    drug_product_id: Mapped[int | None] = mapped_column(
+        ForeignKey("drug_products.id"), nullable=True, index=True
+    )
+    source_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    source_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    jurisdiction: Mapped[str] = mapped_column(String(20), default="BR", nullable=False)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    retrieved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    version: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    evidence_sections: Mapped[list[str]] = mapped_column(JSON, default=list)
+    confidence_level: Mapped[str] = mapped_column(String(40), default="demo", nullable=False)
+    validation_status: Mapped[str] = mapped_column(String(40), default="demo", nullable=False)
+    reviewer: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
+class ClinicalVocabularyModel(Base):
+    __tablename__ = "clinical_vocabulary"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    category: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    code: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    label: Mapped[str] = mapped_column(String(180), nullable=False)
+    normalized_label: Mapped[str] = mapped_column(String(180), nullable=False)
+    severity_weight: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
 class MedicationModel(Base):
     __tablename__ = "medications"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    active_ingredient_id: Mapped[int | None] = mapped_column(
+        ForeignKey("active_ingredients.id"), nullable=True, index=True
+    )
     brand_name: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
     active_ingredient: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
+    commercial_aliases: Mapped[list[str]] = mapped_column(JSON, default=list)
     therapeutic_class: Mapped[str] = mapped_column(String(160), nullable=False)
+    therapeutic_classes: Mapped[list[str]] = mapped_column(JSON, default=list)
+    source_jurisdiction: Mapped[str] = mapped_column(String(20), default="BR", nullable=False)
+    evidence_source_type: Mapped[str] = mapped_column(
+        String(80), default="demo_seed", nullable=False
+    )
+    validation_status: Mapped[str] = mapped_column(String(40), default="demo", nullable=False)
+    concentration: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    pharmaceutical_form: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    evidence_source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     max_daily_dose_mg: Mapped[float] = mapped_column(Float, nullable=False)
     max_duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_cumulative_dose_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
