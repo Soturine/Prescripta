@@ -213,20 +213,20 @@ class RiskEngine:
             alerts.append(
                 Alert(
                     code="CONTINUOUS_USE_REVIEW",
-                    title="Uso contÃ­nuo exige plano de revisÃ£o",
+                    title="Uso contínuo exige plano de revisão",
                     description=(
-                        "Medicamento marcado como uso contÃ­nuo ou prolongado sem duraÃ§Ã£o "
+                        "Medicamento marcado como uso contínuo ou prolongado sem duração "
                         "planejada informada."
                     ),
                     severity=RiskLevel.LOW,
-                    recommendation="Confirmar plano terapÃªutico, reavaliaÃ§Ã£o e monitoramento.",
+                    recommendation="Confirmar plano terapêutico, reavaliação e monitoramento.",
                 )
             )
         if medication.monitoring_required:
             alerts.append(
                 Alert(
                     code="MONITORING_REQUIRED",
-                    title="Monitoramento laboratorial ou clÃ­nico necessÃ¡rio",
+                    title="Monitoramento laboratorial ou clínico necessário",
                     description=(
                         medication.monitoring_notes
                         or "Medicamento possui monitoramento demonstrativo cadastrado."
@@ -247,11 +247,11 @@ class RiskEngine:
                     code="PROLONGED_USE_REVIEW",
                     title="Uso prolongado a revisar",
                     description=(
-                        f"DuraÃ§Ã£o planejada: {prescription.duration_days} dias. "
-                        "Uso prolongado pode exigir seguimento mesmo com dose diÃ¡ria baixa."
+                        f"Duração planejada: {prescription.duration_days} dias. "
+                        "Uso prolongado pode exigir seguimento mesmo com dose diária baixa."
                     ),
                     severity=RiskLevel.MODERATE,
-                    recommendation="Revisar duraÃ§Ã£o, benefÃ­cio, risco acumulado e seguimento.",
+                    recommendation="Revisar duração, benefício, risco acumulado e seguimento.",
                 )
             )
         return alerts
@@ -349,23 +349,23 @@ class RiskEngine:
             alerts.append(
                 Alert(
                     code="RENAL_ELIMINATION_REVIEW",
-                    title="EliminaÃ§Ã£o renal relevante",
+                    title="Eliminação renal relevante",
                     description=(
-                        "Perfil farmacocinÃ©tico indica eliminaÃ§Ã£o renal relevante e o "
+                        "Perfil farmacocinético indica eliminação renal relevante e o "
                         "paciente possui fator renal cadastrado."
                     ),
                     severity=RiskLevel.HIGH,
-                    recommendation="Revisar funÃ§Ã£o renal, dose, intervalo e monitoramento.",
+                    recommendation="Revisar função renal, dose, intervalo e monitoramento.",
                 )
             )
         if patient.hepatic_condition and hepatic_level in high_levels:
             alerts.append(
                 Alert(
                     code="HEPATIC_METABOLISM_REVIEW",
-                    title="MetabolizaÃ§Ã£o hepÃ¡tica relevante",
+                    title="Metabolização hepática relevante",
                     description=(
-                        "Perfil farmacocinÃ©tico indica metabolismo hepÃ¡tico relevante e o "
-                        "paciente possui fator hepÃ¡tico cadastrado."
+                        "Perfil farmacocinético indica metabolismo hepático relevante e o "
+                        "paciente possui fator hepático cadastrado."
                     ),
                     severity=RiskLevel.HIGH,
                     recommendation=(
@@ -410,13 +410,13 @@ class RiskEngine:
             alerts.append(
                 Alert(
                     code="SEROTONERGIC_REVIEW",
-                    title="Risco serotoninÃ©rgico demonstrativo",
+                    title="Risco serotoninérgico demonstrativo",
                     description=(
-                        "Paciente jÃ¡ possui fator ou medicamento serotoninÃ©rgico e a nova "
-                        "prescriÃ§Ã£o tambÃ©m tem cautela cadastrada."
+                        "Paciente já possui fator ou medicamento serotoninérgico e a nova "
+                        "prescrição também tem cautela cadastrada."
                     ),
                     severity=RiskLevel.MODERATE,
-                    recommendation="Revisar associaÃ§Ã£o, dose, sinais de alerta e alternativas.",
+                    recommendation="Revisar associação, dose, sinais de alerta e alternativas.",
                 )
             )
 
@@ -430,13 +430,13 @@ class RiskEngine:
             alerts.append(
                 Alert(
                     code="IMAO_INTERACTION_REVIEW",
-                    title="Uso de IMAO exige revisÃ£o",
+                    title="Uso de IMAO exige revisão",
                     description=(
                         "Paciente possui uso de IMAO e o medicamento novo tem cautela "
-                        "demonstrativa de interaÃ§Ã£o."
+                        "demonstrativa de interação."
                     ),
                     severity=RiskLevel.HIGH,
-                    recommendation="Revisar interaÃ§Ã£o em fonte validada antes de prosseguir.",
+                    recommendation="Revisar interação em fonte validada antes de prosseguir.",
                 )
             )
 
@@ -448,13 +448,13 @@ class RiskEngine:
             alerts.append(
                 Alert(
                     code="SEIZURE_THRESHOLD_REVIEW",
-                    title="HistÃ³rico convulsivo a revisar",
+                    title="Histórico convulsivo a revisar",
                     description=(
-                        "Paciente possui histÃ³rico de convulsÃµes e o medicamento tem cautela "
+                        "Paciente possui histórico de convulsões e o medicamento tem cautela "
                         "demonstrativa de limiar convulsivo."
                     ),
                     severity=RiskLevel.MODERATE,
-                    recommendation="Revisar risco neuropsiquiÃ¡trico com fonte validada.",
+                    recommendation="Revisar risco neuropsiquiátrico com fonte validada.",
                 )
             )
 
@@ -472,9 +472,9 @@ class RiskEngine:
             alerts.append(
                 Alert(
                     code="SEDATION_REVIEW",
-                    title="SedaÃ§Ã£o/depressÃ£o do SNC a revisar",
+                    title="Sedação/depressão do SNC a revisar",
                     description=(
-                        "Medicamento possui cautela de sedaÃ§Ã£o e o paciente usa depressor do "
+                        "Medicamento possui cautela de sedação e o paciente usa depressor do "
                         "SNC demonstrativo."
                     ),
                     severity=RiskLevel.MODERATE,
@@ -493,10 +493,10 @@ class RiskEngine:
             alerts.append(
                 Alert(
                     code="NEUROPSYCHIATRIC_REVIEW",
-                    title="Fator neuropsiquiÃ¡trico a revisar",
+                    title="Fator neuropsiquiátrico a revisar",
                     description=(
-                        "Paciente possui fator de saÃºde mental e o medicamento tem cautela "
-                        "neuropsiquiÃ¡trica cadastrada."
+                        "Paciente possui fator de saúde mental e o medicamento tem cautela "
+                        "neuropsiquiátrica cadastrada."
                     ),
                     severity=RiskLevel.LOW,
                     recommendation=(
@@ -523,12 +523,12 @@ class RiskEngine:
                     code="RIFAMYCIN_HORMONAL_CONTRACEPTIVE_REVIEW",
                     title="Rifamicina e contraceptivo hormonal",
                     description=(
-                        "Regra demonstrativa especÃ­fica para rifampicina/rifabutina: pode haver "
-                        "reduÃ§Ã£o da eficÃ¡cia contraceptiva hormonal. NÃ£o se aplica a todo "
-                        "antibiÃ³tico."
+                        "Regra demonstrativa específica para rifampicina/rifabutina: pode haver "
+                        "redução da eficácia contraceptiva hormonal. Não se aplica a todo "
+                        "antibiótico."
                     ),
                     severity=RiskLevel.HIGH,
-                    recommendation="Recomendar revisÃ£o profissional e orientaÃ§Ã£o contraceptiva.",
+                    recommendation="Recomendar revisão profissional e orientação contraceptiva.",
                 )
             )
 
@@ -556,9 +556,9 @@ class RiskEngine:
             alerts.append(
                 Alert(
                     code="THROMBOTIC_REVIEW",
-                    title="Risco trombÃ³tico a revisar",
+                    title="Risco trombótico a revisar",
                     description=(
-                        "Paciente possui fator trombÃ³tico e medicamento tem cautela trombÃ³tica "
+                        "Paciente possui fator trombótico e medicamento tem cautela trombótica "
                         "cadastrada."
                     ),
                     severity=RiskLevel.MODERATE,
@@ -576,13 +576,13 @@ class RiskEngine:
             alerts.append(
                 Alert(
                     code="GYNECOLOGIC_REVIEW",
-                    title="Quadro ginecolÃ³gico a revisar",
+                    title="Quadro ginecológico a revisar",
                     description=(
-                        "Paciente possui fator ginecolÃ³gico e medicamento tem cautela "
+                        "Paciente possui fator ginecológico e medicamento tem cautela "
                         "relacionada cadastrada."
                     ),
                     severity=RiskLevel.LOW,
-                    recommendation="Revisar contexto ginecolÃ³gico sem assumir contraindicaÃ§Ã£o.",
+                    recommendation="Revisar contexto ginecológico sem assumir contraindicação.",
                 )
             )
         return alerts
