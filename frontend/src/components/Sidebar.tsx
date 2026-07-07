@@ -4,6 +4,7 @@ import {
   FileClock,
   LayoutDashboard,
   Pill,
+  Settings,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -34,8 +35,14 @@ const links = [
   },
   {
     to: "/clinical-imports",
-    label: "Importacoes",
+    label: "Importações",
     icon: DatabaseZap,
+    roles: ["admin", "medico", "enfermagem", "auditor"],
+  },
+  {
+    to: "/settings/ai",
+    label: "IA",
+    icon: Settings,
     roles: ["admin", "medico", "enfermagem", "auditor"],
   },
   { to: "/audit", label: "Auditoria", icon: FileClock, roles: ["admin", "auditor"] },

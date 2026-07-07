@@ -1,6 +1,17 @@
 import axios from "axios";
 
 import type { AuditRecord, DashboardSummary } from "../types/audit";
+import type {
+  AICredentialPayload,
+  AICredentialStatus,
+  AIConnectionTestPayload,
+  AIConnectionTestResult,
+  AIModelListResponse,
+  AIModelSelectPayload,
+  AIProviderId,
+  AIProviderInfo,
+  AISettings,
+} from "../types/aiSettings";
 import type { LoginPayload, LoginResponse } from "../types/auth";
 import type {
   ActiveIngredient,
@@ -241,6 +252,43 @@ export async function explainPrescription(payload: PrescriptionExplanationPayloa
 
 export async function fetchAudit() {
   const response = await api.get<AuditRecord[]>("/audit");
+  return response.data;
+}
+
+export async function fetchAIProviders() {
+  const response = await api.get<AIProviderInfo[]>("/settings/ai/providers");
+  return response.data;
+}
+
+export async function fetchCurrentAISettings() {
+  const response = await api.get<AISettings>("/settings/ai/current");
+  return response.data;
+}
+
+export async function fetchAIModels(provider: AIProviderId, refresh = false) {
+  const response = await api.get<AIModelListResponse>("/settings/ai/models", {
+    params: { provider, refresh },
+  });
+  return response.data;
+}
+
+export async function saveAICredential(payload: AICredentialPayload) {
+  const response = await api.post<AICredentialStatus>("/settings/ai/credentials", payload);
+  return response.data;
+}
+
+export async function deleteAICredential(provider: AIProviderId) {
+  const response = await api.delete<AICredentialStatus>(`/settings/ai/credentials/${provider}`);
+  return response.data;
+}
+
+export async function testAIConnection(payload: AIConnectionTestPayload) {
+  const response = await api.post<AIConnectionTestResult>("/settings/ai/test", payload);
+  return response.data;
+}
+
+export async function selectAIModel(payload: AIModelSelectPayload) {
+  const response = await api.post<AISettings>("/settings/ai/select-model", payload);
   return response.data;
 }
 
