@@ -64,7 +64,7 @@ class MedicationCounselingService:
         force_regenerate: bool = False,
         provider_name: str | None = None,
     ) -> MedicationCounselingSummaryModel:
-        extractor = MedicationCounselingExtractor()
+        extractor = MedicationCounselingExtractor(db=self.db)
         context = extractor.build_source_context(medication, source_text=source_text)
         if not force_regenerate:
             cached = self._cached_summary(medication, context.source_id, context.source_version)
@@ -78,7 +78,7 @@ class MedicationCounselingService:
         )
         generated_by = (
             "ai_provider"
-            if used_provider in {"gpt", "llama", "gemini"}
+            if used_provider in {"gpt", "llama", "gemini", "openai", "ollama", "openai_compatible"}
             else "fallback_deterministic"
         )
         summary = MedicationCounselingSummaryModel(

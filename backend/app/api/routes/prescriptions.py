@@ -118,7 +118,7 @@ def explain_prescription(
     db: DbSession,
     current_user: PrescriptionChecker,
 ) -> PrescriptionExplainResponse:
-    explanation = AIExplainer(settings).explain(payload, requester_role=current_user.role)
+    explanation = AIExplainer(settings, db).explain(payload, requester_role=current_user.role)
     AuditService(db).record_action(
         user=current_user,
         action="prescription.explain",
