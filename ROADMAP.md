@@ -1,49 +1,61 @@
 # Roadmap
 
-## v0.5.0 - Catalogo Brasil/Anvisa + principio ativo + vocabulario controlado
+## Entregue
 
-- ActiveIngredient e DrugProduct.
-- Aliases comerciais resolvendo para principio ativo.
-- Fonte/jurisdicao/status de validacao.
-- Vocabulario clinico controlado.
-- RAG rastreavel por fonte.
+### v0.5.0 - Catálogo Brasil/Anvisa + princípio ativo
 
-## v0.6.0 - Seguranca clinica ampliada + interoperabilidade clinica demonstrativa
+- `ActiveIngredient`, `DrugProduct`, aliases comerciais e fonte/jurisdição/status.
+- Vocabulário clínico controlado.
+- RAG rastreável por fonte.
 
-- Entregue: dose acumulada, uso continuo, monitoramento, ADME, neuropsiquiatria e ginecologia/reproducao.
-- Entregue: `backend/app/integrations/ports/`.
-- Entregue: adapters FHIR/JSON/CSV/mock.
-- Entregue: `PatientMatchingService`, `ClinicalDeduplicationService`, `ConsentService`, `IntegrationAuditService`.
-- Entregue: endpoint `/api/cds/prescription-check`.
-- Sem scraping de hospitais.
+### v0.6.0 - Segurança clínica ampliada + interoperabilidade
 
-## v0.7.0 - Resumo pratico de seguranca + perfil funcional + reconciliacao granular
+- Dose acumulada, uso contínuo, monitoramento e perfis ADME.
+- Cautelas neuropsiquiátricas e reprodutivo/ginecológicas.
+- Ports & Adapters para importação clínica FHIR/JSON/CSV/mock.
+- Consentimento, auditoria e endpoint `/api/cds/prescription-check`.
 
-- Entregue: resumo pratico de seguranca por medicamento com fonte/RAG e revisao humana.
-- Entregue: taxonomia controlada de efeitos adversos e orientacoes praticas.
-- Entregue: perfil funcional do paciente e modo sem historico.
-- Entregue: pergunta minima contextual para atividades de risco.
-- Entregue: reconciliacao clinica granular com aceite/rejeicao por item.
-- Entregue: auditoria de geracao/revisao, perfil funcional e decisoes granulares.
+### v0.7.0 - Resumo prático + perfil funcional + reconciliação granular
 
-## v0.8.0 - Relatorios, exportacao e auditoria avancada
+- Resumo prático de segurança por medicamento com fonte/RAG e revisão humana.
+- Taxonomia controlada de efeitos adversos e orientações práticas.
+- Perfil funcional do paciente, modo sem histórico e pergunta mínima contextual.
+- Reconciliação clínica granular com aceite/rejeição por item.
 
-- Relatorios demonstrativos.
-- Exportacao.
-- Filtros avancados de auditoria.
-- Trilhas de revisao mais completas.
-- Reconciliacao clinica avancada quando necessario.
+### v0.7.1 - Hardening, IA configurável e qualidade textual
 
-## v0.9.0 - Docker/PostgreSQL/deploy
+- Configuração de provider/modelo/API Key via UI.
+- Cache dinâmico de modelos e teste de conexão.
+- Chave protegida no backend, nunca exposta ao frontend.
+- `.env.example`, README e documentação revisados.
+- Importação clínica assistida documentada como lacuna fechada da v0.7.
+- Auditoria de paridade conceitual SafeDose/RicoToro sem copiar código.
+- Roadmap de protocolos rápidos/emergência documentado como possibilidade futura.
+
+## Próximas Versões
+
+### v0.8.0 - Relatórios, exportação e auditoria avançada
+
+- Relatórios de checagens, orientações e importações.
+- Exportação demonstrativa.
+- Filtros avançados de auditoria.
+- Reconciliação clínica avançada se necessário.
+
+### v0.8.x - Protocolos rápidos / emergência, se priorizado
+
+- Apenas com fonte/protocolo validado e revisão clínica.
+- Possíveis fluxos: PCR, anafilaxia, IAM, crise convulsiva e cálculo por peso.
+
+### v0.9.0 - Docker/PostgreSQL/deploy
 
 - Docker Compose.
 - PostgreSQL.
-- Migracoes.
+- Migrações.
 - Deploy demonstrativo.
 
-## v1.0.0 - Versao final de portfolio
+### v1.0.0 - Versão final de portfólio
 
-- Fluxos estaveis.
-- Documentacao completa.
-- Dados demonstrativos revisados.
-- Release pronta para portfolio.
+- Fluxos estáveis.
+- Documentação completa.
+- Dados de exemplo revisados.
+- Release final apresentável.

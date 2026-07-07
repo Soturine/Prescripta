@@ -1,34 +1,41 @@
 # Autenticação e Perfis
 
-Prescripta `v0.2.0` adiciona autenticação JWT e autorização por perfil.
+Prescripta usa autenticação JWT e autorização por perfil.
 
 ## Endpoints
 
-- `POST /api/auth/login`: recebe e-mail e senha, retorna token Bearer e usuário básico.
-- `GET /api/auth/me`: retorna o usuário autenticado.
+- `POST /api/auth/login`
+- `GET /api/auth/me`
 
 ## Perfis
 
-- `admin`: gerencia pacientes, medicamentos, usuários, checagens, auditoria e dashboard.
-- `medico`: gerencia pacientes, consulta medicamentos, verifica prescrições e vê dashboard.
-- `enfermagem`: consulta pacientes e medicamentos, verifica prescrições e vê dashboard.
-- `auditor`: vê dashboard e auditoria, sem criar ou editar registros.
+- `admin`: gerencia pacientes, medicamentos, usuários, checagens, importações, auditoria, dashboard e configuração de IA.
+- `medico`: gerencia pacientes, consulta medicamentos, verifica prescrições, usa IA configurada e revisa resumos/importações permitidos.
+- `enfermagem`: consulta pacientes e medicamentos, verifica prescrições, visualiza orientações e usa IA configurada.
+- `auditor`: visualiza dashboard, auditoria, importações, reconciliação e status da IA, sem alterar dados.
 
-## Senhas
+## IA
+
+- Somente `admin` salva, apaga, testa e ativa provider/modelo de IA.
+- Médicos, enfermagem e auditores podem ver status de IA habilitada/desabilitada.
+- Nenhum perfil recebe API Key em resposta.
+- Auditoria registra eventos técnicos sem segredo.
+
+## Importações
+
+- `admin` e `medico`: importar, aceitar/rejeitar lotes e decidir itens de reconciliação.
+- `enfermagem`: visualizar importações conforme regras existentes.
+- `auditor`: visualizar importações, reconciliação e auditoria.
+
+## Segurança
 
 Senhas são armazenadas com hash Argon2. A senha original nunca deve ser salva, retornada em API, registrada em log ou enviada para auditoria.
 
-## JWT
+O segredo do JWT é configurado por `PRESCRIPTA_SECRET_KEY`.
 
-O segredo do JWT é configurado por `PRESCRIPTA_SECRET_KEY`. O tempo de expiração é configurado por `PRESCRIPTA_ACCESS_TOKEN_EXPIRE_MINUTES`.
+O frontend usa `localStorage` para token de sessão no MVP local. API Keys de IA nunca usam `localStorage`.
 
-Existe um valor padrão apenas para desenvolvimento local. Em ambiente real, sempre configure um segredo forte por variável de ambiente.
-
-## Frontend
-
-O frontend usa `localStorage` para manter o token nesta versão demonstrativa. Essa escolha simplifica o MVP, mas aumenta exposição a XSS e não deve ser tratada como desenho final de produção.
-
-## Credenciais Demonstrativas
+## Credenciais De Exemplo
 
 - `admin@prescripta.local` / `Admin@12345`
 - `medico@prescripta.local` / `Medico@12345`
@@ -36,30 +43,3 @@ O frontend usa `localStorage` para manter o token nesta versão demonstrativa. E
 - `auditor@prescripta.local` / `Auditor@12345`
 
 Essas contas existem apenas para demonstração local.
-
-## Próximos Passos
-
-- Estratégia de sessão mais robusta para produção.
-- Política de troca e recuperação de senha.
-- Revogação de tokens.
-- Rate limit para login.
-- Migrações formais de banco.
-# Atualizacao v0.6.0
-
-Endpoints de integracao clinica:
-
-- `admin` e `medico`: podem importar, aceitar e rejeitar lotes.
-- `enfermagem`: pode visualizar importacoes e executar CDS demonstrativo.
-- `auditor`: pode visualizar importacoes, mas nao aceitar/rejeitar.
-
-Aceite e rejeicao registram auditoria. Importacao exige consentimento ou base legal aplicavel no payload.
-
-# Atualizacao v0.7.0
-
-Permissoes novas:
-
-- `admin` e `medico`: gerar/revisar resumos praticos, editar perfil funcional e aceitar/rejeitar itens de reconciliacao.
-- `enfermagem`: visualizar orientacoes ao paciente, contexto funcional e importacoes conforme regras existentes.
-- `auditor`: visualizar resumos, importacoes, reconciliacao e auditoria; nao pode gerar/revisar resumo nem decidir itens.
-
-Eventos novos auditados: `medication_counseling.generate`, `medication_counseling.review`, `patient.functional_profile.update`, `clinical_reconciliation.item.accepted`, `clinical_reconciliation.item.rejected` e `clinical_reconciliation.safe_items.accepted`.
