@@ -8,8 +8,10 @@ from app.database.models import (
     ActiveIngredientModel,
     ClinicalVocabularyModel,
     DrugProductModel,
+    MedicationCounselingSummaryModel,
     MedicationKnowledgeSourceModel,
     MedicationModel,
+    PatientFunctionalProfileModel,
     PatientIdentifierModel,
     PatientModel,
     UserModel,
@@ -30,10 +32,17 @@ def seed_demo_data(db: Session) -> None:
     _seed_knowledge_sources(db, ingredients)
     _seed_clinical_vocabulary(db)
     _seed_medications(db, ingredients)
+    db.flush()
     _seed_patients(db)
+    db.flush()
+    _seed_functional_profiles(db)
+    db.flush()
     _seed_patient_identifiers(db)
     _normalize_existing_patients(db)
     _link_existing_medications(db, ingredients)
+    db.flush()
+    _seed_counseling_summaries(db)
+    db.flush()
     _seed_users(db)
     db.commit()
 
@@ -94,6 +103,33 @@ def _seed_active_ingredients(db: Session) -> dict[str, ActiveIngredientModel]:
             "source": "manual_curated",
             "validation_status": "demo",
         },
+        {
+            "dcb_name": "tansulosina",
+            "synonyms": ["cloridrato de tansulosina"],
+            "therapeutic_classes": ["alfa bloqueador urologico"],
+            "common_brands": ["Tansulosina Demo"],
+            "jurisdiction": "BR",
+            "source": "demo_seed",
+            "validation_status": "demo",
+        },
+        {
+            "dcb_name": "sertralina",
+            "synonyms": ["cloridrato de sertralina"],
+            "therapeutic_classes": ["inibidor seletivo da recaptacao de serotonina"],
+            "common_brands": ["Sertral"],
+            "jurisdiction": "BR",
+            "source": "demo_seed",
+            "validation_status": "demo",
+        },
+        {
+            "dcb_name": "litio",
+            "synonyms": ["carbonato de litio"],
+            "therapeutic_classes": ["estabilizador de humor"],
+            "common_brands": ["Litio Demo"],
+            "jurisdiction": "BR",
+            "source": "demo_seed",
+            "validation_status": "demo",
+        },
     ]
     ingredients: dict[str, ActiveIngredientModel] = {}
     for spec in specs:
@@ -139,6 +175,9 @@ def _seed_drug_products(
         ("dipirona", "Lisador", "Demo", "demonstrativo", "comprimido", ["oral"]),
         ("ibuprofeno", "Ibuvvida", "Demo", "400 mg", "comprimido", ["oral"]),
         ("nimesulida", "Nimesulida Demo", "Demo", "100 mg", "comprimido", ["oral"]),
+        ("tansulosina", "Tansulosina Demo", "Demo", "0,4 mg", "capsula", ["oral"]),
+        ("sertralina", "Sertral", "Demo", "50 mg", "comprimido", ["oral"]),
+        ("litio", "Litio Demo", "Demo", "300 mg", "comprimido", ["oral"]),
     ]
     for active_name, commercial_name, manufacturer, concentration, form, routes in specs:
         ingredient = ingredients[normalize_text(active_name)]
@@ -229,6 +268,36 @@ def _seed_knowledge_sources(
             "demo",
             "demo",
         ),
+        (
+            "tansulosina",
+            "Base interna demonstrativa - tansulosina",
+            "rag_demo",
+            "BR",
+            None,
+            ["bula resumida", "eventos adversos", "orientacao pratica"],
+            "demo",
+            "pending_review",
+        ),
+        (
+            "sertralina",
+            "Base interna demonstrativa - sertralina",
+            "rag_demo",
+            "BR",
+            None,
+            ["bula resumida", "eventos adversos", "orientacao pratica"],
+            "demo",
+            "pending_review",
+        ),
+        (
+            "litio",
+            "Base interna demonstrativa - litio",
+            "rag_demo",
+            "BR",
+            None,
+            ["bula resumida", "monitoramento", "sinais de alerta"],
+            "demo",
+            "pending_review",
+        ),
     ]
     for (
         active_name,
@@ -301,6 +370,7 @@ def _seed_medications(
 ) -> None:
     has_medications = db.scalar(select(MedicationModel.id).limit(1))
     if has_medications:
+        _seed_v07_medications(db, ingredients)
         return
 
     db.add_all(
@@ -566,6 +636,109 @@ def _seed_medications(
             ),
         ]
     )
+    db.flush()
+    _seed_v07_medications(db, ingredients)
+
+
+def _seed_v07_medications(
+    db: Session,
+    ingredients: dict[str, ActiveIngredientModel],
+) -> None:
+    specs = [
+        MedicationModel(
+            active_ingredient_id=ingredients["tansulosina"].id,
+            brand_name="Tansulosina Demo",
+            active_ingredient="tansulosina",
+            commercial_aliases=["Tansulosina Demo"],
+            therapeutic_class="alfa bloqueador urologico",
+            therapeutic_classes=["alfa bloqueador urologico"],
+            source_jurisdiction="BR",
+            evidence_source_type="rag_demo",
+            validation_status="demo",
+            concentration="0,4 mg",
+            pharmaceutical_form="capsula",
+            max_daily_dose_mg=0.8,
+            max_duration_days=365,
+            continuous_use=True,
+            monitoring_required=True,
+            monitoring_notes=(
+                "Demo: orientar tontura, hipotensao ortostatica e atividades de risco."
+            ),
+            condition_specific_limits={},
+            allowed_routes=["oral"],
+            contraindications=[],
+            cardiac_caution=True,
+            elderly_caution=True,
+            mechanism_of_action="Antagonismo alfa-1 demonstrativo.",
+            pharmacodynamic_notes="Pode reduzir pressao ao levantar em demo.",
+            clinical_interpretation="Revisar risco de queda, direcao e maquinas.",
+            relevant_adverse_effects=[
+                "tontura",
+                "hipotensao_ortostatica",
+                "alteracao_ejaculatoria",
+            ],
+            reproductive_cautions=["alteracao_ejaculatoria"],
+            organs_involved=["cardiovascular", "urologico"],
+            therapeutic_action="sintomas urinarios",
+            alternative_group="urologia",
+            knowledge_source="Base interna demonstrativa v0.7.0",
+            notes="Seed demo para orientacao pratica; nao substitui bula.",
+        ),
+        MedicationModel(
+            active_ingredient_id=ingredients["litio"].id,
+            brand_name="Litio Demo",
+            active_ingredient="litio",
+            commercial_aliases=["Litio Demo", "Carbonato de litio demo"],
+            therapeutic_class="estabilizador de humor",
+            therapeutic_classes=["estabilizador de humor"],
+            source_jurisdiction="BR",
+            evidence_source_type="rag_demo",
+            validation_status="demo",
+            concentration="300 mg",
+            pharmaceutical_form="comprimido",
+            max_daily_dose_mg=1800,
+            max_duration_days=365,
+            continuous_use=True,
+            monitoring_required=True,
+            monitoring_notes="Demo: monitoramento renal e sinais neurologicos/autonomicos.",
+            condition_specific_limits={"renal": 900},
+            allowed_routes=["oral"],
+            contraindications=["doenca renal grave"],
+            renal_caution=True,
+            elderly_caution=True,
+            renal_elimination_level="alto",
+            relevant_adverse_effects=["tremor", "sudorese", "hipertermia"],
+            neuropsychiatric_cautions=["tremor"],
+            organs_involved=["renal", "neurologico"],
+            therapeutic_action="estabilizacao de humor",
+            alternative_group="saude mental",
+            knowledge_source="Base interna demonstrativa v0.7.0",
+            notes="Seed demo para tremor, temperatura e monitoramento.",
+        ),
+    ]
+    for spec in specs:
+        existing = db.scalar(
+            select(MedicationModel).where(
+                MedicationModel.active_ingredient == spec.active_ingredient,
+                MedicationModel.brand_name == spec.brand_name,
+            )
+        )
+        if existing is None:
+            db.add(spec)
+        else:
+            for field in (
+                "active_ingredient_id",
+                "commercial_aliases",
+                "therapeutic_classes",
+                "source_jurisdiction",
+                "evidence_source_type",
+                "validation_status",
+                "relevant_adverse_effects",
+                "neuropsychiatric_cautions",
+                "reproductive_cautions",
+                "knowledge_source",
+            ):
+                setattr(existing, field, getattr(spec, field))
 
 
 def _seed_patients(db: Session) -> None:
@@ -613,6 +786,224 @@ def _seed_patients(db: Session) -> None:
             ),
         ]
     )
+
+
+def _seed_functional_profiles(db: Session) -> None:
+    patient = db.scalar(select(PatientModel).where(PatientModel.name == "Carlos Demonstracao"))
+    if patient is None:
+        return
+    existing = db.scalar(
+        select(PatientFunctionalProfileModel).where(
+            PatientFunctionalProfileModel.patient_id == patient.id
+        )
+    )
+    if existing is not None:
+        return
+    db.add(
+        PatientFunctionalProfileModel(
+            patient_id=patient.id,
+            drives_regularly=True,
+            professional_driver=False,
+            operates_machinery=False,
+            works_at_height=False,
+            fall_risk_activity=True,
+            night_shift=False,
+            caregiver_responsibility=False,
+            high_attention_activity=True,
+            frequent_alcohol_use=None,
+            history_of_falls=True,
+            low_tolerance_to_sedation_or_dizziness=True,
+            source="seed_demo",
+            notes="Perfil funcional demonstrativo para v0.7.0.",
+            last_reviewed_at=datetime.now(UTC),
+        )
+    )
+
+
+def _seed_counseling_summaries(db: Session) -> None:
+    specs = [
+        {
+            "active": "tansulosina",
+            "source_id": "kb:medications/tansulosina.md",
+            "source_name": "Base interna demonstrativa - tansulosina",
+            "main_adverse_effects": [
+                "tontura",
+                "hipotensao_ortostatica",
+                "alteracao_ejaculatoria",
+            ],
+            "patient_relevant_effects": [
+                "tontura",
+                "hipotensao_ortostatica",
+                "alteracao_ejaculatoria",
+            ],
+            "activity_warnings": ["dirigir", "operar_maquinas", "trabalho_em_altura"],
+            "sleep_effects": ["tontura"],
+            "libido_sexual_effects": ["alteracao_ejaculatoria"],
+            "neurologic_effects": ["tontura"],
+            "blood_pressure_warning": True,
+            "driving_warning": True,
+            "machine_operation_warning": True,
+            "work_at_height_warning": True,
+            "fall_risk_warning": True,
+            "sedation_attention_warning": True,
+            "red_flags": ["desmaio", "reacao_alergica", "procurar_atendimento"],
+            "patient_friendly_summary": (
+                "Pode causar tontura e queda de pressao ao levantar. Cautela ao dirigir, "
+                "operar maquinas ou trabalhar em altura ate saber como reage. Pode causar "
+                "alteracoes ejaculatorias."
+            ),
+            "professional_summary": (
+                "Demo v0.7: revisar hipotensao ortostatica, quedas, direcao/maquinas e "
+                "efeitos ejaculatorios; resumo pendente de revisao."
+            ),
+        },
+        {
+            "active": "sertralina",
+            "source_id": "kb:medications/sertralina.md",
+            "source_name": "Base interna demonstrativa - sertralina",
+            "main_adverse_effects": [
+                "insonia",
+                "sonolencia",
+                "alteracao_apetite",
+                "alteracao_humor",
+                "baixa_libido",
+                "disfuncao_sexual",
+                "dor_cabeca",
+                "risco_serotoninergico",
+            ],
+            "patient_relevant_effects": [
+                "insonia",
+                "sonolencia",
+                "alteracao_apetite",
+                "baixa_libido",
+                "dor_cabeca",
+            ],
+            "activity_warnings": ["rotina_alta_atencao"],
+            "sleep_effects": ["insonia", "sonolencia"],
+            "appetite_weight_effects": ["alteracao_apetite"],
+            "mood_behavior_effects": ["alteracao_humor", "risco_serotoninergico"],
+            "libido_sexual_effects": ["baixa_libido", "disfuncao_sexual"],
+            "neurologic_effects": ["dor_cabeca"],
+            "headache_warning": True,
+            "sedation_attention_warning": True,
+            "red_flags": ["agitacao", "procurar_atendimento"],
+            "patient_friendly_summary": (
+                "Pode alterar sono, apetite, humor, libido/funcao sexual e causar dor de "
+                "cabeca. Associacoes serotoninergicas exigem revisao."
+            ),
+            "professional_summary": (
+                "Demo v0.7: orientar sono, apetite, humor, efeitos sexuais, cefaleia e "
+                "risco serotoninergico quando combinado."
+            ),
+        },
+        {
+            "active": "litio",
+            "source_id": "kb:medications/litio.md",
+            "source_name": "Base interna demonstrativa - litio",
+            "main_adverse_effects": ["tremor", "hipertermia", "sudorese"],
+            "patient_relevant_effects": ["tremor", "hipertermia", "sudorese"],
+            "activity_warnings": ["atividade_de_risco"],
+            "neurologic_effects": ["tremor"],
+            "temperature_regulation_effects": ["hipertermia", "sudorese"],
+            "renal_effects": ["monitoramento_renal"],
+            "tremor_warning": True,
+            "sedation_attention_warning": False,
+            "red_flags": ["procurar_atendimento", "dor_intensa_persistente"],
+            "monitoring_required": ["monitoramento_renal"],
+            "patient_friendly_summary": (
+                "Demo: observar tremor, sudorese e alteracoes de temperatura. Procurar "
+                "atendimento se sintomas forem intensos ou houver piora importante."
+            ),
+            "professional_summary": (
+                "Demo v0.7: revisar tremor, temperatura/sudorese e monitoramento renal."
+            ),
+        },
+    ]
+    for spec in specs:
+        medication = db.scalar(
+            select(MedicationModel).where(MedicationModel.active_ingredient == spec["active"])
+        )
+        if medication is None:
+            continue
+        existing = db.scalar(
+            select(MedicationCounselingSummaryModel).where(
+                MedicationCounselingSummaryModel.medication_id == medication.id,
+                MedicationCounselingSummaryModel.source_id == spec["source_id"],
+            )
+        )
+        values = {
+            "active_ingredient_id": medication.active_ingredient_id,
+            "medication_id": medication.id,
+            "source_id": spec["source_id"],
+            "jurisdiction": "BR",
+            "source_name": spec["source_name"],
+            "source_url": None,
+            "source_version": "v0.7.0-demo",
+            "validation_status": "pending_review",
+            "generated_by": "seed_demo",
+            "provider_name": "seed_demo",
+            "confidence": "medium",
+            "requires_review": True,
+            "extracted_evidence": [
+                {
+                    "source_id": spec["source_id"],
+                    "source_name": spec["source_name"],
+                    "jurisdiction": "BR",
+                    "excerpt": spec["patient_friendly_summary"],
+                    "validation_status": "demo",
+                }
+            ],
+        }
+        list_fields = {
+            "main_adverse_effects",
+            "patient_relevant_effects",
+            "activity_warnings",
+            "sleep_effects",
+            "appetite_weight_effects",
+            "mood_behavior_effects",
+            "libido_sexual_effects",
+            "neurologic_effects",
+            "temperature_regulation_effects",
+            "gastrointestinal_effects",
+            "renal_effects",
+            "hepatic_effects",
+            "reproductive_contraceptive_effects",
+            "red_flags",
+            "monitoring_required",
+        }
+        for field in (
+            "main_adverse_effects",
+            "patient_relevant_effects",
+            "activity_warnings",
+            "driving_warning",
+            "machine_operation_warning",
+            "work_at_height_warning",
+            "fall_risk_warning",
+            "sedation_attention_warning",
+            "sleep_effects",
+            "appetite_weight_effects",
+            "mood_behavior_effects",
+            "libido_sexual_effects",
+            "neurologic_effects",
+            "tremor_warning",
+            "headache_warning",
+            "temperature_regulation_effects",
+            "blood_pressure_warning",
+            "gastrointestinal_effects",
+            "renal_effects",
+            "hepatic_effects",
+            "reproductive_contraceptive_effects",
+            "red_flags",
+            "monitoring_required",
+            "patient_friendly_summary",
+            "professional_summary",
+        ):
+            values[field] = spec.get(field, [] if field in list_fields else False)
+        if existing is None:
+            db.add(MedicationCounselingSummaryModel(**values))
+        else:
+            for field, value in values.items():
+                setattr(existing, field, value)
 
 
 def _seed_patient_identifiers(db: Session) -> None:

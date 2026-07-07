@@ -122,6 +122,67 @@ class MedicationKnowledgeSourceModel(Base):
     )
 
 
+class MedicationCounselingSummaryModel(Base):
+    __tablename__ = "medication_counseling_summaries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    active_ingredient_id: Mapped[int | None] = mapped_column(
+        ForeignKey("active_ingredients.id"), nullable=True, index=True
+    )
+    medication_id: Mapped[int | None] = mapped_column(
+        ForeignKey("medications.id"), nullable=True, index=True
+    )
+    source_id: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
+    jurisdiction: Mapped[str] = mapped_column(String(20), default="BR", nullable=False)
+    source_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    source_version: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    validation_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False, index=True
+    )
+    generated_by: Mapped[str] = mapped_column(
+        String(40), default="fallback_deterministic", nullable=False
+    )
+    provider_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    confidence: Mapped[str] = mapped_column(String(40), default="low", nullable=False)
+    requires_review: Mapped[bool] = mapped_column(default=True, nullable=False)
+    main_adverse_effects: Mapped[list[str]] = mapped_column(JSON, default=list)
+    patient_relevant_effects: Mapped[list[str]] = mapped_column(JSON, default=list)
+    activity_warnings: Mapped[list[str]] = mapped_column(JSON, default=list)
+    driving_warning: Mapped[bool] = mapped_column(default=False, nullable=False)
+    machine_operation_warning: Mapped[bool] = mapped_column(default=False, nullable=False)
+    work_at_height_warning: Mapped[bool] = mapped_column(default=False, nullable=False)
+    fall_risk_warning: Mapped[bool] = mapped_column(default=False, nullable=False)
+    sedation_attention_warning: Mapped[bool] = mapped_column(default=False, nullable=False)
+    sleep_effects: Mapped[list[str]] = mapped_column(JSON, default=list)
+    appetite_weight_effects: Mapped[list[str]] = mapped_column(JSON, default=list)
+    mood_behavior_effects: Mapped[list[str]] = mapped_column(JSON, default=list)
+    libido_sexual_effects: Mapped[list[str]] = mapped_column(JSON, default=list)
+    neurologic_effects: Mapped[list[str]] = mapped_column(JSON, default=list)
+    tremor_warning: Mapped[bool] = mapped_column(default=False, nullable=False)
+    headache_warning: Mapped[bool] = mapped_column(default=False, nullable=False)
+    temperature_regulation_effects: Mapped[list[str]] = mapped_column(JSON, default=list)
+    blood_pressure_warning: Mapped[bool] = mapped_column(default=False, nullable=False)
+    gastrointestinal_effects: Mapped[list[str]] = mapped_column(JSON, default=list)
+    renal_effects: Mapped[list[str]] = mapped_column(JSON, default=list)
+    hepatic_effects: Mapped[list[str]] = mapped_column(JSON, default=list)
+    reproductive_contraceptive_effects: Mapped[list[str]] = mapped_column(JSON, default=list)
+    red_flags: Mapped[list[str]] = mapped_column(JSON, default=list)
+    monitoring_required: Mapped[list[str]] = mapped_column(JSON, default=list)
+    patient_friendly_summary: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    professional_summary: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    extracted_evidence: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
 class ClinicalVocabularyModel(Base):
     __tablename__ = "clinical_vocabulary"
 
@@ -295,6 +356,42 @@ class PatientIdentifierModel(Base):
     )
 
 
+class PatientFunctionalProfileModel(Base):
+    __tablename__ = "patient_functional_profiles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    patient_id: Mapped[int] = mapped_column(
+        ForeignKey("patients.id"), nullable=False, unique=True, index=True
+    )
+    drives_regularly: Mapped[bool | None] = mapped_column(default=None, nullable=True)
+    professional_driver: Mapped[bool | None] = mapped_column(default=None, nullable=True)
+    operates_machinery: Mapped[bool | None] = mapped_column(default=None, nullable=True)
+    works_at_height: Mapped[bool | None] = mapped_column(default=None, nullable=True)
+    fall_risk_activity: Mapped[bool | None] = mapped_column(default=None, nullable=True)
+    night_shift: Mapped[bool | None] = mapped_column(default=None, nullable=True)
+    caregiver_responsibility: Mapped[bool | None] = mapped_column(default=None, nullable=True)
+    high_attention_activity: Mapped[bool | None] = mapped_column(default=None, nullable=True)
+    frequent_alcohol_use: Mapped[bool | None] = mapped_column(default=None, nullable=True)
+    history_of_falls: Mapped[bool | None] = mapped_column(default=None, nullable=True)
+    low_tolerance_to_sedation_or_dizziness: Mapped[bool | None] = mapped_column(
+        default=None, nullable=True
+    )
+    source: Mapped[str] = mapped_column(String(80), default="manual", nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_reviewed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
 class ExternalPatientIdentityModel(Base):
     __tablename__ = "external_patient_identities"
 
@@ -347,6 +444,34 @@ class ClinicalSourceRecordModel(Base):
     confidence: Mapped[float] = mapped_column(Float, default=0, nullable=False)
     accepted_by_user: Mapped[bool] = mapped_column(default=False, nullable=False)
     rejected_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class ClinicalReconciliationDecisionModel(Base):
+    __tablename__ = "clinical_reconciliation_decisions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    batch_id: Mapped[int] = mapped_column(
+        ForeignKey("clinical_import_batches.id"), nullable=False, index=True
+    )
+    source_record_id: Mapped[int | None] = mapped_column(
+        ForeignKey("clinical_source_records.id"), nullable=True, index=True
+    )
+    item_id: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
+    record_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    field_path: Mapped[str] = mapped_column(String(160), nullable=False)
+    current_value: Mapped[dict] = mapped_column(JSON, default=dict)
+    imported_value: Mapped[dict] = mapped_column(JSON, default=dict)
+    source_system: Mapped[str] = mapped_column(String(120), nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, default=0, nullable=False)
+    badge: Mapped[str] = mapped_column(String(40), default="novo", nullable=False)
+    suggestion: Mapped[str] = mapped_column(String(80), default="review_manually", nullable=False)
+    decision: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    justification: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
