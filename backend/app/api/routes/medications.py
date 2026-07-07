@@ -8,8 +8,15 @@ from app.database.models import UserModel
 from app.database.session import get_db
 from app.domain.user import UserRole
 from app.repositories.medication_repository import MedicationRepository
+from app.schemas.counseling_schema import (
+    MedicationCounselingGenerateRequest,
+    MedicationCounselingReviewRequest,
+    MedicationCounselingSummaryRead,
+)
 from app.schemas.medication_schema import MedicationCreate, MedicationRead, MedicationUpdate
+from app.services.adverse_effect_taxonomy import taxonomy_snapshot
 from app.services.audit_service import AuditService
+from app.services.medication_counseling_service import MedicationCounselingService
 
 router = APIRouter(prefix="/medications", tags=["medications"])
 DbSession = Annotated[Session, Depends(get_db)]
@@ -18,6 +25,14 @@ MedicationReader = Annotated[
     Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.ENFERMAGEM)),
 ]
 MedicationManager = Annotated[UserModel, Depends(require_roles(UserRole.ADMIN))]
+CounselingReader = Annotated[
+    UserModel,
+    Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.ENFERMAGEM, UserRole.AUDITOR)),
+]
+CounselingManager = Annotated[
+    UserModel,
+    Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO)),
+]
 
 
 @router.get("", response_model=list[MedicationRead])
@@ -40,6 +55,106 @@ def create_medication(
         details={"brand_name": medication.brand_name},
     )
     return medication
+
+
+@router.get("/adverse-effect-taxonomy", response_model=list[dict])
+def adverse_effect_taxonomy(_current_user: CounselingReader) -> list[dict]:
+    return taxonomy_snapshot()
+
+
+@router.get(
+    "/{medication_id}/counseling-summary",
+    response_model=MedicationCounselingSummaryRead | None,
+)
+def get_counseling_summary(
+    medication_id: int,
+    db: DbSession,
+    _current_user: CounselingReader,
+) -> MedicationCounselingSummaryRead | None:
+    medication = MedicationRepository(db).get(medication_id)
+    if medication is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento nÃ£o encontrado."
+        )
+    service = MedicationCounselingService(db)
+    return service.read_model(service.get_best_for_medication(medication))
+
+
+@router.post(
+    "/{medication_id}/counseling-summary/generate",
+    response_model=MedicationCounselingSummaryRead,
+)
+def generate_counseling_summary(
+    medication_id: int,
+    payload: MedicationCounselingGenerateRequest,
+    db: DbSession,
+    current_user: CounselingManager,
+) -> MedicationCounselingSummaryRead:
+    medication = MedicationRepository(db).get(medication_id)
+    if medication is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento nÃ£o encontrado."
+        )
+    summary = MedicationCounselingService(db).generate_for_medication(
+        medication,
+        source_text=payload.source_text,
+        force_regenerate=payload.force_regenerate,
+        provider_name=payload.provider_name,
+    )
+    AuditService(db).record_action(
+        user=current_user,
+        action="medication_counseling.generate",
+        resource_type="medication",
+        resource_id=str(medication.id),
+        details={
+            "summary_id": summary.id,
+            "source_id": summary.source_id,
+            "status": summary.validation_status,
+            "generated_by": summary.generated_by,
+            "provider": summary.provider_name,
+            "requires_review": summary.requires_review,
+        },
+    )
+    return MedicationCounselingSummaryRead.model_validate(summary)
+
+
+@router.post(
+    "/{medication_id}/counseling-summary/review",
+    response_model=MedicationCounselingSummaryRead,
+)
+def review_counseling_summary(
+    medication_id: int,
+    payload: MedicationCounselingReviewRequest,
+    db: DbSession,
+    current_user: CounselingManager,
+) -> MedicationCounselingSummaryRead:
+    medication = MedicationRepository(db).get(medication_id)
+    if medication is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento nÃ£o encontrado."
+        )
+    service = MedicationCounselingService(db)
+    summary = service.get_best_for_medication(medication)
+    if summary is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resumo de orientacao nao encontrado.",
+        )
+    updated = service.review_summary(summary, payload)
+    AuditService(db).record_action(
+        user=current_user,
+        action="medication_counseling.review",
+        resource_type="medication",
+        resource_id=str(medication.id),
+        status=updated.validation_status,
+        details={
+            "summary_id": updated.id,
+            "source_id": updated.source_id,
+            "validation_status": updated.validation_status,
+            "justification": payload.justification,
+        },
+    )
+    return MedicationCounselingSummaryRead.model_validate(updated)
 
 
 @router.get("/{medication_id}", response_model=MedicationRead)

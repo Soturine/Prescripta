@@ -61,3 +61,38 @@ class ClinicalImportBatchRead(BaseModel):
         "Importacao demonstrativa: dados ficam pendentes ate revisao humana."
     )
 
+
+class ReconciliationDecisionRequest(BaseModel):
+    justification: str | None = Field(default=None, max_length=500)
+
+
+class ClinicalReconciliationItemRead(BaseModel):
+    item_id: str
+    source_record_id: int | None = None
+    record_type: str
+    field_path: str
+    current_value: dict
+    imported_value: dict
+    source_system: str
+    source_type: str
+    confidence: float
+    badge: str
+    suggestion: str
+    conflict: bool
+    decision: str | None = None
+    reviewed_by: int | None = None
+    reviewed_at: datetime | None = None
+    justification: str | None = None
+
+
+class ClinicalReconciliationRead(BaseModel):
+    batch_id: int
+    patient_id: int | None = None
+    status: str
+    summary: dict
+    items: list[ClinicalReconciliationItemRead]
+    badges: list[str] = Field(default_factory=list)
+    educational_notice: str = (
+        "Reconciliacao demonstrativa: conflitos exigem decisao humana por item."
+    )
+

@@ -8,10 +8,19 @@ import type {
   ClinicalVocabularyEntry,
   MedicationCatalogSearchResult,
 } from "../types/catalog";
-import type { Medication, MedicationPayload } from "../types/medication";
+import type {
+  AdverseEffectTaxonomyEntry,
+  Medication,
+  MedicationCounselingGeneratePayload,
+  MedicationCounselingReviewPayload,
+  MedicationCounselingSummary,
+  MedicationPayload,
+} from "../types/medication";
 import type {
   ClinicalContextGraph,
   Patient,
+  PatientFunctionalProfile,
+  PatientFunctionalProfilePayload,
   PatientIdentifier,
   PatientIdentifierPayload,
   PatientPayload,
@@ -21,6 +30,8 @@ import type {
   CdsCheckPayload,
   CdsCheckResult,
   ClinicalImportBatch,
+  ClinicalReconciliation,
+  ClinicalReconciliationItem,
   ImportConsentPayload,
 } from "../types/integration";
 import type {
@@ -122,6 +133,22 @@ export async function quickTriagePatient(id: number, payload: QuickTriagePayload
   return response.data;
 }
 
+export async function fetchPatientFunctionalProfile(id: number) {
+  const response = await api.get<PatientFunctionalProfile>(`/patients/${id}/functional-profile`);
+  return response.data;
+}
+
+export async function updatePatientFunctionalProfile(
+  id: number,
+  payload: PatientFunctionalProfilePayload,
+) {
+  const response = await api.put<PatientFunctionalProfile>(
+    `/patients/${id}/functional-profile`,
+    payload,
+  );
+  return response.data;
+}
+
 export async function fetchMedications() {
   const response = await api.get<Medication[]>("/medications");
   return response.data;
@@ -160,6 +187,42 @@ export async function createMedication(payload: MedicationPayload) {
 
 export async function updateMedication(id: number, payload: MedicationPayload) {
   const response = await api.put<Medication>(`/medications/${id}`, payload);
+  return response.data;
+}
+
+export async function fetchAdverseEffectTaxonomy() {
+  const response = await api.get<AdverseEffectTaxonomyEntry[]>(
+    "/medications/adverse-effect-taxonomy",
+  );
+  return response.data;
+}
+
+export async function fetchMedicationCounselingSummary(id: number) {
+  const response = await api.get<MedicationCounselingSummary | null>(
+    `/medications/${id}/counseling-summary`,
+  );
+  return response.data;
+}
+
+export async function generateMedicationCounselingSummary(
+  id: number,
+  payload: MedicationCounselingGeneratePayload = {},
+) {
+  const response = await api.post<MedicationCounselingSummary>(
+    `/medications/${id}/counseling-summary/generate`,
+    payload,
+  );
+  return response.data;
+}
+
+export async function reviewMedicationCounselingSummary(
+  id: number,
+  payload: MedicationCounselingReviewPayload,
+) {
+  const response = await api.post<MedicationCounselingSummary>(
+    `/medications/${id}/counseling-summary/review`,
+    payload,
+  );
   return response.data;
 }
 
@@ -230,6 +293,44 @@ export async function rejectClinicalImport(id: number, reason: string | null) {
   const response = await api.post<ClinicalImportBatch>(`/integrations/imports/${id}/reject`, {
     reason,
   });
+  return response.data;
+}
+
+export async function fetchClinicalReconciliation(id: number) {
+  const response = await api.get<ClinicalReconciliation>(
+    `/integrations/imports/${id}/reconciliation`,
+  );
+  return response.data;
+}
+
+export async function acceptClinicalReconciliationItem(
+  batchId: number,
+  itemId: string,
+  justification: string | null,
+) {
+  const response = await api.post<ClinicalReconciliationItem>(
+    `/integrations/imports/${batchId}/reconciliation/items/${encodeURIComponent(itemId)}/accept`,
+    { justification },
+  );
+  return response.data;
+}
+
+export async function rejectClinicalReconciliationItem(
+  batchId: number,
+  itemId: string,
+  justification: string | null,
+) {
+  const response = await api.post<ClinicalReconciliationItem>(
+    `/integrations/imports/${batchId}/reconciliation/items/${encodeURIComponent(itemId)}/reject`,
+    { justification },
+  );
+  return response.data;
+}
+
+export async function acceptClinicalReconciliationSafeItems(id: number) {
+  const response = await api.post<ClinicalReconciliation>(
+    `/integrations/imports/${id}/reconciliation/accept-safe`,
+  );
   return response.data;
 }
 

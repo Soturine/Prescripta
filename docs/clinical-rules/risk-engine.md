@@ -1,5 +1,20 @@
 # Motor de Risco
 
+## Atualizacao v0.7.0
+
+A v0.7.0 adiciona `patient_counseling`, `missing_data_mode` e `contextual_question` na resposta de checagem.
+
+Esses campos sao orientativos. Eles ajudam o profissional a explicar efeitos, atividades de risco e limitacoes por historico incompleto, mas nao alteram:
+
+- `prescription_status`;
+- `risk_level`;
+- bloqueio;
+- severidade;
+- dose;
+- recomendacao final.
+
+Resumo pratico, perfil funcional e modo sem historico ficam em servicos separados do motor deterministico.
+
 ## Atualizacao v0.6.0
 
 O motor passa a considerar, quando os dados existem:

@@ -12,14 +12,18 @@ from app.domain.user import UserRole
 from app.integrations.adapters.csv.csv_importer import CsvImporter
 from app.integrations.adapters.fhir.fhir_bundle_importer import FhirBundleImporter
 from app.integrations.adapters.json.generic_json_importer import GenericJsonImporter
+from app.integrations.services.clinical_reconciliation_service import ClinicalReconciliationService
 from app.integrations.services.integration_service import IntegrationService
 from app.schemas.integration_schema import (
     ClinicalImportBatchRead,
+    ClinicalReconciliationItemRead,
+    ClinicalReconciliationRead,
     ClinicalSourceRecordRead,
     CsvImportRequest,
     FhirBundleImportRequest,
     GenericJsonImportRequest,
     ImportReviewRequest,
+    ReconciliationDecisionRequest,
 )
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
@@ -133,6 +137,75 @@ def reject_import(
     batch = _get_batch_or_404(db, batch_id)
     updated = service.reject_batch(batch, current_user, reason=payload.reason)
     return _batch_response(db, updated)
+
+
+@router.get("/imports/{batch_id}/reconciliation", response_model=ClinicalReconciliationRead)
+def get_import_reconciliation(
+    batch_id: int,
+    db: DbSession,
+    _current_user: ImportReader,
+) -> ClinicalReconciliationRead:
+    batch = _get_batch_or_404(db, batch_id)
+    return ClinicalReconciliationService(db).build(batch)
+
+
+@router.post(
+    "/imports/{batch_id}/reconciliation/items/{item_id}/accept",
+    response_model=ClinicalReconciliationItemRead,
+)
+def accept_reconciliation_item(
+    batch_id: int,
+    item_id: str,
+    payload: ReconciliationDecisionRequest,
+    db: DbSession,
+    current_user: ImportManager,
+) -> ClinicalReconciliationItemRead:
+    batch = _get_batch_or_404(db, batch_id)
+    try:
+        return ClinicalReconciliationService(db).accept_item(
+            batch,
+            item_id,
+            current_user,
+            justification=payload.justification,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post(
+    "/imports/{batch_id}/reconciliation/items/{item_id}/reject",
+    response_model=ClinicalReconciliationItemRead,
+)
+def reject_reconciliation_item(
+    batch_id: int,
+    item_id: str,
+    payload: ReconciliationDecisionRequest,
+    db: DbSession,
+    current_user: ImportManager,
+) -> ClinicalReconciliationItemRead:
+    batch = _get_batch_or_404(db, batch_id)
+    try:
+        return ClinicalReconciliationService(db).reject_item(
+            batch,
+            item_id,
+            current_user,
+            justification=payload.justification,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post(
+    "/imports/{batch_id}/reconciliation/accept-safe",
+    response_model=ClinicalReconciliationRead,
+)
+def accept_reconciliation_items_without_conflict(
+    batch_id: int,
+    db: DbSession,
+    current_user: ImportManager,
+) -> ClinicalReconciliationRead:
+    batch = _get_batch_or_404(db, batch_id)
+    return ClinicalReconciliationService(db).accept_all_without_conflict(batch, current_user)
 
 
 def _get_batch_or_404(db: Session, batch_id: int) -> ClinicalImportBatchModel:

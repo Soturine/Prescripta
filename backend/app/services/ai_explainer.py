@@ -329,6 +329,9 @@ class AIExplainer:
             for item in payload.rag_evidence
             if item.get("source")
         ]
+        how_to_explain = None
+        if payload.patient_counseling and payload.patient_counseling.orientation_points:
+            how_to_explain = " ".join(payload.patient_counseling.orientation_points[:4])
         return PrescriptionExplainResponse(
             provider=provider,
             model=model,
@@ -343,6 +346,7 @@ class AIExplainer:
             critical_alert_codes=critical_alert_codes,
             missing_patient_data=missing_patient_data,
             rag_sources=rag_sources,
+            how_to_explain_to_patient=how_to_explain,
         )
 
     def _rag_source_label(self, item: dict) -> str:

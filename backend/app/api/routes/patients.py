@@ -10,6 +10,8 @@ from app.domain.user import UserRole
 from app.repositories.patient_repository import PatientRepository
 from app.schemas.patient_schema import (
     PatientCreate,
+    PatientFunctionalProfileRead,
+    PatientFunctionalProfileUpdate,
     PatientIdentifierCreate,
     PatientIdentifierRead,
     PatientRead,
@@ -24,6 +26,7 @@ from app.services.clinical_profile import (
 )
 from app.services.controlled_vocabulary import label_for_code
 from app.services.normalizer import merge_terms
+from app.services.patient_functional_profile import PatientFunctionalProfileService
 from app.services.patient_identifier_service import PatientIdentifierService
 
 router = APIRouter(prefix="/patients", tags=["patients"])
@@ -221,6 +224,49 @@ def list_patient_identifiers(
             status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nÃ£o encontrado."
         )
     return PatientIdentifierService(db).list_for_patient(patient_id)
+
+
+@router.get("/{patient_id}/functional-profile", response_model=PatientFunctionalProfileRead)
+def get_functional_profile(
+    patient_id: int,
+    db: DbSession,
+    _current_user: PatientReader,
+) -> PatientFunctionalProfileRead:
+    patient = PatientRepository(db).get(patient_id)
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nÃ£o encontrado."
+        )
+    return PatientFunctionalProfileService(db).read_for_patient(patient_id)
+
+
+@router.put("/{patient_id}/functional-profile", response_model=PatientFunctionalProfileRead)
+def update_functional_profile(
+    patient_id: int,
+    payload: PatientFunctionalProfileUpdate,
+    db: DbSession,
+    current_user: PatientManager,
+) -> PatientFunctionalProfileRead:
+    patient = PatientRepository(db).get(patient_id)
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nÃ£o encontrado."
+        )
+    service = PatientFunctionalProfileService(db)
+    profile = service.upsert(patient_id, payload)
+    read_profile = service._to_read(profile)
+    AuditService(db).record_action(
+        user=current_user,
+        action="patient.functional_profile.update",
+        resource_type="patient",
+        resource_id=str(patient_id),
+        details={
+            "patient_name": patient.name,
+            "unknown_fields": read_profile.unknown_fields,
+            "source": read_profile.source,
+        },
+    )
+    return read_profile
 
 
 @router.post(

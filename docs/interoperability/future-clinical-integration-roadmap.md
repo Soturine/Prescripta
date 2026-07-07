@@ -157,3 +157,11 @@ Prescripta agora possui a base demonstrativa de Ports & Adapters em `backend/app
 Essa base prepara integracoes futuras por API oficial, mas nao implementa integracao real com hospitais, RNDS, HL7 v2 completo ou DICOM. Hospitais privados exigem contrato, credenciais oficiais, seguranca, governanca e conformidade LGPD.
 
 Nao usar scraping, credenciais de portais ou dados reais na demo publica.
+
+# Atualizacao v0.7.0
+
+A camada de importacao ganhou reconciliacao granular por item.
+
+O servico compara dados importados com dados existentes, marca novo/duplicado/conflito/possivel match e registra aceite/rejeicao item a item. O aceite seguro ignora conflitos e duplicados.
+
+Pendencia para v0.8.0: reconciliacao clinica avancada com mais tipos FHIR, relatorios/exportacao e filtros de auditoria.

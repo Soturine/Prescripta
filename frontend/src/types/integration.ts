@@ -25,6 +25,35 @@ export type ClinicalImportBatch = {
   educational_notice: string;
 };
 
+export type ClinicalReconciliationItem = {
+  item_id: string;
+  source_record_id: number | null;
+  record_type: string;
+  field_path: string;
+  current_value: Record<string, unknown>;
+  imported_value: Record<string, unknown>;
+  source_system: string;
+  source_type: string;
+  confidence: number;
+  badge: string;
+  suggestion: string;
+  conflict: boolean;
+  decision: string | null;
+  reviewed_by: number | null;
+  reviewed_at: string | null;
+  justification: string | null;
+};
+
+export type ClinicalReconciliation = {
+  batch_id: number;
+  patient_id: number | null;
+  status: string;
+  summary: Record<string, number>;
+  items: ClinicalReconciliationItem[];
+  badges: string[];
+  educational_notice: string;
+};
+
 export type ImportConsentPayload = {
   consent_confirmed: boolean;
   purpose: string;

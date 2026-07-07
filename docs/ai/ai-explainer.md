@@ -1,5 +1,13 @@
 # IA Explicativa
 
+## Atualizacao v0.7.0
+
+A explicacao assistida pode incluir `Como explicar ao paciente` quando a checagem trouxer `patient_counseling`.
+
+Essa secao e derivada de resumos praticos ja extraidos de fonte/RAG e validados por schema. A IA explicativa nao cria novo efeito adverso, nao usa memoria livre para completar bula e nao transforma resumo pendente em validado.
+
+O extractor de counseling e documentado em [counseling-extractor.md](counseling-extractor.md). Ele recebe apenas trechos recuperados, retorna JSON estruturado e salva como `pending_review`.
+
 ## Atualizacao v0.6.0
 
 A IA pode explicar, quando o backend ja tiver calculado:
