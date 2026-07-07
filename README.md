@@ -1,27 +1,27 @@
 # Prescripta
 
-![Version](https://img.shields.io/badge/version-v0.6.0-blue)
+![Version](https://img.shields.io/badge/version-v0.7.0-blue)
 ![Backend](https://img.shields.io/badge/backend-FastAPI-009688)
 ![Frontend](https://img.shields.io/badge/frontend-React-155E75)
 ![License](https://img.shields.io/badge/license-Apache--2.0-slate)
 
-Prescripta e um sistema web educacional de apoio a prescricao segura. A v0.6.0 amplia seguranca clinica e cria uma camada de interoperabilidade demonstrativa por Ports & Adapters, com importacoes pendentes, consentimento, auditoria e CDS API.
+Prescripta e um sistema web educacional de apoio a prescricao segura. A v0.7.0 adiciona resumo pratico de seguranca, perfil funcional do paciente, modo sem historico e reconciliacao clinica granular.
 
 > Uso educacional/demonstrativo: Prescripta nao e dispositivo medico, nao substitui avaliacao profissional e nao deve ser usado para decisoes clinicas reais.
 
 Prescripta e um motor de apoio a prescricao segura, preparado para integracao com sistemas clinicos via arquitetura de interoperabilidade, FHIR-like imports, adapters hospitalares, auditoria, consentimento e motor deterministico de risco.
 
-## Preview v0.6.0
+## Preview v0.7.0
 
-![GIF demonstrativo do Prescripta v0.6.0](docs/assets/v0.6.0/prescripta-v0.6-demo.gif)
+![GIF demonstrativo do Prescripta v0.7.0](docs/assets/v0.7.0/prescripta-v0.7-demo.gif)
 
-![Importacoes clinicas](docs/assets/v0.6.0/clinical-imports-list.png)
+![Orientacoes praticas](docs/assets/v0.7.0/medication-counseling-tab.png)
 
-![Plano de exposicao medicamentosa](docs/assets/v0.6.0/medication-exposure-plan.png)
+![Orientacoes ao paciente](docs/assets/v0.7.0/prescription-patient-orientation.png)
 
-![Painel CDS API](docs/assets/v0.6.0/cds-api-panel.png)
+![Perfil funcional](docs/assets/v0.7.0/functional-profile.png)
 
-![Identificadores do paciente](docs/assets/v0.6.0/patient-identifiers.png)
+![Reconciliacao granular](docs/assets/v0.7.0/reconciliation-overview.png)
 
 ## Funcionalidades
 
@@ -40,6 +40,11 @@ Prescripta e um motor de apoio a prescricao segura, preparado para integracao co
 - Identificadores de paciente com hash/mascara e matching sem merge automatico inseguro.
 - Importacoes clinicas FHIR/JSON/CSV/mock com consentimento, pending_review e aceite/rejeicao.
 - Endpoint demonstrativo `POST /api/cds/prescription-check`.
+- Resumo pratico de seguranca por medicamento com fonte, jurisdicao, evidencia e revisao.
+- Extractor IA/RAG com JSON estruturado validado e fallback deterministico.
+- Perfil funcional do paciente para direcao, maquinas, altura, quedas, alcool e alta atencao.
+- Modo sem historico com card de dados faltantes sem bloqueio automatico.
+- Reconciliacao granular de importacoes com aceite/rejeicao por item.
 - RAG interno com `jurisdiction`, `source_name`, `source_url`, `evidence_type` e `validation_status`.
 - IA explicativa multi-provider com fallback deterministico, sem poder de alterar decisao.
 - Auditoria automatica de acoes relevantes.
@@ -109,15 +114,14 @@ npm run build
 
 ## Release Atual
 
-- Publicada: `v0.6.0`
-- Notas: [docs/releases/v0.6.0.md](docs/releases/v0.6.0.md)
+- Publicada: `v0.7.0`
+- Notas: [docs/releases/v0.7.0.md](docs/releases/v0.7.0.md)
 - Auditoria de profissionalizacao: [docs/product/professionalization-audit-v0.5.0.md](docs/product/professionalization-audit-v0.5.0.md)
 - Fontes brasileiras: [docs/clinical-rules/brazilian-medication-sources.md](docs/clinical-rules/brazilian-medication-sources.md)
 
 ## Roadmap Resumido
 
-- `v0.6.0`: Seguranca clinica ampliada + interoperabilidade clinica demonstrativa.
-- `v0.7.0`: Importacao clinica assistida aprimorada + revisao humana avancada.
+- `v0.7.0`: Resumo pratico de seguranca + perfil funcional + reconciliacao granular.
 - `v0.8.0`: Relatorios, exportacao e auditoria avancada.
 - `v0.9.0`: Docker/PostgreSQL/deploy.
 - `v1.0.0`: versao final de portfolio.
@@ -130,6 +134,13 @@ npm run build
 - [Fontes brasileiras de medicamentos](docs/clinical-rules/brazilian-medication-sources.md)
 - [Vocabulario clinico controlado](docs/clinical-rules/controlled-clinical-vocabulary.md)
 - [Motor de risco](docs/clinical-rules/risk-engine.md)
+- [Resumo pratico de seguranca](docs/clinical-rules/medication-counseling-summary.md)
+- [Taxonomia de efeitos adversos](docs/clinical-rules/adverse-effect-taxonomy.md)
+- [Counseling extractor](docs/ai/counseling-extractor.md)
+- [Perfil funcional](docs/product/patient-functional-profile.md)
+- [Modo sem historico](docs/product/no-history-mode.md)
+- [Reconciliacao clinica granular](docs/interoperability/clinical-reconciliation.md)
+- [Auditoria de counseling/reconciliacao](docs/security/counseling-review-audit.md)
 - [Exposicao e uso continuo](docs/clinical-rules/medication-exposure-and-continuous-use.md)
 - [Arquitetura de interoperabilidade](docs/interoperability/architecture.md)
 - [CDS API](docs/interoperability/cds-api.md)

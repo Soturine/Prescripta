@@ -10,9 +10,15 @@ Guia para agentes e colaboradores que forem evoluir o Prescripta.
 - `backend/app/services/anvisa_lookup_service.py`: consulta assistida Anvisa/DCB sem scraping agressivo.
 - `backend/app/services/controlled_vocabulary.py`: vocabulário clínico controlado e normalização de campos legados.
 - `backend/app/services/ai_explainer.py`: camada explicativa; não decide risco.
+- `backend/app/services/medication_counseling_extractor.py`: extrator IA/RAG de resumo pratico; usa apenas fonte recuperada.
+- `backend/app/services/medication_counseling_service.py`: cache, geracao e revisao humana de orientacoes ao paciente.
+- `backend/app/services/patient_counseling_service.py`: monta orientacoes, modo sem historico e pergunta contextual.
+- `backend/app/services/patient_functional_profile.py`: perfil funcional do paciente.
+- `backend/app/services/adverse_effect_taxonomy.py`: taxonomia controlada de efeitos adversos.
 - `backend/app/integrations`: portas, adapters demonstrativos, mapeamento, consentimento e auditoria de importações clínicas.
 - `backend/app/integrations/adapters`: FHIR/JSON/CSV/mock demonstrativos; não conectam sistemas reais.
 - `backend/app/integrations/services`: matching, deduplicação, consentimento e orquestração de importação pendente.
+- `backend/app/integrations/services/clinical_reconciliation_service.py`: reconciliacao granular de importacoes por item.
 - `backend/app/knowledge`: RAG demonstrativo com busca textual e normalização.
 - `backend/app/data/knowledge_base`: base interna demonstrativa em Markdown.
 - `backend/app/core/auth.py`: dependências de autenticação e autorização.
@@ -71,6 +77,9 @@ npm run lint
 - Ao alterar permissões, atualize testes e `docs/security/authentication-and-roles.md`.
 - IA deve apenas explicar alertas gerados por regras determinísticas, contexto RAG demonstrativo e alternativas já avaliadas.
 - Nunca permita que IA altere status, risco, bloqueio, dose crítica ou recomendação final.
+- Resumos praticos gerados por IA/fallback devem usar apenas fonte/RAG/trecho cadastrado, retornar JSON validado e permanecer `pending_review` ate revisao humana.
+- Perfil funcional e modo sem historico orientam cautelas praticas, mas nao bloqueiam prescricao automaticamente.
+- Reconciliacao clinica granular deve registrar aceite/rejeicao por item e nao alterar dado importado sem decisao humana.
 - Preserve fallback determinístico quando não houver chave de API ou provider externo falhar.
 - RAG interno não decide risco, não substitui bula validada e deve permanecer marcado como demonstrativo.
 - Para contexto brasileiro, priorize Anvisa/Bulário/DCB e marque fonte, jurisdição e status de validação.

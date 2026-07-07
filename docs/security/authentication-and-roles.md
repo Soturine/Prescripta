@@ -53,3 +53,13 @@ Endpoints de integracao clinica:
 - `auditor`: pode visualizar importacoes, mas nao aceitar/rejeitar.
 
 Aceite e rejeicao registram auditoria. Importacao exige consentimento ou base legal aplicavel no payload.
+
+# Atualizacao v0.7.0
+
+Permissoes novas:
+
+- `admin` e `medico`: gerar/revisar resumos praticos, editar perfil funcional e aceitar/rejeitar itens de reconciliacao.
+- `enfermagem`: visualizar orientacoes ao paciente, contexto funcional e importacoes conforme regras existentes.
+- `auditor`: visualizar resumos, importacoes, reconciliacao e auditoria; nao pode gerar/revisar resumo nem decidir itens.
+
+Eventos novos auditados: `medication_counseling.generate`, `medication_counseling.review`, `patient.functional_profile.update`, `clinical_reconciliation.item.accepted`, `clinical_reconciliation.item.rejected` e `clinical_reconciliation.safe_items.accepted`.

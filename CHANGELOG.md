@@ -6,9 +6,40 @@ Todas as mudancas relevantes deste projeto sao documentadas aqui.
 
 ### Planned
 
-- v0.7.0: Importacao clinica assistida aprimorada + revisao humana avancada.
 - v0.8.0: Relatorios, exportacao e auditoria avancada.
 - v0.9.0: Docker/PostgreSQL/deploy.
+- v1.0.0: versao final de portfolio.
+
+## [0.7.0] - 2026-07-07
+
+### Added
+
+- `MedicationCounselingSummary` com fonte, jurisdicao, evidencia extraida, cache e revisao humana.
+- `MedicationCounselingExtractor` com providers GPT/Gemini/Llama/fallback e JSON validado por Pydantic.
+- Taxonomia controlada de efeitos adversos e orientacoes praticas.
+- Seeds demonstrativos de tansulosina, sertralina/ISRS e litio demo.
+- `PatientFunctionalProfile` com direcao, maquinas, altura, quedas, turno, alcool e alta atencao.
+- Modo sem historico com dados faltantes e pergunta minima contextual.
+- Cards de orientacao ao paciente, contexto funcional, dados faltantes e resumo pratico na checagem.
+- Reconciliacao clinica granular com badges, decisao por item e aceite seguro de itens sem conflito.
+- Endpoints de counseling, perfil funcional e reconciliacao granular.
+
+### Changed
+
+- Explicacao assistida inclui secao `Como explicar ao paciente` baseada no counseling ja validado no payload.
+- Importacoes clinicas mantem aceite/rejeicao de lote e ganham revisao campo a campo.
+- Roadmap atualizado para v0.8.0 relatorios/exportacao/auditoria, v0.9.0 Docker/PostgreSQL/deploy e v1.0.0 portfolio.
+
+### Security
+
+- Geracao por IA/fallback fica `pending_review` e nao aparece como validada.
+- IA nao altera status, risco, bloqueio, dose critica ou recomendacao final.
+- Decisoes granulares, revisao de resumo e perfil funcional geram auditoria.
+
+### Tests
+
+- Backend ampliado para 58 testes.
+- Mantidos testes antigos de v0.6.0.
 
 ## [0.6.0] - 2026-07-03
 

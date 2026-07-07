@@ -17,11 +17,14 @@
 - Entregue: endpoint `/api/cds/prescription-check`.
 - Sem scraping de hospitais.
 
-## v0.7.0 - Importacao clinica assistida aprimorada + revisao humana avancada
+## v0.7.0 - Resumo pratico de seguranca + perfil funcional + reconciliacao granular
 
-- Reconciliacao avancada de campos aceitos/rejeitados.
-- Melhor visualizacao de diferencas e duplicidades.
-- Mais cenarios FHIR Bundle demonstrativos.
+- Entregue: resumo pratico de seguranca por medicamento com fonte/RAG e revisao humana.
+- Entregue: taxonomia controlada de efeitos adversos e orientacoes praticas.
+- Entregue: perfil funcional do paciente e modo sem historico.
+- Entregue: pergunta minima contextual para atividades de risco.
+- Entregue: reconciliacao clinica granular com aceite/rejeicao por item.
+- Entregue: auditoria de geracao/revisao, perfil funcional e decisoes granulares.
 
 ## v0.8.0 - Relatorios, exportacao e auditoria avancada
 
@@ -29,6 +32,7 @@
 - Exportacao.
 - Filtros avancados de auditoria.
 - Trilhas de revisao mais completas.
+- Reconciliacao clinica avancada quando necessario.
 
 ## v0.9.0 - Docker/PostgreSQL/deploy
 
