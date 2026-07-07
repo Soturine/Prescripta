@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 
 import ClinicalContextGraphCard from "../components/ClinicalContextGraphCard";
 import ClinicalProfileCard from "../components/ClinicalProfileCard";
+import FunctionalProfileCard from "../components/FunctionalProfileCard";
 import LoadingState from "../components/LoadingState";
 import PatientForm from "../components/PatientForm";
 import QuickTriageForm from "../components/QuickTriageForm";
@@ -11,10 +12,16 @@ import { useAuth } from "../context/AuthContext";
 import {
   fetchPatient,
   fetchPatientClinicalContext,
+  fetchPatientFunctionalProfile,
   quickTriagePatient,
+  updatePatientFunctionalProfile,
   updatePatient,
 } from "../services/api";
-import type { PatientPayload, QuickTriagePayload } from "../types/patient";
+import type {
+  PatientFunctionalProfilePayload,
+  PatientPayload,
+  QuickTriagePayload,
+} from "../types/patient";
 
 export default function PatientDetails() {
   const { canAccess } = useAuth();
@@ -32,6 +39,11 @@ export default function PatientDetails() {
     queryFn: () => fetchPatientClinicalContext(patientId),
     enabled: Number.isFinite(patientId),
   });
+  const { data: functionalProfile } = useQuery({
+    queryKey: ["patients", patientId, "functional-profile"],
+    queryFn: () => fetchPatientFunctionalProfile(patientId),
+    enabled: Number.isFinite(patientId),
+  });
   const updateMutation = useMutation({
     mutationFn: (payload: PatientPayload) => updatePatient(patientId, payload),
     onSuccess: async () => {
@@ -45,6 +57,14 @@ export default function PatientDetails() {
       await queryClient.invalidateQueries({ queryKey: ["patients"] });
       await queryClient.invalidateQueries({ queryKey: ["patients", patientId] });
       await queryClient.invalidateQueries({ queryKey: ["patients", patientId, "clinical-context"] });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const functionalProfileMutation = useMutation({
+    mutationFn: (payload: PatientFunctionalProfilePayload) =>
+      updatePatientFunctionalProfile(patientId, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["patients", patientId, "functional-profile"] });
       await queryClient.invalidateQueries({ queryKey: ["audit"] });
     },
   });
@@ -131,6 +151,17 @@ export default function PatientDetails() {
       </section>
 
       <ClinicalProfileCard patient={patient} />
+
+      {functionalProfile ? (
+        <FunctionalProfileCard
+          canManage={canManagePatient}
+          isSaving={functionalProfileMutation.isPending}
+          onSubmit={async (payload) => {
+            await functionalProfileMutation.mutateAsync(payload);
+          }}
+          profile={functionalProfile}
+        />
+      ) : null}
 
       {canManagePatient ? (
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">

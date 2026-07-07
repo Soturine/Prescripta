@@ -1,3 +1,5 @@
+import type { MedicationCounselingSummary } from "./medication";
+
 export type RiskLevel = "baixo" | "moderado" | "alto" | "critico";
 export type PrescriptionStatus = "liberado" | "atencao" | "bloqueado";
 
@@ -18,6 +20,7 @@ export type PrescriptionCheckPayload = {
   duration_days: number | null;
   indication: string | null;
   professional_notes: string | null;
+  contextual_activity_answer?: string | null;
 };
 
 export type DoseSummary = {
@@ -100,6 +103,42 @@ export type ClinicalContextGraph = {
   medication_factors: string[];
 };
 
+export type MissingDataMode = {
+  incomplete_history: boolean;
+  message: string;
+  limitation_summary: string;
+  missing_data: string[];
+  does_not_block_flow: boolean;
+};
+
+export type ContextualQuestion = {
+  should_ask: boolean;
+  question: string | null;
+  options: string[];
+  reason: string | null;
+};
+
+export type FunctionalContextSummary = {
+  profile_known: boolean;
+  unknown_fields: string[];
+  personalized_warnings: string[];
+  generic_warnings: string[];
+  question: ContextualQuestion;
+};
+
+export type PatientCounselingResponse = {
+  summary: MedicationCounselingSummary | null;
+  orientation_points: string[];
+  red_flags: string[];
+  source_label: string | null;
+  review_status: string | null;
+  generated_by_ai: boolean;
+  requires_review: boolean;
+  functional_context: FunctionalContextSummary;
+  missing_data_mode: MissingDataMode;
+  educational_notice: string;
+};
+
 export type PrescriptionCheckResult = {
   status: PrescriptionStatus;
   risk_level: RiskLevel;
@@ -114,6 +153,9 @@ export type PrescriptionCheckResult = {
   rag_evidence: RagEvidence[];
   clinical_context_graph: ClinicalContextGraph;
   alternatives: AlternativeMedication[];
+  patient_counseling: PatientCounselingResponse | null;
+  missing_data_mode: MissingDataMode | null;
+  contextual_question: ContextualQuestion | null;
 };
 
 export type PrescriptionExplanationPayload = PrescriptionCheckResult & {
@@ -176,4 +218,5 @@ export type PrescriptionExplanationResult = {
   critical_alert_codes: string[];
   missing_patient_data: string[];
   rag_sources: string[];
+  how_to_explain_to_patient: string | null;
 };

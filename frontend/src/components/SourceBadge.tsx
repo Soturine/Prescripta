@@ -10,6 +10,10 @@ const sourceLabels: Record<string, string> = {
   manual_curated: "Manual",
   demo_seed: "Demo",
   external_reference: "Externa",
+  rag_demo: "RAG demo",
+  seed_demo: "Seed demo",
+  ai_provider: "IA",
+  fallback_deterministic: "Fallback",
 };
 
 export default function SourceBadge({ source, jurisdiction, status }: SourceBadgeProps) {

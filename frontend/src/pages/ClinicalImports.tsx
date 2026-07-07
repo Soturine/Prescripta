@@ -15,14 +15,23 @@ import RiskBadge from "../components/RiskBadge";
 import { useAuth } from "../context/AuthContext";
 import {
   acceptClinicalImport,
+  acceptClinicalReconciliationItem,
+  acceptClinicalReconciliationSafeItems,
   checkCdsPrescription,
   fetchClinicalImports,
+  fetchClinicalReconciliation,
   importClinicalCsv,
   importClinicalFhir,
   importClinicalJson,
   rejectClinicalImport,
+  rejectClinicalReconciliationItem,
 } from "../services/api";
-import type { ClinicalImportBatch, ImportConsentPayload } from "../types/integration";
+import type {
+  ClinicalImportBatch,
+  ClinicalReconciliation,
+  ClinicalReconciliationItem,
+  ImportConsentPayload,
+} from "../types/integration";
 import { formatDateTime } from "../utils/formatters";
 
 const jsonDemo = JSON.stringify(
@@ -84,6 +93,11 @@ export default function ClinicalImports() {
     () => imports.find((item) => item.id === selectedId) ?? imports[0],
     [imports, selectedId],
   );
+  const { data: reconciliation } = useQuery({
+    queryKey: ["clinical-reconciliation", selected?.id],
+    queryFn: () => fetchClinicalReconciliation(Number(selected?.id)),
+    enabled: Boolean(selected),
+  });
   const importMutation = useMutation({
     mutationFn: async () => {
       const consent: ImportConsentPayload = {
@@ -119,6 +133,40 @@ export default function ClinicalImports() {
     mutationFn: (id: number) => rejectClinicalImport(id, rejectReason),
     onSuccess: async (batch) => {
       setSelectedId(batch.id);
+      await queryClient.invalidateQueries({ queryKey: ["clinical-imports"] });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const acceptSafeMutation = useMutation({
+    mutationFn: acceptClinicalReconciliationSafeItems,
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({ queryKey: ["clinical-reconciliation", result.batch_id] });
+      await queryClient.invalidateQueries({ queryKey: ["clinical-imports"] });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const acceptItemMutation = useMutation({
+    mutationFn: (item: ClinicalReconciliationItem) =>
+      acceptClinicalReconciliationItem(
+        Number(selected?.id),
+        item.item_id,
+        "Aceite granular demonstrativo.",
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["clinical-reconciliation", selected?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["clinical-imports"] });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const rejectItemMutation = useMutation({
+    mutationFn: (item: ClinicalReconciliationItem) =>
+      rejectClinicalReconciliationItem(
+        Number(selected?.id),
+        item.item_id,
+        "Rejeicao granular demonstrativa.",
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["clinical-reconciliation", selected?.id] });
       await queryClient.invalidateQueries({ queryKey: ["clinical-imports"] });
       await queryClient.invalidateQueries({ queryKey: ["audit"] });
     },
@@ -279,6 +327,10 @@ export default function ClinicalImports() {
           isRejecting={rejectMutation.isPending}
           onAccept={() => acceptMutation.mutate(selected.id)}
           onReject={() => rejectMutation.mutate(selected.id)}
+          onAcceptItem={(item) => acceptItemMutation.mutate(item)}
+          onAcceptSafe={() => acceptSafeMutation.mutate(selected.id)}
+          onRejectItem={(item) => rejectItemMutation.mutate(item)}
+          reconciliation={reconciliation ?? null}
           rejectReason={rejectReason}
           setRejectReason={setRejectReason}
         />
@@ -341,7 +393,11 @@ function ImportDetail({
   isAccepting,
   isRejecting,
   onAccept,
+  onAcceptItem,
+  onAcceptSafe,
   onReject,
+  onRejectItem,
+  reconciliation,
   rejectReason,
   setRejectReason,
 }: {
@@ -350,7 +406,11 @@ function ImportDetail({
   isAccepting: boolean;
   isRejecting: boolean;
   onAccept: () => void;
+  onAcceptItem: (item: ClinicalReconciliationItem) => void;
+  onAcceptSafe: () => void;
   onReject: () => void;
+  onRejectItem: (item: ClinicalReconciliationItem) => void;
+  reconciliation: ClinicalReconciliation | null;
   rejectReason: string;
   setRejectReason: (value: string) => void;
 }) {
@@ -385,6 +445,15 @@ function ImportDetail({
           </article>
         ))}
       </div>
+      {reconciliation ? (
+        <ReconciliationPanel
+          canReview={canReview && batch.status === "pending_review"}
+          onAcceptItem={onAcceptItem}
+          onAcceptSafe={onAcceptSafe}
+          onRejectItem={onRejectItem}
+          reconciliation={reconciliation}
+        />
+      ) : null}
       {canReview && batch.status === "pending_review" ? (
         <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center">
           <button
@@ -415,6 +484,134 @@ function ImportDetail({
         </div>
       ) : null}
     </section>
+  );
+}
+
+function ReconciliationPanel({
+  reconciliation,
+  canReview,
+  onAcceptSafe,
+  onAcceptItem,
+  onRejectItem,
+}: {
+  reconciliation: ClinicalReconciliation;
+  canReview: boolean;
+  onAcceptSafe: () => void;
+  onAcceptItem: (item: ClinicalReconciliationItem) => void;
+  onRejectItem: (item: ClinicalReconciliationItem) => void;
+}) {
+  return (
+    <section className="mt-5 rounded-lg border border-slate-200 bg-white p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h3 className="text-base font-bold text-ink">Reconciliacao granular</h3>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            {reconciliation.educational_notice}
+          </p>
+        </div>
+        {canReview ? (
+          <button className="btn-secondary" onClick={onAcceptSafe} type="button">
+            <Check aria-hidden="true" className="h-4 w-4" />
+            Aceitar sem conflito
+          </button>
+        ) : null}
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-4">
+        {Object.entries(reconciliation.summary).map(([key, value]) => (
+          <div className="rounded-lg bg-slate-50 p-3" key={key}>
+            <p className="text-xs font-bold uppercase tracking-normal text-slate-500">{key}</p>
+            <p className="mt-1 text-lg font-bold text-ink">{value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 overflow-hidden rounded-lg border border-slate-200">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[980px] text-left text-sm">
+            <thead className="bg-slate-50 text-xs font-bold uppercase tracking-normal text-slate-500">
+              <tr>
+                <th className="px-4 py-3">Item</th>
+                <th className="px-4 py-3">Atual</th>
+                <th className="px-4 py-3">Importado</th>
+                <th className="px-4 py-3">Badge</th>
+                <th className="px-4 py-3">Sugestao</th>
+                <th className="px-4 py-3 text-right">Revisao</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {reconciliation.items.map((item) => (
+                <tr className="align-top text-slate-700" key={item.item_id}>
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-ink">{item.field_path}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {item.record_type} - confianca {Math.round(item.confidence * 100)}%
+                    </p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <JsonValue value={item.current_value.value} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <JsonValue value={item.imported_value.value} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <ReconciliationBadge badge={item.badge} conflict={item.conflict} />
+                  </td>
+                  <td className="px-4 py-3">{item.suggestion}</td>
+                  <td className="px-4 py-3 text-right">
+                    {canReview && !item.decision ? (
+                      <div className="flex justify-end gap-2">
+                        <button
+                          className="btn-secondary"
+                          onClick={() => onAcceptItem(item)}
+                          type="button"
+                        >
+                          <Check aria-hidden="true" className="h-4 w-4" />
+                          Aceitar
+                        </button>
+                        <button
+                          className="btn-secondary"
+                          onClick={() => onRejectItem(item)}
+                          type="button"
+                        >
+                          <X aria-hidden="true" className="h-4 w-4" />
+                          Rejeitar
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="font-semibold text-slate-600">
+                        {item.decision ?? "-"}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function JsonValue({ value }: { value: unknown }) {
+  return (
+    <pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-2 text-xs text-slate-700">
+      {typeof value === "string" ? value : JSON.stringify(value, null, 2)}
+    </pre>
+  );
+}
+
+function ReconciliationBadge({ badge, conflict }: { badge: string; conflict: boolean }) {
+  const classes = conflict
+    ? "border-red-200 bg-red-50 text-red-700"
+    : badge === "aceito"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : badge === "rejeitado"
+        ? "border-slate-200 bg-slate-100 text-slate-700"
+        : "border-cyan-100 bg-cyan-50 text-cyan-900";
+  return (
+    <span className={`rounded-lg border px-2.5 py-1 text-xs font-bold ${classes}`}>
+      {badge}
+    </span>
   );
 }
 

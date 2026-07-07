@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Sparkles } from "lucide-react";
+import { AlertTriangle, FileText, HelpCircle, ListChecks, Route, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import AlertCard from "../components/AlertCard";
@@ -23,6 +23,9 @@ import {
   fetchPatients,
 } from "../services/api";
 import type {
+  FunctionalContextSummary,
+  MissingDataMode,
+  PatientCounselingResponse,
   PrescriptionCheckPayload,
   PrescriptionExplanationPayload,
 } from "../types/prescription";
@@ -63,6 +66,15 @@ export default function PrescriptionCheck() {
     setLastPayload(payload);
     explanationMutation.reset();
     await checkMutation.mutateAsync(payload);
+  }
+
+  async function handleContextualAnswer(answer: string) {
+    if (!lastPayload) {
+      return;
+    }
+    const nextPayload = { ...lastPayload, contextual_activity_answer: answer };
+    setLastPayload(nextPayload);
+    await checkMutation.mutateAsync(nextPayload);
   }
 
   function buildExplanationPayload(): PrescriptionExplanationPayload | null {
@@ -193,6 +205,16 @@ export default function PrescriptionCheck() {
 
           <DoseAccumulationCard summary={checkMutation.data.dose_summary} />
 
+          <div className="grid gap-4 xl:grid-cols-2">
+            <PatientCounselingCard counseling={checkMutation.data.patient_counseling} />
+            <FunctionalContextCard
+              context={checkMutation.data.patient_counseling?.functional_context ?? null}
+              onAnswer={handleContextualAnswer}
+            />
+            <MissingDataCard mode={checkMutation.data.missing_data_mode} />
+            <PracticalSafetySummaryCard counseling={checkMutation.data.patient_counseling} />
+          </div>
+
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-bold text-ink">Compatibilidade paciente–medicação</h2>
             <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -277,10 +299,179 @@ export default function PrescriptionCheck() {
                   </p>
                 </div>
               ) : null}
+              {explanationMutation.data.how_to_explain_to_patient ? (
+                <div className="mt-4 rounded-lg border border-cyan-100 bg-cyan-50 p-4">
+                  <h3 className="text-sm font-bold text-ink">Como explicar ao paciente</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {explanationMutation.data.how_to_explain_to_patient}
+                  </p>
+                </div>
+              ) : null}
             </section>
           ) : null}
         </section>
       ) : null}
     </div>
+  );
+}
+
+function PatientCounselingCard({
+  counseling,
+}: {
+  counseling: PatientCounselingResponse | null;
+}) {
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-ocean">
+          <ListChecks aria-hidden="true" className="h-5 w-5" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-ink">Orientacoes ao paciente</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            {counseling?.educational_notice ?? "Resumo pratico nao disponivel."}
+          </p>
+        </div>
+      </div>
+      <ul className="mt-4 grid gap-2 text-sm leading-6 text-slate-700">
+        {(counseling?.orientation_points.length
+          ? counseling.orientation_points
+          : ["Gerar ou revisar resumo pratico para este medicamento."]
+        ).map((item) => (
+          <li className="rounded-lg bg-slate-50 px-3 py-2" key={item}>
+            {item}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function FunctionalContextCard({
+  context,
+  onAnswer,
+}: {
+  context: FunctionalContextSummary | null;
+  onAnswer: (answer: string) => Promise<void>;
+}) {
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-ocean">
+          <Route aria-hidden="true" className="h-5 w-5" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-ink">Contexto funcional</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            {context?.profile_known ? "Perfil funcional cadastrado." : "Dados funcionais desconhecidos."}
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-2 text-sm leading-6 text-slate-700">
+        {[...(context?.personalized_warnings ?? []), ...(context?.generic_warnings ?? [])].map(
+          (item) => (
+            <p className="rounded-lg bg-slate-50 px-3 py-2" key={item}>
+              {item}
+            </p>
+          ),
+        )}
+      </div>
+      {context?.question.should_ask ? (
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <div className="flex gap-3">
+            <HelpCircle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-amber-800" />
+            <div>
+              <p className="text-sm font-semibold leading-6 text-amber-950">
+                {context.question.question}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {["Sim", "Nao", "Nao informado"].map((answer) => (
+                  <button
+                    className="btn-secondary bg-white"
+                    key={answer}
+                    onClick={() => onAnswer(answer)}
+                    type="button"
+                  >
+                    {answer}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function MissingDataCard({ mode }: { mode: MissingDataMode | null }) {
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+          <AlertTriangle aria-hidden="true" className="h-5 w-5" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-ink">Dados faltantes</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            {mode?.message ?? "Historico clinico nao avaliado."}
+          </p>
+        </div>
+      </div>
+      {mode?.missing_data.length ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {mode.missing_data.map((item) => (
+            <span
+              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900"
+              key={item}
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-4 text-sm font-semibold text-slate-600">Sem faltas principais.</p>
+      )}
+      {mode ? (
+        <p className="mt-4 text-sm leading-6 text-slate-600">{mode.limitation_summary}</p>
+      ) : null}
+    </section>
+  );
+}
+
+function PracticalSafetySummaryCard({
+  counseling,
+}: {
+  counseling: PatientCounselingResponse | null;
+}) {
+  const summary = counseling?.summary;
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="text-lg font-bold text-ink">Resumo pratico de seguranca</h2>
+      {summary ? (
+        <div className="mt-4 grid gap-3">
+          <p className="text-sm leading-6 text-slate-600">{summary.professional_summary}</p>
+          <div className="flex flex-wrap gap-2">
+            <SourceBadge
+              jurisdiction={summary.jurisdiction}
+              source={summary.generated_by}
+              status={summary.validation_status}
+            />
+            <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+              {summary.requires_review ? "pendente de revisao" : "revisado"}
+            </span>
+            <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+              fonte: {summary.source_name}
+            </span>
+          </div>
+          <div className="grid gap-2 text-sm text-slate-700">
+            <p>Efeitos: {summary.main_adverse_effects.join(", ") || "-"}</p>
+            <p>Alertas: {summary.red_flags.join(", ") || "-"}</p>
+          </div>
+        </div>
+      ) : (
+        <p className="mt-4 text-sm text-slate-600">Resumo pratico ainda nao gerado.</p>
+      )}
+    </section>
   );
 }

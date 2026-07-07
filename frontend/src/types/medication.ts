@@ -50,3 +50,79 @@ export type Medication = {
 };
 
 export type MedicationPayload = Omit<Medication, "id">;
+
+export type CounselingEvidence = {
+  source_id: string;
+  source_name: string;
+  jurisdiction: string;
+  excerpt: string;
+  source_url: string | null;
+  validation_status: string;
+};
+
+export type MedicationCounselingSummary = {
+  id: number;
+  active_ingredient_id: number | null;
+  medication_id: number | null;
+  source_id: string;
+  jurisdiction: string;
+  source_name: string;
+  source_url: string | null;
+  source_version: string | null;
+  validation_status: string;
+  generated_by: string;
+  provider_name: string | null;
+  confidence: string;
+  requires_review: boolean;
+  main_adverse_effects: string[];
+  patient_relevant_effects: string[];
+  activity_warnings: string[];
+  driving_warning: boolean;
+  machine_operation_warning: boolean;
+  work_at_height_warning: boolean;
+  fall_risk_warning: boolean;
+  sedation_attention_warning: boolean;
+  sleep_effects: string[];
+  appetite_weight_effects: string[];
+  mood_behavior_effects: string[];
+  libido_sexual_effects: string[];
+  neurologic_effects: string[];
+  tremor_warning: boolean;
+  headache_warning: boolean;
+  temperature_regulation_effects: string[];
+  blood_pressure_warning: boolean;
+  gastrointestinal_effects: string[];
+  renal_effects: string[];
+  hepatic_effects: string[];
+  reproductive_contraceptive_effects: string[];
+  red_flags: string[];
+  monitoring_required: string[];
+  patient_friendly_summary: string;
+  professional_summary: string;
+  extracted_evidence: CounselingEvidence[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type MedicationCounselingGeneratePayload = {
+  provider_name?: string | null;
+  source_text?: string | null;
+  force_regenerate?: boolean;
+};
+
+export type MedicationCounselingReviewPayload = {
+  validation_status: "curated" | "validated" | "rejected" | "obsolete";
+  patient_friendly_summary?: string | null;
+  professional_summary?: string | null;
+  main_adverse_effects?: string[] | null;
+  patient_relevant_effects?: string[] | null;
+  activity_warnings?: string[] | null;
+  red_flags?: string[] | null;
+  justification?: string | null;
+};
+
+export type AdverseEffectTaxonomyEntry = {
+  category: string;
+  code: string;
+  label: string;
+};

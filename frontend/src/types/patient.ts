@@ -80,3 +80,31 @@ export type ClinicalContextGraph = {
   clinical_profile_completeness_score: number;
   educational_notice: string;
 };
+
+export type PatientFunctionalProfile = {
+  id: number | null;
+  patient_id: number;
+  drives_regularly: boolean | null;
+  professional_driver: boolean | null;
+  operates_machinery: boolean | null;
+  works_at_height: boolean | null;
+  fall_risk_activity: boolean | null;
+  night_shift: boolean | null;
+  caregiver_responsibility: boolean | null;
+  high_attention_activity: boolean | null;
+  frequent_alcohol_use: boolean | null;
+  history_of_falls: boolean | null;
+  low_tolerance_to_sedation_or_dizziness: boolean | null;
+  source: string;
+  notes: string | null;
+  last_reviewed_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  unknown_fields: string[];
+  educational_notice: string;
+};
+
+export type PatientFunctionalProfilePayload = Omit<
+  PatientFunctionalProfile,
+  "id" | "patient_id" | "created_at" | "updated_at" | "unknown_fields" | "educational_notice"
+>;
