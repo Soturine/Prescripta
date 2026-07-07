@@ -509,6 +509,89 @@ class IntegrationAuditLogModel(Base):
     )
 
 
+class AIProviderCredentialModel(Base):
+    __tablename__ = "ai_provider_credentials"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    provider: Mapped[str] = mapped_column(String(40), nullable=False, unique=True, index=True)
+    encrypted_api_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    masked_api_key: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    base_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    is_persistent: Mapped[bool] = mapped_column(default=True, nullable=False)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    last_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
+class AIProviderSettingsModel(Base):
+    __tablename__ = "ai_provider_settings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    provider: Mapped[str] = mapped_column(String(40), default="fallback", nullable=False)
+    selected_model: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    enable_external_calls: Mapped[bool] = mapped_column(default=False, nullable=False)
+    timeout_seconds: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
+    temperature: Mapped[float] = mapped_column(Float, default=0.2, nullable=False)
+    max_output_tokens: Mapped[int] = mapped_column(Integer, default=900, nullable=False)
+    use_json_mode: Mapped[bool] = mapped_column(default=True, nullable=False)
+    updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
+class AIProviderModelCacheModel(Base):
+    __tablename__ = "ai_provider_model_cache"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    provider: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    model_id: Mapped[str] = mapped_column(String(180), nullable=False, index=True)
+    display_name: Mapped[str] = mapped_column(String(220), nullable=False)
+    capabilities: Mapped[list[str]] = mapped_column(JSON, default=list)
+    context_window: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    supports_json: Mapped[bool] = mapped_column(default=False, nullable=False)
+    supports_structured_output: Mapped[bool] = mapped_column(default=False, nullable=False)
+    supports_tools: Mapped[bool] = mapped_column(default=False, nullable=False)
+    is_available: Mapped[bool] = mapped_column(default=True, nullable=False)
+    is_verified: Mapped[bool] = mapped_column(default=False, nullable=False)
+    source: Mapped[str] = mapped_column(String(40), default="cache", nullable=False)
+    refreshed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class AIConfigurationAuditLogModel(Base):
+    __tablename__ = "ai_configuration_audit_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    action: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    provider: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    model: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    external_calls_enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
+    result: Mapped[str] = mapped_column(String(40), nullable=False)
+    error_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
 class UserModel(Base):
     __tablename__ = "users"
 

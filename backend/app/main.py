@@ -16,6 +16,9 @@ from app.api.routes import (
     prescriptions,
     users,
 )
+from app.api.routes import (
+    settings as settings_routes,
+)
 from app.core.config import settings
 from app.database.seed import seed_demo_data
 from app.database.session import SessionLocal, init_db
@@ -35,8 +38,11 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.7.0",
-    description="API educacional para apoio demonstrativo à prescrição segura.",
+    version="0.7.1",
+    description=(
+        "API educacional para apoio à prescrição segura com regras determinísticas, "
+        "fontes rastreáveis, revisão humana e IA explicativa configurável."
+    ),
     lifespan=lifespan,
 )
 
@@ -58,6 +64,7 @@ app.include_router(dashboard.router, prefix=settings.api_prefix)
 app.include_router(audit.router, prefix=settings.api_prefix)
 app.include_router(users.router, prefix=settings.api_prefix)
 app.include_router(integrations.router, prefix=settings.api_prefix)
+app.include_router(settings_routes.router, prefix=settings.api_prefix)
 
 
 @app.get("/health", tags=["health"])

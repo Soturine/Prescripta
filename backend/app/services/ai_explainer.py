@@ -4,16 +4,19 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
-from app.core.config import Settings
+from sqlalchemy.orm import Session
+
+from app.core.config import Settings, settings
 from app.schemas.prescription_schema import (
     AlertRead,
     PrescriptionExplainRequest,
     PrescriptionExplainResponse,
 )
+from app.services.ai_settings import AIConfigurationError, AISettingsService
 
 EDUCATIONAL_NOTICE = (
-    "Resposta gerada como apoio educacional e demonstrativo. Ela não substitui "
-    "avaliação clínica, protocolos institucionais ou decisão profissional."
+    "Resposta gerada como apoio educacional. Ela não substitui avaliação clínica, "
+    "protocolos institucionais ou decisão profissional."
 )
 
 ALERT_EXPLANATIONS = {
@@ -21,30 +24,25 @@ ALERT_EXPLANATIONS = {
         "Há compatibilidade entre alergia registrada e medicamento, princípio ativo ou classe."
     ),
     "MAX_DAILY_DOSE_EXCEEDED": "A dose diária calculada ultrapassa o limite cadastrado.",
-    "DRUG_INTERACTION": "Existe interação demonstrativa entre medicamento novo e uso contínuo.",
+    "DRUG_INTERACTION": "Existe interação entre medicamento novo e uso contínuo.",
     "POLYPHARMACY": "O paciente usa cinco ou mais medicamentos contínuos.",
-    "AGE_RISK": "A idade do paciente aumenta a necessidade de revisão cuidadosa.",
+    "AGE_RISK": "A idade aumenta a necessidade de revisão cuidadosa.",
     "CONTRAINDICATION": "Uma comorbidade coincide com contraindicação cadastrada.",
     "INVALID_ROUTE": "A via informada não consta nas vias permitidas do medicamento.",
+    "CONTINUOUS_USE_REVIEW": "Uso contínuo ou prolongado exige plano de revisão.",
+    "MONITORING_REQUIRED": "O medicamento possui monitoramento cadastrado.",
+    "PROLONGED_USE_REVIEW": "A duração sugere revisão por uso prolongado.",
+    "RENAL_ELIMINATION_REVIEW": "O perfil ADME indica eliminação renal relevante.",
+    "HEPATIC_METABOLISM_REVIEW": "O perfil ADME indica metabolismo hepático relevante.",
+    "SEROTONERGIC_REVIEW": "Há sobreposição de fatores serotoninérgicos.",
+    "IMAO_INTERACTION_REVIEW": "Uso de IMAO exige revisão de interação em fonte validada.",
+    "SEIZURE_THRESHOLD_REVIEW": "Histórico convulsivo coincide com cautela cadastrada.",
+    "SEDATION_REVIEW": "Há cautela de sedação/depressor do SNC.",
+    "RIFAMYCIN_HORMONAL_CONTRACEPTIVE_REVIEW": (
+        "Regra para rifampicina/rifabutina e contraceptivo hormonal exige fonte validada."
+    ),
+    "REPRODUCTIVE_REVIEW": "Fator gestacional/lactacional/reprodutivo exige revisão.",
 }
-
-ALERT_EXPLANATIONS.update(
-    {
-        "CONTINUOUS_USE_REVIEW": "Uso continuo ou prolongado exige plano de revisao.",
-        "MONITORING_REQUIRED": "O medicamento possui monitoramento cadastrado.",
-        "PROLONGED_USE_REVIEW": "A duracao sugere revisao por uso prolongado.",
-        "RENAL_ELIMINATION_REVIEW": "O perfil ADME indica eliminacao renal relevante.",
-        "HEPATIC_METABOLISM_REVIEW": "O perfil ADME indica metabolismo hepatico relevante.",
-        "SEROTONERGIC_REVIEW": "Ha sobreposicao demonstrativa de fatores serotoninergicos.",
-        "IMAO_INTERACTION_REVIEW": "Uso de IMAO exige revisao de interacao em fonte validada.",
-        "SEIZURE_THRESHOLD_REVIEW": "Historico convulsivo coincide com cautela cadastrada.",
-        "SEDATION_REVIEW": "Ha cautela demonstrativa de sedacao/depressor do SNC.",
-        "RIFAMYCIN_HORMONAL_CONTRACEPTIVE_REVIEW": (
-            "Regra demonstrativa especifica para rifampicina/rifabutina e contraceptivo hormonal."
-        ),
-        "REPRODUCTIVE_REVIEW": "Fator gestacional/lactacional/reprodutivo exige revisao.",
-    }
-)
 
 ALERT_QUESTIONS = {
     "ALLERGY_BLOCK": "Existe alternativa terapêutica sem relação com a alergia registrada?",
@@ -54,27 +52,20 @@ ALERT_QUESTIONS = {
     "DRUG_INTERACTION": "A associação medicamentosa é necessária ou há substituição mais segura?",
     "POLYPHARMACY": "Há medicamentos contínuos duplicados, obsoletos ou sem indicação atual?",
     "AGE_RISK": "A idade exige dose inicial menor, monitoramento adicional ou ajuste de intervalo?",
-    "CONTRAINDICATION": "A comorbidade contraindica o uso ou exige protocolo de monitoramento?",
+    "CONTRAINDICATION": "A comorbidade contraindica o uso ou exige monitoramento?",
     "INVALID_ROUTE": "A via de administração deve ser corrigida antes de prosseguir?",
+    "MONITORING_REQUIRED": (
+        "Quais exames, sinais clínicos ou prazos de retorno devem ser definidos?"
+    ),
+    "RENAL_ELIMINATION_REVIEW": "A função renal recente permite esta dose e intervalo?",
+    "HEPATIC_METABOLISM_REVIEW": "A função hepática recente muda dose, intervalo ou alternativa?",
+    "SEROTONERGIC_REVIEW": "A associação serotoninérgica é necessária e monitorável?",
+    "IMAO_INTERACTION_REVIEW": "Há intervalo seguro e fonte validada para esta associação?",
+    "SEIZURE_THRESHOLD_REVIEW": "O histórico convulsivo muda escolha ou monitoramento?",
+    "RIFAMYCIN_HORMONAL_CONTRACEPTIVE_REVIEW": (
+        "A paciente precisa de orientação contraceptiva adicional validada?"
+    ),
 }
-
-ALERT_QUESTIONS.update(
-    {
-        "MONITORING_REQUIRED": (
-            "Quais exames, sinais clinicos ou prazos de retorno devem ser definidos?"
-        ),
-        "RENAL_ELIMINATION_REVIEW": "A funcao renal recente permite esta dose e intervalo?",
-        "HEPATIC_METABOLISM_REVIEW": (
-            "A funcao hepatica recente muda dose, intervalo ou alternativa?"
-        ),
-        "SEROTONERGIC_REVIEW": "A associacao serotoninergica e necessaria e monitoravel?",
-        "IMAO_INTERACTION_REVIEW": "Ha intervalo seguro e fonte validada para esta associacao?",
-        "SEIZURE_THRESHOLD_REVIEW": "O historico convulsivo muda escolha ou monitoramento?",
-        "RIFAMYCIN_HORMONAL_CONTRACEPTIVE_REVIEW": (
-            "A paciente precisa de orientacao contraceptiva adicional validada?"
-        ),
-    }
-)
 
 SYSTEM_INSTRUCTIONS = """
 Você é uma camada explicativa educacional do Prescripta.
@@ -82,7 +73,7 @@ Explique apenas alertas já gerados por regras determinísticas.
 Não libere prescrição, não reduza risco, não calcule dose crítica e não substitua revisão humana.
 Priorize fontes brasileiras quando o contexto for BR.
 Trate fontes internacionais como apoio secundário.
-Informe quando uma evidência for demonstrativa, externa ou pendente de revisão.
+Informe quando uma evidência for externa, educacional ou pendente de revisão.
 Responda em JSON com as chaves: simple_explanation, technical_summary,
 review_questions, educational_notice.
 Use português claro, técnico quando necessário, e preserve todo bloqueio crítico.
@@ -98,8 +89,9 @@ class ExplanationDraft:
 
 
 class AIExplainer:
-    def __init__(self, settings: Settings) -> None:
-        self.settings = settings
+    def __init__(self, app_settings: Settings = settings, db: Session | None = None) -> None:
+        self.settings = app_settings
+        self.db = db
 
     def explain(
         self,
@@ -107,35 +99,35 @@ class AIExplainer:
         *,
         requester_role: str,
     ) -> PrescriptionExplainResponse:
-        provider = self.settings.ai_provider.strip().lower() or "fallback"
-        model = self.settings.ai_model.strip() or None
         fallback_reason = ""
-
-        external_provider_ready = (
-            self.settings.ai_api_key.strip() or self.settings.ai_base_url.strip()
-        )
-        if provider in {"openai", "llama", "local"} and external_provider_ready:
-            try:
-                draft = self._explain_with_openai_compatible(payload, requester_role)
-                return self._response(
-                    payload=payload,
-                    provider=provider,
-                    model=model,
-                    draft=draft,
-                    used_fallback=False,
-                )
-            except Exception as exc:  # pragma: no cover - defensive runtime fallback
-                fallback_reason = f"Fallback determinístico acionado ({type(exc).__name__})."
-        elif provider == "gemini":
-            fallback_reason = (
-                "Provider Gemini selecionado sem conector leve configurado nesta versão; "
-                "fallback determinístico acionado."
-            )
-        elif provider != "fallback":
-            fallback_reason = (
-                "Provider de IA sem chave ou não suportado; "
-                "fallback determinístico acionado."
-            )
+        if self.db is not None:
+            ai_service = AISettingsService(self.db, self.settings)
+            config = ai_service.runtime_config()
+            if config.enable_external_calls:
+                try:
+                    raw = ai_service.complete_json(
+                        system_instructions=SYSTEM_INSTRUCTIONS,
+                        payload=self._build_context(payload, requester_role),
+                        purpose="prescription_explanation",
+                        config=config,
+                    )
+                    draft = self._draft_from_json(raw)
+                    return self._response(
+                        payload=payload,
+                        provider=config.provider,
+                        model=config.model,
+                        draft=draft,
+                        used_fallback=False,
+                    )
+                except Exception as exc:  # pragma: no cover - defensive runtime fallback
+                    fallback_reason = (
+                        "IA externa indisponível; fallback local acionado "
+                        f"({type(exc).__name__})."
+                    )
+            elif config.provider != "fallback":
+                fallback_reason = "Chamadas externas de IA desabilitadas; fallback local acionado."
+        elif self.settings.ai_provider.strip().lower() != "fallback":
+            fallback_reason = "Configuração persistida indisponível; fallback local acionado."
 
         draft = self._fallback_explanation(
             payload,
@@ -150,35 +142,17 @@ class AIExplainer:
             used_fallback=True,
         )
 
-    def _explain_with_openai_compatible(
-        self,
-        payload: PrescriptionExplainRequest,
-        requester_role: str,
-    ) -> ExplanationDraft:
-        from openai import OpenAI
-
-        client_kwargs = {"api_key": self.settings.ai_api_key or "local"}
-        if self.settings.ai_base_url:
-            client_kwargs["base_url"] = self.settings.ai_base_url
-        client = OpenAI(**client_kwargs)
-        response = client.responses.create(
-            model=self.settings.ai_model,
-            instructions=SYSTEM_INSTRUCTIONS,
-            input=self._build_prompt(payload, requester_role),
-            text={"format": {"type": "json_object"}, "verbosity": "low"},
-        )
-        parsed = json.loads(response.output_text)
+    def _draft_from_json(self, raw: dict) -> ExplanationDraft:
         draft = ExplanationDraft(
-            simple_explanation=str(parsed.get("simple_explanation") or ""),
-            technical_summary=str(parsed.get("technical_summary") or ""),
-            review_questions=self._coerce_questions(parsed.get("review_questions")),
-            educational_notice=str(parsed.get("educational_notice") or EDUCATIONAL_NOTICE),
+            simple_explanation=str(raw.get("simple_explanation") or "").strip(),
+            technical_summary=str(raw.get("technical_summary") or "").strip(),
+            review_questions=self._coerce_questions(raw.get("review_questions")),
+            educational_notice=str(raw.get("educational_notice") or EDUCATIONAL_NOTICE),
         )
-        has_required_fields = (
-            draft.simple_explanation and draft.technical_summary and draft.review_questions
-        )
-        if not has_required_fields:
-            raise ValueError("Resposta de IA incompleta.")
+        if not draft.simple_explanation or not draft.technical_summary:
+            raise AIConfigurationError("Resposta de IA incompleta.")
+        if not draft.review_questions:
+            raise AIConfigurationError("Resposta de IA sem perguntas de revisão.")
         return draft
 
     def _fallback_explanation(
@@ -189,29 +163,25 @@ class AIExplainer:
         fallback_reason: str = "",
     ) -> ExplanationDraft:
         daily_total = payload.dose_mg * payload.frequency_per_day
-        cumulative = (
-            daily_total * payload.duration_days if payload.duration_days is not None else None
+        cumulative = daily_total * payload.duration_days if payload.duration_days else None
+        alerts_text = (
+            " ".join(self._plain_alert_line(alert) for alert in payload.alerts)
+            if payload.alerts
+            else "Nenhum alerta foi gerado pelas regras cadastradas."
         )
-        if payload.alerts:
-            alert_lines = [self._plain_alert_line(alert) for alert in payload.alerts]
-            alerts_text = " ".join(alert_lines)
-        else:
-            alerts_text = "Nenhum alerta foi gerado pelas regras cadastradas."
 
         if payload.status == "bloqueado":
             opening = "A prescrição foi bloqueada porque há pelo menos um risco crítico."
         elif payload.human_review_required:
-            opening = "A prescrição exige atenção e revisão humana antes de qualquer decisão."
+            opening = "A prescrição exige atenção e revisão humana antes da decisão."
         else:
-            opening = "A checagem não encontrou risco relevante nas regras demonstrativas."
+            opening = "A checagem não encontrou risco relevante nas regras cadastradas."
 
-        cumulative_text = (
-            f"Dose acumulada estimada: {cumulative:g} mg. " if cumulative else ""
-        )
+        cumulative_text = f"Dose acumulada estimada: {cumulative:g} mg. " if cumulative else ""
         technical_summary = (
             f"Paciente: {payload.patient.name}. Medicamento: {payload.medication.brand_name} "
-            f"({payload.medication.active_ingredient}). Dose diária calculada: {daily_total:g} mg. "
-            f"{cumulative_text}"
+            f"({payload.medication.active_ingredient}). Dose diária calculada: "
+            f"{daily_total:g} mg. {cumulative_text}"
             f"Status determinístico: {payload.status}. Risco: {payload.risk_level}. "
             f"Compatibilidade: {payload.compatibility.get('level', 'não calculada')}. "
             f"Perfil solicitante: {requester_role}. Alertas avaliados: {len(payload.alerts)}."
@@ -225,10 +195,11 @@ class AIExplainer:
             technical_summary = (
                 f"{technical_summary} Contexto RAG interno com fonte/jurisdição: {sources}."
             )
-            if any(
+            has_external_source = any(
                 str(item.get("jurisdiction", "")).upper() not in {"BR", "GLOBAL"}
                 for item in payload.rag_evidence
-            ):
+            )
+            if has_external_source:
                 technical_summary = (
                     f"{technical_summary} Fontes internacionais são apoio secundário "
                     "e não substituem a prioridade brasileira Anvisa/DCB no contexto BR."
@@ -238,19 +209,19 @@ class AIExplainer:
         if mechanism:
             technical_summary = (
                 f"{technical_summary} Perfil ADME/mecanismo: "
-                f"metabolizacao={mechanism.get('metabolism_organs')}, "
-                f"eliminacao={mechanism.get('elimination_organs')}, "
+                f"metabolização={mechanism.get('metabolism_organs')}, "
+                f"eliminação={mechanism.get('elimination_organs')}, "
                 f"renal={mechanism.get('renal_elimination_level')}, "
-                f"hepatico={mechanism.get('hepatic_metabolism_level')}."
+                f"hepático={mechanism.get('hepatic_metabolism_level')}."
             )
         if payload.dose_summary.get("monitoring_required"):
             technical_summary = (
                 f"{technical_summary} Monitoramento cadastrado: "
-                f"{payload.dose_summary.get('monitoring_notes') or 'revisao profissional'}."
+                f"{payload.dose_summary.get('monitoring_notes') or 'revisão profissional'}."
             )
         if exposure.get("has_missing_duration_for_cumulative_dose"):
             technical_summary = (
-                f"{technical_summary} Duracao ausente limita interpretacao da exposicao acumulada."
+                f"{technical_summary} Duração ausente limita interpretação da exposição acumulada."
             )
         if fallback_reason:
             technical_summary = f"{technical_summary} {fallback_reason}"
@@ -262,7 +233,7 @@ class AIExplainer:
         if payload.compatibility.get("review_required"):
             questions.append("Quais dados do perfil clínico ainda precisam ser confirmados?")
         if payload.alternatives:
-            questions.append("Alguma alternativa avaliada apresenta menor risco demonstrativo?")
+            questions.append("Alguma alternativa avaliada apresenta menor risco?")
         if not questions:
             questions = [
                 "A prescrição foi revisada conforme protocolo local?",
@@ -277,13 +248,10 @@ class AIExplainer:
 
     def _plain_alert_line(self, alert: AlertRead) -> str:
         explanation = ALERT_EXPLANATIONS.get(alert.code, alert.description)
-        return (
-            f"{alert.title}: {explanation} Recomendação cadastrada: "
-            f"{alert.recommendation}"
-        )
+        return f"{alert.title}: {explanation} Recomendação cadastrada: {alert.recommendation}"
 
-    def _build_prompt(self, payload: PrescriptionExplainRequest, requester_role: str) -> str:
-        context = {
+    def _build_context(self, payload: PrescriptionExplainRequest, requester_role: str) -> dict:
+        return {
             "patient": payload.patient.model_dump(),
             "medication": payload.medication.model_dump(),
             "dose_mg": payload.dose_mg,
@@ -303,7 +271,6 @@ class AIExplainer:
             "alternatives": payload.alternatives,
             "requester_role": requester_role,
         }
-        return json.dumps(context, ensure_ascii=False)
 
     def _coerce_questions(self, raw_questions: Any) -> list[str]:
         if not isinstance(raw_questions, list):
@@ -323,12 +290,6 @@ class AIExplainer:
         critical_alert_codes = [
             alert.code for alert in payload.alerts if alert.severity == "critico"
         ]
-        missing_patient_data = self._missing_patient_data(payload)
-        rag_sources = [
-            self._rag_source_label(item)
-            for item in payload.rag_evidence
-            if item.get("source")
-        ]
         how_to_explain = None
         if payload.patient_counseling and payload.patient_counseling.orientation_points:
             how_to_explain = " ".join(payload.patient_counseling.orientation_points[:4])
@@ -344,20 +305,21 @@ class AIExplainer:
             prescription_status=payload.status,
             risk_level=payload.risk_level,
             critical_alert_codes=critical_alert_codes,
-            missing_patient_data=missing_patient_data,
-            rag_sources=rag_sources,
+            missing_patient_data=self._missing_patient_data(payload),
+            rag_sources=[
+                self._rag_source_label(item) for item in payload.rag_evidence if item.get("source")
+            ],
             how_to_explain_to_patient=how_to_explain,
         )
 
     def _rag_source_label(self, item: dict) -> str:
         source = str(item.get("source_name") or item.get("source") or "fonte interna")
         jurisdiction = str(item.get("jurisdiction") or "GLOBAL").upper()
-        status = str(item.get("validation_status") or "demo")
-        evidence_type = str(item.get("evidence_type") or "demo_seed")
+        status = str(item.get("validation_status") or "pendente")
+        evidence_type = str(item.get("evidence_type") or "seed_educacional")
         return f"{source} [{jurisdiction}, {evidence_type}, {status}]"
 
     def _missing_patient_data(self, payload: PrescriptionExplainRequest) -> list[str]:
-        missing: list[str] = []
         patient = payload.patient
         checks = {
             "condição renal": patient.renal_condition,
@@ -367,7 +329,7 @@ class AIExplainer:
             "reações adversas": patient.adverse_reactions,
             "medicamentos contínuos": patient.current_medications,
         }
-        for label, value in checks.items():
-            if not value:
-                missing.append(label)
-        return missing
+        return [label for label, value in checks.items() if not value]
+
+    def _build_prompt(self, payload: PrescriptionExplainRequest, requester_role: str) -> str:
+        return json.dumps(self._build_context(payload, requester_role), ensure_ascii=False)

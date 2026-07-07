@@ -4,6 +4,8 @@ import json
 from dataclasses import dataclass
 from typing import Protocol
 
+from sqlalchemy.orm import Session
+
 from app.core.config import Settings, settings
 from app.database.models import MedicationModel
 from app.knowledge.retriever import retrieve
@@ -13,16 +15,17 @@ from app.services.adverse_effect_taxonomy import (
     label_for_effect,
     normalize_effect_list,
 )
+from app.services.ai_settings import AISettingsService
 from app.services.normalizer import normalize_text
 
 PROVIDER_INSTRUCTIONS = """
 Leia apenas os trechos fornecidos.
-Nao use conhecimento externo nao fornecido.
-Nao invente efeitos.
-Se nao encontrar evidencia, marque como insufficient_evidence.
+Não use conhecimento externo não fornecido.
+Não invente efeitos.
+Se não encontrar evidência, marque como insufficient_evidence.
 Preencha somente categorias suportadas.
-Cite source_id/trecho quando possivel.
-Gere resumo curto para paciente e resumo tecnico para profissional.
+Cite source_id/trecho quando possível.
+Gere resumo curto para paciente e resumo técnico para profissional.
 """
 
 
@@ -308,13 +311,41 @@ class GeminiProvider:
         return FallbackDeterministicProvider().extract(request)
 
 
+class ConfiguredAIProvider:
+    def __init__(self, db: Session, app_settings: Settings | None = None) -> None:
+        self.settings = app_settings or settings
+        self.ai_settings = AISettingsService(db, self.settings)
+        self.config = self.ai_settings.runtime_config()
+        self.provider_name = self.config.provider
+
+    def extract(self, request: CounselingExtractionRequest) -> dict:
+        return self.ai_settings.complete_json(
+            system_instructions=PROVIDER_INSTRUCTIONS,
+            payload={
+                "active_ingredient": request.active_ingredient,
+                "jurisdiction": request.jurisdiction,
+                "source_text": request.source_text,
+                "patient_context": request.patient_context,
+                "source_id": request.source_id,
+                "source_name": request.source_name,
+                "source_url": request.source_url,
+                "source_version": request.source_version,
+                "supported_output_schema": "MedicationCounselingProviderOutput",
+            },
+            purpose="medication_counseling_extraction",
+            config=self.config,
+        )
+
+
 class MedicationCounselingExtractor:
     def __init__(
         self,
         provider: CounselingProvider | None = None,
         app_settings: Settings | None = None,
+        db: Session | None = None,
     ) -> None:
         self.settings = app_settings or settings
+        self.db = db
         self.provider = provider or self._provider_from_settings()
 
     def extract(
@@ -336,9 +367,17 @@ class MedicationCounselingExtractor:
             patient_context=patient_context or {},
             evidence=context.evidence,
         )
-        raw_output = self.provider.extract(request)
+        used_provider = self.provider.provider_name
+        try:
+            raw_output = self.provider.extract(request)
+        except Exception:
+            if not isinstance(self.provider, ConfiguredAIProvider):
+                raise
+            fallback = FallbackDeterministicProvider()
+            raw_output = fallback.extract(request)
+            used_provider = fallback.provider_name
         output = self.validate_output(raw_output)
-        return output, context, self.provider.provider_name
+        return output, context, used_provider
 
     def build_source_context(
         self,
@@ -467,12 +506,21 @@ class MedicationCounselingExtractor:
         return MedicationCounselingProviderOutput.model_validate(values)
 
     def _provider_from_settings(self) -> CounselingProvider:
+        if self.db is not None:
+            configured = ConfiguredAIProvider(self.db, self.settings)
+            if configured.config.enable_external_calls and configured.config.provider != "fallback":
+                return configured
+            return FallbackDeterministicProvider()
         provider = self.settings.ai_provider.strip().lower()
         external_ready = self.settings.ai_api_key.strip() or self.settings.ai_base_url.strip()
-        if provider == "openai" and external_ready:
+        if provider == "openai" and external_ready and self.settings.ai_enable_external_calls:
             return GPTProvider(self.settings)
-        if provider in {"llama", "local"} and external_ready:
+        if (
+            provider in {"llama", "local", "ollama"}
+            and external_ready
+            and self.settings.ai_enable_external_calls
+        ):
             return LlamaProvider(self.settings)
-        if provider == "gemini" and external_ready:
+        if provider == "gemini" and external_ready and self.settings.ai_enable_external_calls:
             return GeminiProvider()
         return FallbackDeterministicProvider()

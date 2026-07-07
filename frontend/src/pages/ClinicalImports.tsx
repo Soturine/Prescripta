@@ -48,8 +48,10 @@ const jsonDemo = JSON.stringify(
   2,
 );
 
-const fhirDemo = JSON.stringify(
-  {
+const fhirScenarios = {
+  medication: {
+    label: "Paciente + medicamento",
+    bundle: {
     resourceType: "Bundle",
     entry: [
       {
@@ -67,9 +69,53 @@ const fhirDemo = JSON.stringify(
       },
     ],
   },
-  null,
-  2,
-);
+  },
+  renalConflict: {
+    label: "Paciente + condição renal",
+    bundle: {
+      resourceType: "Bundle",
+      entry: [
+        {
+          resource: {
+            resourceType: "Patient",
+            name: [{ given: ["Carlos"], family: "FHIR" }],
+            birthDate: "1950-03-10",
+          },
+        },
+        {
+          resource: {
+            resourceType: "Condition",
+            code: { text: "Doença renal crônica" },
+          },
+        },
+      ],
+    },
+  },
+  allergyObservation: {
+    label: "Alergia + observação",
+    bundle: {
+      resourceType: "Bundle",
+      entry: [
+        {
+          resource: {
+            resourceType: "AllergyIntolerance",
+            code: { text: "dipirona" },
+            criticality: "high",
+          },
+        },
+        {
+          resource: {
+            resourceType: "Observation",
+            code: { text: "creatinina" },
+            valueString: "resultado externo pendente de revisão",
+          },
+        },
+      ],
+    },
+  },
+} satisfies Record<string, { label: string; bundle: Record<string, unknown> }>;
+
+const fhirDemo = JSON.stringify(fhirScenarios.medication.bundle, null, 2);
 
 const csvDemo = "record_type,value\nmedication,Novalgina\ncondition,renal\n";
 
@@ -80,11 +126,13 @@ export default function ClinicalImports() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [mode, setMode] = useState<"json" | "fhir" | "csv">("json");
   const [sourceSystem, setSourceSystem] = useState("mock_hospital");
-  const [purpose, setPurpose] = useState("Importacao clinica demonstrativa");
+  const [purpose, setPurpose] = useState("Importação clínica assistida");
   const [authorizedBy, setAuthorizedBy] = useState("Paciente/representante demo");
   const [consentConfirmed, setConsentConfirmed] = useState(false);
   const [body, setBody] = useState(jsonDemo);
-  const [rejectReason, setRejectReason] = useState("Rejeitado em revisao humana.");
+  const [fhirScenario, setFhirScenario] = useState<keyof typeof fhirScenarios>("medication");
+  const [rejectReason, setRejectReason] = useState("Rejeitado em revisão humana.");
+  const [itemJustification, setItemJustification] = useState("Revisão granular registrada.");
   const { data: imports = [], isLoading } = useQuery({
     queryKey: ["clinical-imports"],
     queryFn: fetchClinicalImports,
@@ -150,7 +198,7 @@ export default function ClinicalImports() {
       acceptClinicalReconciliationItem(
         Number(selected?.id),
         item.item_id,
-        "Aceite granular demonstrativo.",
+        itemJustification,
       ),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["clinical-reconciliation", selected?.id] });
@@ -163,7 +211,7 @@ export default function ClinicalImports() {
       rejectClinicalReconciliationItem(
         Number(selected?.id),
         item.item_id,
-        "Rejeicao granular demonstrativa.",
+        itemJustification,
       ),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["clinical-reconciliation", selected?.id] });
@@ -201,25 +249,30 @@ export default function ClinicalImports() {
     setBody(nextMode === "json" ? jsonDemo : nextMode === "fhir" ? fhirDemo : csvDemo);
   }
 
+  function changeFhirScenario(nextScenario: keyof typeof fhirScenarios) {
+    setFhirScenario(nextScenario);
+    setBody(JSON.stringify(fhirScenarios[nextScenario].bundle, null, 2));
+  }
+
   return (
     <div className="grid gap-6">
       <header>
-        <h1 className="text-3xl font-bold tracking-normal text-ink">Importacoes Clinicas</h1>
+        <h1 className="text-3xl font-bold tracking-normal text-ink">Importações Clínicas</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-          Recurso demonstrativo com consentimento, auditoria e revisao humana obrigatoria.
+          Importação clínica assistida com consentimento, auditoria e revisão humana obrigatória.
         </p>
       </header>
 
       <section className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-900">
-        Este recurso e demonstrativo. Integracoes reais exigem autorizacao, contrato,
-        seguranca, governanca e conformidade com LGPD.
+        Este recurso usa dados de exemplo. Integrações reais exigem autorização, contrato,
+        segurança, governança e conformidade com LGPD.
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <ShieldCheck aria-hidden="true" className="h-5 w-5 text-ocean" />
-            <h2 className="text-lg font-bold text-ink">Nova importacao</h2>
+            <h2 className="text-lg font-bold text-ink">Nova importação</h2>
           </div>
           <div className="mt-4 grid gap-3">
             <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1">
@@ -256,8 +309,26 @@ export default function ClinicalImports() {
                 onChange={(event) => setConsentConfirmed(event.target.checked)}
                 type="checkbox"
               />
-              Confirmo que ha autorizacao do paciente ou base legal aplicavel para importar estes dados.
+              Confirmo que há autorização do paciente ou base legal aplicável para importar estes dados.
             </label>
+            {mode === "fhir" ? (
+              <label className="grid gap-1.5">
+                <span className="label">Cenário FHIR fictício</span>
+                <select
+                  className="field"
+                  value={fhirScenario}
+                  onChange={(event) =>
+                    changeFhirScenario(event.target.value as keyof typeof fhirScenarios)
+                  }
+                >
+                  {Object.entries(fhirScenarios).map(([key, scenario]) => (
+                    <option key={key} value={key}>
+                      {scenario.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label className="grid gap-1.5">
               <span className="label">{mode === "csv" ? "CSV" : "JSON"}</span>
               <textarea
@@ -278,7 +349,7 @@ export default function ClinicalImports() {
             </button>
             {importMutation.isError ? (
               <p className="text-sm font-semibold text-danger">
-                Nao foi possivel importar. Revise consentimento e payload.
+                Não foi possível importar. Revise consentimento e payload.
               </p>
             ) : null}
           </div>
@@ -313,7 +384,7 @@ export default function ClinicalImports() {
               </button>
             ))}
             {!imports.length && !isLoading ? (
-              <p className="text-sm text-slate-500">Nenhuma importacao registrada.</p>
+              <p className="text-sm text-slate-500">Nenhuma importação registrada.</p>
             ) : null}
           </div>
         </div>
@@ -330,8 +401,10 @@ export default function ClinicalImports() {
           onAcceptItem={(item) => acceptItemMutation.mutate(item)}
           onAcceptSafe={() => acceptSafeMutation.mutate(selected.id)}
           onRejectItem={(item) => rejectItemMutation.mutate(item)}
+          itemJustification={itemJustification}
           reconciliation={reconciliation ?? null}
           rejectReason={rejectReason}
+          setItemJustification={setItemJustification}
           setRejectReason={setRejectReason}
         />
       ) : null}
@@ -339,7 +412,7 @@ export default function ClinicalImports() {
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center gap-3">
           <FlaskConical aria-hidden="true" className="h-5 w-5 text-ocean" />
-          <h2 className="text-lg font-bold text-ink">Integracao externa / CDS API</h2>
+          <h2 className="text-lg font-bold text-ink">Integração externa / CDS API</h2>
         </div>
         <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
@@ -347,7 +420,7 @@ export default function ClinicalImports() {
               POST /api/cds/prescription-check
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Endpoint demonstrativo com persist=false, regras deterministicas e cards estilo CDS.
+              Endpoint educacional com persist=false, regras determinísticas e cards estilo CDS.
             </p>
             <button
               className="btn-secondary mt-4"
@@ -378,7 +451,7 @@ export default function ClinicalImports() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-500">Resultado CDS aparece aqui apos teste.</p>
+              <p className="text-sm text-slate-500">Resultado CDS aparece aqui após teste.</p>
             )}
           </div>
         </div>
@@ -390,6 +463,7 @@ export default function ClinicalImports() {
 function ImportDetail({
   batch,
   canReview,
+  itemJustification,
   isAccepting,
   isRejecting,
   onAccept,
@@ -399,10 +473,12 @@ function ImportDetail({
   onRejectItem,
   reconciliation,
   rejectReason,
+  setItemJustification,
   setRejectReason,
 }: {
   batch: ClinicalImportBatch;
   canReview: boolean;
+  itemJustification: string;
   isAccepting: boolean;
   isRejecting: boolean;
   onAccept: () => void;
@@ -412,13 +488,14 @@ function ImportDetail({
   onRejectItem: (item: ClinicalReconciliationItem) => void;
   reconciliation: ClinicalReconciliation | null;
   rejectReason: string;
+  setItemJustification: (value: string) => void;
   setRejectReason: (value: string) => void;
 }) {
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-lg font-bold text-ink">Detalhes da importacao #{batch.id}</h2>
+          <h2 className="text-lg font-bold text-ink">Detalhes da importação #{batch.id}</h2>
           <p className="mt-1 text-sm text-slate-600">
             Consentimento #{batch.consent_id ?? "-"} - {batch.records.length} registros
           </p>
@@ -436,7 +513,7 @@ function ImportDetail({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h3 className="text-sm font-bold text-ink">{record.record_type}</h3>
               <span className="rounded-lg bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                confianca {Math.round(record.confidence * 100)}%
+                confiança {Math.round(record.confidence * 100)}%
               </span>
             </div>
             <pre className="mt-3 max-h-52 overflow-auto rounded-lg bg-white p-3 text-xs text-slate-700">
@@ -451,7 +528,9 @@ function ImportDetail({
           onAcceptItem={onAcceptItem}
           onAcceptSafe={onAcceptSafe}
           onRejectItem={onRejectItem}
+          itemJustification={itemJustification}
           reconciliation={reconciliation}
+          setItemJustification={setItemJustification}
         />
       ) : null}
       {canReview && batch.status === "pending_review" ? (
@@ -460,7 +539,7 @@ function ImportDetail({
             className="btn-primary"
             disabled={isAccepting}
             onClick={onAccept}
-            title="Aceitar importacao"
+            title="Aceitar importação"
             type="button"
           >
             <Check aria-hidden="true" className="h-4 w-4" />
@@ -475,7 +554,7 @@ function ImportDetail({
             className="btn-secondary"
             disabled={isRejecting}
             onClick={onReject}
-            title="Rejeitar importacao"
+            title="Rejeitar importação"
             type="button"
           >
             <X aria-hidden="true" className="h-4 w-4" />
@@ -490,21 +569,25 @@ function ImportDetail({
 function ReconciliationPanel({
   reconciliation,
   canReview,
+  itemJustification,
   onAcceptSafe,
   onAcceptItem,
   onRejectItem,
+  setItemJustification,
 }: {
   reconciliation: ClinicalReconciliation;
   canReview: boolean;
+  itemJustification: string;
   onAcceptSafe: () => void;
   onAcceptItem: (item: ClinicalReconciliationItem) => void;
   onRejectItem: (item: ClinicalReconciliationItem) => void;
+  setItemJustification: (value: string) => void;
 }) {
   return (
     <section className="mt-5 rounded-lg border border-slate-200 bg-white p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h3 className="text-base font-bold text-ink">Reconciliacao granular</h3>
+          <h3 className="text-base font-bold text-ink">Reconciliação granular</h3>
           <p className="mt-1 text-sm leading-6 text-slate-600">
             {reconciliation.educational_notice}
           </p>
@@ -516,6 +599,16 @@ function ReconciliationPanel({
           </button>
         ) : null}
       </div>
+      {canReview ? (
+        <label className="mt-4 grid gap-1.5">
+          <span className="label">Justificativa para decisão granular</span>
+          <input
+            className="field"
+            value={itemJustification}
+            onChange={(event) => setItemJustification(event.target.value)}
+          />
+        </label>
+      ) : null}
       <div className="mt-4 grid gap-2 sm:grid-cols-4">
         {Object.entries(reconciliation.summary).map(([key, value]) => (
           <div className="rounded-lg bg-slate-50 p-3" key={key}>
@@ -533,8 +626,8 @@ function ReconciliationPanel({
                 <th className="px-4 py-3">Atual</th>
                 <th className="px-4 py-3">Importado</th>
                 <th className="px-4 py-3">Badge</th>
-                <th className="px-4 py-3">Sugestao</th>
-                <th className="px-4 py-3 text-right">Revisao</th>
+                <th className="px-4 py-3">Sugestão</th>
+                <th className="px-4 py-3 text-right">Revisão</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -543,7 +636,7 @@ function ReconciliationPanel({
                   <td className="px-4 py-3">
                     <p className="font-semibold text-ink">{item.field_path}</p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {item.record_type} - confianca {Math.round(item.confidence * 100)}%
+                      {item.record_type} - confiança {Math.round(item.confidence * 100)}%
                     </p>
                   </td>
                   <td className="px-4 py-3">

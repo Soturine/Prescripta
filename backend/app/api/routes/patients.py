@@ -221,7 +221,7 @@ def list_patient_identifiers(
     patient = PatientRepository(db).get(patient_id)
     if patient is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nÃ£o encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
         )
     return PatientIdentifierService(db).list_for_patient(patient_id)
 
@@ -235,7 +235,7 @@ def get_functional_profile(
     patient = PatientRepository(db).get(patient_id)
     if patient is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nÃ£o encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
         )
     return PatientFunctionalProfileService(db).read_for_patient(patient_id)
 
@@ -250,7 +250,7 @@ def update_functional_profile(
     patient = PatientRepository(db).get(patient_id)
     if patient is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nÃ£o encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
         )
     service = PatientFunctionalProfileService(db)
     profile = service.upsert(patient_id, payload)
@@ -283,7 +283,7 @@ def create_patient_identifier(
     patient = PatientRepository(db).get(patient_id)
     if patient is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nÃ£o encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
         )
     try:
         identifier = PatientIdentifierService(db).create(

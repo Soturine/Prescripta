@@ -6,30 +6,23 @@ Guia para agentes e colaboradores que forem evoluir o Prescripta.
 
 - `backend/app/domain`: entidades, enums e objetos de resultado.
 - `backend/app/services`: regras determinísticas, contexto clínico, alternativas e serviços de aplicação.
-- `backend/app/services/medication_catalog.py`: busca por princípio ativo DCB e aliases comerciais.
-- `backend/app/services/anvisa_lookup_service.py`: consulta assistida Anvisa/DCB sem scraping agressivo.
-- `backend/app/services/controlled_vocabulary.py`: vocabulário clínico controlado e normalização de campos legados.
+- `backend/app/services/ai_settings.py`: configuração central de IA, credenciais, modelos e chamadas externas.
 - `backend/app/services/ai_explainer.py`: camada explicativa; não decide risco.
-- `backend/app/services/medication_counseling_extractor.py`: extrator IA/RAG de resumo pratico; usa apenas fonte recuperada.
-- `backend/app/services/medication_counseling_service.py`: cache, geracao e revisao humana de orientacoes ao paciente.
-- `backend/app/services/patient_counseling_service.py`: monta orientacoes, modo sem historico e pergunta contextual.
+- `backend/app/services/medication_counseling_extractor.py`: extrator IA/RAG de resumo prático; usa apenas fonte recuperada.
+- `backend/app/services/medication_counseling_service.py`: cache, geração e revisão humana de orientações ao paciente.
+- `backend/app/services/patient_counseling_service.py`: orientações, modo sem histórico e pergunta contextual.
 - `backend/app/services/patient_functional_profile.py`: perfil funcional do paciente.
 - `backend/app/services/adverse_effect_taxonomy.py`: taxonomia controlada de efeitos adversos.
-- `backend/app/integrations`: portas, adapters demonstrativos, mapeamento, consentimento e auditoria de importações clínicas.
-- `backend/app/integrations/adapters`: FHIR/JSON/CSV/mock demonstrativos; não conectam sistemas reais.
-- `backend/app/integrations/services`: matching, deduplicação, consentimento e orquestração de importação pendente.
-- `backend/app/integrations/services/clinical_reconciliation_service.py`: reconciliacao granular de importacoes por item.
-- `backend/app/knowledge`: RAG demonstrativo com busca textual e normalização.
-- `backend/app/data/knowledge_base`: base interna demonstrativa em Markdown.
-- `backend/app/core/auth.py`: dependências de autenticação e autorização.
-- `backend/app/core/security.py`: hash de senha e JWT.
-- `backend/app/repositories`: acesso a dados via SQLAlchemy.
-- `backend/app/api/routes`: endpoints FastAPI.
+- `backend/app/integrations`: ports, adapters, mapeamento, consentimento e auditoria de importações clínicas.
+- `backend/app/integrations/services/clinical_reconciliation_service.py`: reconciliação granular por item.
+- `backend/app/knowledge`: RAG educacional com busca textual e normalização.
+- `backend/app/api/routes/settings.py`: endpoints de configuração de IA.
 - `backend/tests`: testes unitários e de API.
 - `frontend/src/pages`: telas de navegação.
+- `frontend/src/pages/AISettings.tsx`: tela de configuração de IA.
 - `frontend/src/components`: componentes reutilizáveis.
 - `frontend/src/services`: cliente HTTP e integração com API.
-- `scripts`: utilitários locais, como o script Windows de inicialização.
+- `scripts`: utilitários locais.
 - `docs`: documentação de arquitetura, produto, regras clínicas, segurança e releases.
 
 ## Instalação
@@ -65,30 +58,36 @@ cd frontend
 npm run lint
 ```
 
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check-text-quality.ps1
+```
+
 ## Convenções
 
 - Use TypeScript estrito no frontend.
 - Use Pydantic para contratos de API e SQLAlchemy para persistência.
 - Não misture regra de negócio com componentes React.
 - Não implemente regra de risco diretamente em rota FastAPI; use `backend/app/services`.
-- Não implemente regra decisória no frontend. A UI deve apenas coletar entrada, chamar a API e apresentar o resultado.
+- Não implemente regra decisória no frontend.
 - Backend é a fonte real de autorização; frontend pode esconder menus, mas nunca substituir checagem de perfil.
-- Não registre senha em auditoria, log ou payload de resposta.
-- Ao alterar permissões, atualize testes e `docs/security/authentication-and-roles.md`.
-- IA deve apenas explicar alertas gerados por regras determinísticas, contexto RAG demonstrativo e alternativas já avaliadas.
+- Não registre senha, API Key ou segredo em auditoria, log ou payload de resposta.
+- API Key de IA nunca deve ser salva em `localStorage`.
+- Apenas `admin` pode salvar, apagar, testar ou ativar provider/modelo de IA.
+- Médicos, enfermagem e auditoria podem ver status de IA, mas nunca a chave.
+- IA deve apenas explicar alertas, extrair/classificar com fonte e resumir conteúdo recuperado.
 - Nunca permita que IA altere status, risco, bloqueio, dose crítica ou recomendação final.
-- Resumos praticos gerados por IA/fallback devem usar apenas fonte/RAG/trecho cadastrado, retornar JSON validado e permanecer `pending_review` ate revisao humana.
-- Perfil funcional e modo sem historico orientam cautelas praticas, mas nao bloqueiam prescricao automaticamente.
-- Reconciliacao clinica granular deve registrar aceite/rejeicao por item e nao alterar dado importado sem decisao humana.
-- Preserve fallback determinístico quando não houver chave de API ou provider externo falhar.
-- RAG interno não decide risco, não substitui bula validada e deve permanecer marcado como demonstrativo.
+- Resumos práticos gerados por IA/fallback devem retornar JSON validado e permanecer `pending_review` até revisão humana.
+- Perfil funcional e modo sem histórico orientam cautelas práticas, mas não bloqueiam prescrição automaticamente.
+- Reconciliação clínica granular deve registrar aceite/rejeição por item e não alterar dado importado sem decisão humana.
+- Preserve fallback determinístico quando não houver chave, chamadas externas estiverem desabilitadas ou provider externo falhar.
+- RAG interno não decide risco, não substitui bula validada e deve permanecer marcado como educacional/pendente quando aplicável.
 - Para contexto brasileiro, priorize Anvisa/Bulário/DCB e marque fonte, jurisdição e status de validação.
 - Fontes internacionais são secundárias no contexto BR e devem ser explicitamente identificadas.
 - Não implemente scraping agressivo de Anvisa, hospitais ou portais.
 - Não implemente integração hospitalar real sem API oficial, contrato, segurança e LGPD.
 - Alternativas terapêuticas devem vir da base cadastrada e passar pelo motor de risco antes de aparecerem.
 - Triagem rápida não deve apagar histórico clínico existente sem auditoria.
-- Atualize documentação quando alterar comportamento de produto, API, regra clínica ou segurança.
+- Atualize documentação quando alterar comportamento de produto, API, regra clínica, segurança ou configuração.
 - Atualize `CHANGELOG.md` em mudanças relevantes.
 - Não versionar `.env`, bancos locais, caches, `node_modules` ou `dist`.
 - Não usar dados sensíveis reais em seeds, testes ou exemplos.

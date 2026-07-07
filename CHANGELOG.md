@@ -6,9 +6,42 @@ Todas as mudancas relevantes deste projeto sao documentadas aqui.
 
 ### Planned
 
-- v0.8.0: Relatorios, exportacao e auditoria avancada.
+- v0.8.0: Relatórios, exportação e auditoria avançada.
 - v0.9.0: Docker/PostgreSQL/deploy.
-- v1.0.0: versao final de portfolio.
+- v1.0.0: versão final de portfólio.
+
+## [0.7.1] - 2026-07-07
+
+### Added
+
+- Tela **IA** para configurar provider, API Key, Base URL, modelo, chamadas externas e teste de conexão.
+- Modelos `AIProviderCredential`, `AIProviderSettings`, `AIProviderModelCache` e `AIConfigurationAuditLog`.
+- Listagem dinâmica de modelos com cache de 24 horas e refresh manual.
+- Serviço central de configuração de IA usado pela explicação assistida e pelo `MedicationCounselingExtractor`.
+- Script `scripts/check-text-quality.ps1` para detectar mojibake, `.env.example` comprimido e Markdown problemático.
+- Documentação de configuração de provider, seleção de modelos e tratamento seguro de API Key.
+- Documentos de importação clínica assistida, cenários FHIR, revisão humana e auditoria SafeDose/RicoToro.
+- Roadmap de protocolos rápidos/emergência como lacuna futura, sem implementação clínica nesta versão.
+
+### Changed
+
+- README, roadmap e documentos centrais revisados para português correto e linguagem mais profissional.
+- `.env.example` reorganizado em blocos com variáveis de IA, criptografia e providers.
+- Importação/reconciliação clínica documentada como fluxo assistido com revisão humana avançada.
+- O fallback determinístico permanece padrão e é acionado quando IA externa está indisponível.
+
+### Security
+
+- API Key nunca é retornada pela API, não é salva em `localStorage` e não entra na auditoria.
+- Chaves persistidas usam criptografia com `PRESCRIPTA_CONFIG_ENCRYPTION_KEY`.
+- Ambiente local sem chave de criptografia usa armazenamento em memória para credenciais via UI.
+- Apenas `admin` salva, apaga, testa ou ativa provider/modelo.
+
+### Tests
+
+- Backend ampliado para 64 testes.
+- Cobertura de chave mascarada, bloqueio de chamadas externas, uso do modelo selecionado,
+  cache de modelos, modelo customizado e qualidade textual básica.
 
 ## [0.7.0] - 2026-07-07
 

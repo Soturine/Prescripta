@@ -74,7 +74,7 @@ def get_counseling_summary(
     medication = MedicationRepository(db).get(medication_id)
     if medication is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento nÃ£o encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento não encontrado."
         )
     service = MedicationCounselingService(db)
     return service.read_model(service.get_best_for_medication(medication))
@@ -93,7 +93,7 @@ def generate_counseling_summary(
     medication = MedicationRepository(db).get(medication_id)
     if medication is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento nÃ£o encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento não encontrado."
         )
     summary = MedicationCounselingService(db).generate_for_medication(
         medication,
@@ -131,7 +131,7 @@ def review_counseling_summary(
     medication = MedicationRepository(db).get(medication_id)
     if medication is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento nÃ£o encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Medicamento não encontrado."
         )
     service = MedicationCounselingService(db)
     summary = service.get_best_for_medication(medication)

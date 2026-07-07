@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AccessDenied from "./pages/AccessDenied";
+import AISettings from "./pages/AISettings";
 import Audit from "./pages/Audit";
 import ClinicalImports from "./pages/ClinicalImports";
 import Dashboard from "./pages/Dashboard";
@@ -35,6 +36,10 @@ export default function App() {
 
           <Route element={<ProtectedRoute roles={["admin", "auditor"]} />}>
             <Route path="audit" element={<Audit />} />
+          </Route>
+
+          <Route element={<ProtectedRoute roles={["admin", "medico", "enfermagem", "auditor"]} />}>
+            <Route path="settings/ai" element={<AISettings />} />
           </Route>
 
           <Route element={<ProtectedRoute roles={["admin"]} />}>
