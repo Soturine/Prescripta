@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.counseling_schema import MedicationCounselingSummaryRead
+
 
 class PrescriptionCheckRequest(BaseModel):
     patient_id: int = Field(gt=0)
@@ -10,6 +12,7 @@ class PrescriptionCheckRequest(BaseModel):
     duration_days: int | None = Field(default=None, gt=0, le=365)
     indication: str | None = Field(default=None, max_length=180)
     professional_notes: str | None = None
+    contextual_activity_answer: str | None = Field(default=None, max_length=40)
 
 
 class AlertRead(BaseModel):
@@ -18,6 +21,44 @@ class AlertRead(BaseModel):
     description: str
     severity: str
     recommendation: str
+
+
+class MissingDataMode(BaseModel):
+    incomplete_history: bool
+    message: str
+    limitation_summary: str
+    missing_data: list[str] = Field(default_factory=list)
+    does_not_block_flow: bool = True
+
+
+class ContextualQuestion(BaseModel):
+    should_ask: bool
+    question: str | None = None
+    options: list[str] = Field(default_factory=lambda: ["Sim", "Nao", "Nao informado"])
+    reason: str | None = None
+
+
+class FunctionalContextSummary(BaseModel):
+    profile_known: bool
+    unknown_fields: list[str] = Field(default_factory=list)
+    personalized_warnings: list[str] = Field(default_factory=list)
+    generic_warnings: list[str] = Field(default_factory=list)
+    question: ContextualQuestion
+
+
+class PatientCounselingResponse(BaseModel):
+    summary: MedicationCounselingSummaryRead | None = None
+    orientation_points: list[str] = Field(default_factory=list)
+    red_flags: list[str] = Field(default_factory=list)
+    source_label: str | None = None
+    review_status: str | None = None
+    generated_by_ai: bool = False
+    requires_review: bool = True
+    functional_context: FunctionalContextSummary
+    missing_data_mode: MissingDataMode
+    educational_notice: str = (
+        "Resumo pratico demonstrativo; nao substitui bula completa nem decisao profissional."
+    )
 
 
 class PrescriptionCheckResponse(BaseModel):
@@ -36,6 +77,9 @@ class PrescriptionCheckResponse(BaseModel):
     rag_evidence: list[dict] = Field(default_factory=list)
     clinical_context_graph: dict
     alternatives: list[dict] = Field(default_factory=list)
+    patient_counseling: PatientCounselingResponse | None = None
+    missing_data_mode: MissingDataMode | None = None
+    contextual_question: ContextualQuestion | None = None
 
 
 class PrescriptionExplainPatient(BaseModel):
@@ -120,6 +164,7 @@ class PrescriptionExplainRequest(BaseModel):
     rag_evidence: list[dict] = Field(default_factory=list)
     clinical_context_graph: dict = Field(default_factory=dict)
     alternatives: list[dict] = Field(default_factory=list)
+    patient_counseling: PatientCounselingResponse | None = None
 
 
 class PrescriptionExplainResponse(BaseModel):
@@ -135,3 +180,4 @@ class PrescriptionExplainResponse(BaseModel):
     critical_alert_codes: list[str]
     missing_patient_data: list[str] = Field(default_factory=list)
     rag_sources: list[str] = Field(default_factory=list)
+    how_to_explain_to_patient: str | None = None

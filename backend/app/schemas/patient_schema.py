@@ -109,3 +109,37 @@ class QuickTriageRequest(BaseModel):
     current_medications: list[str] = Field(default_factory=list)
     clinical_notes: str | None = None
     condition_to_review: str | None = None
+
+
+class PatientFunctionalProfileBase(BaseModel):
+    drives_regularly: bool | None = None
+    professional_driver: bool | None = None
+    operates_machinery: bool | None = None
+    works_at_height: bool | None = None
+    fall_risk_activity: bool | None = None
+    night_shift: bool | None = None
+    caregiver_responsibility: bool | None = None
+    high_attention_activity: bool | None = None
+    frequent_alcohol_use: bool | None = None
+    history_of_falls: bool | None = None
+    low_tolerance_to_sedation_or_dizziness: bool | None = None
+    source: str = Field(default="manual", max_length=80)
+    notes: str | None = None
+
+
+class PatientFunctionalProfileUpdate(PatientFunctionalProfileBase):
+    last_reviewed_at: datetime | None = None
+
+
+class PatientFunctionalProfileRead(PatientFunctionalProfileBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int | None = None
+    patient_id: int
+    last_reviewed_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    unknown_fields: list[str] = Field(default_factory=list)
+    educational_notice: str = (
+        "Perfil funcional demonstrativo; dados desconhecidos geram alerta geral, nao bloqueio."
+    )

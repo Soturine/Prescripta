@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import require_roles
 from app.core.config import settings
-from app.database.models import UserModel
+from app.database.models import PrescriptionAuditModel, UserModel
 from app.database.session import get_db
 from app.domain.medication import Medication
 from app.domain.patient import Patient
@@ -16,6 +16,7 @@ from app.repositories.medication_repository import MedicationRepository
 from app.repositories.patient_repository import PatientRepository
 from app.schemas.prescription_schema import (
     AlertRead,
+    PatientCounselingResponse,
     PrescriptionCheckRequest,
     PrescriptionCheckResponse,
     PrescriptionExplainRequest,
@@ -25,6 +26,7 @@ from app.services.ai_explainer import AIExplainer
 from app.services.alternative_service import AlternativeService
 from app.services.audit_service import AuditService
 from app.services.clinical_context_graph import build_clinical_context_graph
+from app.services.patient_counseling_service import PatientCounselingService
 from app.services.risk_engine import RiskEngine
 
 router = APIRouter(prefix="/prescriptions", tags=["prescriptions"])
@@ -84,6 +86,11 @@ def check_prescription(
         should_include=should_include_alternatives,
     )
     audit = AuditService(db).record_check(patient, medication, prescription, result, current_user)
+    patient_counseling = PatientCounselingService(db).build_for_prescription(
+        patient_record,
+        medication_record,
+        contextual_activity_answer=payload.contextual_activity_answer,
+    )
 
     return PrescriptionCheckResponse(
         status=result.status.value,
@@ -99,6 +106,9 @@ def check_prescription(
         rag_evidence=rag_evidence,
         clinical_context_graph=result.clinical_context_graph,
         alternatives=alternatives,
+        patient_counseling=patient_counseling,
+        missing_data_mode=patient_counseling.missing_data_mode,
+        contextual_question=patient_counseling.functional_context.question,
     )
 
 
@@ -125,3 +135,30 @@ def explain_prescription(
         },
     )
     return explanation
+
+
+@router.post("/{audit_id}/patient-counseling", response_model=PatientCounselingResponse)
+def patient_counseling_for_audit(
+    audit_id: int,
+    db: DbSession,
+    _current_user: PrescriptionChecker,
+) -> PatientCounselingResponse:
+    audit = db.get(PrescriptionAuditModel, audit_id)
+    if audit is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Checagem de prescricao nao encontrada.",
+        )
+    patient_record = PatientRepository(db).get(audit.patient_id) if audit.patient_id else None
+    medication_record = (
+        MedicationRepository(db).get(audit.medication_id) if audit.medication_id else None
+    )
+    if patient_record is None or medication_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Paciente ou medicamento da checagem nao encontrado.",
+        )
+    return PatientCounselingService(db).build_for_prescription(
+        patient_record,
+        medication_record,
+    )
