@@ -51,6 +51,13 @@ import type {
   PrescriptionExplanationPayload,
   PrescriptionExplanationResult,
 } from "../types/prescription";
+import type {
+  AuditFilters,
+  DecisionEvidenceItem,
+  DecisionTimelineItem,
+  GeneratedReport,
+  ReportPreview,
+} from "../types/report";
 import type { User, UserCreatePayload, UserRole } from "../types/user";
 
 const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
@@ -250,9 +257,117 @@ export async function explainPrescription(payload: PrescriptionExplanationPayloa
   return response.data;
 }
 
-export async function fetchAudit() {
-  const response = await api.get<AuditRecord[]>("/audit");
+export async function fetchAudit(filters: AuditFilters = {}) {
+  const response = await api.get<AuditRecord[]>("/audit", { params: filters });
   return response.data;
+}
+
+export async function fetchAuditTimeline(eventId: number) {
+  const response = await api.get<DecisionTimelineItem[]>(`/audit/${eventId}/timeline`);
+  return response.data;
+}
+
+export async function fetchAuditEvidence(eventId: number) {
+  const response = await api.get<DecisionEvidenceItem[]>(`/audit/${eventId}/evidence`);
+  return response.data;
+}
+
+export async function fetchReports() {
+  const response = await api.get<GeneratedReport[]>("/reports");
+  return response.data;
+}
+
+export async function fetchReport(id: number) {
+  const response = await api.get<GeneratedReport>(`/reports/${id}`);
+  return response.data;
+}
+
+export async function fetchPrescriptionReportPreview(auditId: number, anonymized = false) {
+  const response = await api.get<ReportPreview>(`/reports/prescriptions/${auditId}/preview`, {
+    params: { mode: anonymized ? "anonymized" : "complete_internal" },
+  });
+  return response.data;
+}
+
+export async function fetchPrescriptionTimeline(auditId: number) {
+  const response = await api.get<DecisionTimelineItem[]>(
+    `/reports/prescriptions/${auditId}/timeline`,
+  );
+  return response.data;
+}
+
+export async function fetchPrescriptionEvidence(auditId: number) {
+  const response = await api.get<DecisionEvidenceItem[]>(
+    `/reports/prescriptions/${auditId}/evidence`,
+  );
+  return response.data;
+}
+
+export async function downloadPrescriptionTechnicalReport(auditId: number, anonymized = false) {
+  return downloadFromApi(
+    `/reports/prescriptions/${auditId}/pdf`,
+    `prescripta-relatorio-tecnico-${auditId}.pdf`,
+    { mode: anonymized ? "anonymized" : "complete_internal" },
+  );
+}
+
+export async function downloadPatientGuidanceReport(auditId: number) {
+  return downloadFromApi(
+    `/reports/prescriptions/${auditId}/patient-guidance.pdf`,
+    `prescripta-orientacoes-paciente-${auditId}.pdf`,
+  );
+}
+
+export async function downloadReconciliationReport(importId: number, anonymized = false) {
+  return downloadFromApi(
+    `/reports/imports/${importId}/reconciliation.pdf`,
+    `prescripta-reconciliacao-${importId}.pdf`,
+    { anonymized },
+  );
+}
+
+export async function downloadAuditReport(filters: AuditFilters = {}) {
+  return downloadFromApi("/reports/audit-events/pdf", "prescripta-auditoria.pdf", filters);
+}
+
+export async function exportPrescriptionJson(auditId: number, anonymized = false) {
+  return downloadFromApi(
+    `/exports/prescriptions/${auditId}.json`,
+    `prescricao-${auditId}.json`,
+    { anonymized },
+  );
+}
+
+export async function exportPrescriptionCsv(auditId: number, anonymized = false) {
+  return downloadFromApi(
+    `/exports/prescriptions/${auditId}.csv`,
+    `prescricao-${auditId}.csv`,
+    { anonymized },
+  );
+}
+
+export async function exportImportJson(importId: number, anonymized = false) {
+  return downloadFromApi(`/exports/imports/${importId}.json`, `importacao-${importId}.json`, {
+    anonymized,
+  });
+}
+
+export async function exportImportCsv(importId: number, anonymized = false) {
+  return downloadFromApi(`/exports/imports/${importId}.csv`, `importacao-${importId}.csv`, {
+    anonymized,
+  });
+}
+
+export async function exportAuditJson(filters: AuditFilters = {}) {
+  return downloadFromApi("/exports/audit-events.json", "audit-events.json", filters);
+}
+
+export async function exportAuditCsv(filters: AuditFilters = {}) {
+  return downloadFromApi("/exports/audit-events.csv", "audit-events.csv", filters);
+}
+
+export async function exportReportJson(reportId: number) {
+  return downloadFromApi(`/exports/reports/${reportId}.json`, `relatorio-${reportId}.json`);
 }
 
 export async function fetchAIProviders() {
@@ -405,4 +520,34 @@ export async function updateUserStatus(id: number, is_active: boolean) {
 export async function updateUserRole(id: number, role: UserRole) {
   const response = await api.patch<User>(`/users/${id}/role`, { role });
   return response.data;
+}
+
+async function downloadFromApi(
+  url: string,
+  fallbackFilename: string,
+  params?: Record<string, unknown>,
+) {
+  const response = await api.get<Blob>(url, { params, responseType: "blob" });
+  const disposition = response.headers["content-disposition"];
+  const filename = filenameFromDisposition(disposition) ?? fallbackFilename;
+  const contentType = response.headers["content-type"];
+  const blob = new Blob([response.data], {
+    type: typeof contentType === "string" ? contentType : "application/octet-stream",
+  });
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
+function filenameFromDisposition(disposition: unknown) {
+  if (typeof disposition !== "string") {
+    return null;
+  }
+  const match = disposition.match(/filename="?([^";]+)"?/i);
+  return match?.[1] ?? null;
 }

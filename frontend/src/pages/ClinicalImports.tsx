@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
   DatabaseZap,
+  Download,
   FileJson,
   FlaskConical,
   ShieldCheck,
@@ -18,11 +19,14 @@ import {
   acceptClinicalReconciliationItem,
   acceptClinicalReconciliationSafeItems,
   checkCdsPrescription,
+  downloadReconciliationReport,
   fetchClinicalImports,
   fetchClinicalReconciliation,
   importClinicalCsv,
   importClinicalFhir,
   importClinicalJson,
+  exportImportCsv,
+  exportImportJson,
   rejectClinicalImport,
   rejectClinicalReconciliationItem,
 } from "../services/api";
@@ -122,6 +126,7 @@ const csvDemo = "record_type,value\nmedication,Novalgina\ncondition,renal\n";
 export default function ClinicalImports() {
   const { canAccess } = useAuth();
   const canReview = canAccess(["admin", "medico"]);
+  const canExport = canAccess(["admin", "medico", "auditor"]);
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [mode, setMode] = useState<"json" | "fhir" | "csv">("json");
@@ -242,6 +247,25 @@ export default function ClinicalImports() {
         observations: [],
         persist: false,
       }),
+  });
+  const reconciliationReportMutation = useMutation({
+    mutationFn: (id: number) => downloadReconciliationReport(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["reports"] });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const exportImportJsonMutation = useMutation({
+    mutationFn: (id: number) => exportImportJson(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const exportImportCsvMutation = useMutation({
+    mutationFn: (id: number) => exportImportCsv(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
   });
 
   function changeMode(nextMode: "json" | "fhir" | "csv") {
@@ -393,13 +417,19 @@ export default function ClinicalImports() {
       {selected ? (
         <ImportDetail
           batch={selected}
+          canExport={canExport}
           canReview={canReview}
+          isExporting={exportImportJsonMutation.isPending || exportImportCsvMutation.isPending}
           isAccepting={acceptMutation.isPending}
           isRejecting={rejectMutation.isPending}
+          isGeneratingReport={reconciliationReportMutation.isPending}
           onAccept={() => acceptMutation.mutate(selected.id)}
           onReject={() => rejectMutation.mutate(selected.id)}
           onAcceptItem={(item) => acceptItemMutation.mutate(item)}
           onAcceptSafe={() => acceptSafeMutation.mutate(selected.id)}
+          onDownloadReport={() => reconciliationReportMutation.mutate(selected.id)}
+          onExportCsv={() => exportImportCsvMutation.mutate(selected.id)}
+          onExportJson={() => exportImportJsonMutation.mutate(selected.id)}
           onRejectItem={(item) => rejectItemMutation.mutate(item)}
           itemJustification={itemJustification}
           reconciliation={reconciliation ?? null}
@@ -462,13 +492,19 @@ export default function ClinicalImports() {
 
 function ImportDetail({
   batch,
+  canExport,
   canReview,
   itemJustification,
+  isExporting,
   isAccepting,
   isRejecting,
+  isGeneratingReport,
   onAccept,
   onAcceptItem,
   onAcceptSafe,
+  onDownloadReport,
+  onExportCsv,
+  onExportJson,
   onReject,
   onRejectItem,
   reconciliation,
@@ -477,13 +513,19 @@ function ImportDetail({
   setRejectReason,
 }: {
   batch: ClinicalImportBatch;
+  canExport: boolean;
   canReview: boolean;
   itemJustification: string;
+  isExporting: boolean;
   isAccepting: boolean;
   isRejecting: boolean;
+  isGeneratingReport: boolean;
   onAccept: () => void;
   onAcceptItem: (item: ClinicalReconciliationItem) => void;
   onAcceptSafe: () => void;
+  onDownloadReport: () => void;
+  onExportCsv: () => void;
+  onExportJson: () => void;
   onReject: () => void;
   onRejectItem: (item: ClinicalReconciliationItem) => void;
   reconciliation: ClinicalReconciliation | null;
@@ -502,6 +544,27 @@ function ImportDetail({
         </div>
         <StatusPill status={batch.status} />
       </div>
+      {canExport ? (
+        <div className="mt-4 flex flex-wrap gap-3 border-t border-slate-100 pt-4">
+          <button
+            className="btn-secondary"
+            disabled={isGeneratingReport}
+            onClick={onDownloadReport}
+            type="button"
+          >
+            <FileJson aria-hidden="true" className="h-4 w-4" />
+            {isGeneratingReport ? "Gerando..." : "Baixar relatório de reconciliação"}
+          </button>
+          <button className="btn-secondary" disabled={isExporting} onClick={onExportJson} type="button">
+            <FileJson aria-hidden="true" className="h-4 w-4" />
+            Exportar JSON
+          </button>
+          <button className="btn-secondary" disabled={isExporting} onClick={onExportCsv} type="button">
+            <Download aria-hidden="true" className="h-4 w-4" />
+            Exportar CSV
+          </button>
+        </div>
+      ) : null}
       {batch.errors.length ? (
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           {batch.errors.join(", ")}

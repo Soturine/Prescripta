@@ -1,5 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, FileText, HelpCircle, ListChecks, Route, Sparkles } from "lucide-react";
+import {
+  AlertTriangle,
+  Download,
+  FileJson,
+  FileText,
+  HelpCircle,
+  History,
+  ListChecks,
+  Route,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { useState } from "react";
 
 import AlertCard from "../components/AlertCard";
@@ -18,7 +29,13 @@ import SourceBadge from "../components/SourceBadge";
 import { useAuth } from "../context/AuthContext";
 import {
   checkPrescription,
+  downloadPatientGuidanceReport,
+  downloadPrescriptionTechnicalReport,
+  exportPrescriptionJson,
   explainPrescription,
+  fetchPrescriptionEvidence,
+  fetchPrescriptionReportPreview,
+  fetchPrescriptionTimeline,
   fetchMedications,
   fetchPatients,
 } from "../services/api";
@@ -29,11 +46,13 @@ import type {
   PrescriptionCheckPayload,
   PrescriptionExplanationPayload,
 } from "../types/prescription";
+import type { DecisionEvidenceItem, DecisionTimelineItem, ReportPreview } from "../types/report";
 
 export default function PrescriptionCheck() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [lastPayload, setLastPayload] = useState<PrescriptionCheckPayload | null>(null);
+  const [anonymizedReport, setAnonymizedReport] = useState(false);
   const { data: patients = [], isLoading: loadingPatients } = useQuery({
     queryKey: ["patients"],
     queryFn: fetchPatients,
@@ -55,12 +74,50 @@ export default function PrescriptionCheck() {
       await queryClient.invalidateQueries({ queryKey: ["audit"] });
     },
   });
+  const auditId = checkMutation.data?.audit_id ?? null;
+  const reportPreviewQuery = useQuery({
+    queryKey: ["prescription-report-preview", auditId, anonymizedReport],
+    queryFn: () => fetchPrescriptionReportPreview(Number(auditId), anonymizedReport),
+    enabled: Boolean(auditId),
+  });
+  const evidenceQuery = useQuery({
+    queryKey: ["prescription-evidence", auditId],
+    queryFn: () => fetchPrescriptionEvidence(Number(auditId)),
+    enabled: Boolean(auditId),
+  });
+  const timelineQuery = useQuery({
+    queryKey: ["prescription-timeline", auditId],
+    queryFn: () => fetchPrescriptionTimeline(Number(auditId)),
+    enabled: Boolean(auditId),
+  });
+  const technicalReportMutation = useMutation({
+    mutationFn: () => downloadPrescriptionTechnicalReport(Number(auditId), anonymizedReport),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["reports"] });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const patientGuidanceMutation = useMutation({
+    mutationFn: () => downloadPatientGuidanceReport(Number(auditId)),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["reports"] });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const exportJsonMutation = useMutation({
+    mutationFn: () => exportPrescriptionJson(Number(auditId), anonymizedReport),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
 
   const isLoading = loadingPatients || loadingMedications;
   const hasRequiredData = patients.length > 0 && medications.length > 0;
   const selectedMedication = lastPayload
     ? medications.find((item) => item.id === lastPayload.medication_id)
     : undefined;
+  const canGenerateTechnical = user?.role === "admin" || user?.role === "medico";
+  const canExport = canGenerateTechnical;
 
   async function handleSubmit(payload: PrescriptionCheckPayload) {
     setLastPayload(payload);
@@ -201,9 +258,70 @@ export default function PrescriptionCheck() {
                 </span>
               ) : null}
             </div>
+            <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
+              <label className="flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
+                <input
+                  checked={anonymizedReport}
+                  className="h-4 w-4 accent-ocean"
+                  onChange={(event) => setAnonymizedReport(event.target.checked)}
+                  type="checkbox"
+                />
+                Dados anonimizados
+              </label>
+              {canGenerateTechnical ? (
+                <button
+                  className="btn-secondary"
+                  disabled={technicalReportMutation.isPending}
+                  onClick={() => technicalReportMutation.mutate()}
+                  title="Baixar relatório técnico"
+                  type="button"
+                >
+                  <Download aria-hidden="true" className="h-4 w-4" />
+                  {technicalReportMutation.isPending
+                    ? "Gerando..."
+                    : "Baixar relatório técnico"}
+                </button>
+              ) : null}
+              <button
+                className="btn-secondary"
+                disabled={patientGuidanceMutation.isPending}
+                onClick={() => patientGuidanceMutation.mutate()}
+                title="Baixar orientação ao paciente"
+                type="button"
+              >
+                <FileText aria-hidden="true" className="h-4 w-4" />
+                {patientGuidanceMutation.isPending
+                  ? "Gerando..."
+                  : "Baixar orientação ao paciente"}
+              </button>
+              {canExport ? (
+                <button
+                  className="btn-secondary"
+                  disabled={exportJsonMutation.isPending}
+                  onClick={() => exportJsonMutation.mutate()}
+                  title="Exportar JSON"
+                  type="button"
+                >
+                  <FileJson aria-hidden="true" className="h-4 w-4" />
+                  Exportar JSON
+                </button>
+              ) : null}
+              {[technicalReportMutation, patientGuidanceMutation, exportJsonMutation].some(
+                (mutation) => mutation.isError,
+              ) ? (
+                <span className="text-sm font-semibold text-danger">
+                  Não foi possível gerar o arquivo solicitado.
+                </span>
+              ) : null}
+            </div>
           </div>
 
           <DoseAccumulationCard summary={checkMutation.data.dose_summary} />
+
+          <ReportSummaryCard
+            isLoading={reportPreviewQuery.isLoading}
+            preview={reportPreviewQuery.data ?? null}
+          />
 
           <div className="grid gap-4 xl:grid-cols-2">
             <PatientCounselingCard counseling={checkMutation.data.patient_counseling} />
@@ -241,6 +359,11 @@ export default function PrescriptionCheck() {
           </div>
 
           <RagEvidencePanel evidence={checkMutation.data.rag_evidence} />
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            <DecisionEvidenceCard evidence={evidenceQuery.data ?? []} />
+            <DecisionTimelineCard timeline={timelineQuery.data ?? []} />
+          </div>
 
           <AlternativeMedicationsCard alternatives={checkMutation.data.alternatives} />
 
@@ -312,6 +435,115 @@ export default function PrescriptionCheck() {
         </section>
       ) : null}
     </div>
+  );
+}
+
+function ReportSummaryCard({
+  preview,
+  isLoading,
+}: {
+  preview: ReportPreview | null;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return <LoadingState label="Preparando resumo do relatório" />;
+  }
+  if (!preview) {
+    return null;
+  }
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <ShieldCheck aria-hidden="true" className="h-5 w-5 text-ocean" />
+            <h2 className="text-lg font-bold text-ink">Resumo do relatório</h2>
+            <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+              {preview.narrative_metadata.fallback_used
+                ? "Fallback determinístico"
+                : "Narrativa por IA"}
+            </span>
+            {preview.report_mode === "anonymized" ? (
+              <span className="rounded-lg bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-800">
+                Dados anonimizados
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {preview.narrative.executive_summary}
+          </p>
+        </div>
+        <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
+          <p>Provider: {preview.narrative_metadata.provider}</p>
+          <p>Modelo: {preview.narrative_metadata.model ?? "determinístico"}</p>
+          <p>Confiança: {Math.round(preview.narrative.confidence * 100)}%</p>
+        </div>
+      </div>
+      <p className="mt-4 break-all rounded-lg bg-slate-50 p-3 font-mono text-xs text-slate-600">
+        EvidenceBundle {preview.evidence_bundle_hash}
+      </p>
+    </section>
+  );
+}
+
+function DecisionEvidenceCard({ evidence }: { evidence: DecisionEvidenceItem[] }) {
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center gap-3">
+        <ShieldCheck aria-hidden="true" className="h-5 w-5 text-ocean" />
+        <h2 className="text-lg font-bold text-ink">Evidências da decisão</h2>
+      </div>
+      <div className="mt-4 grid gap-3">
+        {evidence.length ? (
+          evidence.map((item, index) => (
+            <article className="rounded-lg border border-slate-100 bg-slate-50 p-3" key={index}>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-bold text-ink">{item.code ?? item.source_id}</span>
+                {item.severity ? <RiskBadge level={item.severity as never} /> : null}
+                <SourceBadge
+                  jurisdiction={item.jurisdiction ?? "BR"}
+                  source={item.evidence_type ?? item.source_name ?? "fonte"}
+                  status={item.validation_status ?? "interno"}
+                />
+              </div>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {item.evidence_summary ?? item.source_name ?? "Fonte registrada no bundle."}
+              </p>
+            </article>
+          ))
+        ) : (
+          <p className="text-sm text-slate-600">Nenhuma evidência adicional registrada.</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function DecisionTimelineCard({ timeline }: { timeline: DecisionTimelineItem[] }) {
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center gap-3">
+        <History aria-hidden="true" className="h-5 w-5 text-ocean" />
+        <h2 className="text-lg font-bold text-ink">Linha do tempo da decisão</h2>
+      </div>
+      <ol className="mt-4 grid gap-3">
+        {timeline.length ? (
+          timeline.map((item) => (
+            <li className="flex gap-3" key={`${item.order}-${item.title}`}>
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-xs font-bold text-ocean">
+                {item.order}
+              </span>
+              <div>
+                <p className="font-semibold text-ink">{item.title}</p>
+                <p className="mt-1 text-sm text-slate-600">{item.status}</p>
+              </div>
+            </li>
+          ))
+        ) : (
+          <li className="text-sm text-slate-600">Sem eventos de timeline.</li>
+        )}
+      </ol>
+    </section>
   );
 }
 
