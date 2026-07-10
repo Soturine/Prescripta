@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, CheckCircle, Database, ExternalLink, Pencil, RefreshCw, Search } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import EmptyState from "../components/EmptyState";
 import LoadingState from "../components/LoadingState";
@@ -34,6 +34,8 @@ export default function Medications() {
   const [selectedMedication, setSelectedMedication] = useState<Medication | undefined>();
   const [counselingMedication, setCounselingMedication] = useState<Medication | undefined>();
   const [catalogQuery, setCatalogQuery] = useState("Novalgina");
+  const [medicationFilter, setMedicationFilter] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("todos");
   const queryClient = useQueryClient();
   const { data: medications = [], isLoading } = useQuery({
     queryKey: ["medications"],
@@ -62,6 +64,25 @@ export default function Medications() {
     queryFn: () => lookupAnvisaSource(catalogQuery),
     enabled: catalogQuery.trim().length >= 2,
   });
+  const filteredMedications = useMemo(() => {
+    const query = medicationFilter.trim().toLowerCase();
+    return medications.filter((medication) => {
+      const matchesQuery =
+        !query ||
+        [
+          medication.brand_name,
+          medication.active_ingredient,
+          medication.therapeutic_class,
+          ...(medication.commercial_aliases ?? []),
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(query);
+      const matchesSource =
+        sourceFilter === "todos" || medication.validation_status === sourceFilter;
+      return matchesQuery && matchesSource;
+    });
+  }, [medications, medicationFilter, sourceFilter]);
   const createMutation = useMutation({
     mutationFn: createMedication,
     onSuccess: async () => {
@@ -93,7 +114,7 @@ export default function Medications() {
     mutationFn: (validation_status: "curated" | "validated") =>
       reviewMedicationCounselingSummary(Number(counselingMedication?.id), {
         validation_status,
-        justification: "Revisao demonstrativa v0.7.0.",
+        justification: "Revisão demonstrativa v0.7.0.",
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
@@ -120,9 +141,9 @@ export default function Medications() {
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-ink">Busca por principio ativo ou alias</h2>
+            <h2 className="text-lg font-bold text-ink">Busca por princípio ativo ou alias</h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Nomes comerciais apontam para o principio ativo DCB quando cadastrados no catalogo
+              Nomes comerciais apontam para o princípio ativo DCB quando cadastrados no catálogo
               local.
             </p>
           </div>
@@ -146,7 +167,7 @@ export default function Medications() {
         <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-bold text-ink">Resultado do catalogo</h3>
+              <h3 className="text-sm font-bold text-ink">Resultado do catálogo</h3>
               {searchingCatalog ? (
                 <span className="text-xs font-semibold text-slate-500">buscando...</span>
               ) : null}
@@ -222,7 +243,7 @@ export default function Medications() {
 
       <section className="grid gap-4 lg:grid-cols-[1fr_1fr]">
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-ink">Catalogo de principios ativos</h2>
+          <h2 className="text-lg font-bold text-ink">Catálogo de princípios ativos</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {activeIngredients.map((ingredient) => (
               <span
@@ -241,11 +262,11 @@ export default function Medications() {
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-ink">Politica de conflito de fontes</h2>
+          <h2 className="text-lg font-bold text-ink">Política de conflito de fontes</h2>
           <div className="mt-3 grid gap-2 text-sm leading-6 text-slate-600">
-            <p>Para contexto brasileiro, fontes BR/Anvisa/DCB tem prioridade.</p>
-            <p>Fontes internacionais entram como apoio secundario e precisam de aviso claro.</p>
-            <p>Dipirona/metamizol e exibida como diferenca regulatoria, nao como erro automatico.</p>
+            <p>Para contexto brasileiro, fontes BR/Anvisa/DCB têm prioridade.</p>
+            <p>Fontes internacionais entram como apoio secundário e precisam de aviso claro.</p>
+            <p>Dipirona/metamizol é exibida como diferença regulatória, não como erro automático.</p>
           </div>
         </div>
       </section>
@@ -281,24 +302,54 @@ export default function Medications() {
               onClick={() => setSelectedMedication(undefined)}
               type="button"
             >
-              Cancelar edicao
+              Cancelar edição
             </button>
           ) : null}
           {createMutation.isError || updateMutation.isError ? (
             <p className="mt-3 text-sm font-semibold text-danger">
-              Nao foi possivel salvar medicamento.
+              Não foi possível salvar medicamento.
             </p>
           ) : null}
         </section>
       ) : null}
 
       <section className="grid gap-3">
-        <h2 className="text-lg font-bold text-ink">Lista de medicamentos</h2>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <h2 className="text-lg font-bold text-ink">Lista de medicamentos</h2>
+          <div className="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_180px]">
+            <label className="grid gap-1.5">
+              <span className="label">Filtrar</span>
+              <input
+                className="field"
+                onChange={(event) => setMedicationFilter(event.target.value)}
+                placeholder="Nome, princípio ativo, alias"
+                value={medicationFilter}
+              />
+            </label>
+            <label className="grid gap-1.5">
+              <span className="label">Status da fonte</span>
+              <select
+                className="field"
+                onChange={(event) => setSourceFilter(event.target.value)}
+                value={sourceFilter}
+              >
+                <option value="todos">Todos</option>
+                <option value="demo">Demo</option>
+                <option value="pending_review">Pendente</option>
+                <option value="curated">Curado</option>
+                <option value="validated">Validado</option>
+              </select>
+            </label>
+          </div>
+        </div>
         {isLoading ? <LoadingState label="Carregando medicamentos" /> : null}
         {!isLoading && medications.length === 0 ? (
           <EmptyState title="Nenhum medicamento cadastrado" />
         ) : null}
-        {!isLoading && medications.length > 0 ? (
+        {!isLoading && medications.length > 0 && filteredMedications.length === 0 ? (
+          <EmptyState title="Nenhum medicamento corresponde aos filtros" />
+        ) : null}
+        {!isLoading && filteredMedications.length > 0 ? (
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1240px] text-left text-sm">
@@ -309,14 +360,14 @@ export default function Medications() {
                     <th className="px-4 py-3">Aliases</th>
                     <th className="px-4 py-3">Fonte</th>
                     <th className="px-4 py-3">Classe</th>
-                    <th className="px-4 py-3">Dose maxima</th>
+                    <th className="px-4 py-3">Dose máxima</th>
                     <th className="px-4 py-3">Cautelas</th>
                     <th className="px-4 py-3">Vias</th>
-                    <th className="px-4 py-3 text-right">Acao</th>
+                    <th className="px-4 py-3 text-right">Ação</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {medications.map((medication) => (
+                  {filteredMedications.map((medication) => (
                     <tr key={medication.id} className="text-slate-700">
                       <td className="px-4 py-3 font-semibold text-ink">{medication.brand_name}</td>
                       <td className="px-4 py-3">{medication.active_ingredient}</td>
@@ -333,7 +384,7 @@ export default function Medications() {
                       <td className="px-4 py-3">
                         {[
                           medication.renal_caution ? "renal" : "",
-                          medication.hepatic_caution ? "hepatica" : "",
+                          medication.hepatic_caution ? "hepática" : "",
                           medication.gastrointestinal_caution ? "gastrointestinal" : "",
                           medication.elderly_caution ? "idosos" : "",
                         ]
@@ -409,11 +460,11 @@ function MedicationCounselingPanel({
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 className="text-lg font-bold text-ink">Resumo pratico de seguranca</h2>
+          <h2 className="text-lg font-bold text-ink">Resumo prático de segurança</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
             {medication
               ? `${medication.brand_name} (${medication.active_ingredient})`
-              : "Selecione um medicamento na lista para abrir a aba de orientacoes praticas."}
+              : "Selecione um medicamento na lista para abrir a aba de orientações práticas."}
           </p>
         </div>
         <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1">
@@ -509,15 +560,15 @@ function MedicationCounselingPanel({
                     <dt className="label">Status</dt>
                     <dd className="mt-1 font-semibold text-ink">
                       {summary.validation_status}
-                      {summary.requires_review ? " - revisao pendente" : ""}
+                      {summary.requires_review ? " - revisão pendente" : ""}
                     </dd>
                   </div>
                 </dl>
                 <div className="mt-4 grid gap-2">
-                  <EffectChips title="Sono/atencao" values={summary.sleep_effects} />
+                  <EffectChips title="Sono/atenção" values={summary.sleep_effects} />
                   <EffectChips title="Humor" values={summary.mood_behavior_effects} />
                   <EffectChips title="Sexual/reprodutivo" values={summary.libido_sexual_effects} />
-                  <EffectChips title="Neurologico" values={summary.neurologic_effects} />
+                  <EffectChips title="Neurológico" values={summary.neurologic_effects} />
                   <EffectChips
                     title="Temperatura"
                     values={summary.temperature_regulation_effects}
@@ -527,7 +578,7 @@ function MedicationCounselingPanel({
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-              Nenhum resumo selecionado ou gerado para exibicao.
+              Nenhum resumo selecionado ou gerado para exibição.
             </div>
           )}
         </div>

@@ -79,11 +79,11 @@ export default function QuickTriageForm({ onSubmit }: QuickTriageFormProps) {
   return (
     <form className="grid gap-4" onSubmit={handleSubmit(submit)}>
       <div className="grid gap-4 md:grid-cols-2">
-        <ControlledSelect label="Condicao renal" options={renalOptions} {...register("renal_condition")} />
-        <ControlledSelect label="Condicao hepatica" options={hepaticOptions} {...register("hepatic_condition")} />
+        <ControlledSelect label="Condição renal" options={renalOptions} {...register("renal_condition")} />
+        <ControlledSelect label="Condição hepática" options={hepaticOptions} {...register("hepatic_condition")} />
         <ControlledSelect label="Risco cardiovascular" options={cardiacOptions} {...register("cardiac_condition")} />
         <ControlledSelect
-          label="Historico gastrointestinal"
+          label="Histórico gastrointestinal"
           options={gastrointestinalOptions}
           {...register("gastrointestinal_history")}
         />
@@ -92,7 +92,7 @@ export default function QuickTriageForm({ onSubmit }: QuickTriageFormProps) {
       <div className="grid gap-3 md:grid-cols-3">
         <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
           <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("hypertension")} />
-          Hipertensao
+          Hipertensão
         </label>
         <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
           <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("diabetes")} />
@@ -110,11 +110,11 @@ export default function QuickTriageForm({ onSubmit }: QuickTriageFormProps) {
 
       <div className="grid gap-4 md:grid-cols-2">
         <label className="grid gap-1.5">
-          <span className="label">Alergias ou reacoes ruins</span>
+          <span className="label">Alergias ou reações ruins</span>
           <input className="field" placeholder="dipirona" {...register("allergies")} />
         </label>
         <label className="grid gap-1.5">
-          <span className="label">Medicamentos continuos</span>
+          <span className="label">Medicamentos contínuos</span>
           <input className="field" {...register("current_medications")} />
         </label>
         <label className="grid gap-1.5">
@@ -122,18 +122,18 @@ export default function QuickTriageForm({ onSubmit }: QuickTriageFormProps) {
           <input className="field" {...register("adverse_reactions")} />
         </label>
         <label className="grid gap-1.5">
-          <span className="label">Condicao para revisar</span>
+          <span className="label">Condição para revisar</span>
           <input className="field" placeholder="diabetes tipo 2" {...register("condition_to_review")} />
         </label>
       </div>
       <label className="grid gap-1.5">
-        <span className="label">Observacoes clinicas relevantes</span>
+        <span className="label">Observações clínicas relevantes</span>
         <textarea className="field min-h-20 resize-y" {...register("clinical_notes")} />
       </label>
       <div className="flex justify-end">
         <button className="btn-primary" disabled={isSubmitting} type="submit">
           <Save aria-hidden="true" className="h-4 w-4" />
-          Salvar triagem rapida
+          Salvar triagem rápida
         </button>
       </div>
     </form>

@@ -559,16 +559,16 @@ function PatientCounselingCard({
           <ListChecks aria-hidden="true" className="h-5 w-5" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-ink">Orientacoes ao paciente</h2>
+          <h2 className="text-lg font-bold text-ink">Orientações ao paciente</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            {counseling?.educational_notice ?? "Resumo pratico nao disponivel."}
+            {counseling?.educational_notice ?? "Resumo prático não disponível."}
           </p>
         </div>
       </div>
       <ul className="mt-4 grid gap-2 text-sm leading-6 text-slate-700">
         {(counseling?.orientation_points.length
           ? counseling.orientation_points
-          : ["Gerar ou revisar resumo pratico para este medicamento."]
+          : ["Gerar ou revisar resumo prático para este medicamento."]
         ).map((item) => (
           <li className="rounded-lg bg-slate-50 px-3 py-2" key={item}>
             {item}
@@ -617,7 +617,7 @@ function FunctionalContextCard({
                 {context.question.question}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                {["Sim", "Nao", "Nao informado"].map((answer) => (
+                {["Sim", "Não", "Não informado"].map((answer) => (
                   <button
                     className="btn-secondary bg-white"
                     key={answer}
@@ -646,7 +646,7 @@ function MissingDataCard({ mode }: { mode: MissingDataMode | null }) {
         <div>
           <h2 className="text-lg font-bold text-ink">Dados faltantes</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            {mode?.message ?? "Historico clinico nao avaliado."}
+            {mode?.message ?? "Histórico clínico não avaliado."}
           </p>
         </div>
       </div>
@@ -679,7 +679,7 @@ function PracticalSafetySummaryCard({
   const summary = counseling?.summary;
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="text-lg font-bold text-ink">Resumo pratico de seguranca</h2>
+      <h2 className="text-lg font-bold text-ink">Resumo prático de segurança</h2>
       {summary ? (
         <div className="mt-4 grid gap-3">
           <p className="text-sm leading-6 text-slate-600">{summary.professional_summary}</p>
@@ -690,7 +690,7 @@ function PracticalSafetySummaryCard({
               status={summary.validation_status}
             />
             <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
-              {summary.requires_review ? "pendente de revisao" : "revisado"}
+              {summary.requires_review ? "pendente de revisão" : "revisado"}
             </span>
             <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
               fonte: {summary.source_name}
@@ -702,7 +702,7 @@ function PracticalSafetySummaryCard({
           </div>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-slate-600">Resumo pratico ainda nao gerado.</p>
+        <p className="mt-4 text-sm text-slate-600">Resumo prático ainda não gerado.</p>
       )}
     </section>
   );

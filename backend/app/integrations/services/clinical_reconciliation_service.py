@@ -15,6 +15,7 @@ from app.database.models import (
     PatientModel,
     UserModel,
 )
+from app.integrations.services.clinical_deduplication_service import ClinicalDeduplicationService
 from app.integrations.services.integration_audit_service import IntegrationAuditService
 from app.schemas.integration_schema import (
     ClinicalReconciliationItemRead,
@@ -24,6 +25,21 @@ from app.services.audit_service import AuditService
 from app.services.controlled_vocabulary import category_for_patient_field
 from app.services.normalizer import merge_terms, normalize_text
 from app.services.patient_functional_profile import PatientFunctionalProfileService
+from app.services.patient_identifier_service import (
+    ALLOWED_IDENTIFIER_TYPES,
+    PatientIdentifierService,
+    normalize_identifier_type,
+)
+
+CONDITION_CATEGORY_FIELDS = {
+    "renal": "renal_condition",
+    "hepatic": "hepatic_condition",
+    "cardiac": "cardiac_condition",
+    "gastrointestinal": "gastrointestinal_history",
+    "mental_health": "mental_health_factors",
+    "reproductive_gynecologic": "reproductive_gynecologic_factors",
+    "pregnancy_lactation": "reproductive_gynecologic_factors",
+}
 
 
 @dataclass(frozen=True)
@@ -290,9 +306,13 @@ class ClinicalReconciliationService:
     ) -> ReconciliationDraftItem:
         payload = record.mapped_payload or {}
         imported = payload.get("normalized_value") or payload.get("original_value")
-        normalized_current = {normalize_text(value) for value in current_values}
-        normalized_imported = normalize_text(str(imported))
-        if normalized_imported and normalized_imported in normalized_current:
+        if field_path == "current_medications":
+            duplicate = self._medication_already_present(payload, current_values)
+        else:
+            normalized_current = {normalize_text(value) for value in current_values}
+            normalized_imported = normalize_text(str(imported))
+            duplicate = bool(normalized_imported and normalized_imported in normalized_current)
+        if duplicate:
             badge = "duplicado"
             suggestion = "keep_current"
             conflict = False
@@ -327,11 +347,55 @@ class ClinicalReconciliationService:
     ) -> ReconciliationDraftItem:
         payload = record.mapped_payload or {}
         imported_code = payload.get("mapped_code")
-        current_field = "comorbidities"
-        current: Any = list(patient.comorbidities or []) if patient else []
+        mapped_category = payload.get("clinical_category")
+        current_field = CONDITION_CATEGORY_FIELDS.get(str(mapped_category), "comorbidities")
+        current: Any = self._current_value_for_condition(patient, current_field)
         badge = "novo"
         suggestion = "accept_new_data"
         conflict = False
+        if patient and imported_code and current_field in {
+            "renal_condition",
+            "hepatic_condition",
+            "cardiac_condition",
+            "gastrointestinal_history",
+        }:
+            current = getattr(patient, current_field, None)
+            if current == imported_code:
+                badge = "duplicado"
+                suggestion = "keep_current"
+            elif current:
+                badge = "conflito"
+                suggestion = "review_manually"
+                conflict = True
+            return self._item(
+                batch,
+                record,
+                field_path=current_field,
+                current=current,
+                imported=payload,
+                badge=badge,
+                suggestion=suggestion,
+                conflict=conflict,
+            )
+        if patient and imported_code and current_field in {
+            "mental_health_factors",
+            "reproductive_gynecologic_factors",
+            "comorbidities",
+        }:
+            current_values = list(current or [])
+            if imported_code in current_values:
+                badge = "duplicado"
+                suggestion = "keep_current"
+            return self._item(
+                batch,
+                record,
+                field_path=current_field,
+                current=current_values,
+                imported=payload,
+                badge=badge,
+                suggestion=suggestion,
+                conflict=conflict,
+            )
         for field in (
             "renal_condition",
             "hepatic_condition",
@@ -447,6 +511,47 @@ class ClinicalReconciliationService:
             return "duplicado", "keep_current", False
         return "conflito", "review_manually", True
 
+    def _current_value_for_condition(
+        self,
+        patient: PatientModel | None,
+        field_path: str,
+    ) -> Any:
+        if patient is None:
+            return []
+        if hasattr(patient, field_path):
+            value = getattr(patient, field_path)
+            return list(value or []) if isinstance(value, list) else value
+        return list(patient.comorbidities or [])
+
+    def _medication_already_present(self, payload: dict, current_values: list[str]) -> bool:
+        imported_keys = self._medication_equivalence_keys(payload)
+        if not imported_keys:
+            return False
+        current_keys: set[str] = set()
+        for value in current_values:
+            current_keys.update(
+                self._medication_equivalence_keys(
+                    {
+                        "original_value": value,
+                        "normalized_value": value,
+                    }
+                )
+            )
+        return bool(imported_keys & current_keys)
+
+    def _medication_equivalence_keys(self, payload: dict) -> set[str]:
+        keys = {
+            str(payload.get("active_ingredient_id") or "").strip(),
+            normalize_text(str(payload.get("mapped_code") or "")),
+            normalize_text(str(payload.get("normalized_value") or "")),
+        }
+        raw_value = payload.get("original_value") or payload.get("normalized_value")
+        if raw_value:
+            result = ClinicalDeduplicationService().deduplicate_medication(str(raw_value))
+            keys.add(normalize_text(result.mapped_code))
+            keys.add(normalize_text(result.normalized_value))
+        return {key for key in keys if key}
+
     def _with_decision(
         self,
         item: ReconciliationDraftItem,
@@ -555,9 +660,27 @@ class ClinicalReconciliationService:
             code = imported.get("mapped_code") if isinstance(imported, dict) else None
             if code:
                 patient.renal_condition = code
+        elif item.field_path in {
+            "hepatic_condition",
+            "cardiac_condition",
+            "gastrointestinal_history",
+        }:
+            code = imported.get("mapped_code") if isinstance(imported, dict) else None
+            if code:
+                setattr(patient, item.field_path, code)
+        elif item.field_path in {
+            "mental_health_factors",
+            "reproductive_gynecologic_factors",
+        }:
+            code = imported.get("mapped_code") if isinstance(imported, dict) else None
+            value = code or self._imported_term(imported)
+            current = getattr(patient, item.field_path, [])
+            setattr(patient, item.field_path, merge_terms(current, [value]))
         elif item.field_path == "comorbidities":
             value = self._imported_term(imported)
             patient.comorbidities = merge_terms(patient.comorbidities, [value])
+        elif item.field_path.startswith("patient.identifiers"):
+            self._apply_identifier(patient, imported)
         elif item.field_path.startswith("patient."):
             field = item.field_path.removeprefix("patient.")
             if hasattr(patient, field) and not field.startswith("identifiers"):
@@ -578,6 +701,24 @@ class ClinicalReconciliationService:
                 self.db.flush()
             if hasattr(profile, field):
                 setattr(profile, field, imported)
+
+    def _apply_identifier(self, patient: PatientModel, imported: Any) -> None:
+        if not isinstance(imported, dict):
+            return
+        identifier_value = imported.get("identifier_value") or imported.get("value")
+        if not identifier_value:
+            return
+        identifier_type = str(imported.get("identifier_type") or "external_system_id")
+        normalized_type = normalize_identifier_type(identifier_type)
+        if normalized_type not in ALLOWED_IDENTIFIER_TYPES:
+            normalized_type = "external_system_id"
+        PatientIdentifierService(self.db).create(
+            patient_id=patient.id,
+            identifier_type=normalized_type,
+            identifier_value=str(identifier_value),
+            issuing_system=imported.get("issuing_system") or imported.get("system"),
+            is_primary=False,
+        )
 
     def _imported_term(self, imported: Any) -> str:
         if isinstance(imported, dict):

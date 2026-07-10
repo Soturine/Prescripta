@@ -1,6 +1,6 @@
 # Relatórios
 
-O Prescripta v0.8.0 possui um motor central de relatórios em
+O Prescripta v0.8.1 possui um motor central de relatórios em
 `backend/app/reports`.
 
 ## Tipos
@@ -27,6 +27,16 @@ O Prescripta v0.8.0 possui um motor central de relatórios em
 6. O renderer gera preview HTML e PDF simples.
 7. JSON/CSV exportam dados estruturados.
 8. `GeneratedReport` e `AuditEvent` registram metadados e hashes.
+
+## UX v0.8.1
+
+A tela **Relatórios** permite selecionar um item do histórico e abrir:
+
+- metadados de template, versão, IA, prompt, fallback e hashes;
+- exportação JSON do relatório gerado;
+- regeneração do PDF a partir do alvo auditado;
+- link para auditoria filtrada;
+- timeline e evidências quando o alvo é uma checagem de prescrição.
 
 ## Segurança
 

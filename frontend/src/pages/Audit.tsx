@@ -124,6 +124,7 @@ export default function Audit() {
             Gerar PDF
           </button>
         </div>
+        <ActiveFilterChips filters={filters} onClear={clearFilters} />
       </section>
 
       {isLoading ? <LoadingState label="Carregando auditoria" /> : null}
@@ -191,6 +192,51 @@ export default function Audit() {
       ) : null}
     </div>
   );
+}
+
+function ActiveFilterChips({ filters, onClear }: { filters: AuditFilters; onClear: () => void }) {
+  const entries = Object.entries(filters).filter(
+    ([, value]) => value !== undefined && value !== null && String(value).trim() !== "",
+  );
+  if (!entries.length) {
+    return null;
+  }
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+      {entries.map(([key, value]) => (
+        <span
+          className="rounded-lg bg-cyan-50 px-2.5 py-1 text-xs font-bold text-cyan-800"
+          key={key}
+        >
+          {labelFilterKey(key)}: {String(value)}
+        </span>
+      ))}
+      <button className="btn-secondary" onClick={onClear} type="button">
+        Limpar filtros
+      </button>
+    </div>
+  );
+}
+
+function labelFilterKey(key: string) {
+  const labels: Record<string, string> = {
+    action: "Evento",
+    active_ingredient: "Princípio ativo",
+    ai_model: "Modelo IA",
+    ai_provider: "Provider IA",
+    date_from: "Data inicial",
+    date_to: "Data final",
+    jurisdiction: "Jurisdição",
+    medication: "Medicamento",
+    patient: "Paciente",
+    risk_level: "Risco",
+    sort: "Ordenação",
+    source: "Fonte",
+    status: "Status",
+    text: "Texto",
+    user: "Usuário",
+  };
+  return labels[key] ?? key;
 }
 
 function FilterInput({

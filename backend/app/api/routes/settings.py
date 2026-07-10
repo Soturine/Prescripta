@@ -14,6 +14,7 @@ from app.schemas.ai_settings_schema import (
     AIConnectionTestResponse,
     AICredentialSaveRequest,
     AICredentialStatus,
+    AIHealthRead,
     AIModelListResponse,
     AIModelSelectRequest,
     AIProviderInfo,
@@ -44,6 +45,14 @@ def get_current_ai_settings(
     _current_user: AISettingsReader,
 ) -> AISettingsRead:
     return AISettingsService(db).current()
+
+
+@router.get("/health", response_model=AIHealthRead)
+def get_ai_health(
+    db: DbSession,
+    _current_user: AISettingsReader,
+) -> AIHealthRead:
+    return AISettingsService(db).health()
 
 
 @router.get("/models", response_model=AIModelListResponse)

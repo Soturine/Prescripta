@@ -1,4 +1,4 @@
-"""Report engine package for Prescripta v0.8.0."""
+"""Report engine package for Prescripta v0.8.1."""
 
 from app.reports.schemas import (
     PRESCRIPTA_VERSION,

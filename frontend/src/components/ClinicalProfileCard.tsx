@@ -10,22 +10,22 @@ type ClinicalProfileCardProps = {
 
 export default function ClinicalProfileCard({ patient }: ClinicalProfileCardProps) {
   const rows = [
-    ["Condicao renal", formatClinicalValue(patient.renal_condition)],
-    ["Condicao hepatica", formatClinicalValue(patient.hepatic_condition)],
+    ["Condição renal", formatClinicalValue(patient.renal_condition)],
+    ["Condição hepática", formatClinicalValue(patient.hepatic_condition)],
     ["Risco cardiovascular", formatClinicalValue(patient.cardiac_condition)],
-    ["Historico gastrointestinal", formatClinicalValue(patient.gastrointestinal_history)],
-    ["Hipertensao", patient.hypertension ? "Sim" : "Nao"],
-    ["Diabetes", patient.diabetes ? "Sim" : "Nao"],
+    ["Histórico gastrointestinal", formatClinicalValue(patient.gastrointestinal_history)],
+    ["Hipertensão", patient.hypertension ? "Sim" : "Não"],
+    ["Diabetes", patient.diabetes ? "Sim" : "Não"],
     [
-      "Gravidez/lactacao",
-      patient.pregnancy_or_lactation === null ? "-" : patient.pregnancy_or_lactation ? "Sim" : "Nao",
+      "Gravidez/lactação",
+      patient.pregnancy_or_lactation === null ? "-" : patient.pregnancy_or_lactation ? "Sim" : "Não",
     ],
-    ["Saude mental", formatClinicalList(patient.mental_health_factors ?? [])],
+    ["Saúde mental", formatClinicalList(patient.mental_health_factors ?? [])],
     [
-      "Reprodutivo/ginecologico",
+      "Reprodutivo/ginecológico",
       formatClinicalList(patient.reproductive_gynecologic_factors ?? []),
     ],
-    ["Reacoes adversas", joinList(patient.adverse_reactions) || "-"],
+    ["Reações adversas", joinList(patient.adverse_reactions) || "-"],
   ];
 
   return (
@@ -36,7 +36,7 @@ export default function ClinicalProfileCard({ patient }: ClinicalProfileCardProp
             <ClipboardList aria-hidden="true" className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-ink">Perfil clinico inteligente</h2>
+            <h2 className="text-lg font-bold text-ink">Perfil clínico inteligente</h2>
             <p className="mt-1 text-sm text-slate-600">
               {patient.clinical_profile_badge} · {patient.clinical_profile_completeness_score}%
             </p>
@@ -69,10 +69,10 @@ export default function ClinicalProfileCard({ patient }: ClinicalProfileCardProp
         </div>
       </div>
       <p className="mt-3 text-xs font-medium text-slate-500">
-        Ultima revisao:{" "}
+        Última revisão:{" "}
         {patient.clinical_profile_reviewed_at
           ? formatDateTime(patient.clinical_profile_reviewed_at)
-          : "nao registrada"}
+          : "não registrada"}
       </p>
     </section>
   );

@@ -59,6 +59,32 @@ export type AISettings = {
   updated_at: string | null;
 };
 
+export type AIHealthEvent = {
+  action: string;
+  provider: AIProviderId | string;
+  model: string | null;
+  result: string;
+  error_summary: string | null;
+  created_at: string;
+};
+
+export type AIHealth = {
+  provider: AIProviderId;
+  selected_model: string | null;
+  external_calls_enabled: boolean;
+  external_status: string;
+  credential_status: string;
+  cache_status: string;
+  json_mode_enabled: boolean;
+  fallback_available: boolean;
+  circuit_breaker_state: string;
+  failure_count: number;
+  degraded_until: string | null;
+  last_verified_at: string | null;
+  last_error: string | null;
+  recent_events: AIHealthEvent[];
+};
+
 export type AICredentialPayload = {
   provider: AIProviderId;
   api_key: string | null;

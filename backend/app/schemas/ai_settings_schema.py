@@ -75,6 +75,32 @@ class AISettingsRead(BaseModel):
     updated_at: datetime | None = None
 
 
+class AIHealthEventRead(BaseModel):
+    action: str
+    provider: str
+    model: str | None = None
+    result: str
+    error_summary: str | None = None
+    created_at: datetime
+
+
+class AIHealthRead(BaseModel):
+    provider: str
+    selected_model: str | None = None
+    external_calls_enabled: bool = False
+    external_status: str = "fallback"
+    credential_status: str = "not_required"
+    cache_status: str = "empty"
+    json_mode_enabled: bool = True
+    fallback_available: bool = True
+    circuit_breaker_state: str = "closed"
+    failure_count: int = 0
+    degraded_until: datetime | None = None
+    last_verified_at: datetime | None = None
+    last_error: str | None = None
+    recent_events: list[AIHealthEventRead] = Field(default_factory=list)
+
+
 class AIModelSelectRequest(BaseModel):
     provider: str = Field(pattern="^(fallback|openai|gemini|ollama|openai_compatible)$")
     selected_model: str | None = Field(default=None, max_length=180)
