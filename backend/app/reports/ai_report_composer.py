@@ -41,7 +41,7 @@ class AIReportComposer:
     def compose(self, bundle: ReportEvidenceBundle) -> ReportNarrativeComposition:
         ai_service = AISettingsService(self.db)
         config = ai_service.runtime_config()
-        prompt_version = PROMPT_VERSIONS.get(bundle.report_type, "report_generic_v0.8.0")
+        prompt_version = PROMPT_VERSIONS.get(bundle.report_type, "report_generic_v0.8.1")
         start = time.perf_counter()
         if bundle.ai_context.allow_external_ai:
             try:

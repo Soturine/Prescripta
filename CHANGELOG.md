@@ -9,6 +9,37 @@ Todas as mudancas relevantes deste projeto sao documentadas aqui.
 - v0.9.0: Docker/PostgreSQL/deploy.
 - v1.0.0: versão final de portfólio.
 
+## [0.8.1] - 2026-07-10
+
+### Added
+
+- `/api/health` com versão, ambiente, banco e status de IA sem segredos.
+- Painel de saúde de IA com provider, cache, fallback, circuit breaker e histórico recente.
+- Retry/backoff para falhas transitórias de IA externa e circuit breaker simples.
+- Scripts `setup-dev.ps1`, `dev.ps1`, `reset-demo-db.ps1` e `check-install.ps1`.
+- Relatórios com painel de detalhe, JSON, regeneração de PDF, timeline e evidências.
+- Docs de setup, registro de prompts e benchmark SafeDose v0.8.1.
+
+### Changed
+
+- README virou página de produto/portfólio da versão atual.
+- Sidebar e dashboard exibem versão v0.8.1 e atalhos de fluxo.
+- Importações usam editor de payload recolhível e linguagem de exemplo de teste.
+- Medicamentos ganharam filtros e textos visíveis revisados.
+- Deduplicação/reconciliação reconhecem aliases brasileiros de dipirona/metamizol.
+- Condições importadas podem ser aplicadas aos campos clínicos estruturados adequados.
+- PDF evita substituição destrutiva de acentos suportados por `cp1252`.
+
+### Security
+
+- Identificadores aceitos por reconciliação são salvos com hash/máscara.
+- Health e histórico de IA não expõem API Key ou segredo.
+- Fallback determinístico permanece disponível quando provider externo falha.
+
+### Tests
+
+- Cobertura para health, retry, circuit breaker, aliases de dipirona e identificador mascarado.
+
 ## [0.8.0] - 2026-07-10
 
 ### Added

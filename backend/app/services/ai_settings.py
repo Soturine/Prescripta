@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -26,6 +27,8 @@ from app.schemas.ai_settings_schema import (
     AIConnectionTestResponse,
     AICredentialSaveRequest,
     AICredentialStatus,
+    AIHealthEventRead,
+    AIHealthRead,
     AIModelListResponse,
     AIModelSelectRequest,
     AIProviderInfo,
@@ -34,6 +37,9 @@ from app.schemas.ai_settings_schema import (
 )
 
 MODEL_CACHE_TTL = timedelta(hours=24)
+AI_RETRY_ATTEMPTS = 3
+AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD = 3
+AI_CIRCUIT_BREAKER_COOLDOWN = timedelta(minutes=5)
 
 PROVIDER_CATALOG = {
     "fallback": AIProviderInfo(
@@ -76,6 +82,7 @@ PROVIDER_CATALOG = {
 }
 
 _MEMORY_CREDENTIALS: dict[str, dict[str, str | None]] = {}
+_PROVIDER_FAILURES: dict[str, dict[str, Any]] = {}
 
 
 class AIConfigurationError(ValueError):
@@ -160,6 +167,59 @@ class AISettingsService:
             credential=credential,
             external_status=external_status,
             updated_at=row.updated_at if row else None,
+        )
+
+    def health(self) -> AIHealthRead:
+        current = self.current()
+        config = self.runtime_config()
+        cached_models = self._cached_models(config.provider)
+        credential = current.credential
+        state = self._circuit_state(config.provider)
+        recent_events = list(
+            self.db.scalars(
+                select(AIConfigurationAuditLogModel)
+                .order_by(AIConfigurationAuditLogModel.created_at.desc())
+                .limit(8)
+            )
+        )
+        credential_status = "not_required"
+        if PROVIDER_CATALOG[config.provider].requires_api_key:
+            credential_status = (
+                "configured" if credential and credential.has_credential else "missing"
+            )
+
+        if not cached_models:
+            cache_status = "empty"
+        elif self._cache_is_fresh(cached_models):
+            cache_status = "fresh"
+        else:
+            cache_status = "stale"
+
+        return AIHealthRead(
+            provider=current.provider,
+            selected_model=current.selected_model,
+            external_calls_enabled=current.enable_external_calls,
+            external_status=current.external_status,
+            credential_status=credential_status,
+            cache_status=cache_status,
+            json_mode_enabled=current.use_json_mode,
+            fallback_available=current.fallback_available,
+            circuit_breaker_state="open" if state.get("degraded_until") else "closed",
+            failure_count=int(state.get("failure_count") or 0),
+            degraded_until=state.get("degraded_until"),
+            last_verified_at=credential.last_verified_at if credential else None,
+            last_error=credential.last_error if credential else None,
+            recent_events=[
+                AIHealthEventRead(
+                    action=event.action,
+                    provider=event.provider,
+                    model=event.model,
+                    result=event.result,
+                    error_summary=event.error_summary,
+                    created_at=event.created_at,
+                )
+                for event in recent_events
+            ],
         )
 
     def credential_status(self, provider: str) -> AICredentialStatus:
@@ -456,8 +516,23 @@ class AISettingsService:
         config = config or self.runtime_config()
         if not self._provider_ready(config):
             raise AIConfigurationError("Provider externo não configurado; usando fallback local.")
-        content = self._external_completion(config, system_instructions, payload, purpose)
-        return self._parse_json(content)
+        if self._provider_degraded(config.provider):
+            raise AIConfigurationError(
+                "Provider externo temporariamente indisponível; usando fallback local."
+            )
+        try:
+            content = self._external_completion_with_retry(
+                config,
+                system_instructions,
+                payload,
+                purpose,
+            )
+            parsed = self._parse_json(content)
+            self._record_provider_success(config.provider)
+            return parsed
+        except Exception as exc:
+            self._record_provider_failure(config.provider, self._safe_error(exc))
+            raise
 
     def _provider_ready(self, config: ActiveAIConfig) -> bool:
         if config.provider == "fallback" or not config.enable_external_calls:
@@ -558,6 +633,69 @@ class AISettingsService:
                 )
             )
         return models
+
+    def _external_completion_with_retry(
+        self,
+        config: ActiveAIConfig,
+        system_instructions: str,
+        payload: dict,
+        purpose: str,
+    ) -> str:
+        last_error: Exception | None = None
+        for attempt in range(AI_RETRY_ATTEMPTS):
+            try:
+                return self._external_completion(config, system_instructions, payload, purpose)
+            except Exception as exc:
+                last_error = exc
+                if attempt >= AI_RETRY_ATTEMPTS - 1 or not self._is_transient_provider_error(exc):
+                    raise
+                time.sleep(0.2 * (2**attempt))
+        raise last_error or AIConfigurationError(f"Provider indisponível para {purpose}.")
+
+    def _is_transient_provider_error(self, exc: Exception) -> bool:
+        if isinstance(
+            exc,
+            (
+                httpx.TimeoutException,
+                httpx.ConnectError,
+                httpx.NetworkError,
+                httpx.RemoteProtocolError,
+            ),
+        ):
+            return True
+        if isinstance(exc, httpx.HTTPStatusError):
+            status_code = exc.response.status_code
+            return status_code == 429 or status_code >= 500
+        return False
+
+    def _circuit_state(self, provider: str) -> dict[str, Any]:
+        state = _PROVIDER_FAILURES.get(provider, {"failure_count": 0, "degraded_until": None})
+        degraded_until = state.get("degraded_until")
+        if isinstance(degraded_until, datetime) and degraded_until <= datetime.now(UTC):
+            _PROVIDER_FAILURES.pop(provider, None)
+            return {"failure_count": 0, "degraded_until": None}
+        return state
+
+    def _provider_degraded(self, provider: str) -> bool:
+        degraded_until = self._circuit_state(provider).get("degraded_until")
+        return isinstance(degraded_until, datetime) and degraded_until > datetime.now(UTC)
+
+    def _record_provider_success(self, provider: str) -> None:
+        _PROVIDER_FAILURES.pop(provider, None)
+
+    def _record_provider_failure(self, provider: str, error: str) -> None:
+        if provider == "fallback":
+            return
+        state = self._circuit_state(provider)
+        failure_count = int(state.get("failure_count") or 0) + 1
+        degraded_until = state.get("degraded_until")
+        if failure_count >= AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD:
+            degraded_until = datetime.now(UTC) + AI_CIRCUIT_BREAKER_COOLDOWN
+        _PROVIDER_FAILURES[provider] = {
+            "failure_count": failure_count,
+            "degraded_until": degraded_until,
+            "last_error": error,
+        }
 
     def _external_completion(
         self,

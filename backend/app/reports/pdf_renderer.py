@@ -51,12 +51,32 @@ class SimplePDFRenderer:
         for line in lines:
             content.append(f"({self._escape(line)}) Tj")
             content.append("T*")
+        content.append("T*")
+        content.append(
+            f"({self._escape('Documento gerado pelo Prescripta para revisão humana.')}) Tj"
+        )
         content.append("ET")
-        return "\n".join(content).encode("cp1252", errors="replace")
+        return "\n".join(content).encode("cp1252")
 
     def _escape(self, value: str) -> str:
-        safe = value.encode("cp1252", errors="replace").decode("cp1252")
+        safe = self._sanitize_text(value)
+        safe.encode("cp1252")
         return safe.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+    def _sanitize_text(self, value: str) -> str:
+        return value.translate(
+            str.maketrans(
+                {
+                    "–": "-",
+                    "—": "-",
+                    "•": "*",
+                    "“": '"',
+                    "”": '"',
+                    "‘": "'",
+                    "’": "'",
+                }
+            )
+        )
 
     def _build_pdf(self, objects: list[bytes]) -> bytes:
         output = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")

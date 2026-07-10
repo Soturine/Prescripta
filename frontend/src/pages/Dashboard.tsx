@@ -1,9 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, ClipboardList, Pill, Users } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  ClipboardList,
+  DatabaseZap,
+  FileText,
+  Pill,
+  Settings,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
 import LoadingState from "../components/LoadingState";
 import RiskBadge from "../components/RiskBadge";
-import { fetchDashboard } from "../services/api";
+import { APP_VERSION } from "../config/appVersion";
+import { fetchApiHealth, fetchDashboard } from "../services/api";
 import type { RiskLevel } from "../types/prescription";
 import { formatRisk } from "../utils/formatters";
 
@@ -13,6 +25,10 @@ export default function Dashboard() {
   const { data, error, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: fetchDashboard,
+  });
+  const { data: health } = useQuery({
+    queryKey: ["api-health"],
+    queryFn: fetchApiHealth,
   });
 
   if (isLoading) {
@@ -66,6 +82,31 @@ export default function Dashboard() {
         })}
       </section>
 
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {quickActions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <Link
+              className="group rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-ocean hover:bg-cyan-50"
+              key={action.to}
+              to={action.to}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-ocean">
+                  <Icon aria-hidden="true" className="h-5 w-5" />
+                </div>
+                <ArrowRight
+                  aria-hidden="true"
+                  className="h-4 w-4 text-slate-400 transition group-hover:text-ocean"
+                />
+              </div>
+              <p className="mt-3 text-sm font-bold text-ink">{action.label}</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">{action.description}</p>
+            </Link>
+          );
+        })}
+      </section>
+
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -91,10 +132,48 @@ export default function Dashboard() {
       </section>
 
       <section className="rounded-lg border border-cyan-200 bg-cyan-50 p-4 text-sm leading-6 text-cyan-900">
-        Prescripta v0.6.0 amplia dose acumulada, uso continuo, perfis ADME,
-        neuropsiquiatria, ginecologia/reproducao e interoperabilidade demonstrativa por
-        adapters. Decisoes criticas continuam vindo de regras deterministicas no backend.
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-bold">Prescripta {APP_VERSION}</p>
+            <p>
+              Decisões críticas continuam vindo de regras determinísticas no backend; IA é
+              explicativa, auditável e sempre substituível por fallback local.
+            </p>
+          </div>
+          <div className="grid gap-1 text-xs font-semibold sm:text-right">
+            <span>API: {health?.version ? `v${health.version}` : APP_VERSION}</span>
+            <span>Banco: {health?.database ?? "-"}</span>
+            <span>IA: {health?.ai_provider ?? "fallback"}</span>
+          </div>
+        </div>
       </section>
     </div>
   );
 }
+
+const quickActions = [
+  {
+    to: "/prescription-check",
+    label: "Checar prescrição",
+    description: "Validar dose, cautelas, interações e histórico disponível.",
+    icon: ShieldCheck,
+  },
+  {
+    to: "/clinical-imports",
+    label: "Reconciliar importação",
+    description: "Revisar itens FHIR, JSON ou CSV antes de aplicar no paciente.",
+    icon: DatabaseZap,
+  },
+  {
+    to: "/reports",
+    label: "Abrir relatórios",
+    description: "Ver PDFs, hashes, evidências e exportações geradas.",
+    icon: FileText,
+  },
+  {
+    to: "/settings/ai",
+    label: "Saúde da IA",
+    description: "Conferir provider, fallback, cache e histórico recente.",
+    icon: Settings,
+  },
+];

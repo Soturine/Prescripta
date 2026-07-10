@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
+  ChevronDown,
+  ChevronUp,
   DatabaseZap,
   Download,
   FileJson,
@@ -130,11 +132,12 @@ export default function ClinicalImports() {
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [mode, setMode] = useState<"json" | "fhir" | "csv">("json");
-  const [sourceSystem, setSourceSystem] = useState("mock_hospital");
+  const [sourceSystem, setSourceSystem] = useState("hospital_teste");
   const [purpose, setPurpose] = useState("Importação clínica assistida");
-  const [authorizedBy, setAuthorizedBy] = useState("Paciente/representante demo");
+  const [authorizedBy, setAuthorizedBy] = useState("Paciente/representante autorizado");
   const [consentConfirmed, setConsentConfirmed] = useState(false);
   const [body, setBody] = useState(jsonDemo);
+  const [showPayloadEditor, setShowPayloadEditor] = useState(false);
   const [fhirScenario, setFhirScenario] = useState<keyof typeof fhirScenarios>("medication");
   const [rejectReason, setRejectReason] = useState("Rejeitado em revisão humana.");
   const [itemJustification, setItemJustification] = useState("Revisão granular registrada.");
@@ -271,6 +274,7 @@ export default function ClinicalImports() {
   function changeMode(nextMode: "json" | "fhir" | "csv") {
     setMode(nextMode);
     setBody(nextMode === "json" ? jsonDemo : nextMode === "fhir" ? fhirDemo : csvDemo);
+    setShowPayloadEditor(false);
   }
 
   function changeFhirScenario(nextScenario: keyof typeof fhirScenarios) {
@@ -337,7 +341,7 @@ export default function ClinicalImports() {
             </label>
             {mode === "fhir" ? (
               <label className="grid gap-1.5">
-                <span className="label">Cenário FHIR fictício</span>
+                <span className="label">Exemplo FHIR de teste</span>
                 <select
                   className="field"
                   value={fhirScenario}
@@ -353,14 +357,28 @@ export default function ClinicalImports() {
                 </select>
               </label>
             ) : null}
-            <label className="grid gap-1.5">
-              <span className="label">{mode === "csv" ? "CSV" : "JSON"}</span>
-              <textarea
-                className="field min-h-72 resize-y font-mono text-xs"
-                value={body}
-                onChange={(event) => setBody(event.target.value)}
-              />
-            </label>
+            <button
+              className="btn-secondary w-fit"
+              onClick={() => setShowPayloadEditor((value) => !value)}
+              type="button"
+            >
+              {showPayloadEditor ? (
+                <ChevronUp aria-hidden="true" className="h-4 w-4" />
+              ) : (
+                <ChevronDown aria-hidden="true" className="h-4 w-4" />
+              )}
+              {showPayloadEditor ? "Ocultar payload" : "Editar payload"}
+            </button>
+            {showPayloadEditor ? (
+              <label className="grid gap-1.5">
+                <span className="label">{mode === "csv" ? "CSV" : "JSON"}</span>
+                <textarea
+                  className="field min-h-72 resize-y font-mono text-xs"
+                  value={body}
+                  onChange={(event) => setBody(event.target.value)}
+                />
+              </label>
+            ) : null}
             <button
               className="btn-primary w-fit"
               disabled={importMutation.isPending}
@@ -403,7 +421,7 @@ export default function ClinicalImports() {
                   <StatusPill status={item.status} />
                 </div>
                 <p className="mt-1 text-sm text-slate-600">
-                  {item.source_type} - {formatDateTime(item.imported_at)}
+                  {labelSourceType(item.source_type)} - {formatDateTime(item.imported_at)}
                 </p>
               </button>
             ))}
@@ -574,7 +592,7 @@ function ImportDetail({
         {batch.records.map((record) => (
           <article className="rounded-lg border border-slate-100 bg-slate-50 p-4" key={record.id}>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="text-sm font-bold text-ink">{record.record_type}</h3>
+              <h3 className="text-sm font-bold text-ink">{labelRecordType(record.record_type)}</h3>
               <span className="rounded-lg bg-white px-3 py-1 text-xs font-semibold text-slate-600">
                 confiança {Math.round(record.confidence * 100)}%
               </span>
@@ -646,6 +664,7 @@ function ReconciliationPanel({
   onRejectItem: (item: ClinicalReconciliationItem) => void;
   setItemJustification: (value: string) => void;
 }) {
+  const hasConflicts = (reconciliation.summary.conflicts ?? 0) > 0;
   return (
     <section className="mt-5 rounded-lg border border-slate-200 bg-white p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -656,9 +675,15 @@ function ReconciliationPanel({
           </p>
         </div>
         {canReview ? (
-          <button className="btn-secondary" onClick={onAcceptSafe} type="button">
+          <button
+            className="btn-secondary"
+            disabled={hasConflicts}
+            onClick={onAcceptSafe}
+            title={hasConflicts ? "Resolva conflitos individualmente antes do aceite em lote" : "Aceitar itens seguros"}
+            type="button"
+          >
             <Check aria-hidden="true" className="h-4 w-4" />
-            Aceitar sem conflito
+            {hasConflicts ? "Conflitos exigem revisão" : "Aceitar sem conflito"}
           </button>
         ) : null}
       </div>
@@ -675,7 +700,9 @@ function ReconciliationPanel({
       <div className="mt-4 grid gap-2 sm:grid-cols-4">
         {Object.entries(reconciliation.summary).map(([key, value]) => (
           <div className="rounded-lg bg-slate-50 p-3" key={key}>
-            <p className="text-xs font-bold uppercase tracking-normal text-slate-500">{key}</p>
+            <p className="text-xs font-bold uppercase tracking-normal text-slate-500">
+              {labelSummaryKey(key)}
+            </p>
             <p className="mt-1 text-lg font-bold text-ink">{value}</p>
           </div>
         ))}
@@ -699,7 +726,7 @@ function ReconciliationPanel({
                   <td className="px-4 py-3">
                     <p className="font-semibold text-ink">{item.field_path}</p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {item.record_type} - confiança {Math.round(item.confidence * 100)}%
+                      {labelRecordType(item.record_type)} - confiança {Math.round(item.confidence * 100)}%
                     </p>
                   </td>
                   <td className="px-4 py-3">
@@ -711,7 +738,7 @@ function ReconciliationPanel({
                   <td className="px-4 py-3">
                     <ReconciliationBadge badge={item.badge} conflict={item.conflict} />
                   </td>
-                  <td className="px-4 py-3">{item.suggestion}</td>
+                  <td className="px-4 py-3">{labelSuggestion(item.suggestion)}</td>
                   <td className="px-4 py-3 text-right">
                     {canReview && !item.decision ? (
                       <div className="flex justify-end gap-2">
@@ -766,9 +793,69 @@ function ReconciliationBadge({ badge, conflict }: { badge: string; conflict: boo
         : "border-cyan-100 bg-cyan-50 text-cyan-900";
   return (
     <span className={`rounded-lg border px-2.5 py-1 text-xs font-bold ${classes}`}>
-      {badge}
+      {labelBadge(badge)}
     </span>
   );
+}
+
+function labelBadge(badge: string) {
+  const labels: Record<string, string> = {
+    aceito: "Aceito",
+    conflito: "Conflito",
+    duplicado: "Duplicado",
+    fonte_externa: "Fonte externa",
+    fonte_pendente: "Fonte pendente",
+    novo: "Novo",
+    possivel_match: "Possível correspondência",
+    rejeitado: "Rejeitado",
+    revisao_necessaria: "Revisão necessária",
+  };
+  return labels[badge] ?? badge;
+}
+
+function labelSuggestion(suggestion: string) {
+  const labels: Record<string, string> = {
+    accept_new_data: "Aceitar dado novo após revisão",
+    keep_current: "Manter dado atual",
+    review_manually: "Revisar manualmente",
+  };
+  return labels[suggestion] ?? suggestion;
+}
+
+function labelSummaryKey(key: string) {
+  const labels: Record<string, string> = {
+    accepted: "Aceitos",
+    conflicts: "Conflitos",
+    duplicates: "Duplicados",
+    new: "Novos",
+    rejected: "Rejeitados",
+    requires_manual_review: "Revisão manual",
+    total: "Total",
+  };
+  return labels[key] ?? key;
+}
+
+function labelSourceType(sourceType: string) {
+  const labels: Record<string, string> = {
+    csv: "CSV",
+    fhir_bundle: "FHIR Bundle",
+    generic_json: "JSON genérico",
+  };
+  return labels[sourceType] ?? sourceType;
+}
+
+function labelRecordType(recordType: string) {
+  const labels: Record<string, string> = {
+    allergy: "Alergia",
+    condition: "Condição",
+    current_medication: "Medicamento atual",
+    document: "Documento",
+    functional_profile: "Perfil funcional",
+    medication_request: "Solicitação de medicamento",
+    observation: "Observação",
+    patient: "Paciente",
+  };
+  return labels[recordType] ?? recordType;
 }
 
 function StatusPill({ status }: { status: ClinicalImportBatch["status"] }) {

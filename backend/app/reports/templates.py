@@ -16,17 +16,17 @@ REPORT_TITLES = {
 }
 
 PROMPT_VERSIONS = {
-    "prescription_analysis": "report_prescription_analysis_v0.8.0",
-    "patient_guidance": "report_patient_guidance_v0.8.0",
-    "reconciliation": "report_reconciliation_v0.8.0",
-    "audit": "report_audit_v0.8.0",
+    "prescription_analysis": "report_prescription_analysis_v0.8.1",
+    "patient_guidance": "report_patient_guidance_v0.8.1",
+    "reconciliation": "report_reconciliation_v0.8.1",
+    "audit": "report_audit_v0.8.1",
 }
 
 REPORT_FOOTER = f"{LEGAL_NOTICE} Versao Prescripta: {PRESCRIPTA_VERSION}."
 
 
 def prompt_for_report_type(report_type: str) -> str:
-    prompt_version = PROMPT_VERSIONS.get(report_type, "report_generic_v0.8.0")
+    prompt_version = PROMPT_VERSIONS.get(report_type, "report_generic_v0.8.1")
     return f"""
 Voce e o AIReportComposer do Prescripta.
 Prompt version: {prompt_version}.

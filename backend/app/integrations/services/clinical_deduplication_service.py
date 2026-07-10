@@ -8,7 +8,13 @@ from app.services.normalizer import normalize_text
 MEDICATION_ALIASES = {
     "dipirona": ("dipirona", "dipirona", 0.95),
     "dipirona sodica": ("dipirona", "dipirona", 0.9),
+    "dipirona monoidratada": ("dipirona", "dipirona", 0.9),
     "novalgina": ("dipirona", "dipirona", 0.9),
+    "anador": ("dipirona", "dipirona", 0.88),
+    "dorflex": ("dipirona", "dipirona", 0.82),
+    "neosaldina": ("dipirona", "dipirona", 0.82),
+    "lisador": ("dipirona", "dipirona", 0.86),
+    "metamizole": ("dipirona", "dipirona", 0.9),
     "metamizol": ("dipirona", "dipirona", 0.9),
     "ibuprofeno": ("ibuprofeno", "ibuprofeno", 0.95),
     "ibuvida": ("ibuprofeno", "ibuprofeno", 0.85),
@@ -26,9 +32,10 @@ class DeduplicationResult:
     requires_review: bool
     source: str = "manual_curated"
     jurisdiction: str = "BR"
+    clinical_category: str | None = None
 
     def to_dict(self) -> dict:
-        return {
+        payload = {
             "original_value": self.original_value,
             "normalized_value": self.normalized_value,
             "mapped_code": self.mapped_code,
@@ -37,6 +44,9 @@ class DeduplicationResult:
             "source": self.source,
             "jurisdiction": self.jurisdiction,
         }
+        if self.clinical_category:
+            payload["clinical_category"] = self.clinical_category
+        return payload
 
 
 class ClinicalDeduplicationService:
@@ -64,16 +74,29 @@ class ClinicalDeduplicationService:
 
     def deduplicate_condition(self, value: str) -> DeduplicationResult:
         normalized = normalize_text(value)
-        renal_code = normalize_clinical_code("renal", value)
-        if renal_code in {"doenca_renal_cronica", "funcao_renal_a_revisar"}:
+        for category in (
+            "renal",
+            "hepatic",
+            "cardiac",
+            "gastrointestinal",
+            "mental_health",
+            "reproductive_gynecologic",
+            "pregnancy_lactation",
+        ):
+            code = normalize_clinical_code(category, value)
+            if not code or code == "sem_informacao":
+                continue
+            if code.startswith("sem_"):
+                continue
             return DeduplicationResult(
                 original_value=value,
-                normalized_value="doenca renal cronica"
-                if renal_code == "doenca_renal_cronica"
-                else "funcao renal a revisar",
-                mapped_code=renal_code,
-                confidence=0.85,
-                requires_review=renal_code == "funcao_renal_a_revisar",
+                normalized_value=normalized,
+                mapped_code=code,
+                confidence=0.86 if "a_revisar" not in code else 0.72,
+                requires_review="a_revisar" in code,
+                source="controlled_vocabulary/manual_curated",
+                jurisdiction="BR",
+                clinical_category=category,
             )
         return DeduplicationResult(
             original_value=value,

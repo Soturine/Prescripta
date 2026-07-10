@@ -210,7 +210,7 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
         </label>
 
         <label className="grid gap-1.5">
-          <span className="label">Nome da mae</span>
+          <span className="label">Nome da mãe</span>
           <input className="field" placeholder="apoio a matching" {...register("mother_name")} />
         </label>
 
@@ -226,13 +226,13 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       </label>
 
       <label className="grid gap-1.5">
-        <span className="label">Medicamentos continuos</span>
+        <span className="label">Medicamentos contínuos</span>
         <input className="field" {...register("current_medications")} />
       </label>
 
       <div className="grid gap-4 md:grid-cols-2">
         <label className="grid gap-1.5">
-          <span className="label">Perfil neuropsiquiatrico</span>
+          <span className="label">Perfil neuropsiquiátrico</span>
           <input
             className="field"
             placeholder="uso_isrs, epilepsia_convulsoes"
@@ -241,7 +241,7 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
         </label>
 
         <label className="grid gap-1.5">
-          <span className="label">Perfil reprodutivo/ginecologico</span>
+          <span className="label">Perfil reprodutivo/ginecológico</span>
           <input
             className="field"
             placeholder="uso_anticoncepcional_hormonal, gestante"
@@ -251,11 +251,11 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <ControlledSelect label="Condicao renal" options={renalOptions} {...register("renal_condition")} />
-        <ControlledSelect label="Condicao hepatica" options={hepaticOptions} {...register("hepatic_condition")} />
+        <ControlledSelect label="Condição renal" options={renalOptions} {...register("renal_condition")} />
+        <ControlledSelect label="Condição hepática" options={hepaticOptions} {...register("hepatic_condition")} />
         <ControlledSelect label="Risco cardiovascular" options={cardiacOptions} {...register("cardiac_condition")} />
         <ControlledSelect
-          label="Historico gastrointestinal"
+          label="Histórico gastrointestinal"
           options={gastrointestinalOptions}
           {...register("gastrointestinal_history")}
         />
@@ -264,7 +264,7 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       <div className="grid gap-3 md:grid-cols-3">
         <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
           <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("hypertension")} />
-          Hipertensao
+          Hipertensão
         </label>
         <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
           <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("diabetes")} />
@@ -276,17 +276,17 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
             type="checkbox"
             {...register("pregnancy_or_lactation")}
           />
-          Gravidez/lactacao
+          Gravidez/lactação
         </label>
       </div>
 
       <label className="grid gap-1.5">
-        <span className="label">Reacoes adversas anteriores</span>
+        <span className="label">Reações adversas anteriores</span>
         <input className="field" {...register("adverse_reactions")} />
       </label>
 
       <label className="grid gap-1.5">
-        <span className="label">Observacoes clinicas</span>
+        <span className="label">Observações clínicas</span>
         <textarea className="field min-h-20 resize-y" {...register("clinical_notes")} />
       </label>
 

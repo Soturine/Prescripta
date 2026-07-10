@@ -4,6 +4,7 @@ import type { AuditRecord, DashboardSummary } from "../types/audit";
 import type {
   AICredentialPayload,
   AICredentialStatus,
+  AIHealth,
   AIConnectionTestPayload,
   AIConnectionTestResult,
   AIModelListResponse,
@@ -19,6 +20,7 @@ import type {
   ClinicalVocabularyEntry,
   MedicationCatalogSearchResult,
 } from "../types/catalog";
+import type { ApiHealth } from "../types/health";
 import type {
   AdverseEffectTaxonomyEntry,
   Medication,
@@ -108,6 +110,11 @@ export async function fetchMe() {
 
 export async function fetchDashboard() {
   const response = await api.get<DashboardSummary>("/dashboard");
+  return response.data;
+}
+
+export async function fetchApiHealth() {
+  const response = await api.get<ApiHealth>("/health");
   return response.data;
 }
 
@@ -377,6 +384,11 @@ export async function fetchAIProviders() {
 
 export async function fetchCurrentAISettings() {
   const response = await api.get<AISettings>("/settings/ai/current");
+  return response.data;
+}
+
+export async function fetchAIHealth() {
+  const response = await api.get<AIHealth>("/settings/ai/health");
   return response.data;
 }
 

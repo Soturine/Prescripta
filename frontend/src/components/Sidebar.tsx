@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
+import { APP_SUBTITLE, APP_VERSION } from "../config/appVersion";
 import { useAuth } from "../context/AuthContext";
 import type { UserRole } from "../types/user";
 
@@ -70,7 +71,10 @@ export default function Sidebar() {
       <div className="flex h-full flex-col gap-6 px-4 py-4 lg:px-6 lg:py-7">
         <div>
           <div className="text-2xl font-bold tracking-normal text-ink">Prescripta</div>
-          <div className="mt-1 text-xs font-medium text-slate-500">Uso educacional</div>
+          <div className="mt-1 text-xs font-medium text-slate-500">{APP_SUBTITLE}</div>
+          <div className="mt-2 inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600">
+            {APP_VERSION}
+          </div>
         </div>
 
         <nav className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">

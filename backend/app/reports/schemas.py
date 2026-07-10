@@ -7,8 +7,9 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-PRESCRIPTA_VERSION = "v0.8.0"
-REPORT_TEMPLATE_VERSION = "prescripta_report_template_v0.8.0"
+from app.core.version import APP_VERSION_LABEL, REPORT_TEMPLATE_VERSION
+
+PRESCRIPTA_VERSION = APP_VERSION_LABEL
 
 ReportType = Literal[
     "prescription_analysis",

@@ -9,15 +9,15 @@ import type {
 const booleanFields = [
   ["drives_regularly", "Dirige"],
   ["professional_driver", "Motorista profissional"],
-  ["operates_machinery", "Opera maquinas"],
+  ["operates_machinery", "Opera máquinas"],
   ["works_at_height", "Trabalho em altura"],
   ["fall_risk_activity", "Atividade com queda"],
   ["night_shift", "Turno noturno"],
-  ["caregiver_responsibility", "Cuidador responsavel"],
-  ["high_attention_activity", "Alta atencao"],
-  ["frequent_alcohol_use", "Alcool frequente"],
-  ["history_of_falls", "Historico de quedas"],
-  ["low_tolerance_to_sedation_or_dizziness", "Baixa tolerancia a tontura"],
+  ["caregiver_responsibility", "Cuidador responsável"],
+  ["high_attention_activity", "Alta atenção"],
+  ["frequent_alcohol_use", "Álcool frequente"],
+  ["history_of_falls", "Histórico de quedas"],
+  ["low_tolerance_to_sedation_or_dizziness", "Baixa tolerância a tontura"],
 ] as const;
 
 type BooleanField = (typeof booleanFields)[number][0];
@@ -113,9 +113,9 @@ export default function FunctionalProfileCard({
               }
               value={values[field]}
             >
-              <option value="unknown">Nao informado</option>
+              <option value="unknown">Não informado</option>
               <option value="true">Sim</option>
-              <option value="false">Nao</option>
+              <option value="false">Não</option>
             </select>
           </label>
         ))}

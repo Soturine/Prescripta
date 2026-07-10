@@ -13,7 +13,7 @@ import TagInput from "./TagInput";
 const medicationSchema = z.object({
   active_ingredient_id: z.number().optional(),
   brand_name: z.string().min(2, "Informe o nome comercial."),
-  active_ingredient: z.string().min(2, "Informe o principio ativo."),
+  active_ingredient: z.string().min(2, "Informe o princípio ativo."),
   commercial_aliases: z.string().optional(),
   therapeutic_class: z.string().min(2, "Informe a classe."),
   therapeutic_classes: z.string().optional(),
@@ -23,7 +23,7 @@ const medicationSchema = z.object({
   concentration: z.string().optional(),
   pharmaceutical_form: z.string().optional(),
   evidence_source_url: z.string().optional(),
-  max_daily_dose_mg: z.number().positive("Informe a dose maxima."),
+  max_daily_dose_mg: z.number().positive("Informe a dose máxima."),
   max_duration_days: z.number().positive().optional(),
   max_cumulative_dose_mg: z.number().positive().optional(),
   continuous_use: z.boolean(),
@@ -256,7 +256,7 @@ export default function MedicationForm({
 
         <Autocomplete
           error={errors.active_ingredient?.message}
-          label="Principio ativo DCB"
+          label="Princípio ativo DCB"
           listId="active-ingredient-options"
           options={activeIngredientOptions}
           placeholder="dipirona"
@@ -264,10 +264,10 @@ export default function MedicationForm({
         />
 
         <label className="grid gap-1.5">
-          <span className="label">Classe terapeutica principal</span>
+          <span className="label">Classe terapêutica principal</span>
           <input
             className="field"
-            placeholder="analgesico antitermico"
+            placeholder="analgésico antitérmico"
             {...register("therapeutic_class")}
           />
           {errors.therapeutic_class ? (
@@ -284,13 +284,13 @@ export default function MedicationForm({
 
         <TagInput
           label="Classes controladas"
-          placeholder="analgesico, antitermico"
+          placeholder="analgésico, antitérmico"
           valuePreview={initialMedication ? joinList(initialMedication.therapeutic_classes) : ""}
           {...register("therapeutic_classes")}
         />
 
         <label className="grid gap-1.5">
-          <span className="label">Dose maxima diaria mg</span>
+          <span className="label">Dose máxima diária mg</span>
           <input
             className="field"
             min="0"
@@ -304,7 +304,7 @@ export default function MedicationForm({
         </label>
 
         <label className="grid gap-1.5">
-          <span className="label">Duracao maxima dias</span>
+          <span className="label">Duração máxima dias</span>
           <input
             className="field"
             min="1"
@@ -316,7 +316,7 @@ export default function MedicationForm({
         </label>
 
         <label className="grid gap-1.5">
-          <span className="label">Dose acumulada maxima mg</span>
+          <span className="label">Dose acumulada máxima mg</span>
           <input
             className="field"
             min="0"
@@ -331,30 +331,30 @@ export default function MedicationForm({
 
       <div className="grid gap-4 md:grid-cols-3">
         <ControlledSelect
-          label="Jurisdicao da fonte"
+          label="Jurisdição da fonte"
           options={[
             { value: "BR", label: "Brasil (BR)" },
             { value: "GLOBAL", label: "Global" },
             { value: "US", label: "Estados Unidos (US)" },
-            { value: "EU", label: "Uniao Europeia (EU)" },
+            { value: "EU", label: "União Europeia (EU)" },
           ]}
           {...register("source_jurisdiction")}
         />
         <ControlledSelect
-          label="Fonte da evidencia"
+          label="Fonte da evidência"
           options={[
             { value: "manual_curated", label: "Curadoria manual" },
-            { value: "anvisa_bulario", label: "Anvisa/Bulario" },
+            { value: "anvisa_bulario", label: "Anvisa/Bulário" },
             { value: "dcb", label: "DCB" },
             { value: "demo_seed", label: "Seed demonstrativo" },
-            { value: "external_reference", label: "Referencia externa" },
+            { value: "external_reference", label: "Referência externa" },
           ]}
           {...register("evidence_source_type")}
         />
         <ControlledSelect
-          label="Status de validacao"
+          label="Status de validação"
           options={[
-            { value: "pending_review", label: "Pendente de revisao" },
+            { value: "pending_review", label: "Pendente de revisão" },
             { value: "demo", label: "Demonstrativo" },
             { value: "curated", label: "Curado" },
             { value: "validated", label: "Validado" },
@@ -365,11 +365,11 @@ export default function MedicationForm({
 
       <div className="grid gap-4 md:grid-cols-3">
         <label className="grid gap-1.5">
-          <span className="label">Concentracao</span>
+          <span className="label">Concentração</span>
           <input className="field" placeholder="500 mg/mL" {...register("concentration")} />
         </label>
         <label className="grid gap-1.5">
-          <span className="label">Forma farmaceutica</span>
+          <span className="label">Forma farmacêutica</span>
           <input
             className="field"
             placeholder="comprimido, gotas"
@@ -387,7 +387,7 @@ export default function MedicationForm({
       </div>
 
       <label className="grid gap-1.5">
-        <span className="label">Limites por condicao</span>
+        <span className="label">Limites por condição</span>
         <input
           className="field"
           placeholder="renal:1200, hepatico:800"
@@ -398,8 +398,8 @@ export default function MedicationForm({
       <div className="grid gap-3 md:grid-cols-3">
         {[
           ["renal_caution", "Cautela renal"],
-          ["hepatic_caution", "Cautela hepatica"],
-          ["cardiac_caution", "Cautela cardiaca"],
+          ["hepatic_caution", "Cautela hepática"],
+          ["cardiac_caution", "Cautela cardíaca"],
           ["gastrointestinal_caution", "Cautela gastrointestinal"],
           ["elderly_caution", "Cautela em idosos"],
         ].map(([field, label]) => (
@@ -420,7 +420,7 @@ export default function MedicationForm({
       <div className="grid gap-3 md:grid-cols-2">
         <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
           <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("continuous_use")} />
-          Uso continuo
+          Uso contínuo
         </label>
         <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
           <input
@@ -428,7 +428,7 @@ export default function MedicationForm({
             type="checkbox"
             {...register("monitoring_required")}
           />
-          Monitoramento necessario
+          Monitoramento necessário
         </label>
       </div>
 
@@ -436,7 +436,7 @@ export default function MedicationForm({
         <span className="label">Notas de monitoramento</span>
         <input
           className="field"
-          placeholder="revisar funcao renal/hepatica, sinais clinicos"
+          placeholder="revisar função renal/hepática, sinais clínicos"
           {...register("monitoring_notes")}
         />
       </label>
@@ -447,76 +447,76 @@ export default function MedicationForm({
       ) : null}
 
       <TagInput
-        label="Contraindicacoes estruturadas"
-        placeholder="ulcera ativa, doenca renal grave"
+        label="Contraindicações estruturadas"
+        placeholder="úlcera ativa, doença renal grave"
         {...register("contraindications")}
       />
 
       <div className="grid gap-4 md:grid-cols-2">
         <label className="grid gap-1.5">
-          <span className="label">Mecanismo de acao</span>
+          <span className="label">Mecanismo de ação</span>
           <input className="field" {...register("mechanism_of_action")} />
         </label>
         <label className="grid gap-1.5">
-          <span className="label">Interpretacao clinica</span>
+          <span className="label">Interpretação clínica</span>
           <input className="field" {...register("clinical_interpretation")} />
         </label>
         <label className="grid gap-1.5">
-          <span className="label">Absorcao</span>
+          <span className="label">Absorção</span>
           <input className="field" {...register("absorption_notes")} />
         </label>
         <label className="grid gap-1.5">
-          <span className="label">Distribuicao</span>
+          <span className="label">Distribuição</span>
           <input className="field" {...register("distribution_notes")} />
         </label>
-        <TagInput label="Metabolizacao/processamento" placeholder="hepatico" {...register("metabolism_organs")} />
-        <TagInput label="Eliminacao principal" placeholder="renal" {...register("elimination_organs")} />
+        <TagInput label="Metabolização/processamento" placeholder="hepático" {...register("metabolism_organs")} />
+        <TagInput label="Eliminação principal" placeholder="renal" {...register("elimination_organs")} />
         <ControlledSelect
-          label="Nivel de eliminacao renal"
+          label="Nível de eliminação renal"
           options={[
-            { value: "nao_informado", label: "Nao informado" },
+            { value: "nao_informado", label: "Não informado" },
             { value: "baixo", label: "Baixo" },
             { value: "moderado", label: "Moderado" },
             { value: "alto", label: "Alto" },
-            { value: "critico_revisar", label: "Critico/revisar" },
+            { value: "critico_revisar", label: "Crítico/revisar" },
           ]}
           {...register("renal_elimination_level")}
         />
         <ControlledSelect
-          label="Nivel de metabolismo hepatico"
+          label="Nível de metabolismo hepático"
           options={[
-            { value: "nao_informado", label: "Nao informado" },
+            { value: "nao_informado", label: "Não informado" },
             { value: "baixo", label: "Baixo" },
             { value: "moderado", label: "Moderado" },
             { value: "alto", label: "Alto" },
-            { value: "critico_revisar", label: "Critico/revisar" },
+            { value: "critico_revisar", label: "Crítico/revisar" },
           ]}
           {...register("hepatic_metabolism_level")}
         />
-        <TagInput label="Interacoes CYP" placeholder="cyp2c9_a_revisar" {...register("cyp_interactions")} />
+        <TagInput label="Interações CYP" placeholder="cyp2c9_a_revisar" {...register("cyp_interactions")} />
         <TagInput
-          label="Cautelas neuropsiquiatricas"
+          label="Cautelas neuropsiquiátricas"
           placeholder="risco_serotoninergico, limiar_convulsivo"
           {...register("neuropsychiatric_cautions")}
         />
         <TagInput
-          label="Cautelas reprodutivas/ginecologicas"
+          label="Cautelas reprodutivas/ginecológicas"
           placeholder="uso_anticoncepcional_hormonal, gestante"
           {...register("reproductive_cautions")}
         />
-        <TagInput label="Orgaos envolvidos" placeholder="renal, gastrointestinal" {...register("organs_involved")} />
+        <TagInput label="Órgãos envolvidos" placeholder="renal, gastrointestinal" {...register("organs_involved")} />
         <TagInput
           label="Efeitos adversos relevantes"
           placeholder="sangramento gastrointestinal, gastrite"
           {...register("relevant_adverse_effects")}
         />
         <TagInput
-          label="Contraindicacoes por categoria"
+          label="Contraindicações por categoria"
           placeholder="renal, gastrointestinal"
           {...register("structured_contraindications")}
         />
         <label className="grid gap-1.5">
-          <span className="label">Acao/finalidade</span>
+          <span className="label">Ação/finalidade</span>
           <input className="field" placeholder="analgesia" {...register("therapeutic_action")} />
         </label>
         <label className="grid gap-1.5">
@@ -528,22 +528,22 @@ export default function MedicationForm({
 
       <div className="grid gap-4 md:grid-cols-2">
         <label className="grid gap-1.5">
-          <span className="label">Notas farmacodinamicas</span>
+        <span className="label">Notas farmacodinâmicas</span>
           <textarea className="field min-h-20 resize-y" {...register("pharmacodynamic_notes")} />
         </label>
         <label className="grid gap-1.5">
-          <span className="label">Notas farmacocineticas</span>
+        <span className="label">Notas farmacocinéticas</span>
           <textarea className="field min-h-20 resize-y" {...register("pharmacokinetic_notes")} />
         </label>
       </div>
 
       <label className="grid gap-1.5">
-        <span className="label">Fonte demonstrativa/observacao da evidencia</span>
+        <span className="label">Fonte demonstrativa/observação da evidência</span>
         <input className="field" {...register("knowledge_source")} />
       </label>
 
       <label className="grid gap-1.5">
-        <span className="label">Observacoes clinicas</span>
+        <span className="label">Observações clínicas</span>
         <textarea className="field min-h-24 resize-y" {...register("notes")} />
       </label>
 

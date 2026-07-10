@@ -16,7 +16,9 @@ $accentWarnings = @(
   "avaliacao",
   "usuario",
   "orientacao",
-  "configuracao"
+  "configuracao",
+  "relatorio",
+  "evidencia"
 )
 $exclude = "\\(node_modules|dist|\.git|\.venv|docs\\assets)\\"
 $extensions = @("*.md", "*.py", "*.ts", "*.tsx", "*.ps1", "*.example", "*.txt")
@@ -31,11 +33,13 @@ $warnings = New-Object System.Collections.Generic.List[string]
 foreach ($file in $files) {
   $relative = Resolve-Path -Path $file.FullName -Relative
   $text = [System.IO.File]::ReadAllText($file.FullName)
+
   foreach ($pattern in $criticalPatterns) {
     if ($text.Contains($pattern)) {
       $errors.Add("Mojibake ou encoding inválido em ${relative}: padrão '${pattern}'")
     }
   }
+
   if ($file.Extension -eq ".md") {
     $lines = $text -split "`r?`n"
     for ($index = 0; $index -lt $lines.Count; $index++) {
@@ -45,10 +49,38 @@ foreach ($file in $files) {
       }
     }
   }
-  foreach ($word in $accentWarnings) {
-    if ($text -match "\b$word\b") {
-      $warnings.Add("Revisar possível termo sem acento em ${relative}: ${word}")
-      break
+
+  if ($file.Extension -in @(".md", ".tsx") -and $text -match "FHIR fict[ií]cio|mock_hospital|Paciente Demo") {
+    $warnings.Add("Revisar linguagem de produto/demo em ${relative}.")
+  }
+
+  $visibleLines = New-Object System.Collections.Generic.List[string]
+  foreach ($line in ($text -split "`r?`n")) {
+    if ($file.Extension -eq ".md") {
+      $visibleLines.Add($line)
+      continue
+    }
+    if ($file.Extension -in @(".tsx", ".ts")) {
+      if ($line -match ">[^<{]+<|title=|placeholder=|label=|description=|message=|text:") {
+        $visibleLines.Add($line)
+      }
+      continue
+    }
+    if ($file.Extension -in @(".ps1", ".txt", ".example")) {
+      if ($line -notmatch "^\s*(\$|#|function|param|\}|if|foreach|return)") {
+        $visibleLines.Add($line)
+      }
+    }
+  }
+
+  if ($relative -notmatch "scripts\\check-text-quality\.ps1$") {
+    foreach ($line in $visibleLines) {
+      foreach ($word in $accentWarnings) {
+        if ($line -match "\b$word\b") {
+          $warnings.Add("Revisar possível termo sem acento em ${relative}: ${word}")
+          break
+        }
+      }
     }
   }
 }

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Activity,
   ExternalLink,
   Eye,
   EyeOff,
@@ -15,6 +16,7 @@ import LoadingState from "../components/LoadingState";
 import { useAuth } from "../context/AuthContext";
 import {
   deleteAICredential,
+  fetchAIHealth,
   fetchAIModels,
   fetchAIProviders,
   fetchCurrentAISettings,
@@ -22,7 +24,12 @@ import {
   selectAIModel,
   testAIConnection,
 } from "../services/api";
-import type { AICredentialStatus, AIProviderId, AIProviderInfo } from "../types/aiSettings";
+import type {
+  AICredentialStatus,
+  AIHealth,
+  AIProviderId,
+  AIProviderInfo,
+} from "../types/aiSettings";
 import { formatDateTime } from "../utils/formatters";
 
 const providerOrder: AIProviderId[] = [
@@ -57,6 +64,10 @@ export default function AISettings() {
   const { data: current, isLoading: isLoadingCurrent } = useQuery({
     queryKey: ["ai-settings-current"],
     queryFn: fetchCurrentAISettings,
+  });
+  const { data: health } = useQuery({
+    queryKey: ["ai-health"],
+    queryFn: fetchAIHealth,
   });
   const { data: modelList, isFetching: isFetchingModels } = useQuery({
     queryKey: ["ai-models", provider],
@@ -103,6 +114,7 @@ export default function AISettings() {
       setCredentialStatus(status);
       setApiKey("");
       await queryClient.invalidateQueries({ queryKey: ["ai-settings-current"] });
+      await queryClient.invalidateQueries({ queryKey: ["ai-health"] });
     },
   });
   const deleteCredentialMutation = useMutation({
@@ -111,12 +123,14 @@ export default function AISettings() {
       setCredentialStatus(status);
       setApiKey("");
       await queryClient.invalidateQueries({ queryKey: ["ai-settings-current"] });
+      await queryClient.invalidateQueries({ queryKey: ["ai-health"] });
     },
   });
   const refreshModelsMutation = useMutation({
     mutationFn: () => fetchAIModels(provider, true),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["ai-models", provider] });
+      await queryClient.invalidateQueries({ queryKey: ["ai-health"] });
     },
   });
   const testMutation = useMutation({
@@ -131,6 +145,7 @@ export default function AISettings() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["ai-settings-current"] });
       await queryClient.invalidateQueries({ queryKey: ["ai-models", provider] });
+      await queryClient.invalidateQueries({ queryKey: ["ai-health"] });
     },
   });
   const selectMutation = useMutation({
@@ -148,6 +163,7 @@ export default function AISettings() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["ai-settings-current"] });
+      await queryClient.invalidateQueries({ queryKey: ["ai-health"] });
     },
   });
 
@@ -165,6 +181,8 @@ export default function AISettings() {
         A IA do Prescripta é explicativa e extratora/classificadora com fonte. Ela não decide
         prescrição, risco, bloqueio, dose ou recomendação final.
       </section>
+
+      <AIHealthPanel health={health ?? null} />
 
       {isLoadingCurrent ? <LoadingState label="Carregando configuração de IA" /> : null}
 
@@ -438,6 +456,104 @@ export default function AISettings() {
       </section>
     </div>
   );
+}
+
+function AIHealthPanel({ health }: { health: AIHealth | null }) {
+  const degraded = health?.circuit_breaker_state === "open";
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-ocean">
+            <Activity aria-hidden="true" className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-ink">Saúde da IA</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Status operacional do provider, cache, fallback e histórico recente de configuração.
+            </p>
+          </div>
+        </div>
+        <span
+          className={[
+            "rounded-lg px-3 py-1 text-xs font-bold uppercase tracking-normal",
+            degraded ? "bg-amber-50 text-amber-800" : "bg-emerald-50 text-emerald-700",
+          ].join(" ")}
+        >
+          {degraded ? "Breaker aberto" : "Operacional"}
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <HealthMetric label="Provider" value={health?.provider ?? "-"} />
+        <HealthMetric label="Modelo" value={health?.selected_model ?? "fallback"} />
+        <HealthMetric label="Chamadas externas" value={health?.external_calls_enabled ? "habilitadas" : "desabilitadas"} />
+        <HealthMetric label="Credencial" value={health ? labelCredentialStatus(health.credential_status) : "-"} />
+        <HealthMetric label="Cache de modelos" value={health ? labelCacheStatus(health.cache_status) : "-"} />
+        <HealthMetric label="Modo JSON" value={health?.json_mode_enabled ? "ativo" : "inativo"} />
+        <HealthMetric label="Falhas recentes" value={String(health?.failure_count ?? 0)} />
+        <HealthMetric
+          label="Última verificação"
+          value={health?.last_verified_at ? formatDateTime(health.last_verified_at) : "-"}
+        />
+      </div>
+
+      {health?.last_error ? (
+        <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-900">
+          Último erro: {health.last_error}
+        </p>
+      ) : null}
+
+      {health?.recent_events.length ? (
+        <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
+          <h3 className="text-sm font-bold text-ink">Histórico recente</h3>
+          <div className="mt-3 grid gap-2">
+            {health.recent_events.slice(0, 4).map((event) => (
+              <div
+                className="flex flex-col gap-1 rounded-lg bg-white p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                key={`${event.action}-${event.created_at}`}
+              >
+                <span className="font-semibold text-ink">
+                  {event.action} · {event.provider}
+                  {event.model ? ` / ${event.model}` : ""}
+                </span>
+                <span className="text-xs font-semibold text-slate-500">
+                  {event.result} · {formatDateTime(event.created_at)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function HealthMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+      <p className="text-xs font-bold uppercase tracking-normal text-slate-500">{label}</p>
+      <p className="mt-1 break-words text-sm font-bold text-ink">{value}</p>
+    </div>
+  );
+}
+
+function labelCredentialStatus(status: string) {
+  const labels: Record<string, string> = {
+    configured: "configurada",
+    missing: "ausente",
+    not_required: "não exigida",
+  };
+  return labels[status] ?? status;
+}
+
+function labelCacheStatus(status: string) {
+  const labels: Record<string, string> = {
+    fresh: "atual",
+    stale: "vencido",
+    empty: "vazio",
+  };
+  return labels[status] ?? status;
 }
 
 function StatusLine({ label, value }: { label: string; value: string }) {

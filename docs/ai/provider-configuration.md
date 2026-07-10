@@ -21,6 +21,22 @@ A tela **IA** permite configurar o provider usado pelos recursos explicativos do
 
 Médico, enfermagem e auditor podem ver status, mas não visualizam nem alteram a chave.
 
+## Saúde Operacional
+
+A v0.8.1 adiciona `GET /api/settings/ai/health` e um painel na tela **IA** com:
+
+- provider e modelo ativos;
+- chamadas externas habilitadas ou desabilitadas;
+- status de credencial sem expor chave;
+- cache de modelos;
+- modo JSON;
+- falhas recentes e circuit breaker;
+- eventos recentes de configuração.
+
+Chamadas externas usam retry/backoff apenas para timeouts, falhas de rede,
+HTTP 429 e HTTP 5xx. Depois de falhas repetidas, o provider entra em degradação
+temporária e o fluxo usa fallback local.
+
 ## Variáveis
 
 ```env

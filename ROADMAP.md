@@ -42,6 +42,16 @@
 - Auditoria avançada com filtros, busca, detalhe, timeline e evidências da decisão.
 - Frontend com tela Relatórios, botões de PDF/exportação/evidências/timeline e lazy loading de rotas.
 
+### v0.8.1 - Product Readiness, UX, IA Hardening e Amarração Clínica
+
+- README e documentação reposicionados como material de produto/portfólio.
+- Health endpoint, health panel de IA, retry/backoff e circuit breaker simples.
+- UX de dashboard, sidebar, IA, importações, relatórios, auditoria e medicamentos polida.
+- Deduplicação de aliases de dipirona/metamizol e reconciliação com campos clínicos estruturados.
+- Identificadores importados aceitos com hash/máscara.
+- Scripts Windows de setup, dev, reset demo e checagem de instalação.
+- Benchmark SafeDose v0.8.1 e registro de prompts de relatório.
+
 ## Próximas Versões
 
 ### v0.8.x - Protocolos rápidos / emergência, se priorizado
