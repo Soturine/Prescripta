@@ -1,6 +1,6 @@
 # Prescripta
 
-![Version](https://img.shields.io/badge/version-v0.7.1-blue)
+![Version](https://img.shields.io/badge/version-v0.8.0-blue)
 ![Backend](https://img.shields.io/badge/backend-FastAPI-009688)
 ![Frontend](https://img.shields.io/badge/frontend-React-155E75)
 ![License](https://img.shields.io/badge/license-Apache--2.0-slate)
@@ -13,6 +13,12 @@ para integração clínica.
 > profissional. Não use dados reais de paciente neste projeto.
 
 ## Preview
+
+![Demonstração do Prescripta v0.8.0](docs/assets/v0.8.0/prescripta-v0.8-demo.gif)
+
+![Relatórios gerados](docs/assets/v0.8.0/reports-list.png)
+
+![Auditoria avançada](docs/assets/v0.8.0/audit-advanced-filters.png)
 
 ![Demonstração do Prescripta v0.7.1](docs/assets/v0.7.1/prescripta-v0.7.1-demo.gif)
 
@@ -39,7 +45,11 @@ para integração clínica.
   rejeição por item.
 - IA explicativa configurável por UI, com fallback determinístico e sem poder
   de alterar decisão clínica.
-- Auditoria de ações clínicas, importações, reconciliação e configuração de IA.
+- Relatórios técnicos, orientações ao paciente, reconciliação clínica e auditoria
+  em PDF/preview com `ReportEvidenceBundle` versionado e hash.
+- Exportações JSON/CSV de prescrições, importações, auditoria e relatórios gerados.
+- Auditoria avançada com filtros, busca textual, timeline, evidências da decisão,
+  provider/modelo de IA e eventos de relatório/exportação.
 
 ## Configuração De IA Pela UI
 
@@ -87,6 +97,29 @@ customizado precisa ser testado antes de ser ativado.
 
 Se o provider externo falhar, o Prescripta cai para fallback local e não quebra
 o fluxo clínico.
+
+## Relatórios E Exportações
+
+A v0.8.0 adiciona um motor central de relatórios em `backend/app/reports`.
+
+Principais endpoints:
+
+- `GET /api/reports/prescriptions/{audit_id}/preview`
+- `GET /api/reports/prescriptions/{audit_id}/pdf`
+- `GET /api/reports/prescriptions/{audit_id}/patient-guidance.pdf`
+- `GET /api/reports/imports/{import_id}/reconciliation.pdf`
+- `GET /api/reports/audit-events/pdf`
+- `GET /api/exports/prescriptions/{audit_id}.json`
+- `GET /api/exports/prescriptions/{audit_id}.csv`
+- `GET /api/exports/imports/{import_id}.json`
+- `GET /api/exports/imports/{import_id}.csv`
+- `GET /api/exports/audit-events.json`
+- `GET /api/exports/audit-events.csv`
+- `GET /api/exports/reports/{report_id}.json`
+
+Relatórios usam dados minimizados quando enviados a IA externa, rejeitam JSON
+inválido ou fonte inventada e registram provider, modelo, prompt version,
+fallback, hash do bundle e hash do arquivo.
 
 ## Rodar Com Script Windows
 
@@ -149,15 +182,17 @@ powershell -ExecutionPolicy Bypass -File scripts/check-text-quality.ps1
 
 ## Release Atual
 
-- Publicada: `v0.7.1`
-- Notas: [docs/releases/v0.7.1.md](docs/releases/v0.7.1.md)
+- Publicada: `v0.8.0`
+- Notas: [docs/releases/v0.8.0.md](docs/releases/v0.8.0.md)
+- Relatórios: [docs/reports/README.md](docs/reports/README.md)
+- Privacidade em relatórios com IA: [docs/security/ai-report-privacy.md](docs/security/ai-report-privacy.md)
 - Configuração de IA: [docs/ai/provider-configuration.md](docs/ai/provider-configuration.md)
 - Segurança de API Key: [docs/ai/secure-api-key-handling.md](docs/ai/secure-api-key-handling.md)
 - Auditoria SafeDose/RicoToro: [docs/benchmark/safedose-parity-audit-v0.7.1.md](docs/benchmark/safedose-parity-audit-v0.7.1.md)
 
 ## Roadmap
 
-- `v0.8.0`: relatórios, exportação e auditoria avançada.
+- `v0.8.0`: relatórios, exportação e auditoria avançada. Entregue.
 - `v0.9.0`: Docker/PostgreSQL/deploy.
 - `v1.0.0`: versão final de portfólio.
 

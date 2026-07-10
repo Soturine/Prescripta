@@ -32,14 +32,17 @@
 - Auditoria de paridade conceitual SafeDose/RicoToro sem copiar código.
 - Roadmap de protocolos rápidos/emergência documentado como possibilidade futura.
 
+### v0.8.0 - Relatórios, Evidências e Auditoria Avançada com IA
+
+- Report Engine central com `ReportEvidenceBundle`, hash estável e templates versionados.
+- Relatório técnico de prescrição, orientações ao paciente, reconciliação clínica e auditoria.
+- Exportações JSON/CSV para prescrições, importações, auditoria e relatórios gerados.
+- `GeneratedReport` com histórico, provider/modelo, prompt version, fallback e hash de arquivo.
+- `AIReportComposer` controlado por schema, com fallback determinístico e bloqueio de campos reservados.
+- Auditoria avançada com filtros, busca, detalhe, timeline e evidências da decisão.
+- Frontend com tela Relatórios, botões de PDF/exportação/evidências/timeline e lazy loading de rotas.
+
 ## Próximas Versões
-
-### v0.8.0 - Relatórios, exportação e auditoria avançada
-
-- Relatórios de checagens, orientações e importações.
-- Exportação demonstrativa.
-- Filtros avançados de auditoria.
-- Reconciliação clínica avançada se necessário.
 
 ### v0.8.x - Protocolos rápidos / emergência, se priorizado
 
