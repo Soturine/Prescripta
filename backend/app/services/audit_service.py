@@ -48,6 +48,7 @@ class AuditService:
                 "patient_name": patient.name,
                 "medication_id": medication.id,
                 "medication_name": medication.brand_name,
+                "active_ingredient": medication.active_ingredient,
                 "dose_mg": prescription.dose_mg,
                 "frequency_per_day": prescription.frequency_per_day,
                 "route": prescription.route,
@@ -55,8 +56,32 @@ class AuditService:
                 "indication": prescription.indication,
                 "alerts_count": len(result.alerts),
                 "compatibility": result.compatibility.get("level"),
+                "source": medication.evidence_source_type,
+                "jurisdiction": medication.source_jurisdiction,
+                "validation_status": medication.validation_status,
             },
         )
+        for alert in result.alerts:
+            self.record_action(
+                user=user,
+                action="prescription.alert_fired",
+                resource_type="prescription",
+                resource_id=str(prescription_audit.id),
+                status=result.status.value,
+                risk_level=result.risk_level.value,
+                details={
+                    "patient_id": patient.id,
+                    "medication_id": medication.id,
+                    "medication_name": medication.brand_name,
+                    "active_ingredient": medication.active_ingredient,
+                    "alert": alert.to_dict(),
+                    "severity": alert.severity.value,
+                    "rule_id": alert.code,
+                    "source": medication.evidence_source_type,
+                    "jurisdiction": medication.source_jurisdiction,
+                    "validation_status": medication.validation_status,
+                },
+            )
         return prescription_audit
 
     def record_action(

@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from datetime import datetime
+from typing import Any
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -14,6 +17,66 @@ class AuditRepository:
         return list(
             self.db.scalars(select(AuditEventModel).order_by(AuditEventModel.created_at.desc()))
         )
+
+    def get_event(self, event_id: int) -> AuditEventModel | None:
+        return self.db.get(AuditEventModel, event_id)
+
+    def list_filtered(
+        self,
+        *,
+        user: str | None = None,
+        user_role: str | None = None,
+        patient: str | None = None,
+        medication: str | None = None,
+        active_ingredient: str | None = None,
+        action: str | None = None,
+        resource_type: str | None = None,
+        risk_level: str | None = None,
+        status: str | None = None,
+        severity: str | None = None,
+        ai_provider: str | None = None,
+        ai_model: str | None = None,
+        fallback_used: bool | None = None,
+        source: str | None = None,
+        jurisdiction: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+        text: str | None = None,
+        sort: str = "desc",
+        page: int = 1,
+        page_size: int = 100,
+    ) -> list[AuditEventModel]:
+        events = self.list()
+        filtered = [
+            event
+            for event in events
+            if self._matches(
+                event,
+                user=user,
+                user_role=user_role,
+                patient=patient,
+                medication=medication,
+                active_ingredient=active_ingredient,
+                action=action,
+                resource_type=resource_type,
+                risk_level=risk_level,
+                status=status,
+                severity=severity,
+                ai_provider=ai_provider,
+                ai_model=ai_model,
+                fallback_used=fallback_used,
+                source=source,
+                jurisdiction=jurisdiction,
+                date_from=date_from,
+                date_to=date_to,
+                text=text,
+            )
+        ]
+        reverse = sort.lower() != "asc"
+        filtered.sort(key=lambda event: event.created_at, reverse=reverse)
+        start = max(page - 1, 0) * page_size
+        end = start + page_size
+        return filtered[start:end]
 
     def list_prescription_checks(self) -> list[PrescriptionAuditModel]:
         return list(
@@ -47,3 +110,64 @@ class AuditRepository:
                 if severity in counters:
                     counters[severity] += 1
         return counters
+
+    def _matches(self, event: AuditEventModel, **filters: Any) -> bool:
+        if filters["date_from"] and event.created_at < filters["date_from"]:
+            return False
+        if filters["date_to"] and event.created_at > filters["date_to"]:
+            return False
+        direct = {
+            "user_role": event.user_role,
+            "action": event.action,
+            "resource_type": event.resource_type,
+            "risk_level": event.risk_level,
+            "status": event.status,
+        }
+        for key, value in direct.items():
+            expected = filters.get(key)
+            if expected and str(expected).lower() not in str(value or "").lower():
+                return False
+        if filters["user"]:
+            needle = str(filters["user"]).lower()
+            haystack = (
+                f"{event.user_name or ''} {event.user_email or ''} {event.user_id or ''}"
+            ).lower()
+            if needle not in haystack:
+                return False
+        detail_text = self._details_text(event.details or {})
+        detail_filters = {
+            "patient": filters["patient"],
+            "medication": filters["medication"],
+            "active_ingredient": filters["active_ingredient"],
+            "severity": filters["severity"],
+            "ai_provider": filters["ai_provider"],
+            "ai_model": filters["ai_model"],
+            "source": filters["source"],
+            "jurisdiction": filters["jurisdiction"],
+        }
+        for expected in detail_filters.values():
+            if expected and str(expected).lower() not in detail_text:
+                return False
+        if filters["fallback_used"] is not None:
+            expected_bool = bool(filters["fallback_used"])
+            fallback_text = str((event.details or {}).get("fallback_used", "")).lower()
+            if fallback_text not in {str(expected_bool).lower(), str(int(expected_bool))}:
+                return False
+        if filters["text"]:
+            needle = str(filters["text"]).lower()
+            haystack = (
+                f"{event.action} {event.resource_type} {event.resource_id or ''} "
+                f"{event.user_name or ''} {event.user_email or ''} {detail_text}"
+            ).lower()
+            if needle not in haystack:
+                return False
+        return True
+
+    def _details_text(self, value: Any) -> str:
+        if isinstance(value, dict):
+            return " ".join(
+                f"{key} {self._details_text(item)}" for key, item in value.items()
+            ).lower()
+        if isinstance(value, list):
+            return " ".join(self._details_text(item) for item in value).lower()
+        return str(value or "").lower()
