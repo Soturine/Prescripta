@@ -6,9 +6,49 @@ Todas as mudancas relevantes deste projeto sao documentadas aqui.
 
 ### Planned
 
-- v0.8.0: Relatórios, exportação e auditoria avançada.
 - v0.9.0: Docker/PostgreSQL/deploy.
 - v1.0.0: versão final de portfólio.
+
+## [0.8.0] - 2026-07-10
+
+### Added
+
+- Motor central de relatórios em `backend/app/reports`.
+- `ReportEvidenceBundle` versionado, serializável e com hash estável.
+- `GeneratedReport` para histórico de relatórios gerados, hash de arquivo,
+  template, provider/modelo e fallback.
+- Relatório técnico de prescrição, orientações ao paciente, relatório de
+  reconciliação clínica e relatório de auditoria.
+- Exportações JSON/CSV para prescrições, importações, auditoria e relatórios.
+- `AIReportComposer` com prompt versionado, JSON validado por Pydantic e fallback
+  determinístico.
+- Tela **Relatórios** no frontend.
+- Auditoria avançada com filtros, busca textual, exportação, PDF, detalhe,
+  timeline e evidências da decisão.
+- Botões de relatório, exportação, evidências e timeline na checagem de prescrição.
+- Botões de relatório e exportação na reconciliação clínica.
+
+### Changed
+
+- Frontend usa lazy loading por rota para reduzir o chunk inicial do Vite.
+- Auditoria de checagem inclui princípio ativo, fonte, jurisdição, validação e
+  eventos `prescription.alert_fired`.
+- API versionada como `0.8.0`.
+
+### Security
+
+- Payload enviado a IA externa para relatórios é minimizado e não envia dados
+  identificáveis por padrão.
+- Narrativa de IA não pode retornar campos reservados nem citar `source_id`
+  inexistente; caso ocorra, o backend usa fallback.
+- Exportações e auditorias registram `secret_logged=false` e não incluem API Key.
+
+### Tests
+
+- Backend ampliado para 69 testes.
+- Cobertura de PDF, preview, JSON/CSV, histórico `GeneratedReport`, permissões e
+  rejeição de fonte inventada por IA em relatório.
+- `npm run build` passa sem aviso de chunk maior que 500 kB.
 
 ## [0.7.1] - 2026-07-07
 

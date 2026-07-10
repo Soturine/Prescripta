@@ -9,11 +9,13 @@ from app.api.routes import (
     auth,
     cds,
     dashboard,
+    exports,
     integrations,
     medication_catalog,
     medications,
     patients,
     prescriptions,
+    reports,
     users,
 )
 from app.api.routes import (
@@ -38,7 +40,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.7.1",
+    version="0.8.0",
     description=(
         "API educacional para apoio à prescrição segura com regras determinísticas, "
         "fontes rastreáveis, revisão humana e IA explicativa configurável."
@@ -62,6 +64,8 @@ app.include_router(prescriptions.router, prefix=settings.api_prefix)
 app.include_router(cds.router, prefix=settings.api_prefix)
 app.include_router(dashboard.router, prefix=settings.api_prefix)
 app.include_router(audit.router, prefix=settings.api_prefix)
+app.include_router(reports.router, prefix=settings.api_prefix)
+app.include_router(exports.router, prefix=settings.api_prefix)
 app.include_router(users.router, prefix=settings.api_prefix)
 app.include_router(integrations.router, prefix=settings.api_prefix)
 app.include_router(settings_routes.router, prefix=settings.api_prefix)

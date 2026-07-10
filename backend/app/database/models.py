@@ -647,3 +647,30 @@ class AuditEventModel(Base):
     risk_level: Mapped[str | None] = mapped_column(String(40), nullable=True)
     status: Mapped[str | None] = mapped_column(String(40), nullable=True)
     details: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class GeneratedReportModel(Base):
+    __tablename__ = "generated_reports"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    report_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    target_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    target_id: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    generated_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
+    generated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    template_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    prescripta_version: Mapped[str] = mapped_column(String(40), nullable=False)
+    evidence_bundle_hash: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    ai_provider: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    ai_model: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    ai_prompt_version: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    ai_used: Mapped[bool] = mapped_column(default=False, nullable=False)
+    fallback_used: Mapped[bool] = mapped_column(default=True, nullable=False)
+    anonymized: Mapped[bool] = mapped_column(default=False, nullable=False)
+    file_hash: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), default="generated", nullable=False)
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)

@@ -13,6 +13,8 @@ Guia para agentes e colaboradores que forem evoluir o Prescripta.
 - `backend/app/services/patient_counseling_service.py`: orientações, modo sem histórico e pergunta contextual.
 - `backend/app/services/patient_functional_profile.py`: perfil funcional do paciente.
 - `backend/app/services/adverse_effect_taxonomy.py`: taxonomia controlada de efeitos adversos.
+- `backend/app/reports`: motor de relatórios, EvidenceBundle, PDF simples, exportações JSON/CSV, narrativa controlada por IA e auditoria.
+- `backend/app/reports/prompts`: prompts versionados de relatórios; não podem permitir decisão clínica pela IA.
 - `backend/app/integrations`: ports, adapters, mapeamento, consentimento e auditoria de importações clínicas.
 - `backend/app/integrations/services/clinical_reconciliation_service.py`: reconciliação granular por item.
 - `backend/app/knowledge`: RAG educacional com busca textual e normalização.
@@ -75,7 +77,11 @@ powershell -ExecutionPolicy Bypass -File scripts/check-text-quality.ps1
 - Apenas `admin` pode salvar, apagar, testar ou ativar provider/modelo de IA.
 - Médicos, enfermagem e auditoria podem ver status de IA, mas nunca a chave.
 - IA deve apenas explicar alertas, extrair/classificar com fonte e resumir conteúdo recuperado.
+- IA em relatórios deve atuar apenas como compositora narrativa sobre `ReportEvidenceBundle`.
 - Nunca permita que IA altere status, risco, bloqueio, dose crítica ou recomendação final.
+- Nunca envie CPF, CNS, telefone, endereço, e-mail ou identificador real para IA externa em relatórios.
+- Rejeite narrativa de relatório se a IA retornar campo reservado ou `source_id` inexistente.
+- Relatórios e exportações devem registrar auditoria, hash do bundle, provider/modelo e fallback.
 - Resumos práticos gerados por IA/fallback devem retornar JSON validado e permanecer `pending_review` até revisão humana.
 - Perfil funcional e modo sem histórico orientam cautelas práticas, mas não bloqueiam prescrição automaticamente.
 - Reconciliação clínica granular deve registrar aceite/rejeição por item e não alterar dado importado sem decisão humana.
