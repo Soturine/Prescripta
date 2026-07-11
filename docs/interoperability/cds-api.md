@@ -35,5 +35,5 @@ Permissoes: `admin`, `medico`, `enfermagem`.
 }
 ```
 
-O endpoint usa o motor deterministico, n?o chama IA automaticamente e n?o salva dados clinicos permanentes quando `persist=false`.
+O endpoint usa o motor deterministico, não chama IA automaticamente e não salva dados clinicos permanentes quando `persist=false`.
 

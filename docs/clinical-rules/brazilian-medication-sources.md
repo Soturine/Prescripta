@@ -13,10 +13,10 @@ O Bulário Eletrônico existe para acesso a bulas por populacao e profissionais 
 ## Regras do Prescripta
 
 - Para `jurisdiction = BR`, a ordem de preferencia e Anvisa/Bulario, DCB e curadoria manual revisada.
-- openFDA, DailyMed, FDA e RxNorm n?o sao fonte primaria para decisoes no Brasil.
-- Fontes internacionais podem ser usadas como referencia futura ou apoio secundario, sempre com jurisdi??o explicita.
-- O sistema n?o promete cobertura completa de todos os medicamentos.
-- A v0.5.0 n?o faz scraping agressivo e n?o assume API publica oficial onde ela n?o estiver documentada.
+- openFDA, DailyMed, FDA e RxNorm não sao fonte primaria para decisoes no Brasil.
+- Fontes internacionais podem ser usadas como referencia futura ou apoio secundario, sempre com jurisdição explicita.
+- O sistema não promete cobertura completa de todos os medicamentos.
+- A v0.5.0 não faz scraping agressivo e não assume API publica oficial onde ela não estiver documentada.
 - Todo dado demonstrativo deve manter `validation_status = demo` ou `pending_review`.
 
 ## Exemplo regulatorio

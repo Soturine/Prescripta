@@ -2,7 +2,7 @@
 
 ## O que deixou de ser generico?
 
-- Medicamentos agora possuem princ?pio ativo, aliases, fonte, jurisdi??o e status de valida??o.
+- Medicamentos agora possuem princípio ativo, aliases, fonte, jurisdição e status de validação.
 - Campos clinicos genericos foram substituidos por vocabulario controlado.
 - RAG interno passou a carregar metadados rastreaveis.
 
@@ -10,7 +10,7 @@
 
 O banco armazena codigos consistentes e a interface apresenta labels humanos. Isso reduz ambiguidade e evita respostas finais como `renal` ou `cardiaco`.
 
-## Como o modelo princ?pio ativo primeiro reduziu duplicacao?
+## Como o modelo princípio ativo primeiro reduziu duplicacao?
 
 Aliases comerciais apontam para o mesmo `ActiveIngredient`. Assim, Novalgina e Anador podem resolver para dipirona sem duplicar regra clinica.
 
@@ -23,8 +23,8 @@ Aliases comerciais apontam para o mesmo `ActiveIngredient`. Assim, Novalgina e A
 
 ## O que ja esta mais proximo de uso profissional controlado?
 
-- Separacao entre princ?pio ativo e produto.
-- Fonte/jurisdi??o/status em evidencias.
+- Separacao entre princípio ativo e produto.
+- Fonte/jurisdição/status em evidencias.
 - Prioridade BR documentada.
 - IA limitada a explicacao.
 
@@ -34,13 +34,13 @@ Aliases comerciais apontam para o mesmo `ActiveIngredient`. Assim, Novalgina e A
 - Adapters FHIR/HL7/RNDS/CSV/JSON.
 - Consentimento.
 - Matching de paciente.
-- Auditoria de importa??o.
+- Auditoria de importação.
 - Contratos/API oficiais com sistemas clinicos.
 
 ## Riscos remanescentes
 
 - Dados demonstrativos podem ser confundidos com cobertura real.
-- Fontes pendentes de revis?o exigem governanca.
+- Fontes pendentes de revisão exigem governanca.
 - Integracoes reais precisam seguranca, LGPD e contrato.
 
 ## Por que foco Brasil/Anvisa?

@@ -23,3 +23,30 @@ auditados com hash.
 O sistema não diagnostica, prescreve sozinho, confirma CRM/RQE, consulta hospitais ou garante que
 uma dose é adequada. Um cartão verde não representa segurança clínica absoluta: depende da
 qualidade dos dados e das regras cadastradas.
+
+## O que aparece na tela
+
+O Dashboard resume volume e qualidade; Pacientes mostra o contexto; Medicamentos explica origem e
+curadoria; Checagem apresenta alertas; Relatórios documenta; Auditoria reconstrói. Badges
+`pending_review` ou `demo_unverified` significam que algo ainda não foi validado — não que esteja
+errado ou aprovado.
+
+## Exemplo
+
+Se uma pessoa fictícia usa tramadol e o teste adiciona sertralina, pode aparecer “risco
+serotoninérgico a revisar”. Isso significa conferir a associação e a fonte com profissional; não
+significa diagnóstico de síndrome serotoninérgica.
+
+## Perguntas frequentes
+
+**O sistema receita?** Não. **A IA sabe a resposta final?** Não. **Os dados são completos?** Não;
+seeds servem para demonstração. **Posso cadastrar pessoa real?** Não neste ambiente.
+
+## Glossário e links
+
+- **Fonte:** documento que sustenta uma regra.
+- **Fallback:** resposta local quando IA externa não é usada.
+- **Hash:** impressão digital usada para detectar alteração.
+- **Policy:** regra institucional/regulatória/recomendação claramente classificada.
+
+Veja [visão do produto](../product/product-overview.md) e [limitações](../product/known-limitations.md).

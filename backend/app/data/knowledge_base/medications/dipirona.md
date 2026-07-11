@@ -6,7 +6,7 @@ evidence_type: manual_curated
 validation_status: pending_review
 active_ingredient: dipirona
 commercial_names: [Novalgina, Anador, Dorflex, Neosaldina, Lisador]
-extracted_sections: [princ?pio ativo, aliases comerciais, diferenca regulatoria]
+extracted_sections: [princípio ativo, aliases comerciais, diferenca regulatoria]
 retrieved_at: 2026-07-03
 version: v0.5.0-demo
 ---

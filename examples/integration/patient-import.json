@@ -1,0 +1,13 @@
+{
+  "source_system": "hospital_demo",
+  "consent_id": "CONSENT-DEMO-001",
+  "patient": {
+    "external_id": "PATIENT-DEMO-001",
+    "name": "Paciente Fictício",
+    "birth_date": "1980-01-15"
+  },
+  "allergies": [{ "substance": "ibuprofeno", "status": "active" }],
+  "conditions": [{ "code": "demo-hypertension", "display": "Hipertensão demo" }],
+  "medications": [{ "active_ingredient": "losartana", "status": "active" }],
+  "observations": [{ "code": "weight", "value": 70, "unit": "kg" }]
+}

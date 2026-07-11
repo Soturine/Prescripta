@@ -5,15 +5,15 @@ evidence_type: "rag_demo"
 validation_status: "pending_review"
 active_ingredient: "tansulosina"
 commercial_names: ["Tansulosina Demo"]
-extracted_sections: ["eventos adversos", "orienta??o pratica"]
+extracted_sections: ["eventos adversos", "orientação pratica"]
 version: "v0.7.0-demo"
 ---
 
 # Tansulosina Demo
 
-Trecho demonstrativo para v0.7.0. A fonte e interna e pendente de revis?o humana.
+Trecho demonstrativo para v0.7.0. A fonte e interna e pendente de revisão humana.
 
-Eventos relevantes para orienta??o: tontura, hipotensao ortostatica, queda de pressao ao
+Eventos relevantes para orientação: tontura, hipotensao ortostatica, queda de pressao ao
 levantar e risco de queda em pacientes vulneraveis. O paciente deve ter cautela ao dirigir,
 operar maquinas, trabalhar em altura ou realizar atividade de risco ate saber como reage.
 

@@ -12,3 +12,20 @@ Orientações ao paciente permanecem `pending_review` até revisão humana. Em p
 execução factual e o responsável, sem transformar uma explicação da IA em conduta. Alertas altos,
 mudança clínica, divergência de medicação ou dúvida de dose devem ser escalados ao prescritor e à
 equipe farmacêutica conforme o processo institucional.
+
+## Passo a passo e exemplo
+
+Revise peso/altura, medicamentos, alergias e perfil funcional; registre “não informado” quando não
+souber; leia a orientação revisada; escale risco alto/crítico. Exemplo: sedativo em motorista
+profissional pede comunicação e revisão, não suspensão automática pela interface.
+
+## O que você vê — e o que não significa
+
+Cards clínicos mostram ação e lacunas. JSON técnico não aparece por padrão. Um alerta não é ordem
+de administração nem diagnóstico, e uma orientação gerada não substitui prescrição vigente.
+
+## FAQ, glossário e links
+
+**Posso revisar laudo?** Apenas conforme role e fluxo autorizado. **Posso alterar policy?** Não.
+“Escalonar” é encaminhar ao responsável habilitado. Veja [fluxos](../product/clinical-workflows.md) e
+[limitações](../product/known-limitations.md).

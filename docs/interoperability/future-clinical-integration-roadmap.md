@@ -1,6 +1,6 @@
 # Roadmap Futuro de Integracao Clinica
 
-A v0.5.0 apenas documenta esta camada. Ela n?o implementa FHIR/CDS Hooks nem integracao hospitalar real.
+A v0.5.0 apenas documenta esta camada. Ela não implementa FHIR/CDS Hooks nem integracao hospitalar real.
 
 ## Camada de Interoperabilidade Clinica
 
@@ -143,24 +143,24 @@ Saida futura:
 
 ## Regras de integracao
 
-- N?o fazer scraping de hospitais.
-- N?o armazenar credenciais de portais.
-- N?o prometer integracao automatica com Santa Casa, Unimed, Policlin ou qualquer hospital sem contrato/API.
+- Não fazer scraping de hospitais.
+- Não armazenar credenciais de portais.
+- Não prometer integracao automatica com Santa Casa, Unimed, Policlin ou qualquer hospital sem contrato/API.
 - Integracoes reais exigem parceria, credenciais, contrato, seguranca e conformidade LGPD.
 - RNDS/FHIR e roadmap futuro.
 - Hospitais privados podem usar APIs proprias.
-- Prescripta deve estar preparado por adapters, n?o por scraping.
+- Prescripta deve estar preparado por adapters, não por scraping.
 # Atualizacao v0.6.0
 
 Prescripta agora possui a base demonstrativa de Ports & Adapters em `backend/app/integrations`.
 
-Essa base prepara integracoes futuras por API oficial, mas n?o implementa integracao real com hospitais, RNDS, HL7 v2 completo ou DICOM. Hospitais privados exigem contrato, credenciais oficiais, seguranca, governanca e conformidade LGPD.
+Essa base prepara integracoes futuras por API oficial, mas não implementa integracao real com hospitais, RNDS, HL7 v2 completo ou DICOM. Hospitais privados exigem contrato, credenciais oficiais, seguranca, governanca e conformidade LGPD.
 
-N?o usar scraping, credenciais de portais ou dados reais na demo publica.
+Não usar scraping, credenciais de portais ou dados reais na demo publica.
 
 # Atualizacao v0.7.0
 
-A camada de importa??o ganhou reconciliacao granular por item.
+A camada de importação ganhou reconciliacao granular por item.
 
 O servico compara dados importados com dados existentes, marca novo/duplicado/conflito/possivel match e registra aceite/rejeicao item a item. O aceite seguro ignora conflitos e duplicados.
 

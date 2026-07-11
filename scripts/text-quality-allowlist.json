@@ -1,0 +1,17 @@
+{
+  "ignored_paths": [
+    "docs/assets",
+    "frontend/dist",
+    "frontend/node_modules",
+    ".venv",
+    ".git"
+  ],
+  "allowed_visible_terms": [],
+  "technical_contexts": [
+    "inline_code",
+    "fenced_code",
+    "url",
+    "identifier",
+    "filename"
+  ]
+}

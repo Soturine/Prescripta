@@ -1,5 +1,12 @@
 # Roadmap
 
+## v0.8.5 — entregue
+
+- auditoria integral, consistência textual e licença;
+- performance da auditoria e hardening clínico;
+- interface responsiva por perfil e evidências reais;
+- documentação profunda, aceite e limitações explícitas.
+
 ## v0.8.4 — entregue
 
 - qualidade textual e README com imagens;
@@ -81,19 +88,19 @@
 - Frontend com polish visual, loading/empty states melhores, dashboard e tela
   Protocolos.
 
-### v0.8.3 - Clinical Intelligence, Hist?rico Longitudinal e IA Assistida
+### v0.8.3 - Clinical Intelligence, Histórico Longitudinal e IA Assistida
 
 - Protocolos versionados e integrados a `GeneratedReport`.
-- Relatorios de protocolo em PDF, JSON e CSV por execu??o.
+- Relatorios de protocolo em PDF, JSON e CSV por execução.
 - Auditoria avancada com filtros especificos de protocolo.
-- Hist?rico cl?nico do paciente com laudos/documentos, extracao assistida,
-  revis?o humana, timeline e `PatientKnowledgeBundle`.
+- Histórico clínico do paciente com laudos/documentos, extracao assistida,
+  revisão humana, timeline e `PatientKnowledgeBundle`.
 - Checagem usando peso, idade, altura/IMC, alergias, medicamentos atuais,
-  condicoes, perfil funcional e hist?rico revisado quando houver regra.
-- Catalogo farmacol?gico ampliavel com busca por fonte, importa??o em lote e
+  condicoes, perfil funcional e histórico revisado quando houver regra.
+- Catalogo farmacológico ampliavel com busca por fonte, importação em lote e
   fila de curadoria.
 - IA por modulo com prompts versionados e bundles minimizados.
-- Visao clinica/tecnica no frontend e documentacao por audi?ncia.
+- Visao clinica/tecnica no frontend e documentacao por audiência.
 
 ## Próximas Versões
 

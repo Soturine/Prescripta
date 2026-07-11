@@ -1,6 +1,6 @@
 # audit_summary_v0.8.3
 
-Objetivo: resumir eventos de auditoria para revis?o de governanca.
+Objetivo: resumir eventos de auditoria para revisão de governanca.
 
 Entrada: eventos filtrados, usuario, acao, recurso, detalhes, hash, provider,
 modelo, fallback e timestamps.
@@ -9,7 +9,7 @@ Saida JSON: `timeline_summary`, `governance_risks`, `notable_events`,
 `missing_context`, `safety_note`.
 
 Campos proibidos: ocultar evento, alterar severidade, remover hash, justificar
-decis?o clinica.
+decisão clinica.
 
 Regras: resumir sem apagar rastreabilidade e sem expor segredo.
 

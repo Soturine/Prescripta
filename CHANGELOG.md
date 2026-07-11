@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.8.5] - 2026-07-11
+
+### Alterado
+
+- Auditoria completa do repositório, documentação por audiência e matriz honesta de aceite.
+- Filtros e paginação de eventos de auditoria executados no banco.
+- Frontend responsivo por perfil, com design tokens e separação clínica/técnica.
+
+### Corrigido
+
+- Licença Apache-2.0, encoding UTF-8, acentuação, links e assets.
+- Validações de Dose Intelligence, deduplicação psicotrópica e lifecycle de policy.
+- Duplicação silenciosa de documentos clínicos.
+
+### Evidência
+
+- Capturas e GIFs reais, testes ampliados e baseline de performance documentado.
+
 ## [0.8.4] - 2026-07-11
 
 ### Adicionado
@@ -33,42 +51,42 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 ### Added
 
-- Protocolos versionados em banco, execu??o com paciente opcional, passos
-  executados e relat?rio persistido em `GeneratedReport` como
+- Protocolos versionados em banco, execução com paciente opcional, passos
+  executados e relatório persistido em `GeneratedReport` como
   `protocol_run_report`.
-- Endpoints de relat?rio de protocolo em PDF, JSON e CSV por `run_id`, alem de
+- Endpoints de relatório de protocolo em PDF, JSON e CSV por `run_id`, alem de
   filtro `/api/reports?target_type=protocol_run`.
 - Auditoria de protocolo com filtros por protocolo, categoria, severidade,
-  versao, execu??o, relat?rio, paciente, usuario, fonte, IA/fallback e data.
-- Hist?rico cl?nico longitudinal com documentos, extracao assistida, revis?o
+  versao, execução, relatório, paciente, usuario, fonte, IA/fallback e data.
+- Histórico clínico longitudinal com documentos, extracao assistida, revisão
   humana, timeline e `PatientKnowledgeBundle` minimizado.
 - Checagem com dados do paciente considerados, regra por peso, idade/faixa
-  etaria, altura/IMC e bundle cl?nico sem dado identificavel por padrao.
+  etaria, altura/IMC e bundle clínico sem dado identificavel por padrao.
 - Regras demonstrativas para psicotropicos, serotonergicos, IMAO,
-  bipolaridade/mania, l?tio/renal/AINEs e limiar convulsivo.
-- Catalogo farmacol?gico ampliavel com busca assistida por fonte, importa??o em
+  bipolaridade/mania, lítio/renal/AINEs e limiar convulsivo.
+- Catalogo farmacológico ampliavel com busca assistida por fonte, importação em
   lote e fila de curadoria.
 - Prompts v0.8.3 por modulo em `backend/app/ai/prompts`.
-- Frontend com visao clinica/tecnica, hist?rico/laudos no paciente, curadoria de
+- Frontend com visao clinica/tecnica, histórico/laudos no paciente, curadoria de
   medicamentos, protocolos com contexto do paciente e dashboard orientado a
   tarefa.
-- Documentacao por audi?ncia, escopo m?dico, fluxos clinicos, IA, hist?rico do
+- Documentacao por audiência, escopo médico, fluxos clinicos, IA, histórico do
   paciente, psicotropicos e onboarding institucional.
 
 ### Security
 
 - IA continua impedida de alterar risco, dose, status, protocolo, bloqueio ou
-  decis?o final.
+  decisão final.
 - Dados extraidos de documentos e fontes farmacologicas ficam `pending_review`.
 - Bundles enviados a IA sao minimizados e sem identificadores por padrao.
-- API Key n?o e exposta em frontend, auditoria, relat?rio ou exportacao.
+- API Key não e exposta em frontend, auditoria, relatório ou exportacao.
 
 ### Tests
 
-- Cobertura para relat?rio de protocolo em `GeneratedReport`, filtros de
-  auditoria, contexto de paciente em protocolo, documentos pendentes, revis?o
+- Cobertura para relatório de protocolo em `GeneratedReport`, filtros de
+  auditoria, contexto de paciente em protocolo, documentos pendentes, revisão
   humana, bundle do paciente, regra por peso, IMC, psicotropicos, IA minimizada,
-  importa??o de catalogo e curadoria.
+  importação de catalogo e curadoria.
 
 ## [0.8.2] - 2026-07-11
 
@@ -217,7 +235,7 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 - `MedicationCounselingSummary` com fonte, jurisdição, evidência extraída, cache e revisão humana.
 - `MedicationCounselingExtractor` com providers GPT/Gemini/Llama/fallback e JSON validado por Pydantic.
 - Taxonomia controlada de efeitos adversos e orientações práticas.
-- Seeds demonstrativos de tansulosina, sertralina/ISRS e l?tio demo.
+- Seeds demonstrativos de tansulosina, sertralina/ISRS e lítio demo.
 - `PatientFunctionalProfile` com direcao, maquinas, altura, quedas, turno, alcool e alta atencao.
 - Modo sem histórico com dados faltantes e pergunta mínima contextual.
 - Cards de orientação ao paciente, contexto funcional, dados faltantes e resumo prático na checagem.
@@ -227,14 +245,14 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 ### Changed
 
 - Explicacao assistida inclui secao `Como explicar ao paciente` baseada no counseling ja validado no payload.
-- Importacoes clinicas mantem aceite/rejeicao de lote e ganham revis?o campo a campo.
+- Importacoes clinicas mantem aceite/rejeicao de lote e ganham revisão campo a campo.
 - Roadmap atualizado para v0.8.0 relatorios/exportacao/auditoria, v0.9.0 Docker/PostgreSQL/deploy e v1.0.0 portfolio.
 
 ### Security
 
 - Geração por IA/fallback fica `pending_review` e não aparece como validada.
 - IA não altera status, risco, bloqueio, dose crítica ou recomendação final.
-- Decisoes granulares, revis?o de resumo e perfil funcional geram auditoria.
+- Decisoes granulares, revisão de resumo e perfil funcional geram auditoria.
 
 ### Tests
 
@@ -249,7 +267,7 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 - Perfil ADME/farmacocinetico/farmacodinamico e cautelas renal/hepatica por nivel.
 - Vocabulario `mental_health` e `reproductive_gynecologic`.
 - Regra demonstrativa rifampicina/rifabutina + contraceptivo hormonal.
-- Identificadores de paciente com hash/mascara e matching com revis?o humana.
+- Identificadores de paciente com hash/mascara e matching com revisão humana.
 - Camada `backend/app/integrations` com ports, adapters FHIR/JSON/CSV/mock e mappers.
 - Fluxo de importacoes clinicas `pending_review`, aceite/rejeicao, consentimento e auditoria.
 - Endpoint `POST /api/cds/prescription-check`.
@@ -265,7 +283,7 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 ### Added
 
 - `ActiveIngredient`, `DrugProduct`, `MedicationKnowledgeSource` e `ClinicalVocabulary`.
-- Busca por princ?pio ativo ou alias comercial.
+- Busca por princípio ativo ou alias comercial.
 - Lookup assistido Anvisa/DCB.
 - Seed BR com dipirona, ibuprofeno e nimesulida.
 - Aliases Novalgina, Anador, Dorflex, Neosaldina e Lisador resolvendo para dipirona.
@@ -296,7 +314,7 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 - RAG clínico demonstrativo.
 - Clinical Context Graph.
 - Alternativas avaliadas pelo motor de risco.
-- Script Windows de execu??o local.
+- Script Windows de execução local.
 
 ## [0.3.0] - 2026-07-02
 

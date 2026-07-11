@@ -1,6 +1,6 @@
-# Modelo Princ?pio Ativo Primeiro
+# Modelo Princípio Ativo Primeiro
 
-Prescripta v0.5.0 passa a tratar princ?pio ativo como entidade central.
+Prescripta v0.5.0 passa a tratar princípio ativo como entidade central.
 
 ## ActiveIngredient
 
@@ -28,8 +28,8 @@ Prescripta v0.5.0 passa a tratar princ?pio ativo como entidade central.
 
 ## Compatibilidade com MedicationModel
 
-`MedicationModel` continua existindo como produto prescritivel demonstrativo, mas agora pode apontar para `active_ingredient_id`, aliases comerciais e fonte/jurisdi??o. Isso preserva prescricoes antigas e permite evolucao gradual.
+`MedicationModel` continua existindo como produto prescritivel demonstrativo, mas agora pode apontar para `active_ingredient_id`, aliases comerciais e fonte/jurisdição. Isso preserva prescricoes antigas e permite evolucao gradual.
 
 ## Exemplo
 
-`Novalgina`, `Anador`, `Dorflex`, `Neosaldina` e `Lisador` n?o precisam virar cinco principios ativos. Na seed v0.5, eles sao aliases que resolvem para `dipirona`.
+`Novalgina`, `Anador`, `Dorflex`, `Neosaldina` e `Lisador` não precisam virar cinco principios ativos. Na seed v0.5, eles sao aliases que resolvem para `dipirona`.
