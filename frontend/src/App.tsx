@@ -15,6 +15,7 @@ const Medications = lazy(() => import("./pages/Medications"));
 const PatientDetails = lazy(() => import("./pages/PatientDetails"));
 const Patients = lazy(() => import("./pages/Patients"));
 const PrescriptionCheck = lazy(() => import("./pages/PrescriptionCheck"));
+const Protocols = lazy(() => import("./pages/Protocols"));
 const Reports = lazy(() => import("./pages/Reports"));
 const Users = lazy(() => import("./pages/Users"));
 
@@ -39,6 +40,7 @@ export default function App() {
               element={<ProtectedRoute roles={["admin", "medico", "enfermagem", "auditor"]} />}
             >
               <Route path="clinical-imports" element={<ClinicalImports />} />
+              <Route path="protocols" element={<Protocols />} />
               <Route path="reports" element={<Reports />} />
             </Route>
 

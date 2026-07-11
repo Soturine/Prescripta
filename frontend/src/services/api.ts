@@ -54,6 +54,15 @@ import type {
   PrescriptionExplanationResult,
 } from "../types/prescription";
 import type {
+  EmergencyProtocol,
+  ProtocolEvidence,
+  ProtocolExplainPayload,
+  ProtocolExplainResult,
+  ProtocolReportPreview,
+  ProtocolRunPayload,
+  ProtocolRunResult,
+} from "../types/protocol";
+import type {
   AuditFilters,
   DecisionEvidenceItem,
   DecisionTimelineItem,
@@ -310,6 +319,40 @@ export async function fetchPrescriptionEvidence(auditId: number) {
   return response.data;
 }
 
+export async function fetchProtocols(category?: string) {
+  const response = await api.get<EmergencyProtocol[]>("/protocols", {
+    params: category ? { category } : undefined,
+  });
+  return response.data;
+}
+
+export async function fetchProtocol(id: string) {
+  const response = await api.get<EmergencyProtocol>(`/protocols/${id}`);
+  return response.data;
+}
+
+export async function runProtocol(id: string, payload: ProtocolRunPayload) {
+  const response = await api.post<ProtocolRunResult>(`/protocols/${id}/run`, payload);
+  return response.data;
+}
+
+export async function explainProtocol(id: string, payload: ProtocolExplainPayload) {
+  const response = await api.post<ProtocolExplainResult>(`/protocols/${id}/explain`, payload);
+  return response.data;
+}
+
+export async function fetchProtocolEvidence(id: string) {
+  const response = await api.get<ProtocolEvidence[]>(`/protocols/${id}/evidence`);
+  return response.data;
+}
+
+export async function fetchProtocolReport(id: string, runId?: number | null) {
+  const response = await api.get<ProtocolReportPreview>(`/protocols/${id}/report`, {
+    params: runId ? { run_id: runId } : undefined,
+  });
+  return response.data;
+}
+
 export async function downloadPrescriptionTechnicalReport(auditId: number, anonymized = false) {
   return downloadFromApi(
     `/reports/prescriptions/${auditId}/pdf`,
@@ -335,6 +378,14 @@ export async function downloadReconciliationReport(importId: number, anonymized 
 
 export async function downloadAuditReport(filters: AuditFilters = {}) {
   return downloadFromApi("/reports/audit-events/pdf", "prescripta-auditoria.pdf", filters);
+}
+
+export async function downloadProtocolReportPdf(id: string, runId?: number | null) {
+  return downloadFromApi(
+    `/protocols/${id}/report.pdf`,
+    `prescripta-protocolo-${id}.pdf`,
+    runId ? { run_id: runId } : undefined,
+  );
 }
 
 export async function exportPrescriptionJson(auditId: number, anonymized = false) {
@@ -375,6 +426,20 @@ export async function exportAuditCsv(filters: AuditFilters = {}) {
 
 export async function exportReportJson(reportId: number) {
   return downloadFromApi(`/exports/reports/${reportId}.json`, `relatorio-${reportId}.json`);
+}
+
+export async function exportProtocolRunJson(id: string, runId: number) {
+  return downloadFromApi(
+    `/protocols/${id}/events/${runId}.json`,
+    `protocolo-${id}-${runId}.json`,
+  );
+}
+
+export async function exportProtocolRunCsv(id: string, runId: number) {
+  return downloadFromApi(
+    `/protocols/${id}/events/${runId}.csv`,
+    `protocolo-${id}-${runId}.csv`,
+  );
 }
 
 export async function fetchAIProviders() {

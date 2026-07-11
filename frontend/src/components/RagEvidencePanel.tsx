@@ -13,7 +13,7 @@ export default function RagEvidencePanel({ evidence }: { evidence: RagEvidence[]
               <div>
                 <h3 className="text-sm font-bold text-ink">{item.source_name || item.source}</h3>
                 <p className="mt-1 text-xs font-semibold text-slate-500">
-                  {item.active_ingredient ? `Principio ativo: ${item.active_ingredient}` : item.source}
+                  {item.active_ingredient ? `Princípio ativo: ${item.active_ingredient}` : item.source}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
