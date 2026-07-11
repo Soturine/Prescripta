@@ -1,113 +1,68 @@
-import {
-  ClipboardCheck,
-  DatabaseZap,
-  FileClock,
-  FileText,
-  LayoutDashboard,
-  Pill,
-  Settings,
-  ShieldCheck,
-  Siren,
-  Users,
-} from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
 import { APP_SUBTITLE, APP_VERSION } from "../config/appVersion";
+import { APP_ROUTES } from "../config/routes";
 import { useAuth } from "../context/AuthContext";
-import type { UserRole } from "../types/user";
-
-const links = [
-  {
-    to: "/",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    roles: ["admin", "medico", "enfermagem", "auditor"],
-  },
-  { to: "/patients", label: "Pacientes", icon: Users, roles: ["admin", "medico", "enfermagem"] },
-  {
-    to: "/medications",
-    label: "Medicamentos",
-    icon: Pill,
-    roles: ["admin", "medico", "enfermagem"],
-  },
-  {
-    to: "/prescription-check",
-    label: "Checagem",
-    icon: ClipboardCheck,
-    roles: ["admin", "medico", "enfermagem"],
-  },
-  {
-    to: "/clinical-imports",
-    label: "Importações",
-    icon: DatabaseZap,
-    roles: ["admin", "medico", "enfermagem", "auditor"],
-  },
-  {
-    to: "/settings/ai",
-    label: "IA",
-    icon: Settings,
-    roles: ["admin", "medico", "enfermagem", "auditor"],
-  },
-  {
-    to: "/protocols",
-    label: "Protocolos",
-    icon: Siren,
-    roles: ["admin", "medico", "enfermagem", "auditor"],
-  },
-  {
-    to: "/reports",
-    label: "Relatórios",
-    icon: FileText,
-    roles: ["admin", "medico", "enfermagem", "auditor"],
-  },
-  { to: "/audit", label: "Auditoria", icon: FileClock, roles: ["admin", "auditor"] },
-  { to: "/users", label: "Usuários", icon: ShieldCheck, roles: ["admin"] },
-] satisfies Array<{
-  to: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-  roles: UserRole[];
-}>;
 
 export default function Sidebar() {
   const { canAccess } = useAuth();
-  const visibleLinks = links.filter((item) => canAccess(item.roles));
+  const [open, setOpen] = useState(false);
+  const visibleLinks = APP_ROUTES.filter((item) => canAccess(item.roles));
+  const navigation = (
+    <nav aria-label="Navegação principal" className="grid gap-1.5">
+      {visibleLinks.map((item) => {
+        const Icon = item.icon;
+        return (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === "/"}
+            onClick={() => setOpen(false)}
+            className={({ isActive }) =>
+              [
+                "inline-flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean",
+                isActive
+                  ? "bg-ocean text-white shadow-soft"
+                  : "text-slate-600 hover:bg-cyan-50 hover:text-ink",
+              ].join(" ")
+            }
+          >
+            <Icon aria-hidden="true" className="h-5 w-5" />
+            <span>{item.label}</span>
+          </NavLink>
+        );
+      })}
+    </nav>
+  );
 
   return (
-    <aside className="border-b border-slate-200 bg-white/95 backdrop-blur lg:sticky lg:top-0 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r">
-      <div className="flex h-full flex-col gap-6 px-4 py-4 lg:px-6 lg:py-7">
+    <>
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
         <div>
-          <div className="text-2xl font-bold tracking-normal text-ink">Prescripta</div>
-          <div className="mt-1 text-xs font-medium text-slate-500">{APP_SUBTITLE}</div>
-          <div className="mt-2 inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600">
-            {APP_VERSION}
-          </div>
+          <p className="font-bold text-ink">Prescripta</p>
+          <p className="text-xs text-slate-500">{APP_VERSION}</p>
         </div>
-
-        <nav className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
-          {visibleLinks.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === "/"}
-                className={({ isActive }) =>
-                  [
-                    "inline-flex min-h-11 shrink-0 items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition",
-                    isActive
-                      ? "bg-ocean text-white shadow-soft"
-                      : "text-slate-600 hover:bg-cyan-50 hover:text-ink",
-                  ].join(" ")
-                }
-              >
-                <Icon aria-hidden="true" className="h-5 w-5" />
-                <span>{item.label}</span>
-              </NavLink>
-            );
-          })}
-        </nav>
+        <button aria-expanded={open} aria-label="Abrir menu" className="btn-secondary min-h-11 min-w-11 px-3" onClick={() => setOpen(true)} type="button">
+          <Menu aria-hidden="true" className="h-5 w-5" />
+        </button>
       </div>
-    </aside>
+      {open ? <button aria-label="Fechar menu" className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-sm lg:hidden" onClick={() => setOpen(false)} type="button" /> : null}
+      <aside className={`${open ? "translate-x-0" : "-translate-x-full"} fixed inset-y-0 left-0 z-50 w-[min(88vw,19rem)] border-r border-slate-200 bg-white p-5 shadow-2xl transition-transform lg:sticky lg:top-0 lg:z-20 lg:min-h-screen lg:w-72 lg:translate-x-0 lg:shadow-none`}>
+        <div className="flex h-full flex-col gap-7">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-2xl font-bold tracking-tight text-ink">Prescripta</div>
+              <div className="mt-1 text-xs font-medium text-slate-500">{APP_SUBTITLE}</div>
+              <div className="mt-3 inline-flex rounded-lg bg-cyan-50 px-2.5 py-1 text-xs font-bold text-ocean">{APP_VERSION}</div>
+            </div>
+            <button aria-label="Fechar menu" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden" onClick={() => setOpen(false)} type="button"><X aria-hidden="true" className="h-5 w-5" /></button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto">{navigation}</div>
+          <p className="text-xs leading-5 text-slate-400">Ambiente demonstrativo. IA não decide.</p>
+        </div>
+      </aside>
+    </>
   );
 }

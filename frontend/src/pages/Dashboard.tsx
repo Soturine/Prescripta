@@ -14,6 +14,7 @@ import {
 import { Link } from "react-router-dom";
 
 import LoadingState from "../components/LoadingState";
+import PageHeader from "../components/PageHeader";
 import RiskBadge from "../components/RiskBadge";
 import { APP_VERSION } from "../config/appVersion";
 import { fetchApiHealth, fetchDashboard } from "../services/api";
@@ -58,12 +59,10 @@ export default function Dashboard() {
 
   return (
     <div className="grid gap-6">
-      <header>
-        <h1 className="text-3xl font-bold tracking-normal text-ink">Dashboard</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-          Sistema educacional de apoio à identificação de riscos antes da prescrição.
-        </p>
-      </header>
+      <PageHeader
+        title="Dashboard"
+        description="Visão operacional do ambiente demonstrativo, da qualidade do catálogo e dos fluxos que exigem revisão."
+      />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => {
@@ -82,6 +81,33 @@ export default function Dashboard() {
             </article>
           );
         })}
+      </section>
+
+      <section className="surface-card p-5 sm:p-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-ink">Qualidade do catálogo</h2>
+            <p className="mt-1 text-sm text-slate-500">Transparência sobre cobertura, curadoria e lacunas reais.</p>
+          </div>
+          <Link className="text-sm font-bold text-ocean hover:underline" to="/medications">Abrir catálogo</Link>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ["Princípios ativos", data.catalog_quality.active_ingredients_total],
+            ["Curados/validados", data.catalog_quality.active_ingredients_curated],
+            ["Pendentes", data.catalog_quality.active_ingredients_pending],
+            ["Medicamentos demo", data.catalog_quality.medications_demo],
+            ["Sem fonte externa", data.catalog_quality.medications_without_source],
+            ["Regra de dose pendente", data.catalog_quality.medications_without_dose_rule],
+            ["Policy pendente", data.catalog_quality.medications_without_policy],
+            ["Com counseling", data.catalog_quality.counseling_summaries],
+          ].map(([label, value]) => (
+            <article className="rounded-xl border border-slate-100 bg-slate-50 p-4" key={label}>
+              <p className="text-xs font-semibold text-slate-500">{label}</p>
+              <p className="mt-2 text-2xl font-bold text-ink">{value}</p>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">

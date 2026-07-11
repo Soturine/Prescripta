@@ -20,4 +20,5 @@ export type DashboardSummary = {
   medication_count: number;
   prescription_checks: number;
   alerts_by_severity: Record<RiskLevel, number>;
+  catalog_quality: Record<string, number>;
 };
