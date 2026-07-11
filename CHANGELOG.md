@@ -1,5 +1,22 @@
 # Changelog
 
+## [8.6.0] - 2026-07-11
+
+### Corrigido
+
+- Checker textual Python multiplataforma, sem executável `powershell` hardcoded.
+- Dependências backend travadas e warnings de HTTP 422/TestClient corrigidos na origem.
+
+### Alterado
+
+- CI com backend Ubuntu/Windows, Vitest, smoke e `release-readiness`.
+- Auditoria com contrato paginado, total, total de páginas e navegação no frontend.
+- Política de publicação exige CI verde para o SHA final antes da tag.
+
+### Documentação
+
+- Auditoria prévia, rastreabilidade, transações, performance, acessibilidade e índice central.
+
 ## [0.8.5] - 2026-07-11
 
 ### Alterado
@@ -57,36 +74,36 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 - Endpoints de relatório de protocolo em PDF, JSON e CSV por `run_id`, alem de
   filtro `/api/reports?target_type=protocol_run`.
 - Auditoria de protocolo com filtros por protocolo, categoria, severidade,
-  versao, execução, relatório, paciente, usuario, fonte, IA/fallback e data.
-- Histórico clínico longitudinal com documentos, extracao assistida, revisão
+  versão, execução, relatório, paciente, usuário, fonte, IA/fallback e data.
+- Histórico clínico longitudinal com documentos, extração assistida, revisão
   humana, timeline e `PatientKnowledgeBundle` minimizado.
 - Checagem com dados do paciente considerados, regra por peso, idade/faixa
-  etaria, altura/IMC e bundle clínico sem dado identificavel por padrao.
-- Regras demonstrativas para psicotropicos, serotonergicos, IMAO,
+  etária, altura/IMC e bundle clínico sem dado identificável por padrão.
+- Regras demonstrativas para psicotrópicos, serotoninérgicos, IMAO,
   bipolaridade/mania, lítio/renal/AINEs e limiar convulsivo.
-- Catalogo farmacológico ampliavel com busca assistida por fonte, importação em
+- Catálogo farmacológico ampliável com busca assistida por fonte, importação em
   lote e fila de curadoria.
-- Prompts v0.8.3 por modulo em `backend/app/ai/prompts`.
-- Frontend com visao clinica/tecnica, histórico/laudos no paciente, curadoria de
+- Prompts v0.8.3 por módulo em `backend/app/ai/prompts`.
+- Frontend com visão clínica/tecnica, histórico/laudos no paciente, curadoria de
   medicamentos, protocolos com contexto do paciente e dashboard orientado a
   tarefa.
-- Documentacao por audiência, escopo médico, fluxos clinicos, IA, histórico do
-  paciente, psicotropicos e onboarding institucional.
+- Documentação por audiência, escopo médico, fluxos clínicos, IA, histórico do
+  paciente, psicotrópicos e onboarding institucional.
 
 ### Security
 
 - IA continua impedida de alterar risco, dose, status, protocolo, bloqueio ou
   decisão final.
 - Dados extraidos de documentos e fontes farmacologicas ficam `pending_review`.
-- Bundles enviados a IA sao minimizados e sem identificadores por padrao.
+- Bundles enviados a IA sao minimizados e sem identificadores por padrão.
 - API Key não e exposta em frontend, auditoria, relatório ou exportacao.
 
 ### Tests
 
 - Cobertura para relatório de protocolo em `GeneratedReport`, filtros de
   auditoria, contexto de paciente em protocolo, documentos pendentes, revisão
-  humana, bundle do paciente, regra por peso, IMC, psicotropicos, IA minimizada,
-  importação de catalogo e curadoria.
+  humana, bundle do paciente, regra por peso, IMC, psicotrópicos, IA minimizada,
+  importação de catálogo e curadoria.
 
 ## [0.8.2] - 2026-07-11
 
@@ -245,8 +262,8 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 ### Changed
 
 - Explicacao assistida inclui secao `Como explicar ao paciente` baseada no counseling ja validado no payload.
-- Importacoes clinicas mantem aceite/rejeicao de lote e ganham revisão campo a campo.
-- Roadmap atualizado para v0.8.0 relatorios/exportacao/auditoria, v0.9.0 Docker/PostgreSQL/deploy e v1.0.0 portfolio.
+- Importacoes clínicas mantem aceite/rejeicao de lote e ganham revisão campo a campo.
+- Roadmap atualizado para v0.8.0 relatórios/exportacao/auditoria, v0.9.0 Docker/PostgreSQL/deploy e v1.0.0 portfolio.
 
 ### Security
 
@@ -269,9 +286,9 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 - Regra demonstrativa rifampicina/rifabutina + contraceptivo hormonal.
 - Identificadores de paciente com hash/mascara e matching com revisão humana.
 - Camada `backend/app/integrations` com ports, adapters FHIR/JSON/CSV/mock e mappers.
-- Fluxo de importacoes clinicas `pending_review`, aceite/rejeicao, consentimento e auditoria.
+- Fluxo de importacoes clínicas `pending_review`, aceite/rejeicao, consentimento e auditoria.
 - Endpoint `POST /api/cds/prescription-check`.
-- Tela de Importacoes Clinicas e painel CDS API.
+- Tela de Importacoes Clínicas e painel CDS API.
 
 ### Security
 
@@ -289,7 +306,7 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 - Aliases Novalgina, Anador, Dorflex, Neosaldina e Lisador resolvendo para dipirona.
 - Frontend com busca de catálogo, painel Anvisa/DCB, badges de fonte e selects clínicos controlados.
 - RAG com metadados de fonte, jurisdição, tipo de evidência e status de validação.
-- Documentacao de fontes brasileiras, politica de conflito e interoperabilidade futura.
+- Documentação de fontes brasileiras, politica de conflito e interoperabilidade futura.
 
 ### Changed
 
@@ -323,15 +340,15 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 - IA explicativa para alertas gerados por regras deterministicas.
 - Endpoint protegido e fallback determinístico.
 - Painel "Explicar com IA".
-- Documentacao, benchmark e assets de apresentacao.
+- Documentação, benchmark e assets de apresentacao.
 
 ## [0.2.0] - 2026-07-02
 
 ### Added
 
 - Autenticacao JWT.
-- Perfis `admin`, `medico`, `enfermagem` e `auditor`.
-- Gestao de usuarios.
+- Perfis `admin`, `médico`, `enfermagem` e `auditor`.
+- Gestao de usuários.
 - Auditoria com usuário responsável.
 
 ## [0.1.0] - 2026-07-02
