@@ -4,7 +4,7 @@
 
 A v0.7.0 adiciona `patient_counseling`, `missing_data_mode` e `contextual_question` na resposta de checagem.
 
-Esses campos sao orientativos. Eles ajudam o profissional a explicar efeitos, atividades de risco e limitacoes por hist?rico incompleto, mas n?o alteram:
+Esses campos sao orientativos. Eles ajudam o profissional a explicar efeitos, atividades de risco e limitacoes por histórico incompleto, mas não alteram:
 
 - `prescription_status`;
 - `risk_level`;
@@ -13,7 +13,7 @@ Esses campos sao orientativos. Eles ajudam o profissional a explicar efeitos, at
 - dose;
 - recomendacao final.
 
-Resumo pratico, perfil funcional e modo sem hist?rico ficam em servicos separados do motor deterministico.
+Resumo pratico, perfil funcional e modo sem histórico ficam em servicos separados do motor deterministico.
 
 ## Atualizacao v0.6.0
 
@@ -26,19 +26,19 @@ O motor passa a considerar, quando os dados existem:
 - fatores neuropsiquiatricos;
 - fatores reprodutivos/ginecologicos;
 - regra especifica rifampicina/rifabutina + contraceptivo hormonal;
-- identificadores apenas para matching/deduplicacao, nunca para decis?o clinica.
+- identificadores apenas para matching/deduplicacao, nunca para decisão clinica.
 
-Alertas novos sao de revis?o profissional. O motor n?o afirma que todo antibiotico corta anticoncepcional e n?o cria contraindicao psiquiatrica generica sem fonte.
+Alertas novos sao de revisão profissional. O motor não afirma que todo antibiotico corta anticoncepcional e não cria contraindicao psiquiatrica generica sem fonte.
 
 ## Atualizacao v0.5.0
 
 O motor passa a considerar metadados de medicamento e paciente mais estruturados:
 
-- princ?pio ativo;
+- princípio ativo;
 - aliases comerciais;
-- fonte e jurisdi??o;
-- status de valida??o da evidencia;
-- vocabulario cl?nico controlado.
+- fonte e jurisdição;
+- status de validação da evidencia;
+- vocabulario clínico controlado.
 
 Dados antigos ainda sao aceitos quando possivel, mas entradas genericas como `renal`, `cardiaco` e `gastrointestinal` sao normalizadas para codigos controlados, por exemplo `funcao_renal_a_revisar`.
 

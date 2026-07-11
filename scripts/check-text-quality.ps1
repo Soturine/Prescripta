@@ -7,6 +7,11 @@ $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 
 $root = Resolve-Path (Join-Path $PSScriptRoot "..")
+$allowlistPath = Join-Path $PSScriptRoot "text-quality-allowlist.json"
+if (-not (Test-Path $allowlistPath)) {
+  throw "Allowlist obrigatória não encontrada: $allowlistPath"
+}
+$allowlist = Get-Content -Raw -Encoding utf8 $allowlistPath | ConvertFrom-Json
 $targets = if ($Path) {
   @(Resolve-Path $Path)
 } else {
@@ -17,6 +22,8 @@ $targets = if ($Path) {
     Join-Path $root "docs"
     Join-Path $root "backend\app"
     Join-Path $root "frontend\src"
+    Join-Path $root "scripts"
+    Join-Path $root "examples"
   )
 }
 $extensions = @(".md", ".py", ".ts", ".tsx")
@@ -29,10 +36,11 @@ $forbidden = @(
 $mojibake = @([char]0x00C3, [char]0x00C2, [char]0xFFFD)
 $files = New-Object System.Collections.Generic.List[System.IO.FileInfo]
 foreach ($target in $targets) {
+  if (-not (Test-Path $target)) { continue }
   $item = Get-Item $target
   if ($item.PSIsContainer) {
     Get-ChildItem $item.FullName -Recurse -File | Where-Object {
-      $_.Extension -in $extensions -and $_.FullName -notmatch "\\(assets|node_modules|dist)\\"
+      $_.Extension -in $extensions -and $_.FullName -notmatch "\\(node_modules|dist)\\"
     } | ForEach-Object { $files.Add($_) }
   } elseif ($item.Extension -in $extensions) {
     $files.Add($item)
@@ -67,9 +75,26 @@ foreach ($file in $files) {
     if (-not $visible) { continue }
     $scanLine = [regex]::Replace($line, '`[^`]*`', '')
     $scanLine = [regex]::Replace($scanLine, 'https?://\S+', '')
+    if ($scanLine -match '[\p{L}]+\?[\p{L}?]+') {
+      $errors.Add("Possível caractere corrompido em ${relative}:${lineNumber}")
+    }
     foreach ($word in $forbidden) {
       if ($scanLine -match "(?i)(?<![A-Za-z0-9_])$([regex]::Escape($word))(?![A-Za-z0-9_])") {
         $errors.Add("Termo sem acento em ${relative}:${lineNumber}: '$word'")
+      }
+    }
+    if ($file.Extension -eq ".md") {
+      foreach ($match in [regex]::Matches($line, '!??\[[^\]]*\]\(([^)]+)\)')) {
+        $link = $match.Groups[1].Value.Trim().Split(' ')[0].Trim('<', '>')
+        if ($link -match '^(https?://|mailto:|#)' -or [string]::IsNullOrWhiteSpace($link)) {
+          continue
+        }
+        $linkPath = ($link -split '#')[0]
+        if ([string]::IsNullOrWhiteSpace($linkPath)) { continue }
+        $resolvedLink = Join-Path $file.DirectoryName ([uri]::UnescapeDataString($linkPath))
+        if (-not (Test-Path $resolvedLink)) {
+          $errors.Add("Link ou asset inexistente em ${relative}:${lineNumber}: '$linkPath'")
+        }
       }
     }
   }

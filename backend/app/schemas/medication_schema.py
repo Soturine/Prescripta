@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -37,6 +39,14 @@ class MedicationBase(BaseModel):
     policy_strength: str = "warning_only"
     policy_validation_status: str = "pending_review"
     policy_source_refs: list[str] = Field(default_factory=list)
+    policy_version: str = "v0.8.5-demo"
+    source_version: str | None = None
+    institution_id: str | None = None
+    policy_effective_from: datetime | None = None
+    policy_effective_until: datetime | None = None
+    override_allowed: bool = False
+    override_reason_required: bool = True
+    second_reviewer_role: str | None = None
     psychotropic_class: str | None = None
     psychotropic_profile: dict = Field(default_factory=dict)
     max_duration_days: int | None = Field(default=None, gt=0, le=365)
@@ -115,6 +125,14 @@ class MedicationUpdate(BaseModel):
     policy_strength: str | None = None
     policy_validation_status: str | None = None
     policy_source_refs: list[str] | None = None
+    policy_version: str | None = None
+    source_version: str | None = None
+    institution_id: str | None = None
+    policy_effective_from: datetime | None = None
+    policy_effective_until: datetime | None = None
+    override_allowed: bool | None = None
+    override_reason_required: bool | None = None
+    second_reviewer_role: str | None = None
     psychotropic_class: str | None = None
     psychotropic_profile: dict | None = None
     max_duration_days: int | None = Field(default=None, gt=0, le=365)

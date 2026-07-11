@@ -242,7 +242,7 @@ def patient_counseling_for_audit(
     if audit is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Checagem de prescri??o n?o encontrada.",
+            detail="Checagem de prescrição não encontrada.",
         )
     patient_record = PatientRepository(db).get(audit.patient_id) if audit.patient_id else None
     medication_record = (
@@ -251,7 +251,7 @@ def patient_counseling_for_audit(
     if patient_record is None or medication_record is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Paciente ou medicamento da checagem n?o encontrado.",
+            detail="Paciente ou medicamento da checagem não encontrado.",
         )
     return PatientCounselingService(db).build_for_prescription(
         patient_record,

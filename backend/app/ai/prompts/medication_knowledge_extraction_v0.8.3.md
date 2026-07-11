@@ -9,9 +9,9 @@ Saida JSON: `active_ingredient`, `dcb_name`, `synonyms`, `brand_names`,
 `validation_status`, `contraindications`, `adverse_effects`, `interactions`,
 `renal_caution`, `hepatic_caution`, `psychiatric_cautions`.
 
-Campos proibidos: `validated`, dose inventada, fonte inventada, decis?o clinica.
+Campos proibidos: `validated`, dose inventada, fonte inventada, decisão clinica.
 
-Regras: se a fonte n?o trouxer dado, retornar vazio ou `unknown`; status inicial
+Regras: se a fonte não trouxer dado, retornar vazio ou `unknown`; status inicial
 deve ser `pending_review`.
 
 Fallback: item minimo pendente de curadoria.

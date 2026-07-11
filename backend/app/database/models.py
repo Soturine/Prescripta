@@ -252,6 +252,18 @@ class MedicationModel(Base):
         String(40), default="pending_review", nullable=False
     )
     policy_source_refs: Mapped[list[str]] = mapped_column(JSON, default=list)
+    policy_version: Mapped[str] = mapped_column(String(40), default="v0.8.5-demo", nullable=False)
+    source_version: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    institution_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    policy_effective_from: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    policy_effective_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    override_allowed: Mapped[bool] = mapped_column(default=False, nullable=False)
+    override_reason_required: Mapped[bool] = mapped_column(default=True, nullable=False)
+    second_reviewer_role: Mapped[str | None] = mapped_column(String(40), nullable=True)
     psychotropic_class: Mapped[str | None] = mapped_column(String(100), nullable=True)
     psychotropic_profile: Mapped[dict] = mapped_column(JSON, default=dict)
     max_duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -697,10 +709,10 @@ class AuditEventModel(Base):
     resource_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     resource_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True
     )
-    risk_level: Mapped[str | None] = mapped_column(String(40), nullable=True)
-    status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    risk_level: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
+    status: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
     details: Mapped[dict] = mapped_column(JSON, default=dict)
 
 

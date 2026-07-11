@@ -5,6 +5,16 @@ on:
   pull_request:
 
 jobs:
+  repository-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Text, encoding, links and assets
+        shell: pwsh
+        run: ./scripts/check-text-quality.ps1
+      - name: Whitespace consistency
+        run: git diff --check
+
   backend:
     runs-on: ubuntu-latest
     defaults:

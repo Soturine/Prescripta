@@ -24,7 +24,14 @@ class PsychotropicRiskSignal:
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         payload["severity"] = self.severity.value
+        payload["deduplication_key"] = self.deduplication_key
         return payload
+
+    @property
+    def deduplication_key(self) -> str:
+        medications = "+".join(sorted(set(self.interacting_medications))) or "none"
+        factors = "+".join(sorted(set(self.patient_factors))) or "none"
+        return f"{self.code}|{medications}|{factors}"
 
 
 @dataclass(frozen=True)

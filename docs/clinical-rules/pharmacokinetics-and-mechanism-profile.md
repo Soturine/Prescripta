@@ -13,5 +13,5 @@ Medicamentos podem registrar:
 - notas farmacodinamicas/farmacocineticas;
 - interpretacao clinica.
 
-O motor gera revis?o quando eliminacao renal/metabolismo hepatico relevantes encontram fator renal/hepatico do paciente.
+O motor gera revisão quando eliminacao renal/metabolismo hepatico relevantes encontram fator renal/hepatico do paciente.
 

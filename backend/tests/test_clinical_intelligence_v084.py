@@ -65,8 +65,10 @@ def test_dose_intelligence_weight_bsa_range_and_pending_review():
             "usual_low": 1,
             "usual_high": 3,
             "max_daily": 4,
+            "max_daily_is_per_basis": True,
             "dose_unit": "mg/kg/dia",
             "validation_status": "pending_review",
+            "source_refs": ["demo:dose:v0.8.5"],
         },
         _patient(),
         {"dose_mg": 70, "frequency_per_day": 2},
@@ -75,7 +77,12 @@ def test_dose_intelligence_weight_bsa_range_and_pending_review():
     assert weight.status == "within_usual_range"
     assert weight.requires_human_review is True
     bsa = service.evaluate(
-        {"calculation_basis": "bsa", "dose_per_basis": 100, "dose_unit": "mg/m²"},
+        {
+            "calculation_basis": "bsa",
+            "dose_per_basis": 100,
+            "dose_unit": "mg/m²",
+            "source_refs": ["demo:dose:v0.8.5"],
+        },
         _patient(),
     )
     assert bsa.inputs_used["bsa_m2"] > 1

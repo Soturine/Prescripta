@@ -1,128 +1,301 @@
 # Prescripta
 
-![Versão](https://img.shields.io/badge/versão-v0.8.4-0369a1)
+![Versão](https://img.shields.io/badge/versão-v0.8.5-087f8c)
 ![Backend](https://img.shields.io/badge/backend-FastAPI-009688)
 ![Frontend](https://img.shields.io/badge/frontend-React-149eca)
-![Testes](https://img.shields.io/badge/testes-pytest%20%7C%20Vitest-16a34a)
-![Licença](https://img.shields.io/badge/licença-MIT-f59e0b)
+![Testes](https://img.shields.io/badge/qualidade-pytest%20%7C%20Ruff%20%7C%20TypeScript-16a34a)
+![Licença](https://img.shields.io/badge/licença-Apache--2.0-f59e0b)
 
-O Prescripta é uma plataforma demonstrativa e educacional para checagem rastreável de
-prescrições. Reúne contexto clínico, faixas de dose, sinais psicotrópicos, políticas
-institucionais, orientações e auditoria sem delegar a decisão à inteligência artificial.
+O Prescripta é um produto demonstrativo de portfólio healthtech para organizar contexto, checar
+regras rastreáveis e documentar revisão de prescrições. A v0.8.5 consolida backend, frontend,
+catálogo, dose, psicotrópicos, policy, IA assistiva, relatórios e auditoria em uma experiência mais
+coesa e transparente.
 
-> **Aviso:** não é dispositivo médico, não está validado clinicamente e não substitui médico,
-> farmacêutico, norma vigente, bula, protocolo institucional ou análise regulatória. Use apenas
-> dados fictícios.
+> **Aviso educacional:** não é dispositivo médico, não possui validação clínica e não deve ser
+> usado para atendimento real. Não substitui médico, farmacêutico, enfermagem, bula, protocolo,
+> autoridade sanitária, análise jurídica ou decisão institucional. Use somente dados fictícios.
 
-## Por que existe
+## Sumário
 
-Uma prescrição envolve mais do que comparar uma dose máxima: dados do paciente podem estar
-ausentes, fontes mudam, regras têm forças diferentes e toda conclusão precisa ser revisável. A
-v0.8.4 torna explícita a diferença entre permissão do sistema, credencial demo, recomendação
-clínica, política institucional e regra legal/regulatória documentada.
+- [O que é e que problema resolve](#o-que-é-o-prescripta)
+- [Públicos e funcionamento](#para-quem-serve)
+- [Módulos](#módulos-e-abas)
+- [Motores clínicos](#checagem-de-prescrição)
+- [IA, relatórios e auditoria](#ia-no-prescripta)
+- [Demonstração visual](#screenshots-reais)
+- [Instalação e primeiro uso](#instalação-rápida)
+- [Arquitetura, segurança e limites](#arquitetura)
 
-## O que a v0.8.4 entrega
+## O que é o Prescripta
 
-| Módulo | Entrega |
-| --- | --- |
-| Dose Intelligence | Fórmula, unidade, peso real/ideal/ajustado, IMC, superfície corporal, faixa e limites |
-| Segurança psicotrópica | Sinais heurísticos de interação, sedação, QT, convulsão, mania e vulnerabilidades |
-| Política de prescrição | Especialidade demo, tipo/força da política, fonte, receita e revisão humana |
-| Histórico clínico | Dados estruturados, documentos, extrações revisadas e linha do tempo |
-| Relatórios e auditoria | EvidenceBundle, hash, fonte, fallback, filtros e trilha de decisão |
-| IA assistiva | Explica e extrai somente de fontes enviadas; nunca decide ou valida regras |
+É uma aplicação web com API FastAPI, frontend React e persistência SQLAlchemy. Ela reúne dados
+fictícios do paciente, exposição informada, regras determinísticas, evidências, orientações e trilha
+de auditoria. A inteligência artificial é opcional, minimizada e substituível por fallback local.
 
-## Demonstração visual
+## Que problema resolve
 
-### Dashboard
-![Dashboard clínico](docs/assets/v0.8.4/dashboard-v0.8.4.png)
+Uma checagem não é apenas comparar um número: unidade, frequência, via, peso, altura, histórico,
+medicamentos concomitantes, fonte e vigência mudam a interpretação. O Prescripta torna essas
+dependências visíveis, separa incerteza de bloqueio e registra por que um alerta apareceu.
 
-### Checagem clínica
-![Checagem clínica](docs/assets/v0.8.4/prescription-clinical-view-v0.8.4.png)
+## Para quem serve
 
-### Dose Intelligence
-![Dose Intelligence](docs/assets/v0.8.4/dose-intelligence-v0.8.4.png)
+- **Leigos e avaliadores:** entender o fluxo e os limites de um protótipo healthtech.
+- **Médicos:** revisar contexto, dose, interações e dados faltantes sem falsa segurança.
+- **Enfermagem:** registrar e visualizar contexto, orientação e escalonamento permitido.
+- **Administração:** manter usuários, catálogo, fontes, IA e políticas demo.
+- **Auditoria/TI:** reconstruir decisão, hash, provider, source IDs, integrações e fallback.
 
-### Segurança psicotrópica
-![Segurança psicotrópica](docs/assets/v0.8.4/psychotropic-safety-v0.8.4.png)
+## Como funciona em linguagem simples
 
-### Política de prescrição
-![Política de prescrição](docs/assets/v0.8.4/prescriber-policy-v0.8.4.png)
+O usuário escolhe paciente e medicamento fictícios, informa dose, frequência, via e duração. O
+backend aplica regras cadastradas e devolve resultado geral, Dose Intelligence, sinais
+psicotrópicos, policy do prescritor, lacunas e fontes. IA pode explicar o pacote já calculado, mas
+não muda a decisão. Tudo relevante fica auditado.
 
-### Histórico e laudos
-![Histórico e laudos](docs/assets/v0.8.4/patient-history-documents-v0.8.4.png)
+## Fluxo geral
 
-### Relatórios
-![Relatório rastreável](docs/assets/v0.8.4/report-with-dose-policy-v0.8.4.png)
-
-## Fluxo rápido de teste
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python -m pip install -r backend\requirements.txt
-cd frontend
-npm install
-npm run dev
+```text
+Paciente + medicamento + exposição
+              ↓
+Contexto e dados faltantes
+              ↓
+Risco determinístico ─ Dose ─ Psicotrópicos ─ Policy
+              ↓
+Revisão humana + orientação + relatório
+              ↓
+EvidenceBundle, hash e auditoria
 ```
 
-Em outro terminal:
+## Módulos e abas
+
+| Módulo | O que o usuário vê | O que significa |
+| --- | --- | --- |
+| Dashboard | volume, alertas e qualidade do catálogo | transparência operacional, não cobertura clínica |
+| Pacientes | perfil, fatores, documentos e timeline | contexto disponível e lacunas |
+| Medicamentos | DCB, aliases, fonte, dose, policy e counseling | dado cadastrado com status de revisão |
+| Checagem | resultado clínico e drawer/detalhes técnicos | revisão assistida, não prescrição automática |
+| Protocolos | versões, etapas, fontes e execução | fluxo demonstrativo auditado |
+| Importações | lotes e reconciliação item a item | dado externo não é aplicado silenciosamente |
+| Relatórios | preview, PDF/JSON/CSV, evidência e hash | representação do bundle no momento da geração |
+| Auditoria | filtros server-side, timeline e evidência | reconstrução de ações e decisões |
+| IA assistiva | provider, modelo, fallback e limitação | explicação/extração, nunca decisão |
+
+## Dashboard
+
+Mostra pacientes, medicamentos, checagens, alertas e indicadores reais de curadoria: princípios
+ativos, itens pendentes, demo, sem fonte, sem regra de dose, sem policy e com counseling. Um número
+alto de medicamentos não significa catálogo completo.
+
+## Pacientes
+
+Cadastro fictício com antropometria, alergias, condições, medicamentos atuais, saúde mental,
+fatores reprodutivos e perfil funcional. Dados ausentes aparecem como ausentes; não viram “não”.
+
+## Histórico, laudos e documentos
+
+Documentos textuais/metadados recebem hash, fonte e revisão. Duplicatas pela chave paciente + hash
++ tipo + data + origem geram conflito explícito. Extrações por IA/fallback ficam pendentes até
+revisão humana. Não há OCR ou storage binário produtivo.
+
+## Medicamentos e catálogo farmacológico
+
+O catálogo é centrado em princípio ativo e aceita aliases/produtos. Fonte, jurisdição e status
+acompanham o registro. Seeds são artificiais; regras sem curadoria não são mostradas como validadas.
+
+## Checagem de prescrição
+
+A checagem cruza alergia, interação, exposição, condições, histórico e regras específicas. A visão
+clínica é padrão. Detalhes técnicos aparecem apenas para perfis adequados e incluem fórmulas, JSON,
+source IDs, graph e evidências.
+
+## Dose Intelligence
+
+Calcula referência fixa, por peso real/ideal/ajustado, massa magra ou superfície corporal quando a
+regra tem fonte e status. Separa dose por administração, diária, procedimento e acumulada; valida
+unidade, rota e inputs. Nunca escolhe a dose final.
+
+## Segurança psicotrópica
+
+Sinais determinísticos cobrem serotoninérgicos, mania/psicose, convulsão, sedação, álcool,
+depressão respiratória, QT, lítio, valproato, carbamazepina, lamotrigina, clozapina, metadona,
+antipsicóticos e carga anticolinérgica. A chave estável evita duplicação por alias. Sinal é risco a
+revisar, não diagnóstico.
+
+## Política do prescritor
+
+Separa autorização de sistema, regra legal/regulatória documentada, policy institucional,
+recomendação clínica e demo. Exibe fonte, versão, vigência, instituição, segunda revisão e condição
+de override. CRM/RQE demo permanece `demo_unverified`; nenhuma consulta externa é feita.
+
+## Protocolos rápidos
+
+Protocolos versionados podem receber paciente opcional, registrar etapas e gerar relatório. IA
+explica apenas estrutura e fontes fornecidas; não cria dose, etapa ou conduta.
+
+## Importações e reconciliação
+
+Adapters mock aceitam formatos FHIR-like, JSON e CSV. Cada item é comparado ao contexto local e só
+é aplicado após decisão humana auditada. Integração real exige API oficial, contrato, segurança e
+base legal.
+
+## Relatórios
+
+Prescription, patient guidance, reconciliation, audit e protocol usam `GeneratedReport` quando
+aplicável, com target, versão, template, hash, provider/modelo, fallback e anonimização. Narrativa
+inválida ou com fonte inexistente é rejeitada.
+
+## Auditoria
+
+Filtros de usuário, paciente, medicamento, princípio ativo, protocolo, policy, especialidade, dose,
+IA, fallback, fonte, jurisdição e data são aplicados no banco com ordenação e paginação. SQLite
+ainda limita consultas estruturadas profundas em JSON.
+
+## IA no Prescripta
+
+Providers configuráveis incluem fallback, OpenAI, Gemini, Ollama e compatíveis com OpenAI. A chave
+fica no backend e nunca em `localStorage`. Structured output e source locking protegem módulos
+clínicos. Falha externa mantém fallback e auditoria; a IA não valida regra nem altera dose/risco.
+
+## Visão clínica e visão técnica
+
+A visão clínica reduz ruído e prioriza ação humana. A técnica apresenta fórmula, inputs, JSON,
+policy, fontes, hash e metadados. Enfermagem não recebe o seletor técnico da checagem; autorização
+real continua no backend.
+
+## Integração institucional
+
+Consulte [contratos](docs/integration/adapter-contracts.md),
+[mapeamento](docs/integration/mapping-strategy.md),
+[segurança/LGPD](docs/integration/security-and-lgpd.md) e
+[payloads fictícios](docs/integration/sample-payloads.md).
+
+## Screenshots reais
+
+Capturas feitas na aplicação v0.8.5 rodando localmente com seeds fictícios:
+
+![Dashboard administrativo real](docs/assets/v0.8.5/dashboard-admin-v0.8.5.png)
+*Dashboard administrativo com métricas de qualidade do catálogo.*
+
+![Paciente e histórico real](docs/assets/v0.8.5/patient-history-v0.8.5.png)
+*Histórico e dados demonstrativos, sem paciente real.*
+
+![Checagem clínica real](docs/assets/v0.8.5/prescription-clinical-v0.8.5.png)
+*Visão clínica padrão da checagem.*
+
+![Dose Intelligence real](docs/assets/v0.8.5/dose-intelligence-v0.8.5.png)
+*Fórmula, inputs, status e revisão da regra.*
+
+![Auditoria real](docs/assets/v0.8.5/audit-v0.8.5.png)
+*Filtros, eventos e trilha auditável.*
+
+![Interface móvel real](docs/assets/v0.8.5/mobile-v0.8.5.png)
+*Drawer móvel e largura de 390 px.*
+
+## GIFs
+
+![Fluxo principal](docs/assets/v0.8.5/prescripta-v0.8.5-main-demo.gif)
+
+Também estão disponíveis fluxos [clínico](docs/assets/v0.8.5/prescripta-v0.8.5-clinical-workflow.gif),
+[administrativo/auditoria](docs/assets/v0.8.5/prescripta-v0.8.5-admin-audit.gif) e
+[IA assistiva](docs/assets/v0.8.5/prescripta-v0.8.5-ai-assisted-flow.gif).
+
+## Instalação rápida
+
+Windows:
 
 ```powershell
-cd backend
-..\.venv\Scripts\python -m uvicorn app.main:app --reload
+powershell -ExecutionPolicy Bypass -File scripts/setup-dev.ps1
+powershell -ExecutionPolicy Bypass -File scripts/dev.ps1
 ```
 
-Abra `http://localhost:5173`, entre com uma conta demo, escolha paciente e medicamento e faça a
-checagem. Alterne entre visão clínica e técnica para ver fontes, fórmulas e JSON auditável.
+Linux/macOS:
+
+```bash
+./scripts/setup-dev.sh
+./scripts/dev.sh
+```
+
+## Instalação detalhada
+
+Requer Python 3.12+, Node 24+ e npm. Copie `.env.example` para `.env`, troque segredos de demo se
+necessário e siga o [setup local](docs/getting-started/local-setup.md). Backend usa porta 8000 e
+frontend 5173 por padrão.
+
+## Primeiro uso
+
+1. Entre como admin e confirme status da IA.
+2. Abra um paciente fictício e revise dados/documentos.
+3. Escolha uma checagem de exemplo.
+4. Compare visão clínica e técnica.
+5. Gere relatório e abra auditoria.
 
 ## Credenciais demo
 
 | Perfil | E-mail | Senha |
 | --- | --- | --- |
-| Administrador | `admin@prescripta.local` | `Admin@12345` |
+| Admin | `admin@prescripta.local` | `Admin@12345` |
 | Médico geral | `medico@prescripta.local` | `Medico@12345` |
 | Anestesiologia | `anestesia@prescripta.local` | `Anestesia@12345` |
 | Psiquiatria | `psiquiatria@prescripta.local` | `Psiquiatria@12345` |
 | Auditoria | `auditor@prescripta.local` | `Auditor@12345` |
 | Enfermagem | `enfermagem@prescripta.local` | `Enfermagem@12345` |
 
-As credenciais clínicas são fictícias e exibidas como `demo_unverified`; a aplicação não consulta
-CRM, CFM ou RQE.
-
 ## Configuração de IA
 
-A configuração fica no backend e somente administradores podem salvar, testar, ativar ou apagar
-uma chave. A chave nunca vai para `localStorage`, logs ou respostas. Sem chave — ou diante de falha
-externa — o sistema preserva fallback determinístico. Prompts versionados ficam em
-[`backend/app/ai/prompts`](backend/app/ai/prompts/).
+Somente admin salva/testa/ativa provider ou modelo. Sem chave e chamadas externas desabilitadas, o
+fallback é esperado. Nunca capture a tela com chave preenchida.
 
-## Arquitetura e documentação
+## Testes
 
-- [Guia para leigos e avaliadores](docs/audiences/for-laypeople-and-evaluators.md)
-- [Guia para médicos](docs/audiences/for-physicians.md)
-- [Guia para enfermagem](docs/audiences/for-nursing.md)
-- [Guia de auditoria](docs/audiences/for-auditors.md)
-- [TI e integrações](docs/audiences/for-it-and-integrations.md)
-- [Motor de dose](docs/clinical/dose-intelligence-engine.md)
-- [Segurança psicotrópica](docs/clinical/psychotropic-safety-engine.md)
-- [Política do prescritor](docs/clinical/prescriber-policy-engine.md)
-- [Matriz de aceite](docs/product/v0.8.4-acceptance-matrix.md)
+```powershell
+cd backend
+..\.venv\Scripts\python -m ruff check . --no-cache
+..\.venv\Scripts\python -m pytest
+cd ..\frontend
+npm run lint
+npm run build
+cd ..
+powershell -ExecutionPolicy Bypass -File scripts/check-text-quality.ps1
+git diff --check
+```
 
-O backend FastAPI concentra autorização e regras determinísticas. React apresenta resultados, mas
-não decide. Persistência usa SQLAlchemy; integrações seguem Ports & Adapters e os relatórios usam
-bundles imutáveis com hash.
+## Arquitetura
 
-## Segurança e limites
+Regras determinísticas ficam em services, contratos em domain/schemas, SQLAlchemy em database e
+repositories, integrações em ports/adapters e relatórios em EvidenceBundles. Rotas coordenam
+casos de uso; React não decide risco. Consulte a
+[visão de módulos](docs/product/system-modules.md) e a
+[auditoria v0.8.5](docs/audits/v0.8.5-full-repository-audit.md).
 
-- IA não altera risco, dose, bloqueio, protocolo, status ou recomendação final.
-- Toda regra demo ou pendente exige revisão humana e mostra fonte/status.
-- Fonte internacional é secundária quando há referência brasileira.
-- Não há scraping agressivo, integração hospitalar real ou validação externa de CRM/RQE.
-- CPF, CNS, contato e identificadores reais não devem ser enviados a provedores externos.
+## Estrutura do repositório
 
-Consulte o [ROADMAP](ROADMAP.md), o [CHANGELOG](CHANGELOG.md) e as
-[notas da v0.8.4](docs/releases/v0.8.4.md).
+```text
+backend/app/     API, domínio, serviços, banco, IA, RAG, relatórios e integrações
+backend/tests/   testes unitários e de API
+frontend/src/    páginas, componentes, configurações, serviços e tipos
+docs/            produto, arquitetura, públicos, auditorias e assets
+examples/        payloads estritamente fictícios
+scripts/         instalação, execução, smoke test e qualidade
+```
+
+## Segurança e privacidade
+
+Não use dados reais. Segredos ficam no backend, dados enviados à IA são minimizados, identificadores
+são mascarados/hasheados quando aplicável e ações relevantes são auditadas. A demo não faz
+scraping agressivo nem autenticação em portal institucional.
+
+## Limitações atuais
+
+Leia [limitações conhecidas](docs/product/known-limitations.md) e a
+[matriz de aceite](docs/product/v0.8.5-acceptance-matrix.md). Catálogo, policy e regras de dose são
+demonstrativos/pendentes quando indicado. Assets v0.8.4 não são usados como evidência v0.8.5.
+
+## Roadmap
+
+A v0.9.0 prevê Docker, PostgreSQL, Alembic, deploy demo, storage, backup/restore e hardening de
+ambiente. Consulte o [ROADMAP](ROADMAP.md).
 
 ## Licença
 
-Distribuído sob a [licença MIT](LICENSE).
+Licenciado sob [Apache License 2.0](LICENSE).

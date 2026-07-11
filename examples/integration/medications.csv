@@ -1,0 +1,3 @@
+active_ingredient,commercial_name,concentration,route,source,validation_status
+amoxicilina,Amoxicilina Demo,500 mg,oral,demo_seed,pending_review
+sertralina,Sertralina Demo,50 mg,oral,demo_seed,pending_review

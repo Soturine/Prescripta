@@ -220,16 +220,18 @@ export default function PrescriptionCheck() {
                 type="button"
               >
                 <ShieldCheck aria-hidden="true" className="h-4 w-4" />
-                Modo clinico
+                Modo clínico
               </button>
-              <button
-                className={viewMode === "technical" ? "btn-primary" : "btn-secondary"}
-                onClick={() => setViewMode("technical")}
-                type="button"
-              >
-                <FileJson aria-hidden="true" className="h-4 w-4" />
-                Modo tecnico
-              </button>
+              {canGenerateTechnical ? (
+                <button
+                  className={viewMode === "technical" ? "btn-primary" : "btn-secondary"}
+                  onClick={() => setViewMode("technical")}
+                  type="button"
+                >
+                  <FileJson aria-hidden="true" className="h-4 w-4" />
+                  Modo técnico
+                </button>
+              ) : null}
             </div>
             <div className="mt-4 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
               <div>

@@ -1,5 +1,7 @@
 import type { PrescriptionStatus, RiskLevel } from "../types/prescription";
 import type { UserRole } from "../types/user";
+import { ROLE_LABELS } from "../config/labels";
+import { RISK_LABELS, STATUS_LABELS } from "../config/statuses";
 
 export function splitList(value: string) {
   return value
@@ -13,22 +15,11 @@ export function joinList(value: string[] | null | undefined) {
 }
 
 export function formatRisk(level: RiskLevel | string) {
-  const labels: Record<string, string> = {
-    baixo: "Baixo",
-    moderado: "Moderado",
-    alto: "Alto",
-    critico: "Crítico",
-  };
-  return labels[level] ?? level;
+  return RISK_LABELS[level] ?? level;
 }
 
 export function formatStatus(status: PrescriptionStatus | string) {
-  const labels: Record<string, string> = {
-    liberado: "Liberado",
-    atencao: "Atenção",
-    bloqueado: "Bloqueado",
-  };
-  return labels[status] ?? status;
+  return STATUS_LABELS[status] ?? status;
 }
 
 export function formatDateTime(value: string) {
@@ -43,13 +34,7 @@ export function formatDose(value: number) {
 }
 
 export function formatRole(role: UserRole | string | null | undefined) {
-  const labels: Record<string, string> = {
-    admin: "Admin",
-    medico: "Médico",
-    enfermagem: "Enfermagem",
-    auditor: "Auditor",
-  };
-  return role ? (labels[role] ?? role) : "-";
+  return role ? (ROLE_LABELS[role as UserRole] ?? role) : "-";
 }
 
 export function formatAuditAction(action: string) {

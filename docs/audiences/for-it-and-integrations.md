@@ -14,3 +14,20 @@ Para plugar uma fonte, implemente o port, normalize em DTO interno, preserve fon
 crie fila `pending_review`, teste falhas e mantenha fallback. Segredos ficam no backend; nunca em
 payload de resposta, log ou `localStorage`. Migrações, PostgreSQL, backup e storage binário estão
 planejados para v0.9.0.
+
+## Passo a passo de adapter
+
+Defina contrato e consentimento; valide payload; normalize preservando original; resolva
+identificador; grave lote; reconcilie por item; aplique decisão humana; audite. Use os
+[exemplos fictícios](../integration/sample-payloads.md).
+
+## O que a equipe vê
+
+Importações mostram origem, status, conflito e decisão. Relatórios mostram target/hash/fallback.
+Isso não significa interoperabilidade FHIR certificada ou conexão hospitalar ativa.
+
+## FAQ, glossário e links
+
+**Há migrations?** Ainda não. **Posso usar SQLite em produção?** Não é a proposta. **Onde ficam
+segredos?** Configuração backend criptografada/ambiente. Veja [contratos](../integration/adapter-contracts.md),
+[segurança](../integration/security-and-lgpd.md) e [baseline](../performance/v0.8.5-baseline.md).

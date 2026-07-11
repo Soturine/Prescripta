@@ -61,6 +61,10 @@ class ClinicalDocumentExtractionPayload(BaseModel):
         return clean[:20]
 
 
+class DuplicateClinicalDocumentError(ValueError):
+    pass
+
+
 class PatientHistoryService:
     def __init__(self, db: Session) -> None:
         self.db = db
@@ -72,6 +76,22 @@ class PatientHistoryService:
         user: UserModel,
     ) -> PatientClinicalDocumentModel:
         raw_text = payload.raw_text or ""
+        file_hash = hashlib.sha256(
+            (raw_text + repr(payload.structured_payload)).encode("utf-8")
+        ).hexdigest()
+        duplicate = self.db.scalar(
+            select(PatientClinicalDocumentModel).where(
+                PatientClinicalDocumentModel.patient_id == patient.id,
+                PatientClinicalDocumentModel.file_hash == file_hash,
+                PatientClinicalDocumentModel.document_type == payload.document_type,
+                PatientClinicalDocumentModel.document_date == payload.document_date,
+                PatientClinicalDocumentModel.source_system == payload.source_system,
+            )
+        )
+        if duplicate is not None:
+            raise DuplicateClinicalDocumentError(
+                "Documento clínico duplicado para o paciente e a origem informados."
+            )
         document = PatientClinicalDocumentModel(
             patient_id=patient.id,
             document_type=payload.document_type,
@@ -83,9 +103,7 @@ class PatientHistoryService:
             uploaded_by=user.id,
             raw_text=raw_text,
             structured_payload=payload.structured_payload,
-            file_hash=hashlib.sha256(
-                (raw_text + repr(payload.structured_payload)).encode("utf-8")
-            ).hexdigest(),
+            file_hash=file_hash,
             storage_path=payload.storage_path,
         )
         self.db.add(document)

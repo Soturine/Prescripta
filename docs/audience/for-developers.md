@@ -14,8 +14,8 @@ Prescripta usa FastAPI, Pydantic, SQLAlchemy, React, TypeScript e Vite.
 
 ## Convencoes Importantes
 
-- Regra clinica fica em services, n?o em rotas FastAPI nem componentes React.
-- IA n?o decide risco, dose, status ou protocolo.
+- Regra clinica fica em services, não em rotas FastAPI nem componentes React.
+- IA não decide risco, dose, status ou protocolo.
 - Dados extraidos por IA entram como `pending_review`.
 - Backend e a fonte real de autorizacao.
 - API Key nunca vai para frontend, logs, relatorios ou auditoria.

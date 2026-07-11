@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 :root {
+  --color-clinical: #087f8c;
+  --color-ink: #102033;
+  --radius-card: 0.875rem;
+  --shadow-card: 0 12px 30px -22px rgba(15, 23, 42, 0.38);
+  --motion-fast: 160ms;
   color: #102033;
   background: #eef6f8;
   font-family:
@@ -17,6 +22,15 @@ body {
     #f8fafc;
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(8, 127, 140, 0.18);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-clinical);
+  outline-offset: 2px;
 }
 
 button,
@@ -44,10 +58,21 @@ select {
   }
 
   .surface-card {
-    @apply rounded-lg border border-slate-200 bg-white shadow-sm transition;
+    @apply rounded-xl border border-slate-200/90 bg-white shadow-sm transition-shadow hover:shadow-soft;
   }
 
   .skeleton-line {
     @apply h-3 animate-pulse rounded-full bg-slate-200;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

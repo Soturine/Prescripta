@@ -207,7 +207,7 @@ def get_report(report_id: int, db: DbSession, _current_user: ReportReader) -> Ge
     if report is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Relat?rio n?o encontrado.",
+            detail="Relatório não encontrado.",
         )
     return report
 

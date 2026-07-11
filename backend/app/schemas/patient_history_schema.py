@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import PurePath
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class PatientClinicalDocumentCreate(BaseModel):
@@ -16,6 +17,18 @@ class PatientClinicalDocumentCreate(BaseModel):
     raw_text: str = Field(default="", max_length=20000)
     structured_payload: dict[str, Any] = Field(default_factory=dict)
     storage_path: str | None = Field(default=None, max_length=500)
+
+    @field_validator("storage_path")
+    @classmethod
+    def validate_demo_storage_path(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        path = PurePath(value)
+        if path.is_absolute() or ".." in path.parts:
+            raise ValueError("Caminho de documento inválido.")
+        if path.suffix.lower() not in {".pdf", ".png", ".jpg", ".jpeg", ".txt"}:
+            raise ValueError("Extensão de documento não permitida.")
+        return value
 
 
 class PatientClinicalDocumentRead(BaseModel):

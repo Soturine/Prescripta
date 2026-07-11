@@ -4,13 +4,13 @@
 
 ## Fluxo
 
-1. Resolver medicamento/princ?pio ativo.
+1. Resolver medicamento/princípio ativo.
 2. Recuperar texto de RAG, fonte cadastrada ou trecho informado.
 3. Enviar ao provider apenas o texto recuperado.
 4. Validar JSON com Pydantic.
 5. Normalizar categorias pela taxonomia controlada.
 6. Salvar como `pending_review`.
-7. Exigir revis?o humana para `curated` ou `validated`.
+7. Exigir revisão humana para `curated` ou `validated`.
 
 ## Providers
 
@@ -21,12 +21,12 @@
 
 ## Prompt interno
 
-O provider recebe instrucao para ler apenas os trechos fornecidos, n?o usar conhecimento externo, n?o inventar efeitos, marcar evidencia insuficiente e citar `source_id`/trecho quando possivel.
+O provider recebe instrucao para ler apenas os trechos fornecidos, não usar conhecimento externo, não inventar efeitos, marcar evidencia insuficiente e citar `source_id`/trecho quando possivel.
 
 ## Salvaguardas
 
 - JSON invalido e rejeitado.
 - Categorias desconhecidas sao descartadas.
-- `confidence = insufficient_evidence` quando o texto n?o sustenta resumo.
-- O extrator n?o escreve status da prescri??o.
-- A IA n?o reduz severidade, n?o libera bloqueio e n?o substitui revis?o profissional.
+- `confidence = insufficient_evidence` quando o texto não sustenta resumo.
+- O extrator não escreve status da prescrição.
+- A IA não reduz severidade, não libera bloqueio e não substitui revisão profissional.

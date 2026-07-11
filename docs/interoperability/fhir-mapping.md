@@ -22,5 +22,5 @@ Cada recurso vira `ClinicalSourceRecord` com:
 - `confidence`: confianca aproximada.
 - `record_type`: tipo interno.
 
-O mapeamento n?o e FHIR completo e n?o substitui valida??o institucional.
+O mapeamento não e FHIR completo e não substitui validação institucional.
 
