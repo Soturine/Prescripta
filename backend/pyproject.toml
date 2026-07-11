@@ -1,7 +1,8 @@
 [project]
 name = "prescripta-backend"
-version = "0.8.4"
+version = "0.8.5"
 description = "Educational prescription safety API for Prescripta."
+license = { text = "Apache-2.0" }
 requires-python = ">=3.12"
 
 [tool.pytest.ini_options]

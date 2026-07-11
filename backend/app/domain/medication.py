@@ -74,6 +74,14 @@ class Medication:
     policy_strength: str = "warning_only"
     policy_validation_status: str = "pending_review"
     policy_source_refs: list[str] | None = None
+    policy_version: str = "v0.8.5-demo"
+    source_version: str | None = None
+    institution_id: str | None = None
+    policy_effective_from: Any | None = None
+    policy_effective_until: Any | None = None
+    override_allowed: bool = False
+    override_reason_required: bool = True
+    second_reviewer_role: str | None = None
     psychotropic_class: str | None = None
     psychotropic_profile: dict | None = None
 
@@ -121,6 +129,14 @@ class Medication:
             policy_strength=getattr(record, "policy_strength", "warning_only"),
             policy_validation_status=getattr(record, "policy_validation_status", "pending_review"),
             policy_source_refs=list(getattr(record, "policy_source_refs", []) or []),
+            policy_version=getattr(record, "policy_version", "v0.8.5-demo"),
+            source_version=getattr(record, "source_version", None),
+            institution_id=getattr(record, "institution_id", None),
+            policy_effective_from=getattr(record, "policy_effective_from", None),
+            policy_effective_until=getattr(record, "policy_effective_until", None),
+            override_allowed=bool(getattr(record, "override_allowed", False)),
+            override_reason_required=bool(getattr(record, "override_reason_required", True)),
+            second_reviewer_role=getattr(record, "second_reviewer_role", None),
             psychotropic_class=getattr(record, "psychotropic_class", None),
             psychotropic_profile=dict(getattr(record, "psychotropic_profile", {}) or {}),
             max_daily_dose_mg=record.max_daily_dose_mg,

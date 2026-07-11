@@ -62,7 +62,7 @@ def get_active_ingredient(
     if ingredient is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Princ?pio ativo n?o encontrado.",
+            detail="Princípio ativo não encontrado.",
         )
     return ingredient
 

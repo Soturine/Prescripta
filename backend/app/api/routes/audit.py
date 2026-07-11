@@ -101,7 +101,7 @@ def list_audit(
 def get_audit_event(event_id: int, db: DbSession, _current_user: AuditReader) -> AuditRead:
     event = AuditRepository(db).get_event(event_id)
     if event is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evento n?o encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evento não encontrado.")
     return event
 
 
@@ -109,7 +109,7 @@ def get_audit_event(event_id: int, db: DbSession, _current_user: AuditReader) ->
 def get_audit_timeline(event_id: int, db: DbSession, _current_user: AuditReader) -> list[dict]:
     event = AuditRepository(db).get_event(event_id)
     if event is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evento n?o encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evento não encontrado.")
     if event.resource_type == "prescription" and event.resource_id:
         try:
             bundle = ReportService(db).prescription_bundle(int(event.resource_id))
@@ -137,7 +137,7 @@ def get_audit_timeline(event_id: int, db: DbSession, _current_user: AuditReader)
 def get_audit_evidence(event_id: int, db: DbSession, _current_user: AuditReader) -> list[dict]:
     event = AuditRepository(db).get_event(event_id)
     if event is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evento n?o encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evento não encontrado.")
     if event.resource_type == "prescription" and event.resource_id:
         try:
             bundle = ReportService(db).prescription_bundle(int(event.resource_id))

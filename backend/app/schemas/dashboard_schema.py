@@ -6,3 +6,4 @@ class DashboardSummary(BaseModel):
     medication_count: int
     prescription_checks: int
     alerts_by_severity: dict[str, int]
+    catalog_quality: dict[str, int]

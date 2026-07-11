@@ -349,7 +349,35 @@ class PsychotropicSafetyService:
                 "efeito antimuscarínico",
                 meds("anticholinergic"),
             )
-        return signals
+        if "lamotrigina" in all_meds and has_factor("rash", "reacao cutanea", "stevens"):
+            add(
+                "LAMOTRIGINE_CUTANEOUS_HISTORY",
+                "Lamotrigina e histórico de reação cutânea",
+                RiskLevel.HIGH,
+                "reação cutânea grave exige avaliação imediata",
+                {"lamotrigina"},
+            )
+        if "clozapina" in all_meds:
+            add(
+                "CLOZAPINE_MONITORING_CONTEXT",
+                "Clozapina e monitoramento obrigatório a revisar",
+                RiskLevel.HIGH,
+                "perfil hematológico, metabólico, cardíaco e convulsivo",
+                {"clozapina"},
+                ["monitoramento laboratorial vigente"],
+            )
+        if "metadona" in all_meds and (meds("benzodiazepine") or alcohol):
+            add(
+                "METHADONE_CNS_DEPRESSANTS",
+                "Metadona com depressor do sistema nervoso central",
+                RiskLevel.CRITICAL,
+                "depressão respiratória e sedação aditivas",
+                {"metadona"} | meds("benzodiazepine") | ({"álcool"} if alcohol else set()),
+            )
+        unique: dict[str, PsychotropicRiskSignal] = {}
+        for signal in signals:
+            unique.setdefault(signal.deduplication_key, signal)
+        return list(unique.values())
 
 
 PsychotropicSafetyEngine = PsychotropicSafetyService

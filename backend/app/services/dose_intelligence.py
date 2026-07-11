@@ -1,6 +1,7 @@
 from math import sqrt
 from typing import Any
 
+from app.core.constants import DOSE_UNITS
 from app.domain.clinical_intelligence import DoseIntelligenceResult
 
 
@@ -21,10 +22,37 @@ class DoseIntelligenceService:
         basis = get(rule, "calculation_basis", "fixed")
         unit = get(rule, "dose_unit", get(rule, "unit", "mg"))
         validation = get(rule, "validation_status", "pending_review")
+        source_refs = list(get(rule, "source_refs", []) or [])
         missing: list[str] = []
         inputs: dict[str, Any] = {"weight_kg": weight, "height_cm": height_cm}
         scalar = 1.0
         formula = "dose fixa"
+
+        if not source_refs:
+            missing.append("fonte da regra de dose")
+        if validation not in {"demo_seed", "pending_review", "curated", "validated"}:
+            missing.append("status válido da regra de dose")
+        if unit not in DOSE_UNITS:
+            missing.append("unidade de dose compatível")
+        if weight is not None and not 1 <= float(weight) <= 400:
+            missing.append("peso válido")
+        if height_cm is not None and not 50 <= float(height_cm) <= 260:
+            missing.append("altura válida")
+        if (
+            basis
+            in {
+                "actual_weight",
+                "real_weight",
+                "weight",
+                "ideal_weight",
+                "adjusted_weight",
+                "lean_body_mass",
+            }
+            and "/kg" not in unit
+        ):
+            missing.append("unidade por kg")
+        if basis in {"bsa", "body_surface_area"} and "m²" not in unit and "m2" not in unit:
+            missing.append("unidade por superfície corporal")
 
         if basis in {"actual_weight", "real_weight", "weight"}:
             if not weight:
@@ -79,23 +107,44 @@ class DoseIntelligenceService:
             else fixed
         )
         prescribed = None
+        prescribed_single = None
+        cumulative = None
         if prescription is not None:
             dose = get(prescription, "dose_mg", get(prescription, "dose"))
             frequency = get(prescription, "frequency_per_day", 1)
-            prescribed = float(dose) * int(frequency) if dose is not None else None
+            duration = get(prescription, "duration_days")
+            route = get(prescription, "route")
+            if not frequency or int(frequency) <= 0:
+                missing.append("frequência válida")
+            elif dose is not None:
+                prescribed_single = float(dose)
+                prescribed = prescribed_single * int(frequency)
+                cumulative = prescribed * int(duration) if duration else None
+            allowed_routes = list(get(rule, "allowed_routes", []) or [])
+            if route and allowed_routes and route not in allowed_routes:
+                missing.append("via compatível com a regra")
         low = get(rule, "usual_low")
         high = get(rule, "usual_high")
         maximum = get(rule, "max_daily", get(rule, "max_daily_dose_mg"))
         procedure_max = get(rule, "max_per_procedure")
+        cumulative_max = get(rule, "max_cumulative")
         alerts: list[dict[str, Any]] = []
         status = "insufficient_data" if missing else "calculated"
         if prescribed is not None:
             if low is not None and prescribed < float(low) * scalar:
                 status = "below_usual_range"
-            elif maximum is not None and prescribed > float(maximum) * scalar:
+            elif maximum is not None and prescribed > float(maximum) * (
+                scalar if get(rule, "max_daily_is_per_basis", False) else 1
+            ):
                 status = "above_maximum"
-            elif procedure_max is not None and prescribed > float(procedure_max):
+            elif procedure_max is not None and prescribed_single > float(procedure_max):
                 status = "above_procedure_maximum"
+            elif (
+                cumulative_max is not None
+                and cumulative is not None
+                and cumulative > float(cumulative_max)
+            ):
+                status = "above_cumulative_maximum"
             elif high is not None and prescribed > float(high) * scalar:
                 status = "above_usual_range"
             else:
@@ -107,22 +156,34 @@ class DoseIntelligenceService:
                         "severity": "alto" if "maximum" in status else "moderado",
                     }
                 )
+        if missing:
+            status = (
+                "insufficient_rule"
+                if any("regra" in item for item in missing)
+                else "insufficient_data"
+            )
+            calculated = None
         return DoseIntelligenceResult(
             status=status,
             calculated_dose=calculated,
             calculated_unit=unit,
             calculation_formula=formula,
             calculation_basis=basis,
-            inputs_used=inputs | {"prescribed_daily_dose": prescribed},
+            inputs_used=inputs
+            | {
+                "prescribed_per_administration": prescribed_single,
+                "prescribed_daily_dose": prescribed,
+                "prescribed_cumulative_dose": cumulative,
+            },
             usual_range={"low": low, "high": high},
             max_limits={
                 "daily": maximum,
                 "per_procedure": procedure_max,
-                "cumulative": get(rule, "max_cumulative"),
+                "cumulative": cumulative_max,
             },
             alerts=alerts,
             missing_data=missing,
-            source_refs=list(get(rule, "source_refs", []) or []),
+            source_refs=source_refs,
             validation_status=validation,
             requires_human_review=validation != "validated" or bool(alerts) or bool(missing),
             educational_notice=(

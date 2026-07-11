@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Any
 
 from app.domain.clinical_intelligence import PrescribingPolicyResult
@@ -27,12 +28,22 @@ class PrescribingPolicyService:
         required = list(get(medication, "required_specialty_codes", []) or [])
         recommended = list(get(medication, "recommended_specialty_codes", []) or [])
         sources = list(get(medication, "policy_source_refs", []) or [])
+        effective_from = get(medication, "policy_effective_from")
+        effective_until = get(medication, "policy_effective_until")
         form = get(medication, "prescription_form_type")
         missing: list[str] = []
         warnings: list[str] = []
         institutional: list[str] = []
         legal: list[str] = []
         status = "allowed"
+        now = datetime.now(UTC)
+
+        def normalize_datetime(value: Any) -> datetime | None:
+            if value is None:
+                return None
+            if isinstance(value, str):
+                value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            return value.replace(tzinfo=UTC) if value.tzinfo is None else value
 
         if role not in PRESCRIBING_ROLES:
             status = "blocked_by_policy"
@@ -54,6 +65,14 @@ class PrescribingPolicyService:
             institutional.append(
                 "Regra institucional/demonstrativa; não constitui restrição legal definitiva."
             )
+        starts = normalize_datetime(effective_from)
+        ends = normalize_datetime(effective_until)
+        if starts and now < starts:
+            warnings.append("Política ainda não vigente; mantida apenas como referência.")
+            status = "allowed_with_warning" if status == "allowed" else status
+        if ends and now > ends:
+            warnings.append("Política expirada; revisão da fonte e da versão é obrigatória.")
+            status = "allowed_with_warning" if status == "allowed" else status
         if (
             required
             and specialty not in required
@@ -85,6 +104,14 @@ class PrescribingPolicyService:
                     get(medication, "validation_status", "pending_review"),
                 ),
                 "source_refs": sources,
+                "policy_version": get(medication, "policy_version", "unversioned"),
+                "source_version": get(medication, "source_version"),
+                "institution_id": get(medication, "institution_id"),
+                "effective_from": effective_from,
+                "effective_until": effective_until,
+                "override_allowed": bool(get(medication, "override_allowed", False)),
+                "override_reason_required": bool(get(medication, "override_reason_required", True)),
+                "second_reviewer_role": get(medication, "second_reviewer_role"),
             }
         ]
         return PrescribingPolicyResult(
