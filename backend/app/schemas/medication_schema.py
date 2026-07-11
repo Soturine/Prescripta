@@ -39,7 +39,7 @@ class MedicationBase(BaseModel):
     policy_strength: str = "warning_only"
     policy_validation_status: str = "pending_review"
     policy_source_refs: list[str] = Field(default_factory=list)
-    policy_version: str = "v0.8.5-demo"
+    policy_version: str = "v8.6.0-demo"
     source_version: str | None = None
     institution_id: str | None = None
     policy_effective_from: datetime | None = None

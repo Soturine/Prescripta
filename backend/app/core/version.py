@@ -1,3 +1,3 @@
-APP_VERSION = "0.8.5"
+APP_VERSION = "8.6.0"
 APP_VERSION_LABEL = f"v{APP_VERSION}"
-REPORT_TEMPLATE_VERSION = "prescripta_report_template_v0.8.5"
+REPORT_TEMPLATE_VERSION = "prescripta_report_template_v8.6.0"
