@@ -27,6 +27,12 @@ def list_audit(
     patient: str | None = None,
     medication: str | None = None,
     active_ingredient: str | None = None,
+    protocol: str | None = None,
+    protocol_category: str | None = None,
+    protocol_severity: str | None = None,
+    protocol_version: str | None = None,
+    execution: str | None = None,
+    report_type: str | None = None,
     action: str | None = None,
     resource_type: str | None = None,
     risk_level: str | None = None,
@@ -50,6 +56,12 @@ def list_audit(
         patient=patient,
         medication=medication,
         active_ingredient=active_ingredient,
+        protocol=protocol,
+        protocol_category=protocol_category,
+        protocol_severity=protocol_severity,
+        protocol_version=protocol_version,
+        execution=execution,
+        report_type=report_type,
         action=action,
         resource_type=resource_type,
         risk_level=risk_level,
@@ -88,6 +100,12 @@ def get_audit_timeline(event_id: int, db: DbSession, _current_user: AuditReader)
             return decision_timeline(bundle)
         except (ValueError, ReportNotFoundError):
             pass
+    if event.resource_type == "protocol_run" and event.resource_id:
+        try:
+            preview = ReportService(db).protocol_run_preview(int(event.resource_id))
+            return preview.timeline
+        except (ValueError, ReportNotFoundError):
+            pass
     return [
         {
             "order": 1,
@@ -108,6 +126,12 @@ def get_audit_evidence(event_id: int, db: DbSession, _current_user: AuditReader)
         try:
             bundle = ReportService(db).prescription_bundle(int(event.resource_id))
             return evidence_view(bundle)
+        except (ValueError, ReportNotFoundError):
+            pass
+    if event.resource_type == "protocol_run" and event.resource_id:
+        try:
+            preview = ReportService(db).protocol_run_preview(int(event.resource_id))
+            return preview.evidence
         except (ValueError, ReportNotFoundError):
             pass
     return []

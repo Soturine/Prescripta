@@ -5,7 +5,7 @@ from app.domain.prescription import PrescriptionInput, PrescriptionResult
 from app.services.allergy_checker import check_allergies
 from app.services.clinical_context_graph import build_clinical_context_graph
 from app.services.controlled_vocabulary import label_for_code
-from app.services.dose_calculator import check_max_daily_dose
+from app.services.dose_calculator import check_max_daily_dose, check_weight_based_dose
 from app.services.interaction_checker import check_interactions
 from app.services.normalizer import has_any_match, normalize_terms
 from app.services.text import any_token_matches, normalize_text
@@ -55,6 +55,7 @@ class RiskEngine:
         alerts: list[Alert] = []
         alerts.extend(check_allergies(patient, medication))
         alerts.extend(check_max_daily_dose(medication, prescription))
+        alerts.extend(check_weight_based_dose(patient, medication, prescription))
         alerts.extend(check_interactions(medication, patient.current_medications))
         alerts.extend(self._check_polypharmacy(patient))
         alerts.extend(self._check_contraindications(patient, medication))
@@ -94,7 +95,7 @@ class RiskEngine:
                 risk_level = _max_risk(alerts)
 
         status = _status_for_risk(risk_level)
-        dose_summary = self._dose_summary(medication, prescription)
+        dose_summary = self._dose_summary(patient, medication, prescription)
         compatibility = self._compatibility(patient, medication, alerts, status)
         graph = build_clinical_context_graph(
             patient,
@@ -440,6 +441,90 @@ class RiskEngine:
                 )
             )
 
+        bipolar_history = bool(
+            patient_factors
+            & {
+                "transtorno bipolar",
+                "mania hipomania",
+                "virada maniaca",
+                "risco suicida",
+            }
+            or patient_terms & {"bipolaridade", "transtorno bipolar", "mania", "hipomania"}
+        )
+        is_antidepressant = bool(
+            is_serotonergic
+            or therapeutic_terms
+            & {
+                "antidepressivo",
+                "isrs",
+                "snri",
+                "triciclico",
+                "inibidor seletivo da recaptacao de serotonina",
+            }
+            or active
+            in {
+                "sertralina",
+                "fluoxetina",
+                "paroxetina",
+                "escitalopram",
+                "citalopram",
+                "venlafaxina",
+                "duloxetina",
+                "amitriptilina",
+                "bupropiona",
+            }
+        )
+        if bipolar_history and is_antidepressant:
+            alerts.append(
+                Alert(
+                    code="ANTIDEPRESSANT_BIPOLAR_REVIEW",
+                    title="Histórico bipolar/mania exige revisão",
+                    description=(
+                        "Histórico compatível com transtorno bipolar, mania/hipomania ou "
+                        "risco de virada maníaca exige revisão profissional ao interpretar "
+                        "antidepressivos. O sistema não conclui diagnóstico."
+                    ),
+                    severity=RiskLevel.MODERATE,
+                    recommendation=(
+                        "Confirmar histórico, uso de estabilizador de humor e plano de "
+                        "monitoramento antes de prosseguir."
+                    ),
+                )
+            )
+
+        lithium_current_or_new = active in {"litio", "carbonato de litio"} or bool(
+            current & {"litio", "carbonato de litio", "lítio", "carbonato de lítio"}
+        )
+        renal_or_nsaid_context = bool(
+            patient.renal_condition
+            or current
+            & {
+                "ibuprofeno",
+                "nimesulida",
+                "diclofenaco",
+                "naproxeno",
+                "hidroclorotiazida",
+                "furosemida",
+            }
+            or active in {"ibuprofeno", "nimesulida", "diclofenaco", "naproxeno"}
+        )
+        if lithium_current_or_new and renal_or_nsaid_context:
+            alerts.append(
+                Alert(
+                    code="LITHIUM_RENAL_NSAID_REVIEW",
+                    title="Lítio, rim e interações exigem monitoramento",
+                    description=(
+                        "Uso de lítio associado a contexto renal, diurético ou AINE cadastrado "
+                        "exige revisão e monitoramento demonstrativo."
+                    ),
+                    severity=RiskLevel.HIGH,
+                    recommendation=(
+                        "Revisar função renal, hidratação, fármacos concomitantes e níveis "
+                        "quando aplicável."
+                    ),
+                )
+            )
+
         seizure_history = bool(
             "epilepsia convulsoes" in patient_factors
             or patient_terms & {"epilepsia", "convulsao", "convulsoes"}
@@ -638,8 +723,30 @@ class RiskEngine:
             )
         ]
 
-    def _dose_summary(self, medication: Medication, prescription: PrescriptionInput) -> dict:
+    def _dose_summary(
+        self,
+        patient: Patient,
+        medication: Medication,
+        prescription: PrescriptionInput,
+    ) -> dict:
         cumulative = self._cumulative_dose(prescription)
+        bmi = None
+        if patient.height_cm:
+            height_m = patient.height_cm / 100
+            if height_m > 0:
+                bmi = round(patient.weight_kg / (height_m * height_m), 1)
+        weight_limit = None
+        if medication.dose_by_weight_enabled and medication.dose_mg_per_kg:
+            weight_limit = round(medication.dose_mg_per_kg * patient.weight_kg, 2)
+        weight_based_rule = {
+            "enabled": medication.dose_by_weight_enabled,
+            "dose_mg_per_kg": medication.dose_mg_per_kg,
+            "patient_weight_kg": patient.weight_kg,
+            "calculated_daily_limit_mg": weight_limit,
+            "was_considered": bool(
+                medication.dose_by_weight_enabled and medication.dose_mg_per_kg
+            ),
+        }
         return {
             "daily_total_mg": prescription.daily_total_mg,
             "duration_days": prescription.duration_days,
@@ -674,7 +781,57 @@ class RiskEngine:
                 "clinical_interpretation": medication.clinical_interpretation,
             },
             "condition_specific_limits": medication.condition_specific_limits or {},
+            "weight_based": weight_based_rule,
+            "weight_based_rule": weight_based_rule,
+            "anthropometrics": {
+                "age": patient.age,
+                "age_group": self._age_group(patient),
+                "weight_kg": patient.weight_kg,
+                "height_cm": patient.height_cm,
+                "bmi": bmi,
+                "bmi_considered": bmi is not None,
+            },
+            "patient_data_considered": self._patient_data_considered(patient),
         }
+
+    def _age_group(self, patient: Patient) -> str:
+        if patient.age is None:
+            return "idade_nao_informada"
+        if patient.age < 12:
+            return "crianca"
+        if patient.age < 18:
+            return "adolescente"
+        if patient.age >= 65:
+            return "idoso"
+        return "adulto"
+
+    def _patient_data_considered(self, patient: Patient) -> list[dict[str, str]]:
+        items = [
+            ("peso", f"{patient.weight_kg:g} kg"),
+            ("idade", str(patient.age) if patient.age is not None else "não informada"),
+        ]
+        if patient.height_cm:
+            items.append(("altura", f"{patient.height_cm:g} cm"))
+        collections = [
+            ("alergias", patient.allergies),
+            ("medicamentos atuais", patient.current_medications),
+            ("comorbidades", patient.comorbidities),
+            ("saúde mental", patient.mental_health_factors),
+            ("fatores reprodutivos", patient.reproductive_gynecologic_factors),
+            ("reações adversas", patient.adverse_reactions),
+        ]
+        for label, values in collections:
+            if values:
+                items.append((label, ", ".join(values[:8])))
+        for label, value in [
+            ("renal", patient.renal_condition),
+            ("hepático", patient.hepatic_condition),
+            ("cardíaco", patient.cardiac_condition),
+            ("gastrointestinal", patient.gastrointestinal_history),
+        ]:
+            if value:
+                items.append((label, value))
+        return [{"label": label, "value": value} for label, value in items]
 
     def _compatibility(
         self,

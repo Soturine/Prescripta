@@ -4,10 +4,21 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.auth import require_roles
-from app.database.models import UserModel
+from app.database.models import (
+    PatientClinicalDocumentModel,
+    PatientDocumentExtractionModel,
+    UserModel,
+)
 from app.database.session import get_db
 from app.domain.user import UserRole
 from app.repositories.patient_repository import PatientRepository
+from app.schemas.patient_history_schema import (
+    PatientClinicalDocumentCreate,
+    PatientClinicalDocumentRead,
+    PatientDocumentExtractionRead,
+    PatientDocumentReviewRequest,
+    PatientKnowledgeBundleRead,
+)
 from app.schemas.patient_schema import (
     PatientCreate,
     PatientFunctionalProfileRead,
@@ -27,6 +38,7 @@ from app.services.clinical_profile import (
 from app.services.controlled_vocabulary import label_for_code
 from app.services.normalizer import merge_terms
 from app.services.patient_functional_profile import PatientFunctionalProfileService
+from app.services.patient_history_service import PatientHistoryService
 from app.services.patient_identifier_service import PatientIdentifierService
 
 router = APIRouter(prefix="/patients", tags=["patients"])
@@ -267,6 +279,132 @@ def update_functional_profile(
         },
     )
     return read_profile
+
+
+@router.get(
+    "/{patient_id}/documents",
+    response_model=list[PatientClinicalDocumentRead],
+)
+def list_patient_documents(
+    patient_id: int,
+    db: DbSession,
+    _current_user: PatientReader,
+) -> list[PatientClinicalDocumentRead]:
+    patient = PatientRepository(db).get(patient_id)
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nao encontrado."
+        )
+    return PatientHistoryService(db).list_documents(patient_id)
+
+
+@router.post(
+    "/{patient_id}/documents",
+    response_model=PatientClinicalDocumentRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_patient_document(
+    patient_id: int,
+    payload: PatientClinicalDocumentCreate,
+    db: DbSession,
+    current_user: PatientManager,
+) -> PatientClinicalDocumentRead:
+    patient = PatientRepository(db).get(patient_id)
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nao encontrado."
+        )
+    return PatientHistoryService(db).create_document(patient, payload, current_user)
+
+
+@router.post(
+    "/{patient_id}/documents/{document_id}/extract",
+    response_model=PatientDocumentExtractionRead,
+)
+def extract_patient_document(
+    patient_id: int,
+    document_id: int,
+    db: DbSession,
+    current_user: PatientManager,
+) -> PatientDocumentExtractionRead:
+    patient = PatientRepository(db).get(patient_id)
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nao encontrado."
+        )
+    document = db.get(PatientClinicalDocumentModel, document_id)
+    if document is None or document.patient_id != patient_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Documento clinico nao encontrado.",
+        )
+    return PatientHistoryService(db).extract_document(patient, document, current_user)
+
+
+@router.post(
+    "/{patient_id}/document-extractions/{extraction_id}/review",
+    response_model=PatientDocumentExtractionRead,
+)
+def review_patient_document_extraction(
+    patient_id: int,
+    extraction_id: int,
+    payload: PatientDocumentReviewRequest,
+    db: DbSession,
+    current_user: PatientManager,
+) -> PatientDocumentExtractionRead:
+    patient = PatientRepository(db).get(patient_id)
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nao encontrado."
+        )
+    extraction = db.get(PatientDocumentExtractionModel, extraction_id)
+    if extraction is None or extraction.patient_id != patient_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Extracao clinica nao encontrada.",
+        )
+    return PatientHistoryService(db).review_extraction(
+        patient,
+        extraction,
+        decision=payload.decision,
+        accepted_entities=payload.accepted_entities,
+        user=current_user,
+        justification=payload.justification,
+    )
+
+
+@router.get(
+    "/{patient_id}/timeline",
+    response_model=list[dict],
+)
+def patient_timeline(
+    patient_id: int,
+    db: DbSession,
+    _current_user: PatientReader,
+) -> list[dict]:
+    patient = PatientRepository(db).get(patient_id)
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nao encontrado."
+        )
+    return PatientHistoryService(db).timeline(patient_id)
+
+
+@router.get(
+    "/{patient_id}/knowledge-bundle",
+    response_model=PatientKnowledgeBundleRead,
+)
+def patient_knowledge_bundle(
+    patient_id: int,
+    db: DbSession,
+    _current_user: PatientReader,
+) -> PatientKnowledgeBundleRead:
+    patient = PatientRepository(db).get(patient_id)
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nao encontrado."
+        )
+    return PatientHistoryService(db).knowledge_bundle(patient)
 
 
 @router.post(

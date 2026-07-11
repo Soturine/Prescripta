@@ -13,10 +13,17 @@ from app.schemas.counseling_schema import (
     MedicationCounselingReviewRequest,
     MedicationCounselingSummaryRead,
 )
+from app.schemas.medication_knowledge_schema import (
+    MedicationBulkImportRequest,
+    MedicationKnowledgeCurationRead,
+    MedicationKnowledgeLookupRequest,
+    MedicationKnowledgeReviewRequest,
+)
 from app.schemas.medication_schema import MedicationCreate, MedicationRead, MedicationUpdate
 from app.services.adverse_effect_taxonomy import taxonomy_snapshot
 from app.services.audit_service import AuditService
 from app.services.medication_counseling_service import MedicationCounselingService
+from app.services.medication_knowledge_service import MedicationKnowledgeService
 
 router = APIRouter(prefix="/medications", tags=["medications"])
 DbSession = Annotated[Session, Depends(get_db)]
@@ -60,6 +67,49 @@ def create_medication(
 @router.get("/adverse-effect-taxonomy", response_model=list[dict])
 def adverse_effect_taxonomy(_current_user: CounselingReader) -> list[dict]:
     return taxonomy_snapshot()
+
+
+@router.post("/knowledge/lookup", response_model=MedicationKnowledgeCurationRead)
+def medication_knowledge_lookup(
+    payload: MedicationKnowledgeLookupRequest,
+    db: DbSession,
+    current_user: MedicationManager,
+) -> MedicationKnowledgeCurationRead:
+    return MedicationKnowledgeService(db).lookup(payload, user=current_user)
+
+
+@router.post("/knowledge/bulk-import", response_model=list[MedicationKnowledgeCurationRead])
+def medication_knowledge_bulk_import(
+    payload: MedicationBulkImportRequest,
+    db: DbSession,
+    current_user: MedicationManager,
+) -> list[MedicationKnowledgeCurationRead]:
+    return MedicationKnowledgeService(db).bulk_import(payload, user=current_user)
+
+
+@router.get("/knowledge/curation-queue", response_model=list[MedicationKnowledgeCurationRead])
+def medication_knowledge_queue(
+    db: DbSession,
+    _current_user: MedicationReader,
+    review_status: str | None = None,
+) -> list[MedicationKnowledgeCurationRead]:
+    return MedicationKnowledgeService(db).list_queue(review_status=review_status)
+
+
+@router.post(
+    "/knowledge/curation-queue/{item_id}/review",
+    response_model=MedicationKnowledgeCurationRead,
+)
+def review_medication_knowledge(
+    item_id: int,
+    payload: MedicationKnowledgeReviewRequest,
+    db: DbSession,
+    current_user: MedicationManager,
+) -> MedicationKnowledgeCurationRead:
+    try:
+        return MedicationKnowledgeService(db).review(item_id, payload, user=current_user)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.get(

@@ -47,6 +47,71 @@ def seed_demo_data(db: Session) -> None:
     db.commit()
 
 
+def _v083_active_ingredient_specs() -> list[dict]:
+    names_by_class = {
+        "analgesico_antitermico": ["acido acetilsalicilico", "codeina", "tramadol"],
+        "aine": ["diclofenaco", "naproxeno", "cetoprofeno", "meloxicam", "celecoxibe"],
+        "antibiotico": [
+            "amoxicilina",
+            "azitromicina",
+            "ceftriaxona",
+            "cefalexina",
+            "ciprofloxacino",
+            "clindamicina",
+            "doxiciclina",
+            "metronidazol",
+            "sulfametoxazol trimetoprima",
+            "levofloxacino",
+        ],
+        "anti_hipertensivo": [
+            "losartana",
+            "enalapril",
+            "captopril",
+            "amlodipino",
+            "hidroclorotiazida",
+            "furosemida",
+            "atenolol",
+            "carvedilol",
+            "espironolactona",
+        ],
+        "antidiabetico": ["metformina", "glibenclamida", "insulina regular", "insulina nph"],
+        "anticoagulante_antiagregante": ["varfarina", "heparina", "enoxaparina", "clopidogrel"],
+        "psicotropico": [
+            "fluoxetina",
+            "escitalopram",
+            "venlafaxina",
+            "amitriptilina",
+            "bupropiona",
+            "diazepam",
+            "clonazepam",
+            "risperidona",
+            "quetiapina",
+            "haloperidol",
+            "valproato de sodio",
+            "carbamazepina",
+            "lamotrigina",
+            "fenitoina",
+        ],
+        "respiratorio": ["salbutamol", "budesonida", "prednisona", "dexametasona"],
+        "gastrointestinal": ["omeprazol", "pantoprazol", "metoclopramida", "ondansetrona"],
+    }
+    specs: list[dict] = []
+    for therapeutic_class, names in names_by_class.items():
+        for name in names:
+            specs.append(
+                {
+                    "dcb_name": name,
+                    "synonyms": [],
+                    "therapeutic_classes": [therapeutic_class],
+                    "common_brands": [],
+                    "jurisdiction": "BR",
+                    "source": "anvisa_dcb_reference_pending",
+                    "validation_status": "pending_review",
+                }
+            )
+    return specs
+
+
 def _seed_active_ingredients(db: Session) -> dict[str, ActiveIngredientModel]:
     specs = [
         {
@@ -131,6 +196,7 @@ def _seed_active_ingredients(db: Session) -> dict[str, ActiveIngredientModel]:
             "validation_status": "demo",
         },
     ]
+    specs.extend(_v083_active_ingredient_specs())
     ingredients: dict[str, ActiveIngredientModel] = {}
     for spec in specs:
         normalized_name = normalize_text(spec["dcb_name"])

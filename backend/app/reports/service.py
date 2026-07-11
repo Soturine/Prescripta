@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 from app.database.models import (
     AuditEventModel,
     ClinicalImportBatchModel,
+    EmergencyProtocolRunModel,
+    EmergencyProtocolRunReportModel,
     GeneratedReportModel,
     PrescriptionAuditModel,
     UserModel,
@@ -42,12 +44,19 @@ class ReportService:
         self.db = db
         self.builder = ReportEvidenceBundleBuilder(db)
 
-    def list_reports(self) -> list[GeneratedReportModel]:
-        return list(
-            self.db.scalars(
-                select(GeneratedReportModel).order_by(GeneratedReportModel.generated_at.desc())
-            )
-        )
+    def list_reports(
+        self,
+        *,
+        report_type: str | None = None,
+        target_type: str | None = None,
+    ) -> list[GeneratedReportModel]:
+        stmt = select(GeneratedReportModel)
+        if report_type:
+            stmt = stmt.where(GeneratedReportModel.report_type == report_type)
+        if target_type:
+            stmt = stmt.where(GeneratedReportModel.target_type == target_type)
+        stmt = stmt.order_by(GeneratedReportModel.generated_at.desc())
+        return list(self.db.scalars(stmt))
 
     def get_report(self, report_id: int) -> GeneratedReportModel | None:
         return self.db.get(GeneratedReportModel, report_id)
@@ -89,6 +98,11 @@ class ReportService:
     ) -> ReportPreview:
         bundle = self.builder.audit_bundle(events, filters=filters)
         return self._preview(title=REPORT_TITLES["audit"], bundle=bundle)
+
+    def protocol_run_preview(self, run_id: int) -> ReportPreview:
+        run = self._protocol_run_or_error(run_id)
+        bundle = self.builder.protocol_run_bundle(run)
+        return self._preview(title=f"Relatorio de Protocolo - {run.protocol_title}", bundle=bundle)
 
     def prescription_bundle(
         self,
@@ -207,6 +221,58 @@ class ReportService:
             action="report.pdf_downloaded",
             report=report,
             details={"report_kind": "audit"},
+        )
+        return pdf, report
+
+    def generate_protocol_run_pdf(
+        self,
+        run_id: int,
+        *,
+        user: UserModel,
+    ) -> tuple[bytes, GeneratedReportModel]:
+        run = self._protocol_run_or_error(run_id)
+        preview = self.protocol_run_preview(run_id)
+        pdf = self._pdf_from_preview(preview)
+        report = self._persist_generated_report(
+            report_type="protocol_run_report",
+            target_type="protocol_run",
+            target_id=str(run_id),
+            user=user,
+            preview=preview,
+            file_bytes=pdf,
+            anonymized=False,
+        )
+        self.db.add(
+            EmergencyProtocolRunReportModel(
+                run_id=run.id,
+                generated_report_id=report.id,
+                report_type="protocol_run_report",
+            )
+        )
+        self.db.commit()
+        self._record_action(
+            user=user,
+            action="protocol.report_generated",
+            report=report,
+            details={
+                "report_kind": "protocol_run_report",
+                "run_id": run.id,
+                "protocol_id": run.protocol_id,
+                "protocol_version": run.protocol_version,
+                "patient_id": run.patient_id,
+            },
+        )
+        self._record_action(
+            user=user,
+            action="protocol.report_downloaded",
+            report=report,
+            details={
+                "report_kind": "protocol_run_report",
+                "run_id": run.id,
+                "protocol_id": run.protocol_id,
+                "protocol_version": run.protocol_version,
+                "patient_id": run.patient_id,
+            },
         )
         return pdf, report
 
@@ -333,6 +399,57 @@ class ReportService:
             target_type="audit_events",
             target_id="filtered",
             details={"filters": filters, "bundle_hash": bundle.hash()},
+        )
+        return content
+
+    def export_protocol_run_json(self, run_id: int, *, user: UserModel) -> bytes:
+        run = self._protocol_run_or_error(run_id)
+        bundle = self.builder.protocol_run_bundle(run)
+        content = export_json_bytes("protocol_run_report", self._bundle_export_payload(bundle))
+        self._record_export(
+            user=user,
+            action="protocol.exported_json",
+            target_type="protocol_run",
+            target_id=str(run_id),
+            details={
+                "run_id": run.id,
+                "protocol_id": run.protocol_id,
+                "protocol_version": run.protocol_version,
+                "patient_id": run.patient_id,
+                "bundle_hash": bundle.hash(),
+            },
+        )
+        return content
+
+    def export_protocol_run_csv(self, run_id: int, *, user: UserModel) -> bytes:
+        run = self._protocol_run_or_error(run_id)
+        bundle = self.builder.protocol_run_bundle(run)
+        rows = [
+            {
+                "run_id": run.id,
+                "protocol_id": run.protocol_id,
+                "protocol_title": run.protocol_title,
+                "protocol_version": run.protocol_version,
+                "patient_id": run.patient_id,
+                "status": run.status,
+                "triage_flags": "; ".join(run.triage_flags or []),
+                "evidence_refs": "; ".join(run.evidence_refs or []),
+                "bundle_hash": bundle.hash(),
+            }
+        ]
+        content = export_csv_bytes(rows)
+        self._record_export(
+            user=user,
+            action="protocol.exported_csv",
+            target_type="protocol_run",
+            target_id=str(run_id),
+            details={
+                "run_id": run.id,
+                "protocol_id": run.protocol_id,
+                "protocol_version": run.protocol_version,
+                "patient_id": run.patient_id,
+                "bundle_hash": bundle.hash(),
+            },
         )
         return content
 
@@ -544,3 +661,9 @@ class ReportService:
         if batch is None:
             raise ReportNotFoundError("Importacao clinica nao encontrada.")
         return batch
+
+    def _protocol_run_or_error(self, run_id: int) -> EmergencyProtocolRunModel:
+        run = self.db.get(EmergencyProtocolRunModel, run_id)
+        if run is None:
+            raise ReportNotFoundError("Execucao de protocolo nao encontrada.")
+        return run

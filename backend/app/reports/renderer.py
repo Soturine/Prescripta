@@ -30,6 +30,7 @@ def render_report_html(
         _paragraph_section("Resumo executivo", narrative.narrative.executive_summary),
         _paragraph_section("Explicacao profissional", narrative.narrative.professional_explanation),
         _prescription_section(bundle),
+        _protocol_section(bundle),
         _reconciliation_section(bundle),
         _audit_section(bundle),
         _table_section("Evidencias da decisao", evidence),
@@ -104,6 +105,20 @@ def render_report_lines(
                 f"Risco: {prescription.risk_level}",
             ]
         )
+    if bundle.protocol_run_result is not None:
+        protocol = bundle.protocol_run_result
+        lines.extend(
+            [
+                "",
+                "Protocolo",
+                f"Nome: {protocol.get('protocol_title') or '-'}",
+                f"Versao: {protocol.get('protocol_version') or '-'}",
+                f"Categoria: {protocol.get('protocol_category') or '-'}",
+                f"Severidade: {protocol.get('protocol_severity') or '-'}",
+                f"Paciente: {protocol.get('patient_reference') or '-'}",
+                f"Flags: {'; '.join(protocol.get('triage_flags') or []) or '-'}",
+            ]
+        )
     if bundle.reconciliation_result is not None:
         lines.extend(
             ["", "Reconciliacao", _short_json(bundle.reconciliation_result.get("summary"))]
@@ -154,6 +169,22 @@ def _prescription_section(bundle: ReportEvidenceBundle) -> str:
         ("Risco", prescription.risk_level),
     ]
     return _section("Prescricao", rows)
+
+
+def _protocol_section(bundle: ReportEvidenceBundle) -> str:
+    result = bundle.protocol_run_result
+    if result is None:
+        return ""
+    rows = [
+        ("Protocolo", str(result.get("protocol_title") or "-")),
+        ("Versao", str(result.get("protocol_version") or "-")),
+        ("Categoria", str(result.get("protocol_category") or "-")),
+        ("Severidade", str(result.get("protocol_severity") or "-")),
+        ("Paciente", str(result.get("patient_reference") or "-")),
+        ("Flags", "; ".join(result.get("triage_flags") or []) or "-"),
+        ("Calculculos", _short_json(result.get("calculated_values") or [])),
+    ]
+    return _section("Protocolo rapido", rows)
 
 
 def _reconciliation_section(bundle: ReportEvidenceBundle) -> str:

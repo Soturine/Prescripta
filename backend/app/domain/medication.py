@@ -52,6 +52,8 @@ class Medication:
     concentration: str | None = None
     pharmaceutical_form: str | None = None
     evidence_source_url: str | None = None
+    dose_mg_per_kg: float | None = None
+    dose_by_weight_enabled: bool = False
 
     @classmethod
     def from_record(cls, record: Any) -> "Medication":
@@ -69,6 +71,8 @@ class Medication:
             concentration=record.concentration,
             pharmaceutical_form=record.pharmaceutical_form,
             evidence_source_url=record.evidence_source_url,
+            dose_mg_per_kg=getattr(record, "dose_mg_per_kg", None),
+            dose_by_weight_enabled=bool(getattr(record, "dose_by_weight_enabled", False)),
             max_daily_dose_mg=record.max_daily_dose_mg,
             max_duration_days=record.max_duration_days,
             max_cumulative_dose_mg=record.max_cumulative_dose_mg,

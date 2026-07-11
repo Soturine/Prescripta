@@ -71,7 +71,7 @@ def test_protocol_run_records_audit_and_calculations(
             "notes": "Cenário demonstrativo sem dado real.",
         },
     )
-    audit = client.get("/api/audit", headers=headers, params={"resource_type": "protocol"})
+    audit = client.get("/api/audit", headers=headers, params={"resource_type": "protocol_run"})
 
     assert run.status_code == 200
     body = run.json()
@@ -79,8 +79,10 @@ def test_protocol_run_records_audit_and_calculations(
     assert body["calculated_values"][0]["source_ref"] == "anafilaxia_adrenalina_im"
     assert body["calculated_values"][0]["requires_human_confirmation"] is True
     assert audit.status_code == 200
-    assert audit.json()[0]["action"] == "protocol.run"
-    assert audit.json()[0]["details"]["secret_logged"] is False
+    events = audit.json()
+    assert {event["action"] for event in events} >= {"protocol.run", "protocol.step_checked"}
+    run_event = next(event for event in events if event["action"] == "protocol.run")
+    assert run_event["details"]["secret_logged"] is False
 
 
 def test_protocol_report_and_exports_use_run_event(
