@@ -3,16 +3,16 @@ from __future__ import annotations
 from app.reports.schemas import PRESCRIPTA_VERSION
 
 LEGAL_NOTICE = (
-    "Prescripta e um sistema educacional de apoio a prescricao segura. "
-    "Nao e dispositivo medico validado e nao substitui avaliacao clinica, bula, "
-    "protocolo institucional ou decisao profissional."
+    "Prescripta é um sistema educacional de apoio à prescrição segura. "
+    "Não é dispositivo médico validado e não substitui avaliação clínica, bula, "
+    "protocolo institucional ou decisão profissional."
 )
 
 REPORT_TITLES = {
-    "prescription_analysis": "Relatorio Tecnico de Prescricao",
-    "patient_guidance": "Orientacoes ao Paciente",
-    "reconciliation": "Relatorio de Reconciliacao Clinica",
-    "audit": "Relatorio de Auditoria",
+    "prescription_analysis": "Relatório Técnico de Prescrição",
+    "patient_guidance": "Orientações ao Paciente",
+    "reconciliation": "Relatório de Reconciliação Clínica",
+    "audit": "Relatório de Auditoria",
 }
 
 PROMPT_VERSIONS = {
@@ -22,25 +22,25 @@ PROMPT_VERSIONS = {
     "audit": "report_audit_v0.8.1",
 }
 
-REPORT_FOOTER = f"{LEGAL_NOTICE} Versao Prescripta: {PRESCRIPTA_VERSION}."
+REPORT_FOOTER = f"{LEGAL_NOTICE} Versão Prescripta: {PRESCRIPTA_VERSION}."
 
 
 def prompt_for_report_type(report_type: str) -> str:
     prompt_version = PROMPT_VERSIONS.get(report_type, "report_generic_v0.8.1")
     return f"""
-Voce e o AIReportComposer do Prescripta.
+Você é o AIReportComposer do Prescripta.
 Prompt version: {prompt_version}.
 
 Tarefa:
-- Gerar apenas secoes narrativas em JSON valido.
-- Usar somente informacoes presentes no ReportEvidenceBundle.
+- Gerar apenas seções narrativas em JSON válido.
+- Usar somente informações presentes no ReportEvidenceBundle.
 - Citar apenas source_ids presentes no bundle quando preencher cited_source_ids.
-- Nao inventar fonte, efeito adverso, contraindicacao, interacao, regra, dose ou decisao.
-- Nao alterar risco final, status final, bloqueio, severidade, dose, duracao, regra ou fonte.
-- Nao substituir avaliacao profissional.
-- Usar linguagem profissional no resumo tecnico.
-- Usar linguagem simples e nao alarmista no campo patient_guidance.
-- Nao retornar HTML nem Markdown perigoso.
+- Não inventar fonte, efeito adverso, contraindicação, interação, regra, dose ou decisão.
+- Não alterar risco final, status final, bloqueio, severidade, dose, duração, regra ou fonte.
+- Não substituir avaliação profissional.
+- Usar linguagem profissional no resumo técnico.
+- Usar linguagem simples e não alarmista no campo patient_guidance.
+- Não retornar HTML nem Markdown perigoso.
 
 Retorne JSON com exatamente estas chaves:
 executive_summary, professional_explanation, patient_guidance, evidence_summary,
