@@ -9,6 +9,7 @@ import {
   downloadAuditReport,
   downloadPatientGuidanceReport,
   downloadPrescriptionTechnicalReport,
+  downloadProtocolRunReportPdf,
   downloadReconciliationReport,
   exportReportJson,
   fetchPrescriptionEvidence,
@@ -24,7 +25,7 @@ export default function Reports() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["reports"],
-    queryFn: fetchReports,
+    queryFn: () => fetchReports(),
   });
   const selected = useMemo(
     () => reports.find((report) => report.id === selectedId) ?? reports[0] ?? null,
@@ -58,6 +59,9 @@ export default function Reports() {
       }
       if (report.target_type === "clinical_import") {
         return downloadReconciliationReport(Number(report.target_id), report.anonymized);
+      }
+      if (report.target_type === "protocol_run") {
+        return downloadProtocolRunReportPdf(Number(report.target_id));
       }
       return downloadAuditReport({});
     },
@@ -266,6 +270,7 @@ function labelForReport(reportType: string) {
     patient_guidance: "Orientações ao Paciente",
     prescription_analysis: "Relatório Técnico de Prescrição",
     prescription_technical: "Relatório Técnico de Prescrição",
+    protocol_run_report: "Relatório de Protocolo",
     reconciliation: "Relatório de Reconciliação Clínica",
   };
   return labels[reportType] ?? reportType;
@@ -276,6 +281,7 @@ function labelTarget(targetType: string) {
     audit_events: "Auditoria filtrada",
     clinical_import: "Importação clínica",
     prescription_audit: "Checagem de prescrição",
+    protocol_run: "Execução de protocolo",
   };
   return labels[targetType] ?? targetType;
 }

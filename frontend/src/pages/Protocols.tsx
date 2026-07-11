@@ -18,15 +18,17 @@ import EmptyState from "../components/EmptyState";
 import LoadingState from "../components/LoadingState";
 import { useAuth } from "../context/AuthContext";
 import {
-  downloadProtocolReportPdf,
+  downloadProtocolRunReportPdf,
   explainProtocol,
   exportProtocolRunCsv,
   exportProtocolRunJson,
   fetchProtocolEvidence,
   fetchProtocolReport,
   fetchProtocols,
+  fetchPatients,
   runProtocol,
 } from "../services/api";
+import type { Patient } from "../types/patient";
 import type {
   EmergencyProtocol,
   ProtocolContext,
@@ -48,12 +50,17 @@ export default function Protocols() {
   const [search, setSearch] = useState("");
   const [fieldValues, setFieldValues] = useState<FieldValues>({});
   const [selectedSteps, setSelectedSteps] = useState<number[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [question, setQuestion] = useState("Explique o racional sem alterar o fluxo.");
 
   const { data: protocols = [], isLoading } = useQuery({
     queryKey: ["protocols"],
     queryFn: () => fetchProtocols(),
+  });
+  const { data: patients = [] } = useQuery({
+    queryKey: ["patients"],
+    queryFn: fetchPatients,
   });
 
   const selectedProtocol = protocols.find((protocol) => protocol.id === selectedId) ?? protocols[0];
@@ -97,7 +104,10 @@ export default function Protocols() {
 
   const runMutation = useMutation({
     mutationFn: () =>
-      runProtocol(String(selectedProtocol?.id), buildRunPayload(selectedProtocol, fieldValues, selectedSteps, notes)),
+      runProtocol(
+        String(selectedProtocol?.id),
+        buildRunPayload(selectedProtocol, fieldValues, selectedSteps, notes, selectedPatientId),
+      ),
   });
   const explainMutation = useMutation({
     mutationFn: () =>
@@ -246,7 +256,10 @@ export default function Protocols() {
                 }
                 onNotesChange={setNotes}
                 onRun={() => runMutation.mutate()}
+                onPatientChange={setSelectedPatientId}
+                patients={patients}
                 protocol={selectedProtocol}
+                selectedPatientId={selectedPatientId}
               />
               {runMutation.isError ? (
                 <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
@@ -260,7 +273,7 @@ export default function Protocols() {
             <RunResultPanel
               onCsv={() => exportProtocolRunCsv(selectedProtocol.id, runMutation.data.run_id)}
               onJson={() => exportProtocolRunJson(selectedProtocol.id, runMutation.data.run_id)}
-              onPdf={() => downloadProtocolReportPdf(selectedProtocol.id, runMutation.data.run_id)}
+              onPdf={() => downloadProtocolRunReportPdf(runMutation.data.run_id)}
               onReport={() => reportMutation.mutate()}
               result={runMutation.data}
             />
@@ -405,25 +418,51 @@ function ContextPanel({
   protocol,
   fieldValues,
   notes,
+  patients,
+  selectedPatientId,
   canRun,
   isRunning,
   onFieldChange,
   onNotesChange,
+  onPatientChange,
   onRun,
 }: {
   protocol: EmergencyProtocol;
   fieldValues: FieldValues;
   notes: string;
+  patients: Patient[];
+  selectedPatientId: number | null;
   canRun: boolean;
   isRunning: boolean;
   onFieldChange: (name: string, value: string) => void;
   onNotesChange: (value: string) => void;
+  onPatientChange: (value: number | null) => void;
   onRun: () => void;
 }) {
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <h2 className="text-lg font-bold text-ink">Contexto mínimo</h2>
       <div className="mt-4 grid gap-3">
+        <label className="grid gap-1.5">
+          <span className="label">Selecionar paciente</span>
+          <select
+            className="field"
+            onChange={(event) =>
+              onPatientChange(event.target.value ? Number(event.target.value) : null)
+            }
+            value={selectedPatientId ?? ""}
+          >
+            <option value="">Sem paciente vinculado</option>
+            {patients.map((patient) => (
+              <option key={patient.id} value={patient.id}>
+                {patient.name} - {patient.age ?? "idade?"} anos - {patient.weight_kg} kg
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-slate-500">
+            Idade, peso, alergias, medicamentos e historico revisado entram como contexto.
+          </span>
+        </label>
         {protocol.context_fields.map((field) => (
           <ContextInput
             field={field}
@@ -522,6 +561,10 @@ function RunResultPanel({
         <div>
           <h2 className="text-lg font-bold text-emerald-950">Execução registrada</h2>
           <p className="mt-1 text-sm font-semibold text-emerald-900">{result.audit_notice}</p>
+          <p className="mt-1 text-xs font-bold text-emerald-900">
+            Versao {result.protocol_version}
+            {result.patient_id ? ` - Paciente #${result.patient_id}` : " - sem paciente vinculado"}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button className="btn-secondary" onClick={onReport} type="button">
@@ -543,6 +586,26 @@ function RunResultPanel({
         </div>
       </div>
       <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        {result.patient_context_summary && Object.keys(result.patient_context_summary).length ? (
+          <div className="rounded-lg border border-emerald-200 bg-white p-4 lg:col-span-2">
+            <h3 className="text-sm font-bold text-ink">Contexto do paciente</h3>
+            <div className="mt-3 grid gap-2 text-sm text-slate-600 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                ["Idade", result.patient_context_summary.age_years],
+                ["Peso", result.patient_context_summary.weight_kg],
+                [
+                  "Altura/IMC",
+                  `${result.patient_context_summary.height_cm ?? "-"} / ${result.patient_context_summary.bmi ?? "-"}`,
+                ],
+                ["Documentos revisados", result.patient_context_summary.reviewed_documents],
+              ].map(([label, value]) => (
+                <p className="rounded-lg bg-slate-50 px-3 py-2" key={String(label)}>
+                  <strong className="text-ink">{String(label)}:</strong> {String(value ?? "-")}
+                </p>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <div className="rounded-lg border border-emerald-200 bg-white p-4">
           <h3 className="text-sm font-bold text-ink">Flags</h3>
           <div className="mt-3 grid gap-2 text-sm text-slate-600">
@@ -697,8 +760,10 @@ function buildRunPayload(
   values: FieldValues,
   selectedStepOrders: number[],
   notes: string,
+  patientId: number | null,
 ): ProtocolRunPayload {
   return {
+    patient_id: patientId,
     context: buildContext(protocol?.context_fields ?? [], values),
     selected_step_orders: selectedStepOrders,
     notes: notes || null,

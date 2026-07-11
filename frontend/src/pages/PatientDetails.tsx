@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FileText, Sparkles } from "lucide-react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import ClinicalContextGraphCard from "../components/ClinicalContextGraphCard";
@@ -12,7 +13,13 @@ import { useAuth } from "../context/AuthContext";
 import {
   fetchPatient,
   fetchPatientClinicalContext,
+  fetchPatientDocuments,
   fetchPatientFunctionalProfile,
+  fetchPatientKnowledgeBundle,
+  fetchPatientTimeline,
+  createPatientDocument,
+  extractPatientDocument,
+  reviewPatientDocumentExtraction,
   quickTriagePatient,
   updatePatientFunctionalProfile,
   updatePatient,
@@ -29,6 +36,8 @@ export default function PatientDetails() {
   const queryClient = useQueryClient();
   const params = useParams();
   const patientId = Number(params.patientId);
+  const [documentTitle, setDocumentTitle] = useState("Laudo ou observação clínica");
+  const [documentText, setDocumentText] = useState("");
   const { data: patient, isLoading } = useQuery({
     queryKey: ["patients", patientId],
     queryFn: () => fetchPatient(patientId),
@@ -42,6 +51,21 @@ export default function PatientDetails() {
   const { data: functionalProfile } = useQuery({
     queryKey: ["patients", patientId, "functional-profile"],
     queryFn: () => fetchPatientFunctionalProfile(patientId),
+    enabled: Number.isFinite(patientId),
+  });
+  const { data: documents = [] } = useQuery({
+    queryKey: ["patients", patientId, "documents"],
+    queryFn: () => fetchPatientDocuments(patientId),
+    enabled: Number.isFinite(patientId),
+  });
+  const { data: timeline = [] } = useQuery({
+    queryKey: ["patients", patientId, "timeline"],
+    queryFn: () => fetchPatientTimeline(patientId),
+    enabled: Number.isFinite(patientId),
+  });
+  const { data: knowledgeBundle } = useQuery({
+    queryKey: ["patients", patientId, "knowledge-bundle"],
+    queryFn: () => fetchPatientKnowledgeBundle(patientId),
     enabled: Number.isFinite(patientId),
   });
   const updateMutation = useMutation({
@@ -65,6 +89,47 @@ export default function PatientDetails() {
       updatePatientFunctionalProfile(patientId, payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["patients", patientId, "functional-profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const createDocumentMutation = useMutation({
+    mutationFn: () =>
+      createPatientDocument(patientId, {
+        document_type: "clinical_note",
+        title: documentTitle,
+        summary: "Texto clínico cadastrado manualmente.",
+        source_type: "manual_text",
+        source_system: "prescripta",
+        raw_text: documentText,
+      }),
+    onSuccess: async () => {
+      setDocumentText("");
+      await queryClient.invalidateQueries({ queryKey: ["patients", patientId, "documents"] });
+      await queryClient.invalidateQueries({ queryKey: ["patients", patientId, "timeline"] });
+      await queryClient.invalidateQueries({ queryKey: ["patients", patientId, "knowledge-bundle"] });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const extractMutation = useMutation({
+    mutationFn: (documentId: number) => extractPatientDocument(patientId, documentId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["patients", patientId, "documents"] });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const reviewExtractionMutation = useMutation({
+    mutationFn: (payload: { extractionId: number; entities: Record<string, unknown> }) =>
+      reviewPatientDocumentExtraction(patientId, payload.extractionId, {
+        decision: "accept",
+        accepted_entities: payload.entities,
+        justification: "Revisão humana demonstrativa v0.8.3.",
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["patients"] });
+      await queryClient.invalidateQueries({ queryKey: ["patients", patientId] });
+      await queryClient.invalidateQueries({ queryKey: ["patients", patientId, "documents"] });
+      await queryClient.invalidateQueries({ queryKey: ["patients", patientId, "timeline"] });
+      await queryClient.invalidateQueries({ queryKey: ["patients", patientId, "knowledge-bundle"] });
       await queryClient.invalidateQueries({ queryKey: ["audit"] });
     },
   });
@@ -151,6 +216,157 @@ export default function PatientDetails() {
       </section>
 
       <ClinicalProfileCard patient={patient} />
+
+      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-ocean">
+              <FileText aria-hidden="true" className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-ink">Histórico clínico e laudos</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Textos, PDFs pesquisáveis e observações entram como documento pendente até revisão.
+                Imagem/OCR permanece como cadastro manual assistido nesta versão.
+              </p>
+            </div>
+          </div>
+
+          {canManagePatient ? (
+            <div className="mt-4 grid gap-3">
+              <label className="grid gap-1.5">
+                <span className="label">Título</span>
+                <input
+                  className="field"
+                  onChange={(event) => setDocumentTitle(event.target.value)}
+                  value={documentTitle}
+                />
+              </label>
+              <label className="grid gap-1.5">
+                <span className="label">Texto do laudo/documento</span>
+                <textarea
+                  className="field min-h-32"
+                  onChange={(event) => setDocumentText(event.target.value)}
+                  placeholder="Cole aqui o texto pesquisável do laudo, exame, observação ou resumo externo."
+                  value={documentText}
+                />
+              </label>
+              <button
+                className="btn-primary w-fit"
+                disabled={!documentText.trim() || createDocumentMutation.isPending}
+                onClick={() => createDocumentMutation.mutate()}
+                type="button"
+              >
+                <FileText aria-hidden="true" className="h-4 w-4" />
+                Anexar texto
+              </button>
+            </div>
+          ) : null}
+
+          {extractMutation.data ? (
+            <div className="mt-4 rounded-lg border border-cyan-100 bg-cyan-50 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-ink">Extração pendente de revisão</p>
+                  <p className="mt-1 text-sm text-slate-700">
+                    Provider: {extractMutation.data.provider} · confiança{" "}
+                    {Math.round(extractMutation.data.confidence * 100)}%
+                  </p>
+                </div>
+                <button
+                  className="btn-primary"
+                  disabled={reviewExtractionMutation.isPending}
+                  onClick={() =>
+                    reviewExtractionMutation.mutate({
+                      extractionId: extractMutation.data.id,
+                      entities: extractMutation.data.extracted_entities,
+                    })
+                  }
+                  type="button"
+                >
+                  <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
+                  Aceitar itens
+                </button>
+              </div>
+              <pre className="mt-3 max-h-56 overflow-auto rounded-lg bg-white p-3 text-xs text-slate-700">
+                {JSON.stringify(extractMutation.data.extracted_entities, null, 2)}
+              </pre>
+            </div>
+          ) : null}
+
+          <div className="mt-5 grid gap-3">
+            {documents.length ? (
+              documents.map((document) => (
+                <article className="rounded-lg border border-slate-100 bg-slate-50 p-4" key={document.id}>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="font-bold text-ink">{document.title}</p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        {document.document_type} · {document.review_status}
+                      </p>
+                    </div>
+                    {canManagePatient ? (
+                      <button
+                        className="btn-secondary"
+                        disabled={extractMutation.isPending}
+                        onClick={() => extractMutation.mutate(document.id)}
+                        type="button"
+                      >
+                        <Sparkles aria-hidden="true" className="h-4 w-4" />
+                        Extrair dados
+                      </button>
+                    ) : null}
+                  </div>
+                  {Object.keys(document.extracted_entities ?? {}).length ? (
+                    <div className="mt-3 rounded-lg border border-cyan-100 bg-white p-3 text-sm text-slate-700">
+                      <pre className="max-h-44 overflow-auto whitespace-pre-wrap">
+                        {JSON.stringify(document.extracted_entities, null, 2)}
+                      </pre>
+                    </div>
+                  ) : null}
+                </article>
+              ))
+            ) : (
+              <p className="text-sm text-slate-600">Nenhum laudo/documento anexado.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid content-start gap-4">
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-ocean" />
+              <h2 className="text-lg font-bold text-ink">PatientKnowledgeBundle</h2>
+            </div>
+            <div className="mt-4 grid gap-2 text-sm text-slate-600">
+              <p>Documentos revisados: {knowledgeBundle?.reviewed_documents.length ?? 0}</p>
+              <p>Extrações revisadas: {knowledgeBundle?.reviewed_extractions.length ?? 0}</p>
+              <p>Medicamentos históricos: {knowledgeBundle?.medication_history.length ?? 0}</p>
+              <p>Dados faltantes: {knowledgeBundle?.missing_data.join(", ") || "-"}</p>
+            </div>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-bold text-ink">Linha do tempo do paciente</h2>
+            <ol className="mt-4 grid gap-3">
+              {timeline.length ? (
+                timeline.slice(0, 8).map((event, index) => (
+                  <li className="flex gap-3" key={`${event.id ?? index}-${event.title}`}>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-xs font-bold text-ocean">
+                      {index + 1}
+                    </span>
+                    <div>
+                      <p className="font-semibold text-ink">{String(event.title ?? "-")}</p>
+                      <p className="mt-1 text-sm text-slate-600">{String(event.event_type ?? "")}</p>
+                    </div>
+                  </li>
+                ))
+              ) : (
+                <li className="text-sm text-slate-600">Sem eventos longitudinais ainda.</li>
+              )}
+            </ol>
+          </div>
+        </div>
+      </section>
 
       {functionalProfile ? (
         <FunctionalProfileCard

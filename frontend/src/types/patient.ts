@@ -108,3 +108,74 @@ export type PatientFunctionalProfilePayload = Omit<
   PatientFunctionalProfile,
   "id" | "patient_id" | "created_at" | "updated_at" | "unknown_fields" | "educational_notice"
 >;
+
+export type PatientClinicalDocument = {
+  id: number;
+  patient_id: number;
+  document_type: string;
+  title: string;
+  summary: string;
+  source_type: string;
+  source_system: string | null;
+  document_date: string | null;
+  uploaded_at: string;
+  raw_text: string;
+  structured_payload: Record<string, unknown>;
+  extracted_entities: Record<string, unknown>;
+  confidence: number;
+  validation_status: string;
+  review_status: string;
+  file_hash: string | null;
+  storage_path: string | null;
+};
+
+export type PatientClinicalDocumentPayload = {
+  document_type: string;
+  title: string;
+  summary?: string;
+  source_type: string;
+  source_system?: string | null;
+  document_date?: string | null;
+  raw_text?: string;
+  structured_payload?: Record<string, unknown>;
+};
+
+export type PatientDocumentExtraction = {
+  id: number;
+  patient_id: number;
+  document_id: number;
+  provider: string;
+  model: string | null;
+  extracted_entities: Record<string, unknown>;
+  confidence: number;
+  validation_status: string;
+  review_status: string;
+  created_at: string;
+};
+
+export type PatientDocumentReviewPayload = {
+  decision: "accept" | "reject";
+  accepted_entities?: Record<string, unknown> | null;
+  justification?: string | null;
+};
+
+export type PatientKnowledgeBundle = {
+  patient_id: number;
+  patient_reference: string;
+  generated_at: string;
+  send_identifiable_data: boolean;
+  structured_profile: Record<string, unknown>;
+  documents: Array<Record<string, unknown>>;
+  reviewed_documents: Array<Record<string, unknown>>;
+  reviewed_entities: Record<string, unknown>;
+  reviewed_extractions: Array<Record<string, unknown>>;
+  medication_history: Array<Record<string, unknown>>;
+  imported_context: Array<Record<string, unknown>>;
+  imports: Array<Record<string, unknown>>;
+  protocol_context: Array<Record<string, unknown>>;
+  protocol_runs: Array<Record<string, unknown>>;
+  timeline: Array<Record<string, unknown>>;
+  missing_data: string[];
+  limitations: string[];
+  educational_notice: string;
+};

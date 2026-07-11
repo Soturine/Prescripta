@@ -13,6 +13,8 @@ export type Medication = {
   pharmaceutical_form: string | null;
   evidence_source_url: string | null;
   max_daily_dose_mg: number;
+  dose_mg_per_kg: number | null;
+  dose_by_weight_enabled: boolean;
   max_duration_days: number | null;
   max_cumulative_dose_mg: number | null;
   continuous_use: boolean;
@@ -125,4 +127,39 @@ export type AdverseEffectTaxonomyEntry = {
   category: string;
   code: string;
   label: string;
+};
+
+export type MedicationKnowledgeLookupPayload = {
+  query: string;
+  source_name: string;
+  source_url?: string | null;
+  source_text?: string | null;
+};
+
+export type MedicationBulkImportPayload = {
+  source_name: string;
+  source_url?: string | null;
+  dry_run?: boolean;
+  items: Array<Record<string, unknown>>;
+};
+
+export type MedicationKnowledgeReviewPayload = {
+  decision: "approve" | "reject";
+  justification?: string | null;
+  edited_payload?: Record<string, unknown> | null;
+};
+
+export type MedicationKnowledgeCurationItem = {
+  id: number;
+  query: string;
+  source_name: string;
+  source_url: string | null;
+  source_text_excerpt: string;
+  extracted_payload: Record<string, unknown>;
+  provider: string;
+  model: string | null;
+  validation_status: string;
+  review_status: string;
+  reviewed_by: number | null;
+  created_by: number | null;
 };
