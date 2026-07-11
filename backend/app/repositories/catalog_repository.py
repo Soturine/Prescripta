@@ -15,9 +15,7 @@ class MedicationCatalogRepository:
 
     def list_active_ingredients(self) -> list[ActiveIngredientModel]:
         return list(
-            self.db.scalars(
-                select(ActiveIngredientModel).order_by(ActiveIngredientModel.dcb_name)
-            )
+            self.db.scalars(select(ActiveIngredientModel).order_by(ActiveIngredientModel.dcb_name))
         )
 
     def get_active_ingredient(self, active_ingredient_id: int) -> ActiveIngredientModel | None:
@@ -30,9 +28,7 @@ class MedicationCatalogRepository:
             )
         )
 
-    def list_drug_products(
-        self, active_ingredient_id: int | None = None
-    ) -> list[DrugProductModel]:
+    def list_drug_products(self, active_ingredient_id: int | None = None) -> list[DrugProductModel]:
         statement = select(DrugProductModel).order_by(DrugProductModel.commercial_name)
         if active_ingredient_id is not None:
             statement = statement.where(

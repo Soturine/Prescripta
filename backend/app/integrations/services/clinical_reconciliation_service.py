@@ -353,12 +353,17 @@ class ClinicalReconciliationService:
         badge = "novo"
         suggestion = "accept_new_data"
         conflict = False
-        if patient and imported_code and current_field in {
-            "renal_condition",
-            "hepatic_condition",
-            "cardiac_condition",
-            "gastrointestinal_history",
-        }:
+        if (
+            patient
+            and imported_code
+            and current_field
+            in {
+                "renal_condition",
+                "hepatic_condition",
+                "cardiac_condition",
+                "gastrointestinal_history",
+            }
+        ):
             current = getattr(patient, current_field, None)
             if current == imported_code:
                 badge = "duplicado"
@@ -377,11 +382,16 @@ class ClinicalReconciliationService:
                 suggestion=suggestion,
                 conflict=conflict,
             )
-        if patient and imported_code and current_field in {
-            "mental_health_factors",
-            "reproductive_gynecologic_factors",
-            "comorbidities",
-        }:
+        if (
+            patient
+            and imported_code
+            and current_field
+            in {
+                "mental_health_factors",
+                "reproductive_gynecologic_factors",
+                "comorbidities",
+            }
+        ):
             current_values = list(current or [])
             if imported_code in current_values:
                 badge = "duplicado"
@@ -411,8 +421,13 @@ class ClinicalReconciliationService:
                 badge = "duplicado"
                 suggestion = "keep_current"
                 break
-            if category == "renal" and imported_code and "renal" in normalize_text(
-                str(payload.get("normalized_value") or payload.get("original_value"))
+            if (
+                category == "renal"
+                and imported_code
+                and "renal"
+                in normalize_text(
+                    str(payload.get("normalized_value") or payload.get("original_value"))
+                )
             ):
                 current_field = field
                 current = getattr(patient, field, None)
@@ -582,17 +597,13 @@ class ClinicalReconciliationService:
             justification=decision.justification if decision else None,
         )
 
-    def _find_item(
-        self, batch: ClinicalImportBatchModel, item_id: str
-    ) -> ReconciliationDraftItem:
+    def _find_item(self, batch: ClinicalImportBatchModel, item_id: str) -> ReconciliationDraftItem:
         for item in self._draft_items(batch):
             if item.item_id == item_id:
                 return item
         raise ValueError("Item de reconciliacao nao encontrado.")
 
-    def _decision_for_item_by_id(
-        self, item_id: str
-    ) -> ClinicalReconciliationDecisionModel | None:
+    def _decision_for_item_by_id(self, item_id: str) -> ClinicalReconciliationDecisionModel | None:
         return self.db.scalar(
             select(ClinicalReconciliationDecisionModel).where(
                 ClinicalReconciliationDecisionModel.item_id == item_id

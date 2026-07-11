@@ -1,2 +1,1 @@
 """FHIR demonstrative adapters."""
-

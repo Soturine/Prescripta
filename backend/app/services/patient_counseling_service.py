@@ -121,8 +121,10 @@ class PatientCounselingService:
             unknown_fields = [
                 field for field in FUNCTIONAL_FIELDS if getattr(profile, field, None) is None
             ]
-            if summary and summary.driving_warning and (
-                profile.drives_regularly or profile.professional_driver
+            if (
+                summary
+                and summary.driving_warning
+                and (profile.drives_regularly or profile.professional_driver)
             ):
                 personalized_warnings.append(
                     "Paciente dirige regularmente; reforcar cautela ate saber como reage."
@@ -131,21 +133,31 @@ class PatientCounselingService:
                 personalized_warnings.append(
                     "Paciente opera maquinas; orientar pausa/cautela se houver sono ou tontura."
                 )
-            if summary and summary.fall_risk_warning and (
-                profile.works_at_height or profile.fall_risk_activity or profile.history_of_falls
+            if (
+                summary
+                and summary.fall_risk_warning
+                and (
+                    profile.works_at_height
+                    or profile.fall_risk_activity
+                    or profile.history_of_falls
+                )
             ):
                 personalized_warnings.append(
                     "Perfil com altura/queda; destacar risco de tontura, pressao baixa ou reflexos."
                 )
-            if summary and summary.sedation_attention_warning and (
-                profile.high_attention_activity or profile.caregiver_responsibility
+            if (
+                summary
+                and summary.sedation_attention_warning
+                and (profile.high_attention_activity or profile.caregiver_responsibility)
             ):
                 personalized_warnings.append(
                     "Rotina exige atencao; orientar observacao nas primeiras doses."
                 )
-            if summary and (
-                summary.sedation_attention_warning or summary.blood_pressure_warning
-            ) and profile.frequent_alcohol_use:
+            if (
+                summary
+                and (summary.sedation_attention_warning or summary.blood_pressure_warning)
+                and profile.frequent_alcohol_use
+            ):
                 personalized_warnings.append(
                     "Uso frequente de alcool informado; revisar risco de sedacao/tontura."
                 )
@@ -242,9 +254,7 @@ class PatientCounselingService:
             warnings.append("Sem alerta funcional especifico extraido dos trechos disponiveis.")
         return warnings
 
-    def _has_activity_relevant_risk(
-        self, summary: MedicationCounselingSummaryModel | None
-    ) -> bool:
+    def _has_activity_relevant_risk(self, summary: MedicationCounselingSummaryModel | None) -> bool:
         if summary is None:
             return False
         effects = set(summary.sleep_effects or []) | set(summary.main_adverse_effects or [])

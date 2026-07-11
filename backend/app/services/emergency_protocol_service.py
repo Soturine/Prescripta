@@ -372,7 +372,9 @@ class EmergencyProtocolService:
             lines.extend(["", "Flags do contexto:", *[f"- {flag}" for flag in flags]])
         if calculations:
             lines.extend(["", "Cálculos demonstrativos:"])
-            lines.extend([f"- {item.label}: {item.value} ({item.warning})" for item in calculations])
+            lines.extend(
+                [f"- {item.label}: {item.value} ({item.warning})" for item in calculations]
+            )
         payload = {
             "protocol": protocol.model_dump(mode="json"),
             "run_id": run_id,
@@ -399,7 +401,9 @@ class EmergencyProtocolService:
             evidence=evidence,
         )
 
-    def export_event_json(self, protocol_id: str, run_id: int, user: UserModel | None = None) -> bytes:
+    def export_event_json(
+        self, protocol_id: str, run_id: int, user: UserModel | None = None
+    ) -> bytes:
         protocol = self.get_protocol(protocol_id)
         run = self._run_model(run_id, protocol.id)
         payload = self._run_export_payload(run)
@@ -420,7 +424,9 @@ class EmergencyProtocolService:
             )
         return export_json_bytes("protocol_run", payload)
 
-    def export_event_csv(self, protocol_id: str, run_id: int, user: UserModel | None = None) -> bytes:
+    def export_event_csv(
+        self, protocol_id: str, run_id: int, user: UserModel | None = None
+    ) -> bytes:
         protocol = self.get_protocol(protocol_id)
         run = self._run_model(run_id, protocol.id)
         rows = [
@@ -461,9 +467,7 @@ class EmergencyProtocolService:
             if field.required and _empty(context.get(field.name))
         ]
         if missing:
-            raise ProtocolValidationError(
-                "Contexto mínimo ausente: " + ", ".join(missing) + "."
-            )
+            raise ProtocolValidationError("Contexto mínimo ausente: " + ", ".join(missing) + ".")
 
     def _calculations(
         self, protocol: EmergencyProtocolRead, context: dict[str, Any]
@@ -829,21 +833,74 @@ def _build_protocols() -> list[EmergencyProtocolRead]:
             source_version="publicação municipal consultada em 2026",
             last_reviewed_at="2026-07-11",
             disclaimer=common_disclaimer,
-            red_flags=["estridor ou broncoespasmo", "hipotensão", "urticária extensa com sintomas respiratórios", "rebaixamento de consciência"],
-            immediate_measures=["ABCDE", "acionar ajuda", "adrenalina IM por profissional habilitado", "oxigênio/acesso venoso conforme gravidade"],
-            medication_references=["Adrenalina 1 mg/mL IM é referência demonstrativa; confirmar dose, concentração e protocolo local."],
-            cautions=["Não atrasar acionamento de suporte", "Cautela em idosos/cardiopatas exige julgamento, mas não dispensa manejo urgente"],
-            referral_criteria=["qualquer suspeita de anafilaxia sistêmica", "recorrência ou necessidade de doses repetidas"],
-            monitoring=["pressão arterial", "frequência cardíaca", "saturação", "sinais respiratórios", "recorrência bifásica"],
-            documentation_items=["gatilho suspeito", "horário de início", "sinais vitais", "medicações administradas", "resposta clínica"],
-            do_not_apply_when=["quadro local leve sem sinais sistêmicos deve ser avaliado por protocolo próprio"],
-            human_judgment_points=["confirmar diagnóstico diferencial", "confirmar dose e via", "decidir observação e transferência"],
-            safety_notes=["A calculadora é demonstrativa e nunca deve ser usada como prescrição automática."],
+            red_flags=[
+                "estridor ou broncoespasmo",
+                "hipotensão",
+                "urticária extensa com sintomas respiratórios",
+                "rebaixamento de consciência",
+            ],
+            immediate_measures=[
+                "ABCDE",
+                "acionar ajuda",
+                "adrenalina IM por profissional habilitado",
+                "oxigênio/acesso venoso conforme gravidade",
+            ],
+            medication_references=[
+                "Adrenalina 1 mg/mL IM é referência demonstrativa; confirmar dose, concentração e protocolo local."
+            ],
+            cautions=[
+                "Não atrasar acionamento de suporte",
+                "Cautela em idosos/cardiopatas exige julgamento, mas não dispensa manejo urgente",
+            ],
+            referral_criteria=[
+                "qualquer suspeita de anafilaxia sistêmica",
+                "recorrência ou necessidade de doses repetidas",
+            ],
+            monitoring=[
+                "pressão arterial",
+                "frequência cardíaca",
+                "saturação",
+                "sinais respiratórios",
+                "recorrência bifásica",
+            ],
+            documentation_items=[
+                "gatilho suspeito",
+                "horário de início",
+                "sinais vitais",
+                "medicações administradas",
+                "resposta clínica",
+            ],
+            do_not_apply_when=[
+                "quadro local leve sem sinais sistêmicos deve ser avaliado por protocolo próprio"
+            ],
+            human_judgment_points=[
+                "confirmar diagnóstico diferencial",
+                "confirmar dose e via",
+                "decidir observação e transferência",
+            ],
+            safety_notes=[
+                "A calculadora é demonstrativa e nunca deve ser usada como prescrição automática."
+            ],
             context_fields=[
-                {"name": "suspected_trigger", "label": "Gatilho suspeito", "field_type": "text", "required": True},
-                {"name": "weight_kg", "label": "Peso", "field_type": "number", "unit": "kg", "helper": "Usado apenas em cálculo demonstrativo."},
+                {
+                    "name": "suspected_trigger",
+                    "label": "Gatilho suspeito",
+                    "field_type": "text",
+                    "required": True,
+                },
+                {
+                    "name": "weight_kg",
+                    "label": "Peso",
+                    "field_type": "number",
+                    "unit": "kg",
+                    "helper": "Usado apenas em cálculo demonstrativo.",
+                },
                 {"name": "age_years", "label": "Idade", "field_type": "number", "unit": "anos"},
-                {"name": "respiratory_symptoms", "label": "Sintomas respiratórios", "field_type": "boolean"},
+                {
+                    "name": "respiratory_symptoms",
+                    "label": "Sintomas respiratórios",
+                    "field_type": "boolean",
+                },
                 {"name": "hypotension", "label": "Hipotensão", "field_type": "boolean"},
             ],
             calculators=[
@@ -856,11 +913,46 @@ def _build_protocols() -> list[EmergencyProtocolRead]:
                 }
             ],
             steps=[
-                _step(1, "Reconhecer sinais sistêmicos", "Avaliar pele/mucosa, respiração, circulação e consciência.", "A presença de comprometimento respiratório ou circulatório exige ação imediata.", "critical", "anafilaxia_reconhecimento"),
-                _step(2, "Acionar suporte", "Chamar equipe, preparar monitorização e acionar regulação/SAMU quando aplicável.", "Fluxo rápido reduz atraso em tratamento e transferência.", "critical", "anafilaxia_suporte"),
-                _step(3, "Organizar ABCDE", "Posicionar, avaliar via aérea, respiração, circulação e sinais vitais.", "ABCDE mantém a sequência verificável e auditável.", "high", "anafilaxia_abcde"),
-                _step(4, "Adrenalina IM", "Usar adrenalina IM conforme profissional habilitado e protocolo local.", "A etapa não é autorização automática de dose; exige conferência humana.", "critical", "anafilaxia_adrenalina_im"),
-                _step(5, "Monitorar resposta", "Registrar sinais, resposta, recorrência e necessidade de reavaliação.", "Anafilaxia pode exigir observação e nova decisão clínica.", "high", "anafilaxia_monitoramento"),
+                _step(
+                    1,
+                    "Reconhecer sinais sistêmicos",
+                    "Avaliar pele/mucosa, respiração, circulação e consciência.",
+                    "A presença de comprometimento respiratório ou circulatório exige ação imediata.",
+                    "critical",
+                    "anafilaxia_reconhecimento",
+                ),
+                _step(
+                    2,
+                    "Acionar suporte",
+                    "Chamar equipe, preparar monitorização e acionar regulação/SAMU quando aplicável.",
+                    "Fluxo rápido reduz atraso em tratamento e transferência.",
+                    "critical",
+                    "anafilaxia_suporte",
+                ),
+                _step(
+                    3,
+                    "Organizar ABCDE",
+                    "Posicionar, avaliar via aérea, respiração, circulação e sinais vitais.",
+                    "ABCDE mantém a sequência verificável e auditável.",
+                    "high",
+                    "anafilaxia_abcde",
+                ),
+                _step(
+                    4,
+                    "Adrenalina IM",
+                    "Usar adrenalina IM conforme profissional habilitado e protocolo local.",
+                    "A etapa não é autorização automática de dose; exige conferência humana.",
+                    "critical",
+                    "anafilaxia_adrenalina_im",
+                ),
+                _step(
+                    5,
+                    "Monitorar resposta",
+                    "Registrar sinais, resposta, recorrência e necessidade de reavaliação.",
+                    "Anafilaxia pode exigir observação e nova decisão clínica.",
+                    "high",
+                    "anafilaxia_monitoramento",
+                ),
             ],
         ),
         EmergencyProtocolRead(
@@ -877,25 +969,96 @@ def _build_protocols() -> list[EmergencyProtocolRead]:
             source_version="atualizado em 23/04/2024 no portal gov.br",
             last_reviewed_at="2026-07-11",
             disclaimer=common_disclaimer,
-            red_flags=["inconsciência", "respiração ausente ou anormal", "ausência de pulso por profissional treinado"],
-            immediate_measures=["segurança da cena", "acionar ajuda", "compressões torácicas", "DEA/desfibrilador"],
+            red_flags=[
+                "inconsciência",
+                "respiração ausente ou anormal",
+                "ausência de pulso por profissional treinado",
+            ],
+            immediate_measures=[
+                "segurança da cena",
+                "acionar ajuda",
+                "compressões torácicas",
+                "DEA/desfibrilador",
+            ],
             referral_criteria=["todo caso suspeito de PCR"],
-            monitoring=["ritmo quando disponível", "qualidade das compressões", "retorno de circulação espontânea", "tempo de ciclos"],
-            documentation_items=["horário de colapso", "início das compressões", "choques", "ritmos", "retorno de circulação"],
-            do_not_apply_when=["paciente responsivo com respiração normal deve seguir outra avaliação de urgência"],
-            human_judgment_points=["confirmar responsividade/respiração", "decidir via aérea e medicações no suporte avançado", "decidir interrupção/continuidade conforme regulação"],
+            monitoring=[
+                "ritmo quando disponível",
+                "qualidade das compressões",
+                "retorno de circulação espontânea",
+                "tempo de ciclos",
+            ],
+            documentation_items=[
+                "horário de colapso",
+                "início das compressões",
+                "choques",
+                "ritmos",
+                "retorno de circulação",
+            ],
+            do_not_apply_when=[
+                "paciente responsivo com respiração normal deve seguir outra avaliação de urgência"
+            ],
+            human_judgment_points=[
+                "confirmar responsividade/respiração",
+                "decidir via aérea e medicações no suporte avançado",
+                "decidir interrupção/continuidade conforme regulação",
+            ],
             safety_notes=["Fluxo exige treinamento em SBV/SAV e protocolo institucional."],
             context_fields=[
-                {"name": "responsive", "label": "Paciente responsivo", "field_type": "boolean", "required": True},
-                {"name": "normal_breathing", "label": "Respiração normal", "field_type": "boolean", "required": True},
+                {
+                    "name": "responsive",
+                    "label": "Paciente responsivo",
+                    "field_type": "boolean",
+                    "required": True,
+                },
+                {
+                    "name": "normal_breathing",
+                    "label": "Respiração normal",
+                    "field_type": "boolean",
+                    "required": True,
+                },
                 {"name": "aed_available", "label": "DEA disponível", "field_type": "boolean"},
             ],
             steps=[
-                _step(1, "Garantir segurança", "Confirmar segurança da cena e uso de EPI.", "Evita risco para equipe e paciente.", "high", "pcr_seguranca"),
-                _step(2, "Checar responsividade e respiração", "Avaliar resposta e respiração normal sem atrasar acionamento.", "Reconhecimento rápido é gatilho do fluxo.", "critical", "pcr_reconhecimento"),
-                _step(3, "Acionar ajuda e DEA", "Chamar equipe, carrinho de emergência e desfibrilador/DEA.", "Desfibrilação precoce é ponto crítico quando indicada.", "critical", "pcr_dea"),
-                _step(4, "Iniciar compressões", "Realizar compressões de alta qualidade conforme treinamento.", "Qualidade das compressões depende de treinamento e revezamento.", "critical", "pcr_compressoes"),
-                _step(5, "Registrar ciclos", "Registrar tempos, ritmos, choques e retorno de circulação.", "Registro sustenta auditoria e continuidade do cuidado.", "high", "pcr_documentacao"),
+                _step(
+                    1,
+                    "Garantir segurança",
+                    "Confirmar segurança da cena e uso de EPI.",
+                    "Evita risco para equipe e paciente.",
+                    "high",
+                    "pcr_seguranca",
+                ),
+                _step(
+                    2,
+                    "Checar responsividade e respiração",
+                    "Avaliar resposta e respiração normal sem atrasar acionamento.",
+                    "Reconhecimento rápido é gatilho do fluxo.",
+                    "critical",
+                    "pcr_reconhecimento",
+                ),
+                _step(
+                    3,
+                    "Acionar ajuda e DEA",
+                    "Chamar equipe, carrinho de emergência e desfibrilador/DEA.",
+                    "Desfibrilação precoce é ponto crítico quando indicada.",
+                    "critical",
+                    "pcr_dea",
+                ),
+                _step(
+                    4,
+                    "Iniciar compressões",
+                    "Realizar compressões de alta qualidade conforme treinamento.",
+                    "Qualidade das compressões depende de treinamento e revezamento.",
+                    "critical",
+                    "pcr_compressoes",
+                ),
+                _step(
+                    5,
+                    "Registrar ciclos",
+                    "Registrar tempos, ritmos, choques e retorno de circulação.",
+                    "Registro sustenta auditoria e continuidade do cuidado.",
+                    "high",
+                    "pcr_documentacao",
+                ),
             ],
         ),
         EmergencyProtocolRead(
@@ -912,24 +1075,109 @@ def _build_protocols() -> list[EmergencyProtocolRead]:
             source_version="atualizado em 23/04/2024 no portal gov.br",
             last_reviewed_at="2026-07-11",
             disclaimer=common_disclaimer,
-            red_flags=["crise ativa prolongada", "trauma", "gestação", "hipoglicemia", "rebaixamento persistente"],
-            immediate_measures=["proteger contra trauma", "não inserir objetos na boca", "lateralizar se possível", "avaliar glicemia"],
-            medication_references=["Benzodiazepínicos aparecem em protocolos de SAV, mas exigem prescrição/competência profissional."],
-            referral_criteria=["primeira crise", "crise prolongada", "recorrência", "trauma", "alteração persistente de consciência"],
-            monitoring=["tempo de crise", "saturação", "glicemia", "nível de consciência", "recorrência"],
-            documentation_items=["horário de início/fim", "descrição da crise", "glicemia", "medicações em uso", "trauma"],
-            human_judgment_points=["diferenciar síncope/AVC/intoxicação", "decidir medicação e via", "definir transferência"],
+            red_flags=[
+                "crise ativa prolongada",
+                "trauma",
+                "gestação",
+                "hipoglicemia",
+                "rebaixamento persistente",
+            ],
+            immediate_measures=[
+                "proteger contra trauma",
+                "não inserir objetos na boca",
+                "lateralizar se possível",
+                "avaliar glicemia",
+            ],
+            medication_references=[
+                "Benzodiazepínicos aparecem em protocolos de SAV, mas exigem prescrição/competência profissional."
+            ],
+            referral_criteria=[
+                "primeira crise",
+                "crise prolongada",
+                "recorrência",
+                "trauma",
+                "alteração persistente de consciência",
+            ],
+            monitoring=[
+                "tempo de crise",
+                "saturação",
+                "glicemia",
+                "nível de consciência",
+                "recorrência",
+            ],
+            documentation_items=[
+                "horário de início/fim",
+                "descrição da crise",
+                "glicemia",
+                "medicações em uso",
+                "trauma",
+            ],
+            human_judgment_points=[
+                "diferenciar síncope/AVC/intoxicação",
+                "decidir medicação e via",
+                "definir transferência",
+            ],
             context_fields=[
-                {"name": "seizure_active", "label": "Crise ativa", "field_type": "boolean", "required": True},
-                {"name": "duration_minutes", "label": "Duração", "field_type": "number", "unit": "min"},
-                {"name": "glucose_mg_dl", "label": "Glicemia", "field_type": "number", "unit": "mg/dL"},
+                {
+                    "name": "seizure_active",
+                    "label": "Crise ativa",
+                    "field_type": "boolean",
+                    "required": True,
+                },
+                {
+                    "name": "duration_minutes",
+                    "label": "Duração",
+                    "field_type": "number",
+                    "unit": "min",
+                },
+                {
+                    "name": "glucose_mg_dl",
+                    "label": "Glicemia",
+                    "field_type": "number",
+                    "unit": "mg/dL",
+                },
             ],
             steps=[
-                _step(1, "Proteger o paciente", "Afastar objetos, proteger cabeça e evitar contenção inadequada.", "Evita trauma sem piorar a crise.", "high", "convulsao_seguranca"),
-                _step(2, "Não inserir objetos na boca", "Manter via aérea observada sem manobras perigosas.", "Reduz risco de lesão e aspiração.", "critical", "convulsao_via_aerea"),
-                _step(3, "Cronometrar e avaliar glicemia", "Registrar duração e glicemia capilar quando disponível.", "Hipoglicemia é causa reversível importante.", "high", "convulsao_glicemia"),
-                _step(4, "Acionar suporte se prolongada", "Crise prolongada/recorrente exige suporte e protocolo local.", "Medicação depende de profissional habilitado.", "high", "convulsao_suporte"),
-                _step(5, "Documentar recuperação", "Registrar pós-ictal, sinais vitais, trauma e encaminhamento.", "Continuidade do cuidado depende do registro.", "attention", "convulsao_documentacao"),
+                _step(
+                    1,
+                    "Proteger o paciente",
+                    "Afastar objetos, proteger cabeça e evitar contenção inadequada.",
+                    "Evita trauma sem piorar a crise.",
+                    "high",
+                    "convulsao_seguranca",
+                ),
+                _step(
+                    2,
+                    "Não inserir objetos na boca",
+                    "Manter via aérea observada sem manobras perigosas.",
+                    "Reduz risco de lesão e aspiração.",
+                    "critical",
+                    "convulsao_via_aerea",
+                ),
+                _step(
+                    3,
+                    "Cronometrar e avaliar glicemia",
+                    "Registrar duração e glicemia capilar quando disponível.",
+                    "Hipoglicemia é causa reversível importante.",
+                    "high",
+                    "convulsao_glicemia",
+                ),
+                _step(
+                    4,
+                    "Acionar suporte se prolongada",
+                    "Crise prolongada/recorrente exige suporte e protocolo local.",
+                    "Medicação depende de profissional habilitado.",
+                    "high",
+                    "convulsao_suporte",
+                ),
+                _step(
+                    5,
+                    "Documentar recuperação",
+                    "Registrar pós-ictal, sinais vitais, trauma e encaminhamento.",
+                    "Continuidade do cuidado depende do registro.",
+                    "attention",
+                    "convulsao_documentacao",
+                ),
             ],
         ),
         EmergencyProtocolRead(
@@ -946,16 +1194,53 @@ def _build_protocols() -> list[EmergencyProtocolRead]:
             source_version="Linha de cuidado consultada em 2026",
             last_reviewed_at="2026-07-11",
             disclaimer=common_disclaimer,
-            red_flags=["glicemia < 70 mg/dL", "inconsciência", "convulsão", "não consegue ingerir com segurança"],
-            immediate_measures=["medir glicemia", "avaliar consciência/deglutição", "corrigir conforme via segura", "reavaliar glicemia"],
-            medication_references=["Carboidrato oral ou glicose EV dependem de consciência, acesso e protocolo local."],
-            referral_criteria=["rebaixamento", "sem resposta à correção", "uso de sulfonilureia/insulina", "recorrência"],
+            red_flags=[
+                "glicemia < 70 mg/dL",
+                "inconsciência",
+                "convulsão",
+                "não consegue ingerir com segurança",
+            ],
+            immediate_measures=[
+                "medir glicemia",
+                "avaliar consciência/deglutição",
+                "corrigir conforme via segura",
+                "reavaliar glicemia",
+            ],
+            medication_references=[
+                "Carboidrato oral ou glicose EV dependem de consciência, acesso e protocolo local."
+            ],
+            referral_criteria=[
+                "rebaixamento",
+                "sem resposta à correção",
+                "uso de sulfonilureia/insulina",
+                "recorrência",
+            ],
             monitoring=["glicemia seriada", "consciência", "sinais vitais", "recorrência"],
-            documentation_items=["glicemia inicial", "estado de consciência", "correção realizada", "glicemia pós-correção"],
-            human_judgment_points=["via oral segura", "necessidade de acesso venoso", "investigar causa e recorrência"],
+            documentation_items=[
+                "glicemia inicial",
+                "estado de consciência",
+                "correção realizada",
+                "glicemia pós-correção",
+            ],
+            human_judgment_points=[
+                "via oral segura",
+                "necessidade de acesso venoso",
+                "investigar causa e recorrência",
+            ],
             context_fields=[
-                {"name": "glucose_mg_dl", "label": "Glicemia capilar", "field_type": "number", "unit": "mg/dL", "required": True},
-                {"name": "conscious", "label": "Consciente", "field_type": "boolean", "required": True},
+                {
+                    "name": "glucose_mg_dl",
+                    "label": "Glicemia capilar",
+                    "field_type": "number",
+                    "unit": "mg/dL",
+                    "required": True,
+                },
+                {
+                    "name": "conscious",
+                    "label": "Consciente",
+                    "field_type": "boolean",
+                    "required": True,
+                },
                 {"name": "can_swallow", "label": "Consegue deglutir", "field_type": "boolean"},
             ],
             calculators=[
@@ -968,11 +1253,46 @@ def _build_protocols() -> list[EmergencyProtocolRead]:
                 }
             ],
             steps=[
-                _step(1, "Confirmar glicemia", "Medir glicemia capilar e avaliar sintomas.", "A medida orienta correção e reavaliação.", "high", "hipoglicemia_linha_cuidado"),
-                _step(2, "Avaliar consciência/deglutição", "Decidir se há via oral segura.", "Evita aspiração em paciente rebaixado.", "critical", "hipoglicemia_via_segura"),
-                _step(3, "Corrigir conforme protocolo", "Usar carboidrato oral ou glicose EV conforme condição e competência.", "Dose/via dependem de protocolo local.", "high", "hipoglicemia_correcao"),
-                _step(4, "Reavaliar glicemia", "Repetir glicemia após correção conforme protocolo.", "Recorrência exige nova avaliação.", "high", "hipoglicemia_reavaliacao"),
-                _step(5, "Investigar causa", "Registrar insulina, antidiabéticos, jejum, álcool, infecção ou exercício.", "Evita alta sem plano de prevenção.", "attention", "hipoglicemia_causa"),
+                _step(
+                    1,
+                    "Confirmar glicemia",
+                    "Medir glicemia capilar e avaliar sintomas.",
+                    "A medida orienta correção e reavaliação.",
+                    "high",
+                    "hipoglicemia_linha_cuidado",
+                ),
+                _step(
+                    2,
+                    "Avaliar consciência/deglutição",
+                    "Decidir se há via oral segura.",
+                    "Evita aspiração em paciente rebaixado.",
+                    "critical",
+                    "hipoglicemia_via_segura",
+                ),
+                _step(
+                    3,
+                    "Corrigir conforme protocolo",
+                    "Usar carboidrato oral ou glicose EV conforme condição e competência.",
+                    "Dose/via dependem de protocolo local.",
+                    "high",
+                    "hipoglicemia_correcao",
+                ),
+                _step(
+                    4,
+                    "Reavaliar glicemia",
+                    "Repetir glicemia após correção conforme protocolo.",
+                    "Recorrência exige nova avaliação.",
+                    "high",
+                    "hipoglicemia_reavaliacao",
+                ),
+                _step(
+                    5,
+                    "Investigar causa",
+                    "Registrar insulina, antidiabéticos, jejum, álcool, infecção ou exercício.",
+                    "Evita alta sem plano de prevenção.",
+                    "attention",
+                    "hipoglicemia_causa",
+                ),
             ],
         ),
         EmergencyProtocolRead(
@@ -989,24 +1309,93 @@ def _build_protocols() -> list[EmergencyProtocolRead]:
             source_version="publicação DF consultada em 2026",
             last_reviewed_at="2026-07-11",
             disclaimer=common_disclaimer,
-            red_flags=["dor prolongada", "sudorese", "dispneia", "síncope", "instabilidade hemodinâmica", "dor irradiada"],
-            immediate_measures=["ABCDE", "ECG prioritário", "monitorização", "acesso e regulação conforme gravidade"],
-            referral_criteria=["suspeita de SCA", "ECG alterado", "instabilidade", "dor persistente"],
+            red_flags=[
+                "dor prolongada",
+                "sudorese",
+                "dispneia",
+                "síncope",
+                "instabilidade hemodinâmica",
+                "dor irradiada",
+            ],
+            immediate_measures=[
+                "ABCDE",
+                "ECG prioritário",
+                "monitorização",
+                "acesso e regulação conforme gravidade",
+            ],
+            referral_criteria=[
+                "suspeita de SCA",
+                "ECG alterado",
+                "instabilidade",
+                "dor persistente",
+            ],
             monitoring=["dor", "ECG", "pressão arterial", "frequência cardíaca", "saturação"],
-            documentation_items=["início da dor", "características", "ECG", "sinais vitais", "fatores de risco", "condutas"],
-            human_judgment_points=["interpretar ECG", "avaliar contraindicações", "decidir terapia e destino"],
+            documentation_items=[
+                "início da dor",
+                "características",
+                "ECG",
+                "sinais vitais",
+                "fatores de risco",
+                "condutas",
+            ],
+            human_judgment_points=[
+                "interpretar ECG",
+                "avaliar contraindicações",
+                "decidir terapia e destino",
+            ],
             context_fields=[
-                {"name": "chest_pain_minutes", "label": "Duração da dor", "field_type": "number", "unit": "min", "required": True},
+                {
+                    "name": "chest_pain_minutes",
+                    "label": "Duração da dor",
+                    "field_type": "number",
+                    "unit": "min",
+                    "required": True,
+                },
                 {"name": "radiation", "label": "Irradiação", "field_type": "boolean"},
                 {"name": "systolic_bp", "label": "PAS", "field_type": "number", "unit": "mmHg"},
                 {"name": "spo2", "label": "Saturação", "field_type": "number", "unit": "%"},
             ],
             steps=[
-                _step(1, "Avaliar ABCDE", "Identificar instabilidade e causas ameaçadoras.", "Dor torácica pode ser SCA ou outra emergência fatal.", "high", "dor_toracica_abcde"),
-                _step(2, "Priorizar ECG", "Obter/encaminhar ECG conforme protocolo de porta/primeiro atendimento.", "ECG rápido orienta rota assistencial.", "high", "dor_toracica_ecg"),
-                _step(3, "Monitorar sinais", "Monitorizar dor, PA, FC, saturação e sintomas associados.", "Instabilidade altera prioridade.", "high", "dor_toracica_monitorizacao"),
-                _step(4, "Checar contraindicações", "Não automatizar medicações; avaliar alergias, sangramento e protocolos.", "Conduta farmacológica exige julgamento.", "attention", "dor_toracica_contraindicacoes"),
-                _step(5, "Documentar tempos", "Registrar início da dor, ECG, decisão e transferência.", "Tempo é indicador crítico do fluxo.", "attention", "dor_toracica_documentacao"),
+                _step(
+                    1,
+                    "Avaliar ABCDE",
+                    "Identificar instabilidade e causas ameaçadoras.",
+                    "Dor torácica pode ser SCA ou outra emergência fatal.",
+                    "high",
+                    "dor_toracica_abcde",
+                ),
+                _step(
+                    2,
+                    "Priorizar ECG",
+                    "Obter/encaminhar ECG conforme protocolo de porta/primeiro atendimento.",
+                    "ECG rápido orienta rota assistencial.",
+                    "high",
+                    "dor_toracica_ecg",
+                ),
+                _step(
+                    3,
+                    "Monitorar sinais",
+                    "Monitorizar dor, PA, FC, saturação e sintomas associados.",
+                    "Instabilidade altera prioridade.",
+                    "high",
+                    "dor_toracica_monitorizacao",
+                ),
+                _step(
+                    4,
+                    "Checar contraindicações",
+                    "Não automatizar medicações; avaliar alergias, sangramento e protocolos.",
+                    "Conduta farmacológica exige julgamento.",
+                    "attention",
+                    "dor_toracica_contraindicacoes",
+                ),
+                _step(
+                    5,
+                    "Documentar tempos",
+                    "Registrar início da dor, ECG, decisão e transferência.",
+                    "Tempo é indicador crítico do fluxo.",
+                    "attention",
+                    "dor_toracica_documentacao",
+                ),
             ],
         ),
         EmergencyProtocolRead(
@@ -1023,15 +1412,56 @@ def _build_protocols() -> list[EmergencyProtocolRead]:
             source_version="Linha de cuidado consultada em 2026",
             last_reviewed_at="2026-07-11",
             disclaimer=common_disclaimer,
-            red_flags=["saturação baixa", "fala entrecortada", "exaustão", "cianose", "rebaixamento", "silêncio auscultatório"],
-            immediate_measures=["posição confortável", "saturação", "oxigênio se indicado", "broncodilatador conforme protocolo"],
-            medication_references=["Salbutamol/ipratrópio/corticoide aparecem em linhas de cuidado; uso exige protocolo local."],
-            referral_criteria=["exacerbação moderada/grave", "baixa resposta", "saturação baixa", "exaustão"],
-            monitoring=["saturação", "frequência respiratória", "fala", "uso de musculatura acessória", "resposta ao broncodilatador"],
-            documentation_items=["gatilho", "saturação", "gravidade", "doses administradas", "resposta"],
-            human_judgment_points=["classificar gravidade", "decidir via/dispositivo", "decidir transferência"],
+            red_flags=[
+                "saturação baixa",
+                "fala entrecortada",
+                "exaustão",
+                "cianose",
+                "rebaixamento",
+                "silêncio auscultatório",
+            ],
+            immediate_measures=[
+                "posição confortável",
+                "saturação",
+                "oxigênio se indicado",
+                "broncodilatador conforme protocolo",
+            ],
+            medication_references=[
+                "Salbutamol/ipratrópio/corticoide aparecem em linhas de cuidado; uso exige protocolo local."
+            ],
+            referral_criteria=[
+                "exacerbação moderada/grave",
+                "baixa resposta",
+                "saturação baixa",
+                "exaustão",
+            ],
+            monitoring=[
+                "saturação",
+                "frequência respiratória",
+                "fala",
+                "uso de musculatura acessória",
+                "resposta ao broncodilatador",
+            ],
+            documentation_items=[
+                "gatilho",
+                "saturação",
+                "gravidade",
+                "doses administradas",
+                "resposta",
+            ],
+            human_judgment_points=[
+                "classificar gravidade",
+                "decidir via/dispositivo",
+                "decidir transferência",
+            ],
             context_fields=[
-                {"name": "spo2", "label": "Saturação", "field_type": "number", "unit": "%", "required": True},
+                {
+                    "name": "spo2",
+                    "label": "Saturação",
+                    "field_type": "number",
+                    "unit": "%",
+                    "required": True,
+                },
                 {"name": "wheezing", "label": "Sibilância", "field_type": "boolean"},
                 {"name": "speaks_sentences", "label": "Fala frases", "field_type": "boolean"},
             ],
@@ -1045,11 +1475,46 @@ def _build_protocols() -> list[EmergencyProtocolRead]:
                 }
             ],
             steps=[
-                _step(1, "Classificar gravidade", "Avaliar fala, esforço, saturação e estado mental.", "Gravidade define urgência e transferência.", "high", "asma_gravidade"),
-                _step(2, "Posicionar e oxigenar", "Manter sentado/confortável e oxigênio conforme alvo e protocolo.", "Oxigenação baixa é sinal de risco.", "high", "asma_oxigenio"),
-                _step(3, "Broncodilatar conforme protocolo", "Aplicar broncodilatador por dispositivo adequado quando indicado.", "Dose/dispositivo exigem profissional habilitado.", "high", "asma_broncodilatador"),
-                _step(4, "Reavaliar resposta", "Reavaliar saturação, fala e esforço após medidas iniciais.", "Baixa resposta exige escalonamento.", "high", "asma_reavaliacao"),
-                _step(5, "Registrar gatilhos", "Documentar gatilho, medicações prévias e plano de seguimento.", "Ajuda prevenção e continuidade.", "attention", "asma_documentacao"),
+                _step(
+                    1,
+                    "Classificar gravidade",
+                    "Avaliar fala, esforço, saturação e estado mental.",
+                    "Gravidade define urgência e transferência.",
+                    "high",
+                    "asma_gravidade",
+                ),
+                _step(
+                    2,
+                    "Posicionar e oxigenar",
+                    "Manter sentado/confortável e oxigênio conforme alvo e protocolo.",
+                    "Oxigenação baixa é sinal de risco.",
+                    "high",
+                    "asma_oxigenio",
+                ),
+                _step(
+                    3,
+                    "Broncodilatar conforme protocolo",
+                    "Aplicar broncodilatador por dispositivo adequado quando indicado.",
+                    "Dose/dispositivo exigem profissional habilitado.",
+                    "high",
+                    "asma_broncodilatador",
+                ),
+                _step(
+                    4,
+                    "Reavaliar resposta",
+                    "Reavaliar saturação, fala e esforço após medidas iniciais.",
+                    "Baixa resposta exige escalonamento.",
+                    "high",
+                    "asma_reavaliacao",
+                ),
+                _step(
+                    5,
+                    "Registrar gatilhos",
+                    "Documentar gatilho, medicações prévias e plano de seguimento.",
+                    "Ajuda prevenção e continuidade.",
+                    "attention",
+                    "asma_documentacao",
+                ),
             ],
         ),
         EmergencyProtocolRead(
@@ -1066,25 +1531,108 @@ def _build_protocols() -> list[EmergencyProtocolRead]:
             source_version="portal Anvisa consultado em 2026",
             last_reviewed_at="2026-07-11",
             disclaimer=common_disclaimer,
-            red_flags=["rebaixamento", "convulsão", "instabilidade", "ingestão intencional", "múltiplas substâncias", "criança"],
-            immediate_measures=["segurança da cena", "ABCDE", "não induzir vômito", "identificar substância/dose/tempo", "acionar CIAT/Disque-Intoxicação"],
-            referral_criteria=["qualquer sintoma sistêmico", "dose desconhecida", "substância de alto risco", "tentativa de autoextermínio"],
-            monitoring=["consciência", "sinais vitais", "glicemia", "ECG quando indicado", "evolução neurológica"],
-            documentation_items=["substância", "dose estimada", "horário", "embalagem", "coingestões", "orientação do CIAT"],
-            do_not_apply_when=["exposição ocupacional/química complexa exige protocolo específico e segurança ambiental"],
-            human_judgment_points=["descontaminação", "antídotos", "observação", "risco psiquiátrico"],
+            red_flags=[
+                "rebaixamento",
+                "convulsão",
+                "instabilidade",
+                "ingestão intencional",
+                "múltiplas substâncias",
+                "criança",
+            ],
+            immediate_measures=[
+                "segurança da cena",
+                "ABCDE",
+                "não induzir vômito",
+                "identificar substância/dose/tempo",
+                "acionar CIAT/Disque-Intoxicação",
+            ],
+            referral_criteria=[
+                "qualquer sintoma sistêmico",
+                "dose desconhecida",
+                "substância de alto risco",
+                "tentativa de autoextermínio",
+            ],
+            monitoring=[
+                "consciência",
+                "sinais vitais",
+                "glicemia",
+                "ECG quando indicado",
+                "evolução neurológica",
+            ],
+            documentation_items=[
+                "substância",
+                "dose estimada",
+                "horário",
+                "embalagem",
+                "coingestões",
+                "orientação do CIAT",
+            ],
+            do_not_apply_when=[
+                "exposição ocupacional/química complexa exige protocolo específico e segurança ambiental"
+            ],
+            human_judgment_points=[
+                "descontaminação",
+                "antídotos",
+                "observação",
+                "risco psiquiátrico",
+            ],
             safety_notes=["Não orientar vômito, leite, carvão ou antídoto sem protocolo/CIAT."],
             context_fields=[
-                {"name": "substance", "label": "Substância suspeita", "field_type": "text", "required": True},
-                {"name": "time_since_exposure_minutes", "label": "Tempo desde exposição", "field_type": "number", "unit": "min"},
+                {
+                    "name": "substance",
+                    "label": "Substância suspeita",
+                    "field_type": "text",
+                    "required": True,
+                },
+                {
+                    "name": "time_since_exposure_minutes",
+                    "label": "Tempo desde exposição",
+                    "field_type": "number",
+                    "unit": "min",
+                },
                 {"name": "intentional", "label": "Exposição intencional", "field_type": "boolean"},
             ],
             steps=[
-                _step(1, "Garantir segurança", "Avaliar cena, EPI e risco de exposição secundária.", "Protege equipe e paciente.", "high", "intoxicacao_seguranca"),
-                _step(2, "ABCDE e sinais vitais", "Priorizar via aérea, respiração, circulação e consciência.", "Sintomas sistêmicos mudam prioridade.", "critical", "intoxicacao_abcde"),
-                _step(3, "Não induzir vômito", "Evitar medidas caseiras ou descontaminação sem orientação.", "Condutas inadequadas podem agravar lesão.", "critical", "intoxicacao_nao_induzir"),
-                _step(4, "Identificar substância", "Registrar nome, dose, horário, coingestões e embalagem.", "CIAT depende dessas informações.", "high", "intoxicacao_identificacao"),
-                _step(5, "Acionar CIAT/Disque-Intoxicação", "Usar rede toxicológica/regulação e registrar orientação.", "Antídotos e observação dependem de orientação especializada.", "high", "intoxicacao_renaciat"),
+                _step(
+                    1,
+                    "Garantir segurança",
+                    "Avaliar cena, EPI e risco de exposição secundária.",
+                    "Protege equipe e paciente.",
+                    "high",
+                    "intoxicacao_seguranca",
+                ),
+                _step(
+                    2,
+                    "ABCDE e sinais vitais",
+                    "Priorizar via aérea, respiração, circulação e consciência.",
+                    "Sintomas sistêmicos mudam prioridade.",
+                    "critical",
+                    "intoxicacao_abcde",
+                ),
+                _step(
+                    3,
+                    "Não induzir vômito",
+                    "Evitar medidas caseiras ou descontaminação sem orientação.",
+                    "Condutas inadequadas podem agravar lesão.",
+                    "critical",
+                    "intoxicacao_nao_induzir",
+                ),
+                _step(
+                    4,
+                    "Identificar substância",
+                    "Registrar nome, dose, horário, coingestões e embalagem.",
+                    "CIAT depende dessas informações.",
+                    "high",
+                    "intoxicacao_identificacao",
+                ),
+                _step(
+                    5,
+                    "Acionar CIAT/Disque-Intoxicação",
+                    "Usar rede toxicológica/regulação e registrar orientação.",
+                    "Antídotos e observação dependem de orientação especializada.",
+                    "high",
+                    "intoxicacao_renaciat",
+                ),
             ],
         ),
     ]

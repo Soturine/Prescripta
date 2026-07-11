@@ -228,6 +228,32 @@ class MedicationModel(Base):
     max_daily_dose_mg: Mapped[float] = mapped_column(Float, nullable=False)
     dose_mg_per_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
     dose_by_weight_enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
+    usual_dose_low: Mapped[float | None] = mapped_column(Float, nullable=True)
+    usual_dose_high: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_single_dose: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_per_procedure: Mapped[float | None] = mapped_column(Float, nullable=True)
+    dose_calculation_basis: Mapped[str] = mapped_column(String(40), default="fixed", nullable=False)
+    dose_unit: Mapped[str] = mapped_column(String(40), default="mg", nullable=False)
+    dose_rule_validation_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False
+    )
+    dose_source_refs: Mapped[list[str]] = mapped_column(JSON, default=list)
+    controlled_substance: Mapped[bool] = mapped_column(default=False, nullable=False)
+    controlled_substance_list: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    prescription_form_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    high_alert_category: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    recommended_specialty_codes: Mapped[list[str]] = mapped_column(JSON, default=list)
+    required_specialty_codes: Mapped[list[str]] = mapped_column(JSON, default=list)
+    requires_second_review: Mapped[bool] = mapped_column(default=False, nullable=False)
+    requires_institutional_protocol: Mapped[bool] = mapped_column(default=False, nullable=False)
+    policy_type: Mapped[str] = mapped_column(String(60), default="demo_policy", nullable=False)
+    policy_strength: Mapped[str] = mapped_column(String(40), default="warning_only", nullable=False)
+    policy_validation_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False
+    )
+    policy_source_refs: Mapped[list[str]] = mapped_column(JSON, default=list)
+    psychotropic_class: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    psychotropic_profile: Mapped[dict] = mapped_column(JSON, default=dict)
     max_duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_cumulative_dose_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
     continuous_use: Mapped[bool] = mapped_column(default=False, nullable=False)
@@ -594,6 +620,23 @@ class AIConfigurationAuditLogModel(Base):
     )
 
 
+class SpecialtyModel(Base):
+    __tablename__ = "specialties"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    code: Mapped[str] = mapped_column(String(80), unique=True, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    demo_only: Mapped[bool] = mapped_column(default=True, nullable=False)
+    requires_rqe_for_real_use: Mapped[bool] = mapped_column(default=False, nullable=False)
+    credential_verification_status: Mapped[str] = mapped_column(
+        String(40), default="demo_unverified", nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
 class UserModel(Base):
     __tablename__ = "users"
 
@@ -603,6 +646,13 @@ class UserModel(Base):
     hashed_password: Mapped[str] = mapped_column(String(512), nullable=False)
     role: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    specialty_code: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    crm_demo: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    crm_uf: Mapped[str | None] = mapped_column(String(2), nullable=True)
+    rqe_demo: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    credential_verification_status: Mapped[str] = mapped_column(
+        String(40), default="demo_unverified", nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
@@ -630,6 +680,9 @@ class PrescriptionAuditModel(Base):
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
     alerts: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    dose_intelligence: Mapped[dict] = mapped_column(JSON, default=dict)
+    psychotropic_safety: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    prescribing_policy: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
 class AuditEventModel(Base):

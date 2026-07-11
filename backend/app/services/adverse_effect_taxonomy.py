@@ -95,9 +95,7 @@ ADVERSE_EFFECT_TAXONOMY: tuple[AdverseEffectCategory, ...] = (
     AdverseEffectCategory("red_flags", "inchaco_importante", "Inchaco importante"),
     AdverseEffectCategory("red_flags", "desmaio", "Desmaio"),
     AdverseEffectCategory("red_flags", "sangramento_importante", "Sangramento importante"),
-    AdverseEffectCategory(
-        "red_flags", "dor_intensa_persistente", "Dor intensa/persistente"
-    ),
+    AdverseEffectCategory("red_flags", "dor_intensa_persistente", "Dor intensa/persistente"),
 )
 
 ENTRY_BY_CODE = {entry.code: entry for entry in ADVERSE_EFFECT_TAXONOMY}

@@ -122,10 +122,15 @@ class MedicationCounselingService:
             setattr(summary, field, value)
         summary.validation_status = payload.validation_status
         summary.requires_review = payload.validation_status not in {"curated", "validated"}
-        summary.generated_by = "manual_curated" if summary.validation_status in {
-            "curated",
-            "validated",
-        } else summary.generated_by
+        summary.generated_by = (
+            "manual_curated"
+            if summary.validation_status
+            in {
+                "curated",
+                "validated",
+            }
+            else summary.generated_by
+        )
         summary.updated_at = datetime.now(UTC)
         self.db.commit()
         self.db.refresh(summary)

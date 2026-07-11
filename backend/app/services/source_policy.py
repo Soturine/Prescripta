@@ -9,6 +9,7 @@ BR_SOURCE_PRIORITY = {
     "US": 3,
 }
 
+
 def source_priority(jurisdiction: str | None, context_jurisdiction: str = "BR") -> int:
     jurisdiction_value = (jurisdiction or "GLOBAL").upper()
     context_value = context_jurisdiction.upper()

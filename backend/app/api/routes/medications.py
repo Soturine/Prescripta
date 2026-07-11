@@ -188,7 +188,7 @@ def review_counseling_summary(
     if summary is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resumo de orientacao nao encontrado.",
+            detail="Resumo de orienta??o n?o encontrado.",
         )
     updated = service.review_summary(summary, payload)
     AuditService(db).record_action(

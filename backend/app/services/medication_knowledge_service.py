@@ -269,9 +269,7 @@ class MedicationKnowledgeService:
             return
         normalized = normalize_text(name)
         existing = self.db.scalar(
-            select(ActiveIngredientModel).where(
-                ActiveIngredientModel.normalized_name == normalized
-            )
+            select(ActiveIngredientModel).where(ActiveIngredientModel.normalized_name == normalized)
         )
         therapeutic_classes = _as_list(payload.get("therapeutic_classes")) or _as_list(
             payload.get("therapeutic_class")

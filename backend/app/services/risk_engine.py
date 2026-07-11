@@ -369,9 +369,7 @@ class RiskEngine:
                         "paciente possui fator hepático cadastrado."
                     ),
                     severity=RiskLevel.HIGH,
-                    recommendation=(
-                        "Revisar funcao hepatica, dose, interacoes e monitoramento."
-                    ),
+                    recommendation=("Revisar funcao hepatica, dose, interacoes e monitoramento."),
                 )
             )
         return alerts
@@ -563,18 +561,20 @@ class RiskEngine:
                         "SNC demonstrativo."
                     ),
                     severity=RiskLevel.MODERATE,
-                    recommendation=(
-                        "Revisar risco de sedacao, quedas e orientacoes ao paciente."
-                    ),
+                    recommendation=("Revisar risco de sedacao, quedas e orientacoes ao paciente."),
                 )
             )
 
-        if patient_factors and cautions and not {
-            "SEROTONERGIC_REVIEW",
-            "IMAO_INTERACTION_REVIEW",
-            "SEIZURE_THRESHOLD_REVIEW",
-            "SEDATION_REVIEW",
-        }.intersection({alert.code for alert in alerts}):
+        if (
+            patient_factors
+            and cautions
+            and not {
+                "SEROTONERGIC_REVIEW",
+                "IMAO_INTERACTION_REVIEW",
+                "SEIZURE_THRESHOLD_REVIEW",
+                "SEDATION_REVIEW",
+            }.intersection({alert.code for alert in alerts})
+        ):
             alerts.append(
                 Alert(
                     code="NEUROPSYCHIATRIC_REVIEW",
@@ -743,9 +743,7 @@ class RiskEngine:
             "dose_mg_per_kg": medication.dose_mg_per_kg,
             "patient_weight_kg": patient.weight_kg,
             "calculated_daily_limit_mg": weight_limit,
-            "was_considered": bool(
-                medication.dose_by_weight_enabled and medication.dose_mg_per_kg
-            ),
+            "was_considered": bool(medication.dose_by_weight_enabled and medication.dose_mg_per_kg),
         }
         return {
             "daily_total_mg": prescription.daily_total_mg,

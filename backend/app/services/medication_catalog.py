@@ -84,8 +84,7 @@ class MedicationCatalogService:
         if any(self._matches_text(name, normalized_query) for name in names):
             return "active_ingredient"
         if any(
-            self._matches_text(brand, normalized_query)
-            for brand in ingredient.common_brands or []
+            self._matches_text(brand, normalized_query) for brand in ingredient.common_brands or []
         ):
             return "brand_alias"
         return None

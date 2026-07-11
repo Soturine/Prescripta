@@ -59,4 +59,3 @@ class MedicationExposureService:
             monitoring_required=medication.monitoring_required,
             monitoring_notes=medication.monitoring_notes,
         )
-

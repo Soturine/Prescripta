@@ -121,9 +121,7 @@ def _explain_payload(
 
 
 def test_ai_explainer_returns_deterministic_fallback_without_api_key() -> None:
-    explainer = AIExplainer(
-        Settings(ai_provider="openai", ai_api_key="", ai_model="gpt-test")
-    )
+    explainer = AIExplainer(Settings(ai_provider="openai", ai_api_key="", ai_model="gpt-test"))
 
     result = explainer.explain(_sample_explain_request(), requester_role="medico")
 

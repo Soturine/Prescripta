@@ -17,4 +17,3 @@ class FhirPatientAdapter:
 
     def normalize_patient(self) -> dict:
         return self.get_patient()
-

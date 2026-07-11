@@ -10,9 +10,7 @@ class FhirObservationAdapter:
 
     def get_observations(self) -> list[dict]:
         return [
-            resource
-            for resource in self.resources
-            if resource.get("resourceType") == "Observation"
+            resource for resource in self.resources if resource.get("resourceType") == "Observation"
         ]
 
     def normalize_observations(self) -> list[dict]:

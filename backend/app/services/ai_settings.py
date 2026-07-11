@@ -429,8 +429,7 @@ class AISettingsService:
         try:
             result = self.complete_json(
                 system_instructions=(
-                    "Responda apenas JSON válido com a chave ok=true. "
-                    "Não use dados clínicos reais."
+                    "Responda apenas JSON válido com a chave ok=true. Não use dados clínicos reais."
                 ),
                 payload={"test": "prescripta_ai_settings"},
                 purpose="connection_test",
@@ -501,7 +500,9 @@ class AISettingsService:
             use_json_mode=(
                 use_json_mode_override
                 if use_json_mode_override is not None
-                else row.use_json_mode if row else self.settings.ai_use_json_mode
+                else row.use_json_mode
+                if row
+                else self.settings.ai_use_json_mode
             ),
         )
 
@@ -1003,7 +1004,9 @@ class AISettingsService:
                 external_calls_enabled=(
                     bool(external_calls_enabled)
                     if external_calls_enabled is not None
-                    else bool(row.enable_external_calls) if row else False
+                    else bool(row.enable_external_calls)
+                    if row
+                    else False
                 ),
                 result=result,
                 error_summary=error_summary,
@@ -1025,7 +1028,9 @@ class AISettingsService:
                     "external_calls_enabled": (
                         bool(external_calls_enabled)
                         if external_calls_enabled is not None
-                        else bool(row.enable_external_calls) if row else False
+                        else bool(row.enable_external_calls)
+                        if row
+                        else False
                     ),
                     "error_summary": error_summary,
                     "secret_logged": False,

@@ -293,7 +293,7 @@ def list_patient_documents(
     patient = PatientRepository(db).get(patient_id)
     if patient is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nao encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente n?o encontrado."
         )
     return PatientHistoryService(db).list_documents(patient_id)
 
@@ -312,7 +312,7 @@ def create_patient_document(
     patient = PatientRepository(db).get(patient_id)
     if patient is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nao encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente n?o encontrado."
         )
     return PatientHistoryService(db).create_document(patient, payload, current_user)
 
@@ -330,13 +330,13 @@ def extract_patient_document(
     patient = PatientRepository(db).get(patient_id)
     if patient is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nao encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente n?o encontrado."
         )
     document = db.get(PatientClinicalDocumentModel, document_id)
     if document is None or document.patient_id != patient_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Documento clinico nao encontrado.",
+            detail="Documento cl?nico n?o encontrado.",
         )
     return PatientHistoryService(db).extract_document(patient, document, current_user)
 
@@ -355,13 +355,13 @@ def review_patient_document_extraction(
     patient = PatientRepository(db).get(patient_id)
     if patient is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nao encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente n?o encontrado."
         )
     extraction = db.get(PatientDocumentExtractionModel, extraction_id)
     if extraction is None or extraction.patient_id != patient_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Extracao clinica nao encontrada.",
+            detail="Extracao clinica n?o encontrada.",
         )
     return PatientHistoryService(db).review_extraction(
         patient,
@@ -385,7 +385,7 @@ def patient_timeline(
     patient = PatientRepository(db).get(patient_id)
     if patient is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nao encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente n?o encontrado."
         )
     return PatientHistoryService(db).timeline(patient_id)
 
@@ -402,7 +402,7 @@ def patient_knowledge_bundle(
     patient = PatientRepository(db).get(patient_id)
     if patient is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente nao encontrado."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Paciente n?o encontrado."
         )
     return PatientHistoryService(db).knowledge_bundle(patient)
 

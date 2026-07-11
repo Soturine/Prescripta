@@ -14,6 +14,7 @@ from app.database.models import (
     PatientFunctionalProfileModel,
     PatientIdentifierModel,
     PatientModel,
+    SpecialtyModel,
     UserModel,
 )
 from app.domain.user import UserRole
@@ -32,6 +33,7 @@ def seed_demo_data(db: Session) -> None:
     _seed_knowledge_sources(db, ingredients)
     _seed_clinical_vocabulary(db)
     _seed_medications(db, ingredients)
+    _seed_v084_medications(db, ingredients)
     db.flush()
     _seed_patients(db)
     db.flush()
@@ -42,6 +44,8 @@ def seed_demo_data(db: Session) -> None:
     _link_existing_medications(db, ingredients)
     db.flush()
     _seed_counseling_summaries(db)
+    db.flush()
+    _seed_specialties(db)
     db.flush()
     _seed_users(db)
     db.commit()
@@ -807,6 +811,112 @@ def _seed_v07_medications(
                 setattr(existing, field, getattr(spec, field))
 
 
+def _seed_v084_medications(db: Session, ingredients: dict[str, ActiveIngredientModel]) -> None:
+    common = ["dipirona", "ibuprofeno", "amoxicilina", "losartana", "metformina"]
+    psychotropic = [
+        "sertralina",
+        "fluoxetina",
+        "venlafaxina",
+        "amitriptilina",
+        "bupropiona",
+        "diazepam",
+        "clonazepam",
+        "zolpidem",
+        "litio",
+        "valproato",
+        "carbamazepina",
+        "lamotrigina",
+        "quetiapina",
+        "risperidona",
+        "haloperidol",
+        "clozapina",
+        "metilfenidato",
+        "lisdexanfetamina",
+    ]
+    opioids = ["morfina", "fentanil", "tramadol", "metadona"]
+    anesthetics = [
+        "lidocaina",
+        "bupivacaina",
+        "propofol",
+        "cetamina",
+        "midazolam",
+        "rocuronio",
+        "succinilcolina",
+    ]
+    for name in common + psychotropic + opioids + anesthetics:
+        normalized = normalize_text(name)
+        ingredient = ingredients.get(normalized)
+        if ingredient is None:
+            ingredient = ActiveIngredientModel(
+                dcb_name=name,
+                normalized_name=normalized,
+                synonyms=[],
+                therapeutic_classes=["demo_pending_review"],
+                common_brands=[],
+                jurisdiction="BR",
+                source="demo_seed",
+                validation_status="pending_review",
+            )
+            db.add(ingredient)
+            db.flush()
+            ingredients[normalized] = ingredient
+        existing = db.scalar(
+            select(MedicationModel).where(MedicationModel.active_ingredient == normalized)
+        )
+        policy_specialties: list[str] = []
+        high_alert = None
+        if name in psychotropic:
+            policy_specialties = ["psychiatry", "neurology"]
+            high_alert = "psychotropic"
+        elif name in opioids:
+            policy_specialties = ["pain_medicine", "palliative_care", "anesthesiology"]
+            high_alert = "opioid_high_potency"
+        elif name in anesthetics:
+            policy_specialties = ["anesthesiology", "emergency_medicine", "intensive_care"]
+            high_alert = "anesthetic_procedural"
+        values = {
+            "active_ingredient_id": ingredient.id,
+            "brand_name": f"{name.title()} Demo",
+            "active_ingredient": normalized,
+            "commercial_aliases": [],
+            "therapeutic_class": "demo pendente de revisão",
+            "therapeutic_classes": list(ingredient.therapeutic_classes or []),
+            "source_jurisdiction": "BR",
+            "evidence_source_type": "demo_seed",
+            "validation_status": "pending_review",
+            "max_daily_dose_mg": 1000,
+            "allowed_routes": ["a_revisar"],
+            "contraindications": [],
+            "dose_rule_validation_status": "pending_review",
+            "dose_calculation_basis": "actual_weight" if name in anesthetics else "fixed",
+            "dose_unit": "mg/kg" if name in anesthetics else "mg",
+            "recommended_specialty_codes": policy_specialties,
+            "requires_institutional_protocol": name in anesthetics,
+            "requires_second_review": name in opioids or name in anesthetics,
+            "policy_type": "demo_policy",
+            "policy_strength": "requires_review" if high_alert else "warning_only",
+            "policy_validation_status": "pending_review",
+            "high_alert_category": high_alert,
+            "psychotropic_class": "pending_classification" if name in psychotropic else None,
+            "notes": "Seed educacional; limites e vias exigem curadoria antes de uso.",
+        }
+        if existing is None:
+            db.add(MedicationModel(**values))
+        else:
+            for field in (
+                "recommended_specialty_codes",
+                "requires_institutional_protocol",
+                "requires_second_review",
+                "policy_type",
+                "policy_strength",
+                "policy_validation_status",
+                "high_alert_category",
+                "psychotropic_class",
+                "dose_rule_validation_status",
+            ):
+                setattr(existing, field, values[field])
+
+
 def _seed_patients(db: Session) -> None:
     has_patients = db.scalar(select(PatientModel.id).limit(1))
     if has_patients:
@@ -1133,40 +1243,99 @@ def _link_existing_medications(
         medication.validation_status = medication.validation_status or ingredient.validation_status
 
 
-def _seed_users(db: Session) -> None:
-    has_users = db.scalar(select(UserModel.id).limit(1))
-    if has_users:
-        return
+def _seed_specialties(db: Session) -> None:
+    specs = {
+        "general_practice": "Medicina geral",
+        "family_medicine": "Medicina de família e comunidade",
+        "internal_medicine": "Clínica médica",
+        "pediatrics": "Pediatria",
+        "geriatrics": "Geriatria",
+        "psychiatry": "Psiquiatria",
+        "neurology": "Neurologia",
+        "anesthesiology": "Anestesiologia",
+        "emergency_medicine": "Medicina de emergência",
+        "intensive_care": "Medicina intensiva",
+        "oncology": "Oncologia",
+        "pain_medicine": "Medicina da dor",
+        "palliative_care": "Cuidados paliativos",
+        "cardiology": "Cardiologia",
+        "infectious_disease": "Infectologia",
+        "obstetrics_gynecology": "Ginecologia e obstetrícia",
+        "surgery": "Cirurgia",
+        "other": "Outra especialidade demo",
+    }
+    for code, name in specs.items():
+        if db.scalar(select(SpecialtyModel).where(SpecialtyModel.code == code)) is None:
+            db.add(SpecialtyModel(code=code, name=name, demo_only=True))
 
-    db.add_all(
-        [
-            UserModel(
-                name="Admin Prescripta",
-                email="admin@prescripta.local",
-                hashed_password=hash_password("Admin@12345"),
-                role=UserRole.ADMIN.value,
-                is_active=True,
-            ),
-            UserModel(
-                name="Medico Demonstracao",
-                email="medico@prescripta.local",
-                hashed_password=hash_password("Medico@12345"),
-                role=UserRole.MEDICO.value,
-                is_active=True,
-            ),
-            UserModel(
-                name="Enfermagem Demonstracao",
-                email="enfermagem@prescripta.local",
-                hashed_password=hash_password("Enfermagem@12345"),
-                role=UserRole.ENFERMAGEM.value,
-                is_active=True,
-            ),
-            UserModel(
-                name="Auditor Demonstracao",
-                email="auditor@prescripta.local",
-                hashed_password=hash_password("Auditor@12345"),
-                role=UserRole.AUDITOR.value,
-                is_active=True,
-            ),
-        ]
-    )
+
+def _seed_users(db: Session) -> None:
+    specs = [
+        ("Admin Prescripta", "admin@prescripta.local", "Admin@12345", UserRole.ADMIN, None),
+        (
+            "Médico geral demo",
+            "medico@prescripta.local",
+            "Medico@12345",
+            UserRole.MEDICO,
+            "general_practice",
+        ),
+        (
+            "Anestesiologia demo",
+            "anestesia@prescripta.local",
+            "Anestesia@12345",
+            UserRole.MEDICO,
+            "anesthesiology",
+        ),
+        (
+            "Psiquiatria demo",
+            "psiquiatria@prescripta.local",
+            "Psiquiatria@12345",
+            UserRole.MEDICO,
+            "psychiatry",
+        ),
+        (
+            "Neurologia demo",
+            "neurologia@prescripta.local",
+            "Neurologia@12345",
+            UserRole.MEDICO,
+            "neurology",
+        ),
+        (
+            "Oncologia demo",
+            "oncologia@prescripta.local",
+            "Oncologia@12345",
+            UserRole.MEDICO,
+            "oncology",
+        ),
+        (
+            "Enfermagem demonstração",
+            "enfermagem@prescripta.local",
+            "Enfermagem@12345",
+            UserRole.ENFERMAGEM,
+            None,
+        ),
+        (
+            "Auditor demonstração",
+            "auditor@prescripta.local",
+            "Auditor@12345",
+            UserRole.AUDITOR,
+            None,
+        ),
+    ]
+    for name, email, password, role, specialty in specs:
+        user = db.scalar(select(UserModel).where(UserModel.email == email))
+        if user is None:
+            db.add(
+                UserModel(
+                    name=name,
+                    email=email,
+                    hashed_password=hash_password(password),
+                    role=role.value,
+                    is_active=True,
+                    specialty_code=specialty,
+                    credential_verification_status="demo_unverified",
+                )
+            )
+        elif role == UserRole.MEDICO and not user.specialty_code:
+            user.specialty_code = specialty
+            user.credential_verification_status = "demo_unverified"

@@ -212,9 +212,11 @@ def _table_section(title: str, rows: list[dict[str, Any]]) -> str:
     head = "".join(f"<th>{html.escape(header)}</th>" for header in headers)
     body = ""
     for row in rows:
-        body += "<tr>" + "".join(
-            f"<td>{html.escape(str(row.get(header, '')))}</td>" for header in headers
-        ) + "</tr>"
+        body += (
+            "<tr>"
+            + "".join(f"<td>{html.escape(str(row.get(header, '')))}</td>" for header in headers)
+            + "</tr>"
+        )
     return (
         f"<h2>{html.escape(title)}</h2><table><thead><tr>{head}</tr></thead>"
         f"<tbody>{body}</tbody></table>"

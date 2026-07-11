@@ -149,4 +149,3 @@ def test_clinical_deduplication_preserves_original_value() -> None:
     assert result.mapped_code == "dipirona"
     assert condition.original_value == "problema nos rins"
     assert condition.requires_review is True
-

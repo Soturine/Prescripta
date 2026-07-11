@@ -57,9 +57,7 @@ class ClinicalImportBatchRead(BaseModel):
     finished_at: datetime | None = None
     errors: list[str] = Field(default_factory=list)
     records: list[ClinicalSourceRecordRead] = Field(default_factory=list)
-    educational_notice: str = (
-        "Importação assistida: dados ficam pendentes até revisão humana."
-    )
+    educational_notice: str = "Importação assistida: dados ficam pendentes até revisão humana."
 
 
 class ReconciliationDecisionRequest(BaseModel):
@@ -92,7 +90,4 @@ class ClinicalReconciliationRead(BaseModel):
     summary: dict
     items: list[ClinicalReconciliationItemRead]
     badges: list[str] = Field(default_factory=list)
-    educational_notice: str = (
-        "Reconciliação assistida: conflitos exigem decisão humana por item."
-    )
-
+    educational_notice: str = "Reconciliação assistida: conflitos exigem decisão humana por item."

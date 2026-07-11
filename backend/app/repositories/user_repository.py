@@ -25,6 +25,11 @@ class UserRepository:
         hashed_password: str,
         role: str,
         is_active: bool = True,
+        specialty_code: str | None = None,
+        crm_demo: str | None = None,
+        crm_uf: str | None = None,
+        rqe_demo: str | None = None,
+        credential_verification_status: str = "demo_unverified",
     ) -> UserModel:
         user = UserModel(
             name=name,
@@ -32,6 +37,11 @@ class UserRepository:
             hashed_password=hashed_password,
             role=role,
             is_active=is_active,
+            specialty_code=specialty_code,
+            crm_demo=crm_demo,
+            crm_uf=crm_uf,
+            rqe_demo=rqe_demo,
+            credential_verification_status=credential_verification_status,
         )
         self.db.add(user)
         self.db.commit()

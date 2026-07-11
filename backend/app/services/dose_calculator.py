@@ -8,9 +8,7 @@ def calculate_daily_dose(prescription: PrescriptionInput) -> float:
     return prescription.dose_mg * prescription.frequency_per_day
 
 
-def check_max_daily_dose(
-    medication: Medication, prescription: PrescriptionInput
-) -> list[Alert]:
+def check_max_daily_dose(medication: Medication, prescription: PrescriptionInput) -> list[Alert]:
     daily_total = calculate_daily_dose(prescription)
     if daily_total <= medication.max_daily_dose_mg:
         return []
@@ -52,8 +50,6 @@ def check_weight_based_dose(
                 f"({medication.dose_mg_per_kg:g} mg/kg x {patient.weight_kg:g} kg)."
             ),
             severity=RiskLevel.HIGH,
-            recommendation=(
-                "Revisar dose por kg, peso registrado e fonte antes de prosseguir."
-            ),
+            recommendation=("Revisar dose por kg, peso registrado e fonte antes de prosseguir."),
         )
     ]
