@@ -910,6 +910,8 @@ class AISettingsService:
 
     def _cache_is_fresh(self, models: list[AIProviderModelCacheModel]) -> bool:
         latest = max(model.refreshed_at for model in models)
+        if latest.tzinfo is None:
+            latest = latest.replace(tzinfo=UTC)
         return datetime.now(UTC) - latest <= MODEL_CACHE_TTL
 
     def _upsert_model(
