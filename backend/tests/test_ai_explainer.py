@@ -266,7 +266,7 @@ def test_audit_keeps_prescription_check_event_after_explanation(
 
     assert explain_response.status_code == 200
     prescription_checks = [
-        event for event in audit_response.json() if event["action"] == "prescription.check"
+        event for event in audit_response.json()["items"] if event["action"] == "prescription.check"
     ]
     assert len(prescription_checks) == 1
     assert prescription_checks[0]["resource_id"] == str(check_result["audit_id"])

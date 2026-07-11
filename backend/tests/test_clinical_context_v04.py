@@ -252,4 +252,6 @@ def test_quick_triage_preserves_existing_data_and_audits(
     assert payload["renal_condition"] == "funcao_renal_a_revisar"
     assert payload["allergies"] == ["dipirona"]
     assert payload["current_medications"] == ["losartana", "metformina"]
-    assert any(event["action"] == "patient.quick_triage" for event in audit_response.json())
+    assert any(
+        event["action"] == "patient.quick_triage" for event in audit_response.json()["items"]
+    )

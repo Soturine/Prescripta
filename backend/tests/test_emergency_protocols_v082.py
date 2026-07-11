@@ -79,7 +79,7 @@ def test_protocol_run_records_audit_and_calculations(
     assert body["calculated_values"][0]["source_ref"] == "anafilaxia_adrenalina_im"
     assert body["calculated_values"][0]["requires_human_confirmation"] is True
     assert audit.status_code == 200
-    events = audit.json()
+    events = audit.json()["items"]
     assert {event["action"] for event in events} >= {"protocol.run", "protocol.step_checked"}
     run_event = next(event for event in events if event["action"] == "protocol.run")
     assert run_event["details"]["secret_logged"] is False

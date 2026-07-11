@@ -24,10 +24,11 @@ export default function Audit() {
   const filters = useMemo(() => paramsToFilters(searchParams), [searchParams]);
   const [draft, setDraft] = useState<AuditFilters>(filters);
   const [selected, setSelected] = useState<AuditRecord | null>(null);
-  const { data: records = [], isLoading } = useQuery({
+  const { data: auditPage, isLoading } = useQuery({
     queryKey: ["audit", filters],
     queryFn: () => fetchAudit(filters),
   });
+  const records = auditPage?.items ?? [];
   const { data: timeline = [] } = useQuery({
     queryKey: ["audit-timeline", selected?.id],
     queryFn: () => fetchAuditTimeline(Number(selected?.id)),
@@ -187,6 +188,13 @@ export default function Audit() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm">
+            <span>{auditPage?.total ?? 0} eventos · página {auditPage?.page ?? 1} de {auditPage?.total_pages || 1}</span>
+            <div className="flex gap-2">
+              <button className="btn-secondary" disabled={!auditPage?.has_previous} onClick={() => setSearchParams(filtersToParams({ ...filters, page: (auditPage?.page ?? 1) - 1 }))} type="button">Anterior</button>
+              <button className="btn-secondary" disabled={!auditPage?.has_next} onClick={() => setSearchParams(filtersToParams({ ...filters, page: (auditPage?.page ?? 1) + 1 }))} type="button">Próxima</button>
+            </div>
           </div>
         </section>
       ) : null}

@@ -58,7 +58,8 @@ class AuditRepository:
         sort: str = "desc",
         page: int = 1,
         page_size: int = 100,
-    ) -> list[AuditEventModel]:
+        include_total: bool = False,
+    ) -> list[AuditEventModel] | tuple[list[AuditEventModel], int]:
         statement = select(AuditEventModel)
         direct_filters = {
             AuditEventModel.user_role: user_role,
@@ -133,8 +134,10 @@ class AuditRepository:
             if sort.lower() == "asc"
             else AuditEventModel.created_at.desc()
         )
+        total = self.db.scalar(select(func.count()).select_from(statement.subquery())) or 0
         statement = statement.order_by(order).offset((page - 1) * page_size).limit(page_size)
-        return list(self.db.scalars(statement))
+        items = list(self.db.scalars(statement))
+        return (items, total) if include_total else items
 
     def list_prescription_checks(self) -> list[PrescriptionAuditModel]:
         return list(

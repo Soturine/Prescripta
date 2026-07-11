@@ -11,14 +11,14 @@ from app.domain.user import UserRole
 from app.reports.audit import decision_timeline, evidence_view
 from app.reports.service import ReportNotFoundError, ReportService
 from app.repositories.audit_repository import AuditRepository
-from app.schemas.audit_schema import AuditRead
+from app.schemas.audit_schema import AuditPage, AuditRead
 
 router = APIRouter(prefix="/audit", tags=["audit"])
 DbSession = Annotated[Session, Depends(get_db)]
 AuditReader = Annotated[UserModel, Depends(require_roles(UserRole.ADMIN, UserRole.AUDITOR))]
 
 
-@router.get("", response_model=list[AuditRead])
+@router.get("", response_model=AuditPage)
 def list_audit(
     db: DbSession,
     _current_user: AuditReader,
@@ -57,8 +57,8 @@ def list_audit(
     sort: str = "desc",
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=100, ge=1, le=500),
-) -> list[AuditRead]:
-    return AuditRepository(db).list_filtered(
+) -> AuditPage:
+    items, total = AuditRepository(db).list_filtered(
         user=user,
         user_role=user_role,
         patient=patient,
@@ -94,6 +94,17 @@ def list_audit(
         sort=sort,
         page=page,
         page_size=page_size,
+        include_total=True,
+    )
+    total_pages = (total + page_size - 1) // page_size
+    return AuditPage(
+        items=items,
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=total_pages,
+        has_next=page < total_pages,
+        has_previous=page > 1,
     )
 
 
