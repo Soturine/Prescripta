@@ -1,4 +1,5 @@
 import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -114,15 +115,11 @@ def test_prescribing_policy_never_turns_demo_into_legal_block():
 def test_text_quality_script_rejects_visible_unaccented_terms(tmp_path: Path):
     fixture = tmp_path / "visible.md"
     fixture.write_text("A prescricao nao tem contexto clinico.\n", encoding="utf-8")
-    script = Path(__file__).parents[2] / "scripts" / "check-text-quality.ps1"
+    script = Path(__file__).parents[2] / "scripts" / "check_text_quality.py"
     completed = subprocess.run(
         [
-            "powershell",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-File",
+            sys.executable,
             str(script),
-            "-Path",
             str(fixture),
         ],
         check=False,
@@ -131,3 +128,13 @@ def test_text_quality_script_rejects_visible_unaccented_terms(tmp_path: Path):
     )
     assert completed.returncode != 0
     assert "Termo sem acento" in completed.stdout
+
+
+def test_text_quality_script_allows_technical_identifier(tmp_path: Path):
+    fixture = tmp_path / "technical.py"
+    fixture.write_text('policy_type = "prescricao_demo"\n', encoding="utf-8")
+    script = Path(__file__).parents[2] / "scripts" / "check_text_quality.py"
+    completed = subprocess.run(
+        [sys.executable, str(script), str(fixture)], capture_output=True, text=True
+    )
+    assert completed.returncode == 0, completed.stdout
