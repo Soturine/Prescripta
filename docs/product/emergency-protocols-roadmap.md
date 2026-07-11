@@ -1,29 +1,35 @@
-# Roadmap de Protocolos Rápidos / Emergência
+# Protocolos Rápidos / Emergência
 
-O Prescripta ainda não possui Central de Emergência.
+A lacuna de Central de Emergência foi fechada na v0.8.2 com uma implementação
+demonstrativa, auditável e limitada.
 
-Essa lacuna foi identificada na auditoria de paridade conceitual SafeDose/RicoToro, mas não será implementada na v0.7.1.
+## Entregue Na v0.8.2
 
-## Possibilidades Futuras
-
-- PCR.
 - Anafilaxia.
-- IAM.
-- Crise convulsiva.
-- Cálculo por peso.
-- Avisos de via/dose.
-- Checagem de alergias, idade, peso e medicamentos em uso.
+- PCR.
+- Convulsão / crise convulsiva.
+- Hipoglicemia.
+- Dor torácica / suspeita de SCA.
+- Broncoespasmo / crise asmática.
+- Intoxicação medicamentosa.
 
-## Condições Para Implementar
+## Garantias
 
-- Fonte/protocolo validado.
-- Revisão clínica humana.
-- Separação clara entre apoio educacional e decisão assistencial.
-- Auditoria.
-- Testes de dose, via, intervalo, contraindicação e escalonamento.
+- Fonte e jurisdição explícitas.
+- Contexto mínimo por protocolo.
+- Execução registrada em auditoria.
+- Relatório, PDF, JSON e CSV por evento.
+- IA apenas explicativa, sem alterar estrutura.
+- Cálculos demonstrativos com confirmação humana obrigatória.
 
-## Versão Sugerida
+## Limites
 
-`v0.8.x` ou posterior, se priorizado.
+- Não há validação clínica externa formal.
+- Não substitui protocolo institucional.
+- Não aciona SAMU, CIAT ou sistema hospitalar real.
 
-Não implementar emergência sem fonte/protocolo validado.
+## Próximos Passos
+
+- Revisão clínica externa.
+- Versionamento de protocolos em banco.
+- Histórico de mudanças entre versões de protocolo.

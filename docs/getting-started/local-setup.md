@@ -1,5 +1,8 @@
 # Setup Local
 
+Para um roteiro ainda mais curto, veja `docs/setup/quickstart.md`. Para
+problemas comuns, veja `docs/setup/troubleshooting.md`.
+
 ## Caminho Recomendado
 
 ```powershell
@@ -31,3 +34,9 @@ exemplo. Não use dados reais de paciente.
 
 `GET /api/health` retorna nome, versão, ambiente, banco, provider de IA e se
 chamadas externas estão habilitadas. A resposta não inclui segredo.
+
+## Primeiro Fluxo
+
+Depois de logar como admin demo, valide Dashboard, Medicamentos, Checagem,
+Importações, Relatórios, Protocolos e IA. A jornada detalhada está em
+`docs/product/first-run-user-journey.md`.

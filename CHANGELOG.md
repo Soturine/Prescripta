@@ -1,13 +1,48 @@
 # Changelog
 
-Todas as mudancas relevantes deste projeto sao documentadas aqui.
+Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 ## [Unreleased]
 
 ### Planned
 
-- v0.9.0: Docker/PostgreSQL/deploy.
+- v0.9.0: Docker/PostgreSQL/migrações/deploy demo.
 - v1.0.0: versão final de portfólio.
+
+## [0.8.2] - 2026-07-11
+
+### Added
+
+- Central de Protocolos Rápidos com sete fluxos demonstrativos de urgência.
+- Endpoints `/api/protocols`, detalhe, execução, explicação, evidência, relatório,
+  PDF e exportação JSON/CSV por evento.
+- Execução auditada `protocol.run` com contexto mínimo, flags e cálculos
+  demonstrativos.
+- Tela **Protocolos** no frontend com filtros, passos, contexto, evidências,
+  explicação e exportações.
+- Docs de arquitetura de protocolos, política de fontes, UX, quickstart,
+  troubleshooting, jornada inicial e benchmark v0.8.2.
+
+### Changed
+
+- README raiz reestruturado como guia de produto, arquitetura, módulos, setup,
+  uso inicial, screenshots e limites.
+- Sidebar e health visual atualizados para v0.8.2.
+- Frontend recebeu polish em botões, campos, loading, empty states, layout,
+  dashboard e textos visíveis.
+- Roadmap reposicionado para v0.9.0 como próxima etapa principal.
+
+### Security
+
+- IA em protocolos é apenas explicativa e não altera passos, dose, fonte ou
+  decisão.
+- Protocolos mantêm aviso educacional e exigem julgamento humano.
+- Eventos de protocolo registram `secret_logged=false`.
+
+### Tests
+
+- Cobertura para listagem, detalhe, validação de contexto, execução, auditoria,
+  relatório, exportações e explicação fallback de protocolos.
 
 ## [0.8.1] - 2026-07-10
 
@@ -118,15 +153,15 @@ Todas as mudancas relevantes deste projeto sao documentadas aqui.
 
 ### Added
 
-- `MedicationCounselingSummary` com fonte, jurisdicao, evidencia extraida, cache e revisao humana.
+- `MedicationCounselingSummary` com fonte, jurisdição, evidência extraída, cache e revisão humana.
 - `MedicationCounselingExtractor` com providers GPT/Gemini/Llama/fallback e JSON validado por Pydantic.
-- Taxonomia controlada de efeitos adversos e orientacoes praticas.
+- Taxonomia controlada de efeitos adversos e orientações práticas.
 - Seeds demonstrativos de tansulosina, sertralina/ISRS e litio demo.
 - `PatientFunctionalProfile` com direcao, maquinas, altura, quedas, turno, alcool e alta atencao.
-- Modo sem historico com dados faltantes e pergunta minima contextual.
-- Cards de orientacao ao paciente, contexto funcional, dados faltantes e resumo pratico na checagem.
-- Reconciliacao clinica granular com badges, decisao por item e aceite seguro de itens sem conflito.
-- Endpoints de counseling, perfil funcional e reconciliacao granular.
+- Modo sem histórico com dados faltantes e pergunta mínima contextual.
+- Cards de orientação ao paciente, contexto funcional, dados faltantes e resumo prático na checagem.
+- Reconciliação clínica granular com badges, decisão por item e aceite seguro de itens sem conflito.
+- Endpoints de counseling, perfil funcional e reconciliação granular.
 
 ### Changed
 
@@ -136,8 +171,8 @@ Todas as mudancas relevantes deste projeto sao documentadas aqui.
 
 ### Security
 
-- Geracao por IA/fallback fica `pending_review` e nao aparece como validada.
-- IA nao altera status, risco, bloqueio, dose critica ou recomendacao final.
+- Geração por IA/fallback fica `pending_review` e não aparece como validada.
+- IA não altera status, risco, bloqueio, dose crítica ou recomendação final.
 - Decisoes granulares, revisao de resumo e perfil funcional geram auditoria.
 
 ### Tests
@@ -161,8 +196,8 @@ Todas as mudancas relevantes deste projeto sao documentadas aqui.
 
 ### Security
 
-- Sem scraping, sem credenciais de portais e sem integracao hospitalar real.
-- IA permanece apenas explicativa e nao altera decisao deterministica.
+- Sem scraping, sem credenciais de portais e sem integração hospitalar real.
+- IA permanece apenas explicativa e não altera decisão determinística.
 
 ## [0.5.0] - 2026-07-03
 
@@ -173,31 +208,31 @@ Todas as mudancas relevantes deste projeto sao documentadas aqui.
 - Lookup assistido Anvisa/DCB.
 - Seed BR com dipirona, ibuprofeno e nimesulida.
 - Aliases Novalgina, Anador, Dorflex, Neosaldina e Lisador resolvendo para dipirona.
-- Frontend com busca de catalogo, painel Anvisa/DCB, badges de fonte e selects clinicos controlados.
-- RAG com metadados de fonte, jurisdicao, tipo de evidencia e status de validacao.
+- Frontend com busca de catálogo, painel Anvisa/DCB, badges de fonte e selects clínicos controlados.
+- RAG com metadados de fonte, jurisdição, tipo de evidência e status de validação.
 - Documentacao de fontes brasileiras, politica de conflito e interoperabilidade futura.
 
 ### Changed
 
-- `MedicationModel` ganhou campos de principio ativo, aliases, fonte, jurisdicao, status, concentracao e forma farmaceutica.
-- Campos clinicos genericos sao normalizados para codigos controlados.
-- Compatibilidade e grafo clinico exibem labels humanos.
-- IA explicativa menciona fonte/jurisdicao e trata fontes internacionais como secundarias no contexto BR.
+- `MedicationModel` ganhou campos de princípio ativo, aliases, fonte, jurisdição, status, concentração e forma farmacêutica.
+- Campos clínicos genéricos são normalizados para códigos controlados.
+- Compatibilidade e grafo clínico exibem labels humanos.
+- IA explicativa menciona fonte/jurisdição e trata fontes internacionais como secundárias no contexto BR.
 
 ### Security
 
 - IA segue sem alterar status, risco, bloqueio, dose ou recomendacao.
 - Sem scraping agressivo.
-- Sem integracao hospitalar real nesta versao.
+- Sem integração hospitalar real nesta versão.
 
 ## [0.4.0] - 2026-07-02
 
 ### Added
 
-- Perfil clinico inteligente.
-- Triagem rapida com auditoria.
-- Dose acumulada, duracao e compatibilidade paciente-medicacao.
-- RAG clinico demonstrativo.
+- Perfil clínico inteligente.
+- Triagem rápida com auditoria.
+- Dose acumulada, duração e compatibilidade paciente-medicação.
+- RAG clínico demonstrativo.
 - Clinical Context Graph.
 - Alternativas avaliadas pelo motor de risco.
 - Script Windows de execucao local.
@@ -207,7 +242,7 @@ Todas as mudancas relevantes deste projeto sao documentadas aqui.
 ### Added
 
 - IA explicativa para alertas gerados por regras deterministicas.
-- Endpoint protegido e fallback deterministico.
+- Endpoint protegido e fallback determinístico.
 - Painel "Explicar com IA".
 - Documentacao, benchmark e assets de apresentacao.
 
@@ -218,7 +253,7 @@ Todas as mudancas relevantes deste projeto sao documentadas aqui.
 - Autenticacao JWT.
 - Perfis `admin`, `medico`, `enfermagem` e `auditor`.
 - Gestao de usuarios.
-- Auditoria com usuario responsavel.
+- Auditoria com usuário responsável.
 
 ## [0.1.0] - 2026-07-02
 
@@ -226,6 +261,6 @@ Todas as mudancas relevantes deste projeto sao documentadas aqui.
 
 - Backend FastAPI.
 - Frontend React.
-- CRUD basico de pacientes e medicamentos.
-- Motor deterministico inicial.
-- Auditoria, testes, documentacao e CI.
+- CRUD básico de pacientes e medicamentos.
+- Motor determinístico inicial.
+- Auditoria, testes, documentação e CI.

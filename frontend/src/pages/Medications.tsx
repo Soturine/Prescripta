@@ -184,7 +184,7 @@ export default function Medications() {
                         <p className="mt-1 text-xs font-semibold text-slate-500">
                           {result.match_type === "brand_alias"
                             ? "Alias comercial resolvido"
-                            : "Principio ativo"}
+                            : "Princípio ativo"}
                         </p>
                       </div>
                       <SourceBadge
@@ -224,7 +224,7 @@ export default function Medications() {
                   status={anvisaLookup.validation_status}
                 />
                 <p>Status: {anvisaLookup.status}</p>
-                <p>Principio ativo: {anvisaLookup.active_ingredient ?? "pendente"}</p>
+                <p>Princípio ativo: {anvisaLookup.active_ingredient ?? "pendente"}</p>
                 <p>{anvisaLookup.guidance}</p>
                 <a
                   className="inline-flex w-fit items-center gap-2 text-sm font-bold text-amber-950 underline"
@@ -356,7 +356,7 @@ export default function Medications() {
                 <thead className="bg-slate-50 text-xs font-bold uppercase tracking-normal text-slate-500">
                   <tr>
                     <th className="px-4 py-3">Nome</th>
-                    <th className="px-4 py-3">Principio ativo</th>
+                    <th className="px-4 py-3">Princípio ativo</th>
                     <th className="px-4 py-3">Aliases</th>
                     <th className="px-4 py-3">Fonte</th>
                     <th className="px-4 py-3">Classe</th>
@@ -397,11 +397,11 @@ export default function Medications() {
                           <button
                             className="btn-secondary"
                             onClick={() => setCounselingMedication(medication)}
-                            title={`Orientacoes de ${medication.brand_name}`}
+                            title={`Orientações de ${medication.brand_name}`}
                             type="button"
                           >
                             <BookOpen aria-hidden="true" className="h-4 w-4" />
-                            Orientacoes
+                            Orientações
                           </button>
                           {canManageMedication ? (
                           <button
@@ -476,7 +476,7 @@ function MedicationCounselingPanel({
             onClick={() => setTab("practical")}
             type="button"
           >
-            Orientacoes praticas
+            Orientações práticas
           </button>
           <button
             className={[
@@ -529,9 +529,9 @@ function MedicationCounselingPanel({
             <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
               <article className="rounded-lg border border-slate-100 bg-slate-50 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-sm font-bold text-ink">Orientacoes ao paciente</h3>
+                  <h3 className="text-sm font-bold text-ink">Orientações ao paciente</h3>
                   <span className="rounded-lg bg-white px-3 py-1 text-xs font-bold text-slate-700">
-                    confianca {summary.confidence}
+                    confiança {summary.confidence}
                   </span>
                 </div>
                 <p className="mt-3 text-sm leading-6 text-slate-600">

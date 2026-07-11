@@ -18,6 +18,7 @@ from app.api.routes import (
     medications,
     patients,
     prescriptions,
+    protocols,
     reports,
     users,
 )
@@ -66,6 +67,7 @@ app.include_router(patients.router, prefix=settings.api_prefix)
 app.include_router(medications.router, prefix=settings.api_prefix)
 app.include_router(medication_catalog.router, prefix=settings.api_prefix)
 app.include_router(prescriptions.router, prefix=settings.api_prefix)
+app.include_router(protocols.router, prefix=settings.api_prefix)
 app.include_router(cds.router, prefix=settings.api_prefix)
 app.include_router(dashboard.router, prefix=settings.api_prefix)
 app.include_router(audit.router, prefix=settings.api_prefix)

@@ -8,6 +8,7 @@ import {
   Pill,
   Settings,
   ShieldCheck,
+  Siren,
   Users,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -52,6 +53,7 @@ export default function Dashboard() {
       icon: ClipboardList,
       color: "text-warning",
     },
+    { label: "Protocolos", value: 7, icon: Siren, color: "text-danger" },
   ];
 
   return (
@@ -63,7 +65,7 @@ export default function Dashboard() {
         </p>
       </header>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
@@ -169,6 +171,12 @@ const quickActions = [
     label: "Abrir relatórios",
     description: "Ver PDFs, hashes, evidências e exportações geradas.",
     icon: FileText,
+  },
+  {
+    to: "/protocols",
+    label: "Abrir protocolos",
+    description: "Consultar fluxos rápidos com fonte, contexto mínimo e auditoria.",
+    icon: Siren,
   },
   {
     to: "/settings/ai",

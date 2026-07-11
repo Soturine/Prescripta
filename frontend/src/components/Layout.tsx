@@ -9,11 +9,11 @@ export default function Layout() {
   const { logout, user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-[#f4f8fb] text-ink lg:flex">
+    <div className="min-h-screen text-ink lg:flex">
       <Sidebar />
       <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <div className="mx-auto w-full max-w-7xl">
-          <div className="mb-6 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-6 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-bold text-ink">{user?.name}</p>
               <p className="text-xs text-slate-500">
