@@ -1,40 +1,50 @@
 # Registro De Prompts
 
-Os prompts de relatório ficam versionados por tipo:
+Este registro lista prompts versionados usados ou preparados pelo Prescripta.
+Cada prompt deve declarar objetivo, entrada, saida JSON, campos proibidos,
+regras de seguranca, fallback e teste esperado.
 
-| Tipo | Prompt v0.8.1 |
+## v0.8.3
+
+| Modulo | Prompt | Arquivo |
+| --- | --- | --- |
+| Checagem de prescricao | `prescription_explanation_v0.8.3` | `backend/app/ai/prompts/prescription_explanation_v0.8.3.md` |
+| Orientacao ao paciente | `patient_guidance_v0.8.3` | `backend/app/ai/prompts/patient_guidance_v0.8.3.md` |
+| Relatorios | `report_narrative_v0.8.3` | `backend/app/ai/prompts/report_narrative_v0.8.3.md` |
+| Protocolos | `protocol_explanation_v0.8.3` | `backend/app/ai/prompts/protocol_explanation_v0.8.3.md` |
+| Medicamentos | `medication_knowledge_extraction_v0.8.3` | `backend/app/ai/prompts/medication_knowledge_extraction_v0.8.3.md` |
+| Laudos/documentos | `clinical_document_extraction_v0.8.3` | `backend/app/ai/prompts/clinical_document_extraction_v0.8.3.md` |
+| Historico do paciente | `patient_history_summary_v0.8.3` | `backend/app/ai/prompts/patient_history_summary_v0.8.3.md` |
+| Auditoria | `audit_summary_v0.8.3` | `backend/app/ai/prompts/audit_summary_v0.8.3.md` |
+
+## v0.8.2
+
+Explicacao de protocolos rapidos usa instrucao runtime em
+`EmergencyProtocolService`. A resposta aceita apenas narrativa e referencias
+existentes nos passos do protocolo.
+
+## v0.8.1
+
+| Tipo | Prompt |
 | --- | --- |
-| Prescrição técnica | `report_prescription_analysis_v0.8.1` |
-| Orientações ao paciente | `report_patient_guidance_v0.8.1` |
-| Reconciliação | `report_reconciliation_v0.8.1` |
+| Prescricao tecnica | `report_prescription_analysis_v0.8.1` |
+| Orientacoes ao paciente | `report_patient_guidance_v0.8.1` |
+| Reconciliacao | `report_reconciliation_v0.8.1` |
 | Auditoria | `report_audit_v0.8.1` |
 
-## Protocolos v0.8.2
+## Regras Globais
 
-A explicação de protocolos rápidos usa instrução runtime em
-`EmergencyProtocolService`. Ela não é um prompt de relatório e não altera a
-estrutura do protocolo. A resposta aceita apenas narrativa:
+- Prompt recebe apenas bundle minimizado do modulo.
+- IA deve retornar JSON validado.
+- Campos inesperados ou reservados acionam fallback.
+- Fontes citadas precisam existir no bundle.
+- IA nao altera risco, status, dose, duracao, bloqueio, fonte, protocolo ou
+  decisao.
+- Dado extraido entra como `pending_review`.
+- Dado identificavel nao deve ser enviado por padrao.
 
-- `simple_explanation`;
-- `professional_summary`;
-- `safety_note`;
-- `cited_evidence_refs`.
+## Localizacao
 
-Referências citadas precisam existir nos passos do protocolo, caso contrário o
-backend aciona fallback local.
-
-## Regras
-
-- Prompt recebe apenas `ReportEvidenceBundle`.
-- IA deve retornar JSON validado por `ReportNarrativeSchema`.
-- `extra="forbid"` bloqueia campos reservados ou inesperados.
-- `cited_source_ids` precisa existir no bundle.
-- IA não pode alterar risco, status, dose, duração, bloqueio, fonte ou decisão.
-- Falha, JSON inválido, fonte inventada ou prompt injection acionam fallback
-  determinístico.
-
-## Localização
-
-- Templates runtime: `backend/app/reports/templates.py`
-- Arquivos de referência: `backend/app/reports/prompts/`
-- Composer: `backend/app/reports/ai_report_composer.py`
+- Prompts v0.8.3: `backend/app/ai/prompts/`
+- Relatorios runtime: `backend/app/reports/templates.py`
+- Composer de relatorio: `backend/app/reports/ai_report_composer.py`

@@ -1,5 +1,12 @@
 # Créditos de Assets
 
+## v0.8.3
+
+Os screenshots e GIFs em `docs/assets/v0.8.3/` foram capturados da aplicacao
+Prescripta rodando localmente com dados demonstrativos artificiais.
+
+Nao foram usados assets externos na UI ou na documentacao da v0.8.3.
+
 ## v0.8.2
 
 Os screenshots e GIFs em `docs/assets/v0.8.2/` foram capturados da aplicação

@@ -14,10 +14,12 @@ para integração clínica.
 - `v0.8.1`: prontidão de produto, UX, IA hardening, docs, assets e amarração clínica.
 - `v0.8.2`: protocolos rápidos/emergência demonstrativos, frontend polish, README forte,
   docs de onboarding e assets públicos ampliados.
+- `v0.8.3`: inteligencia clinica assistida, historico longitudinal do paciente,
+  protocolos integrados a `GeneratedReport`, catalogo farmacologico ampliavel,
+  prompts por modulo e frontend com visao clinica/tecnica.
 
 ## Próximas Versões
 
-- `v0.8.3`: ajustes finos de protocolos/UX se revisão clínica apontar melhorias.
 - `v0.9.0`: Docker/PostgreSQL/migrações/deploy.
 - `v1.0.0`: versão final de portfólio.
 

@@ -65,13 +65,21 @@
 - Frontend com polish visual, loading/empty states melhores, dashboard e tela
   Protocolos.
 
+### v0.8.3 - Clinical Intelligence, Historico Longitudinal e IA Assistida
+
+- Protocolos versionados e integrados a `GeneratedReport`.
+- Relatorios de protocolo em PDF, JSON e CSV por execucao.
+- Auditoria avancada com filtros especificos de protocolo.
+- Historico clinico do paciente com laudos/documentos, extracao assistida,
+  revisao humana, timeline e `PatientKnowledgeBundle`.
+- Checagem usando peso, idade, altura/IMC, alergias, medicamentos atuais,
+  condicoes, perfil funcional e historico revisado quando houver regra.
+- Catalogo farmacologico ampliavel com busca por fonte, importacao em lote e
+  fila de curadoria.
+- IA por modulo com prompts versionados e bundles minimizados.
+- Visao clinica/tecnica no frontend e documentacao por audiencia.
+
 ## Próximas Versões
-
-### v0.8.3 - Ajustes finos de protocolos e UX, se necessário
-
-- Revisão clínica externa dos protocolos demonstrativos.
-- Versionamento de protocolos em banco.
-- Ajustes de screenshots, copy e responsividade após uso real.
 
 ### v0.9.0 - Docker/PostgreSQL/deploy
 
@@ -79,6 +87,8 @@
 - PostgreSQL.
 - Migrações.
 - Deploy demonstrativo e instalação mais profissional.
+- Backup/restore e separacao dev/prod.
+- Hardening de seguranca de ambiente.
 
 ### v1.0.0 - Versão final de portfólio
 

@@ -1,164 +1,193 @@
 # Prescripta
 
-![Version](https://img.shields.io/badge/version-v0.8.2-blue)
+![Version](https://img.shields.io/badge/version-v0.8.3-blue)
 ![Backend](https://img.shields.io/badge/backend-FastAPI-009688)
 ![Frontend](https://img.shields.io/badge/frontend-React-155E75)
 ![License](https://img.shields.io/badge/license-Apache--2.0-slate)
 
-Prescripta é uma plataforma educacional de apoio à prescrição segura. O projeto
-combina regras determinísticas, catálogo farmacológico centrado em princípio
-ativo, reconciliação clínica assistida, protocolos rápidos, relatórios
-auditáveis e IA explicativa com fallback local.
+Prescripta e uma plataforma educacional de apoio a prescricao segura. Ela combina
+regras deterministicas, catalogo farmacologico por principio ativo, historico
+clinico longitudinal, protocolos rapidos, relatorios auditaveis e IA assistiva
+controlada por evidencias.
 
-> Prescripta não é dispositivo médico validado. Não substitui avaliação
-> profissional, protocolo institucional, bula, regulação médica ou decisão
-> clínica. Não use dados reais de paciente.
+> Prescripta nao e dispositivo medico validado. Nao substitui avaliacao
+> profissional, protocolo institucional, bula, regulacao medica ou decisao
+> clinica. Nao use dados reais de pacientes.
 
-## Resumo Executivo
+## Sumario
 
-O objetivo do Prescripta é demonstrar, em um produto completo e testável, como um
-sistema de saúde pode separar UI, API, regra clínica, IA e auditoria. O backend
-continua sendo a fonte real de decisão e autorização; o frontend organiza a
-experiência; a IA apenas explica, resume ou compõe texto a partir de evidência
-rastreável.
+- [O que e](#o-que-e)
+- [Por que existe](#por-que-existe)
+- [Para quem serve](#para-quem-serve)
+- [Como funciona](#como-funciona)
+- [Modulos](#modulos)
+- [Fluxos principais](#fluxos-principais)
+- [IA no Prescripta](#ia-no-prescripta)
+- [Visao clinica e visao tecnica](#visao-clinica-e-visao-tecnica)
+- [Screenshots](#screenshots)
+- [Instalacao rapida](#instalacao-rapida)
+- [Instalacao detalhada](#instalacao-detalhada)
+- [Credenciais demo](#credenciais-demo)
+- [Testes](#testes)
+- [Arquitetura](#arquitetura)
+- [Roadmap](#roadmap)
+- [Limitacoes](#limitacoes)
+- [Licenca](#licenca)
 
-A v0.8.2 adiciona a **Central de Protocolos Rápidos**, melhora a experiência
-visual e transforma o README em um guia de produto, instalação e avaliação
-técnica.
+## O Que E
 
-## Problema
+Prescripta e um produto de portfolio healthtech que demonstra como organizar um
+sistema de apoio a prescricao com seguranca, rastreabilidade e separacao clara
+entre regra clinica, interface, auditoria e IA.
 
-Prescrições e fluxos clínicos costumam falhar por informação incompleta,
-duplicidade, histórico fragmentado, baixa rastreabilidade e dependência de
-explicações manuais. Em protótipos com IA, há ainda o risco de delegar decisões
-críticas a modelos generativos.
+Na v0.8.3, o sistema ganha historico clinico do paciente com laudos e documentos,
+protocolos versionados integrados a `GeneratedReport`, bundle clinico minimizado
+para IA, catalogo farmacologico ampliavel e visoes mais adequadas para medico,
+enfermagem, auditoria e administracao.
 
-Prescripta aborda esse problema com:
+## Por Que Existe
 
-- regras determinísticas e testáveis;
-- fonte, jurisdição e status de validação por medicamento/protocolo;
-- revisão humana antes de aplicar dados importados;
-- auditoria de checagens, relatórios, IA e protocolos;
-- IA com escopo limitado e fallback determinístico.
+Prescricoes podem falhar por historico incompleto, duplicidade, alergias nao
+revisadas, baixa rastreabilidade, documentos espalhados e excesso de confianca em
+resumos manuais. Prototipos com IA ainda trazem o risco de deixar um modelo
+generativo decidir o que deveria continuar deterministico.
+
+Prescripta responde com:
+
+- regras testaveis no backend;
+- fontes, jurisdicao e status de validacao;
+- revisao humana para dados importados ou extraidos;
+- auditoria de checagem, protocolo, relatorio, IA e download;
+- IA limitada a explicar, resumir e estruturar dados com fonte;
+- fallback local quando provider externo falha ou nao esta configurado.
 
 ## Para Quem Serve
 
-- Avaliadores técnicos que querem ver arquitetura de produto healthtech.
-- Desenvolvedores estudando FastAPI, React, auditoria e IA responsável.
-- Profissionais e estudantes que precisam de um simulador educacional sem dados
-  reais.
-- Recrutadores analisando maturidade de produto, documentação e testes.
+- Avaliadores nao tecnicos que querem entender o fluxo de uma prescricao.
+- Medicos e enfermagem que querem ver alertas praticos e dados considerados.
+- Auditores e administradores que precisam de rastreabilidade, hashes e eventos.
+- Desenvolvedores/TI que querem estudar FastAPI, React, adapters, relatorios e IA
+  segura.
 
-## Fluxo Principal
+## Como Funciona
 
-1. Entrar com usuário demo.
-2. Revisar pacientes, perfil clínico e perfil funcional.
-3. Consultar catálogo de medicamentos por princípio ativo ou alias comercial.
-4. Simular checagem de prescrição.
-5. Ler alertas, compatibilidade, orientação ao paciente e evidência RAG.
-6. Reconciliar importações clínicas demonstrativas.
-7. Gerar relatórios, exportações e timeline de auditoria.
-8. Abrir Protocolos para fluxos rápidos com contexto mínimo e auditoria.
-9. Verificar saúde/configuração da IA quando necessário.
+1. Um usuario abre ou cadastra um paciente.
+2. O historico clinico recebe dados estruturados, documentos, textos, importacoes
+   e observacoes.
+3. Dados extraidos de laudos ficam `pending_review` ate revisao humana.
+4. A checagem monta um contexto clinico controlado com idade, peso, altura, IMC,
+   alergias, medicamentos atuais, comorbidades, perfil funcional e documentos
+   revisados.
+5. O motor deterministico calcula risco, alertas, dose por peso quando houver
+   regra cadastrada, cautelas por idade e fatores neuropsiquiatricos.
+6. A IA pode explicar os alertas, gerar narrativa ou estruturar uma fonte, mas
+   nunca altera risco, dose, status, bloqueio, protocolo ou decisao final.
+7. Relatorios, exportacoes e protocolos entram em auditoria.
 
-## Abas Do Sistema
+## Modulos
 
-| Aba | Para Que Serve | Principais Ações |
+| Aba | O que faz | Acoes principais |
 | --- | --- | --- |
-| Dashboard | Visão executiva do ambiente demo. | Métricas, atalhos, saúde da API/IA e versão. |
-| Pacientes | Cadastro e revisão de perfil clínico. | Criar, editar, triagem rápida, identificadores e perfil funcional. |
-| Medicamentos | Catálogo, princípios ativos e orientações práticas. | Buscar alias, revisar fonte, cadastrar regras e gerar resumo. |
-| Checagem | Simulação determinística de prescrição. | Dose, duração, via, alergias, interações, RAG e orientação. |
-| Importações | Revisão humana de dados FHIR/JSON/CSV. | Importar, comparar, aceitar/rejeitar item e exportar. |
-| Relatórios | Histórico de relatórios e evidências. | Preview, PDF, JSON, timeline, hash e metadados de IA. |
-| Protocolos | Fluxos rápidos demonstrativos de emergência. | Consultar, preencher contexto, executar, explicar, exportar. |
-| Auditoria | Eventos de decisão e segurança. | Filtrar, abrir detalhe, timeline, evidência e PDF. |
-| Usuários | Administração de contas demo. | Criar usuários e ajustar perfis. |
-| Configurações > IA | Provider/modelo e saúde operacional. | Salvar credencial, listar modelos, testar conexão e ver fallback. |
+| Dashboard | Entrada do produto e estado do ambiente. | Comece por aqui, saude da API/IA, atalhos e fluxos. |
+| Pacientes | Perfil clinico, historico e documentos. | Cadastrar, editar, anexar laudo, extrair entidades, revisar timeline. |
+| Historico clinico/laudos | Area dentro do paciente. | Texto colado, documentos, exames, observacoes, medicamentos anteriores e eventos. |
+| Medicamentos | Catalogo e fila de curadoria. | Busca local, aliases, regra por peso, busca assistida por fonte e importacao em lote. |
+| Checagem | Analise deterministica de prescricao. | Dose, via, duracao, alertas, dados considerados, orientacao e IA explicativa. |
+| Protocolos | Fluxos rapidos demonstrativos. | Selecionar paciente, executar, explicar, gerar relatorio PDF/JSON/CSV. |
+| Importacoes | Entrada estruturada FHIR/JSON/CSV/mock. | Consentimento, deduplicacao, aceite/rejeicao por item. |
+| Relatorios | Historico de `GeneratedReport`. | Preview, PDF, JSON, CSV, hash, provider/modelo e evidencias. |
+| Auditoria | Rastro de eventos e governanca. | Filtros por protocolo, paciente, usuario, IA, fonte, data, relatorio e severidade. |
+| IA | Configuracao e saude operacional. | Provider/modelo, teste, fallback, cache e visibilidade sem expor chave. |
+| Usuarios | Controle administrativo. | Criar contas e perfis demo. |
 
-## Central De Protocolos Rápidos
+## Fluxos Principais
 
-A v0.8.2 inclui sete protocolos demonstrativos:
+### Checar prescricao
 
-- Anafilaxia.
-- Parada cardiorrespiratória (PCR).
-- Convulsão / crise convulsiva.
-- Hipoglicemia.
-- Dor torácica / suspeita de síndrome coronariana aguda.
-- Broncoespasmo / crise asmática inicial.
-- Intoxicação medicamentosa.
+Abra um paciente, selecione medicamento, dose, frequencia, via e duracao. A tela
+mostra decisao resumida, alertas praticos, dados considerados, dados faltantes,
+orientacao ao paciente e detalhes tecnicos quando permitido.
 
-Cada protocolo tem fonte, jurisdição, status de validação, aviso educacional,
-sinais de alerta, medidas imediatas, passos auditáveis, contexto mínimo,
-evidência e pontos de julgamento humano. A execução gera evento de auditoria e
-pode ser exportada em JSON/CSV ou renderizada como relatório PDF simples.
+### Importar historico
 
-A IA pode explicar o racional do protocolo, mas não cria etapas, não altera dose,
-não autoriza conduta e não inventa fonte.
+Use a area de importacoes para payloads FHIR-like, JSON, CSV ou mock. Cada item
+precisa de revisao humana antes de alterar o perfil do paciente.
 
-## Como A IA É Usada
+### Anexar laudo
 
-A IA é usada para:
+No detalhe do paciente, cole um texto ou registre metadados de documento. A
+extracao assistida cria entidades em `pending_review`; o profissional aceita ou
+rejeita antes de aplicar ao paciente.
 
-- explicar alertas já gerados por regras determinísticas;
-- extrair ou resumir conteúdo recuperado com fonte;
-- compor narrativa de relatórios a partir de `ReportEvidenceBundle`;
-- explicar protocolos rápidos sem alterar sua estrutura.
+### Consultar protocolo
 
-A IA não é usada para:
+Abra Protocolos, selecione o paciente se fizer sentido, informe contexto minimo e
+execute. A versao do protocolo, passos, flags, calculos e dados do paciente
+considerados ficam registrados.
 
-- decidir risco final;
-- desbloquear prescrição;
-- mudar dose crítica;
-- criar contraindicação;
-- inventar `source_id`;
-- alterar dados importados;
-- substituir revisão humana.
+### Gerar relatorio
 
-Quando provider externo falha, chamadas externas estão desabilitadas ou não há
-credencial, o sistema usa fallback local.
+Relatorios de prescricao, orientacao, auditoria, reconciliacao e protocolo entram
+em `GeneratedReport`, com hash e metadados de IA/fallback.
 
-## Segurança, LGPD E Auditoria
+### Configurar IA
 
-- API Key de IA fica no backend e nunca é retornada ao frontend.
-- Apenas admin salva, remove, testa ou ativa provider/modelo.
-- Médicos, enfermagem e auditoria podem ver status de IA sem visualizar chave.
-- Identificadores importados aceitos são salvos com hash/máscara.
-- Importações clínicas exigem consentimento e revisão humana.
-- Relatórios e exportações registram hash e não incluem segredo.
-- Protocolos rápidos registram execução e fonte em auditoria.
-- Dados demo são artificiais; não use dados sensíveis reais.
+Somente admin configura provider/modelo/API Key. Medicos, enfermagem e auditoria
+veem status operacional sem ver segredo.
 
-## Arquitetura
+## IA No Prescripta
 
-```txt
-frontend React + TypeScript
-  -> cliente HTTP tipado
-  -> rotas protegidas por perfil
+A IA pode:
 
-backend FastAPI
-  -> schemas Pydantic
-  -> services determinísticos
-  -> repositories SQLAlchemy
-  -> auditoria e relatórios
-  -> IA explicativa via AISettingsService
+- explicar alertas ja gerados;
+- resumir dados faltantes;
+- gerar orientacao ao paciente com linguagem controlada;
+- compor narrativa de relatorio a partir de `ReportEvidenceBundle`;
+- explicar protocolo sem mudar etapas;
+- extrair entidades de laudo ou fonte farmacologica fornecida;
+- resumir historico revisado e auditoria.
 
-SQLite local demo
-  -> seed artificial
-  -> sem dados reais
-```
+A IA nao pode:
 
-O frontend pode esconder menus por perfil, mas a autorização real está no
-backend.
+- liberar prescricao;
+- alterar risco, dose, status, protocolo ou regra critica;
+- inventar fonte, diagnostico, interacao, efeito ou bula;
+- salvar dado extraido como validado automaticamente;
+- receber dados identificaveis por padrao.
 
-## Stack
+## Visao Clinica E Visao Tecnica
 
-- Python 3.12, FastAPI, Pydantic, SQLAlchemy, Pytest e Ruff.
-- React, TypeScript, Vite, TanStack Query, React Hook Form, Zod e Tailwind.
-- SQLite local para demo.
-- Providers de IA: fallback local, OpenAI, Gemini, Ollama e OpenAI-compatible.
+Medico e enfermagem veem por padrao a visao clinica: risco, alertas, dados do
+paciente considerados, perguntas sugeridas e orientacao. Score bruto, hashes,
+RAG, JSON e `source_id` ficam recolhidos.
 
-## Instalação Rápida
+Admin e auditor podem abrir a visao tecnica: evidencias, bundle, timeline,
+hashes, provider/modelo, regras disparadas e payloads auditaveis. O backend
+continua sendo a fonte real de autorizacao.
+
+## Screenshots
+
+Assets da v0.8.3 ficam em `docs/assets/v0.8.3/`.
+
+| Area | Imagem |
+| --- | --- |
+| Dashboard clinico | `docs/assets/v0.8.3/dashboard-clinical-view-v0.8.3.png` |
+| Historico e laudos | `docs/assets/v0.8.3/patient-history-documents-v0.8.3.png` |
+| Checagem clinica | `docs/assets/v0.8.3/prescription-clinical-view-v0.8.3.png` |
+| Detalhes tecnicos | `docs/assets/v0.8.3/prescription-technical-details-v0.8.3.png` |
+| Protocolos com paciente | `docs/assets/v0.8.3/protocol-patient-context-v0.8.3.png` |
+| Relatorio de protocolo | `docs/assets/v0.8.3/protocol-generated-report-v0.8.3.png` |
+| Fila de curadoria | `docs/assets/v0.8.3/medication-curation-queue-v0.8.3.png` |
+| Mobile | `docs/assets/v0.8.3/responsive-mobile-v0.8.3.png` |
+
+GIFs principais:
+
+- `docs/assets/v0.8.3/prescripta-v0.8.3-main-demo.gif`
+- `docs/assets/v0.8.3/prescripta-v0.8.3-patient-history-demo.gif`
+- `docs/assets/v0.8.3/prescripta-v0.8.3-ai-assisted-workflow.gif`
+- `docs/assets/v0.8.3/prescripta-v0.8.3-protocol-personalized-demo.gif`
+
+## Instalacao Rapida
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/setup-dev.ps1
@@ -166,14 +195,14 @@ powershell -ExecutionPolicy Bypass -File scripts/check-install.ps1
 powershell -ExecutionPolicy Bypass -File scripts/dev.ps1
 ```
 
-URLs padrão:
+URLs padrao:
 
 - Frontend: `http://127.0.0.1:5173`
 - API: `http://127.0.0.1:8000/api`
 - Swagger: `http://127.0.0.1:8000/docs`
 - Health: `http://127.0.0.1:8000/api/health`
 
-## Instalação Detalhada
+## Instalacao Detalhada
 
 ```powershell
 python -m venv .venv
@@ -183,19 +212,16 @@ npm install
 ```
 
 Crie `.env` a partir de `.env.example` se quiser alterar banco, CORS ou IA. Para
-uso local com fallback, nenhuma chave externa é obrigatória.
+uso local com fallback, nenhuma chave externa e obrigatoria.
 
-## Rodar Backend
+Backend:
 
 ```powershell
 cd backend
 ..\.venv\Scripts\python -m uvicorn app.main:app --reload
 ```
 
-O backend cria o banco demo e popula dados artificiais quando `PRESCRIPTA_AUTO_SEED`
-está habilitado.
-
-## Rodar Frontend
+Frontend:
 
 ```powershell
 cd frontend
@@ -207,45 +233,13 @@ npm run dev
 | Perfil | E-mail | Senha |
 | --- | --- | --- |
 | Admin | `admin@prescripta.local` | `Admin@12345` |
-| Médico | `medico@prescripta.local` | `Medico@12345` |
+| Medico | `medico@prescripta.local` | `Medico@12345` |
 | Enfermagem | `enfermagem@prescripta.local` | `Enfermagem@12345` |
 | Auditor | `auditor@prescripta.local` | `Auditor@12345` |
 
-## Primeiros 5 Minutos
+## Testes
 
-1. Rode `scripts/setup-dev.ps1`.
-2. Rode `scripts/dev.ps1`.
-3. Entre como admin demo.
-4. Abra Dashboard e confira a versão `v0.8.2`.
-5. Vá em Medicamentos e busque `Novalgina`.
-6. Faça uma checagem de prescrição.
-7. Gere orientação ao paciente e relatório.
-8. Importe um JSON demonstrativo e revise a reconciliação.
-9. Abra Protocolos, execute Hipoglicemia ou Anafilaxia com contexto artificial.
-10. Confira Auditoria e Configurações > IA.
-
-## Configurar IA
-
-Pela UI:
-
-1. Entre como admin.
-2. Abra **IA**.
-3. Escolha provider.
-4. Salve credencial ou Base URL quando aplicável.
-5. Atualize modelos.
-6. Teste conexão.
-7. Ative modelo.
-
-Pelo backend:
-
-```env
-PRESCRIPTA_AI_PROVIDER=fallback
-PRESCRIPTA_AI_MODEL=
-PRESCRIPTA_AI_ENABLE_EXTERNAL_CALLS=false
-PRESCRIPTA_CONFIG_ENCRYPTION_KEY=troque-esta-chave-local
-```
-
-## Testes E Validação
+Backend:
 
 ```powershell
 cd backend
@@ -253,81 +247,61 @@ cd backend
 ..\.venv\Scripts\python -m pytest
 ```
 
+Frontend:
+
 ```powershell
 cd frontend
 npm run lint
 npm run build
 ```
 
+Qualidade textual e diff:
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/check-text-quality.ps1
+git diff --check
 ```
 
-## Screenshots
-
-| Módulo | Captura |
-| --- | --- |
-| Dashboard | ![Dashboard](docs/assets/v0.8.2/dashboard-v0.8.2.png) |
-| Pacientes | ![Pacientes](docs/assets/v0.8.2/patients-list-v0.8.2.png) |
-| Detalhe do paciente | ![Paciente](docs/assets/v0.8.2/patient-details-v0.8.2.png) |
-| Medicamentos | ![Medicamentos](docs/assets/v0.8.2/medications-catalog-v0.8.2.png) |
-| Formulário de medicamento | ![Formulário de medicamento](docs/assets/v0.8.2/medication-form-v0.8.2.png) |
-| Checagem | ![Checagem](docs/assets/v0.8.2/prescription-check-v0.8.2.png) |
-| Orientação ao paciente | ![Orientação ao paciente](docs/assets/v0.8.2/patient-guidance-card-v0.8.2.png) |
-| Importações | ![Importações](docs/assets/v0.8.2/imports-reconciliation-v0.8.2.png) |
-| Relatórios | ![Relatórios](docs/assets/v0.8.2/reports-list-v0.8.2.png) |
-| Auditoria | ![Auditoria](docs/assets/v0.8.2/audit-timeline-v0.8.2.png) |
-| IA | ![IA](docs/assets/v0.8.2/ai-settings-v0.8.2.png) |
-| Protocolos | ![Protocolos](docs/assets/v0.8.2/protocols-list-v0.8.2.png) |
-| Detalhe de protocolo | ![Detalhe de protocolo](docs/assets/v0.8.2/protocol-detail-v0.8.2.png) |
-| Execução de protocolo | ![Execução de protocolo](docs/assets/v0.8.2/protocol-run-v0.8.2.png) |
-| Sidebar e versão | ![Sidebar e versão](docs/assets/v0.8.2/sidebar-version-v0.8.2.png) |
-| Responsivo | ![Responsivo](docs/assets/v0.8.2/responsive-view-v0.8.2.png) |
-
-## GIFs
-
-![Demonstração principal](docs/assets/v0.8.2/prescripta-v0.8.2-main-demo.gif)
-
-![Demonstração de protocolos](docs/assets/v0.8.2/prescripta-v0.8.2-protocols-demo.gif)
-
-## Estrutura Do Repositório
+## Arquitetura
 
 ```txt
-backend/app/api/routes        Rotas FastAPI
-backend/app/services          Regras determinísticas e serviços de aplicação
-backend/app/reports           Relatórios, PDF simples, JSON/CSV e narrativa controlada
-backend/app/integrations      Importação clínica, consentimento e reconciliação
-backend/tests                 Testes unitários e de API
-frontend/src/pages            Telas React
-frontend/src/components       Componentes reutilizáveis
-frontend/src/services         Cliente HTTP tipado
-docs                          Arquitetura, produto, segurança, benchmark e releases
-scripts                       Setup, dev, reset e qualidade textual
+frontend React + TypeScript
+  -> cliente HTTP tipado
+  -> visoes clinica/tecnica
+  -> rotas protegidas por perfil
+
+backend FastAPI
+  -> schemas Pydantic
+  -> services deterministicas
+  -> repositories SQLAlchemy
+  -> relatorios, auditoria e exports
+  -> IA assistiva via AISettingsService
+
+SQLite local demo
+  -> seed artificial
+  -> sem dados reais
 ```
 
-## Roadmap Resumido
+Camadas de acoplamento institucional ficam em `backend/app/integrations` e docs
+de onboarding explicam adapters FHIR-like, JSON, CSV, API custom, banco
+institucional, mock e upload manual.
 
-- `v0.8.2`: protocolos rápidos, README forte, assets e polish visual.
-- `v0.8.3`: ajustes finos de protocolos, UX e lacunas pequenas, se necessário.
-- `v0.9.0`: Docker, PostgreSQL, migrações e deploy demo.
-- `v1.0.0`: versão final de portfólio.
+## Roadmap
 
-## Benchmark E Diferenciais
+- `v0.8.3`: inteligencia clinica assistida, historico longitudinal, protocolos
+  integrados a relatorios, catalogo ampliavel e UX por perfil.
+- `v0.9.0`: Docker, PostgreSQL, migracoes, deploy demo e hardening de ambiente.
+- `v1.0.0`: versao final de portfolio com dados e docs revisados.
 
-O benchmark SafeDose/RicoToro é usado apenas como comparação conceitual. Não há
-cópia de código, layout, texto ou regra de terceiros. O Prescripta se diferencia
-por backend/frontend separados, regras determinísticas testáveis, auditoria,
-relatórios, reconciliação granular, IA limitada e agora protocolos rápidos com
-fonte e execução auditada.
+## Limitacoes
 
-Documentos úteis:
+- Uso educacional/demonstrativo.
+- Nao substitui avaliacao profissional.
+- Nao acessa sistema hospitalar sem API, contrato, permissao e configuracao.
+- OCR real e armazenamento de arquivos binarios ficam para etapa futura.
+- Catalogo ampliado tem itens pendentes de curadoria quando nao ha fonte validada.
+- Protocolos demonstrativos exigem julgamento humano e fonte institucional.
 
-- [Auditoria v0.8.2](docs/benchmark/safedose-parity-audit-v0.8.2.md)
-- [Arquitetura de protocolos](docs/protocols/emergency-protocols-architecture.md)
-- [Política de fontes](docs/protocols/protocol-source-policy.md)
-- [Jornada inicial](docs/product/first-run-user-journey.md)
-- [Troubleshooting](docs/setup/troubleshooting.md)
+## Licenca
 
-## Licença
-
-Apache-2.0. Veja [LICENSE](LICENSE).
+Apache-2.0. Veja `LICENSE`.
