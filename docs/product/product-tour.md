@@ -13,4 +13,3 @@ fontes fornecidas; falha aciona fallback. Nenhuma tela representa autorização 
 
 Consulte as capturas no README, as limitações conhecidas e os guias por audiência antes de avaliar
 um fluxo isoladamente.
-

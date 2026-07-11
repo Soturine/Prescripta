@@ -21,4 +21,3 @@ Removê-los em massa sem Alembic e testes de falha intermediária aumentaria o r
 6. qualquer exceção executa rollback e não deixa evento órfão.
 
 Na migração PostgreSQL/Alembic, cada fluxo receberá teste de falha após persistência intermediária.
-

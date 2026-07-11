@@ -11,4 +11,3 @@ Importacoes clínicas exigem:
 Dados reais não devem ser usados na demo publica. Identificadores sensiveis devem ser armazenados com hash quando aplicavel e exibidos apenas mascarados.
 
 Aceite de importação e revisão humana sao obrigatorios antes de qualquer incorporacao definitiva ao perfil.
-

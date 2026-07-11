@@ -6,4 +6,3 @@ avaliação quando disponíveis.
 
 CRM/RQE demo não é consultado externamente nem apresentado como validado. O workflow integral de
 override com identidade do segundo revisor permanece parcial e exige autorização institucional.
-

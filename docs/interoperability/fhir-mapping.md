@@ -23,4 +23,3 @@ Cada recurso vira `ClinicalSourceRecord` com:
 - `record_type`: tipo interno.
 
 O mapeamento não e FHIR completo e não substitui validação institucional.
-

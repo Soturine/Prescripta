@@ -6,4 +6,3 @@ Uma release só pode ser criada depois do CI concluído e verde para o SHA da `m
 Itens sem teste ou evidência recebem `partial`, `not_implemented`, `blocked_by_external_validation`
 ou `deferred`. Captura visual não equivale a E2E, regra demo não equivale a validação clínica e
 provider configurado não equivale a disponibilidade operacional.
-

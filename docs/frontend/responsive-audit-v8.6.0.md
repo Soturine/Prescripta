@@ -5,4 +5,3 @@ tablet e mobile usam drawer. Tabelas extensas preservam rolagem interna, evitand
 
 As resoluções 1920×1080, 1366×768, 1024×768 e 360×800 constam no checklist manual. Ausência de
 regressão visual automatizada em todas elas é registrada como `partial`.
-

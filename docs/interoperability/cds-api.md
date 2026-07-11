@@ -36,4 +36,3 @@ Permissoes: `admin`, `médico`, `enfermagem`.
 ```
 
 O endpoint usa o motor deterministico, não chama IA automaticamente e não salva dados clínicos permanentes quando `persist=false`.
-

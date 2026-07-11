@@ -9,4 +9,3 @@ históricos presentes somente no JSON de detalhes ainda usam busca textual no SQ
 
 O frontend mantém filtros na URL, apresenta o total e permite avançar ou retornar. Exportações
 continuam recebendo o mesmo conjunto de filtros e são auditadas pelos serviços de relatório.
-

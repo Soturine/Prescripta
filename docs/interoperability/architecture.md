@@ -24,4 +24,3 @@ Prescripta v0.6.0 cria uma camada demonstrativa de Ports & Adapters em `backend/
 ## Limites
 
 Sem scraping de hospitais, sem credenciais de portais, sem RNDS real, sem HL7 v2 completo e sem DICOM real.
-

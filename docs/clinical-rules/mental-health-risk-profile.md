@@ -11,4 +11,3 @@ Exemplos:
 - `risco_serotoninergico`
 
 Alertas sao de revisão profissional, não contraindicacoes automaticas. A IA pode explicar o alerta gerado, mas não pode criar regra nova nem reduzir risco.
-

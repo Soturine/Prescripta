@@ -6,4 +6,3 @@ exposto a enfermagem. As resoluções de evidência incluem desktop, tablet e mo
 
 Pendências: teste automatizado de focus trap/Escape e auditoria com leitor de tela permanecem
 `partial`; não foram declaradas como certificação WCAG.
-

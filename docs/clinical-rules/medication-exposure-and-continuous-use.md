@@ -15,4 +15,3 @@ Alertas novos:
 - `PROLONGED_USE_REVIEW`
 
 Esses alertas sao demonstrativos e pedem revisão profissional.
-

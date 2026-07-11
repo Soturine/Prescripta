@@ -6,4 +6,3 @@ Erros transitórios podem ser reenviados com a mesma chave de idempotência, nun
 
 Cada lote registra origem, versão do contrato, hash, usuário, status e itens aceitos/rejeitados. Um
 erro não autoriza sobrescrever silenciosamente dado importado nem apagar histórico local.
-

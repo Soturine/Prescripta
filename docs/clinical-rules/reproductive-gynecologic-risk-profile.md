@@ -14,4 +14,3 @@ Exemplos:
 Regra demonstrativa especifica: rifampicina ou rifabutina com contraceptivo hormonal gera alerta de possivel reducao de eficacia contraceptiva.
 
 Prescripta não afirma que todo antibiotico corta anticoncepcional.
-

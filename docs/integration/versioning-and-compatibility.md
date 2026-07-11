@@ -5,4 +5,3 @@ são preservados somente quando seguros; campos obrigatórios ausentes bloqueiam
 
 Mudança incompatível exige nova versão de contrato e período explícito de transição. Exemplos são
 fictícios e FHIR-like: não alegam conformidade FHIR certificada nem conexão hospitalar real.
-

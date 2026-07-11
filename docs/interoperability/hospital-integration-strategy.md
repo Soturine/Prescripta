@@ -16,4 +16,3 @@ Prescripta esta preparado por adapters, não por scraping.
 - Credenciais de portal de paciente.
 - Scraping de sistemas hospitalares.
 - RNDS real, HL7 v2 completo e DICOM real.
-
