@@ -2,7 +2,7 @@
 
 Objetivo: explicar racional e limitacoes de uma execução de protocolo.
 
-Entrada: protocolo, versao, passos, contexto minimo, paciente selecionado,
+Entrada: protocolo, versão, passos, contexto minimo, paciente selecionado,
 flags, calculos demonstrativos e evidencias.
 
 Saida JSON: `simple_explanation`, `professional_summary`, `missing_context`,

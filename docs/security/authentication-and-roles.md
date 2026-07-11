@@ -10,7 +10,7 @@ Prescripta usa autenticação JWT e autorização por perfil.
 ## Perfis
 
 - `admin`: gerencia pacientes, medicamentos, usuários, checagens, importações, auditoria, dashboard e configuração de IA.
-- `medico`: gerencia pacientes, consulta medicamentos, verifica prescrições, usa IA configurada e revisa resumos/importações permitidos.
+- `médico`: gerencia pacientes, consulta medicamentos, verifica prescrições, usa IA configurada e revisa resumos/importações permitidos.
 - `enfermagem`: consulta pacientes e medicamentos, verifica prescrições, visualiza orientações e usa IA configurada.
 - `auditor`: visualiza dashboard, auditoria, importações, reconciliação e status da IA, sem alterar dados.
 
@@ -23,7 +23,7 @@ Prescripta usa autenticação JWT e autorização por perfil.
 
 ## Importações
 
-- `admin` e `medico`: importar, aceitar/rejeitar lotes e decidir itens de reconciliação.
+- `admin` e `médico`: importar, aceitar/rejeitar lotes e decidir itens de reconciliação.
 - `enfermagem`: visualizar importações conforme regras existentes.
 - `auditor`: visualizar importações, reconciliação e auditoria.
 
@@ -38,7 +38,7 @@ O frontend usa `localStorage` para token de sessão no MVP local. API Keys de IA
 ## Credenciais De Exemplo
 
 - `admin@prescripta.local` / `Admin@12345`
-- `medico@prescripta.local` / `Medico@12345`
+- `médico@prescripta.local` / `Médico@12345`
 - `enfermagem@prescripta.local` / `Enfermagem@12345`
 - `auditor@prescripta.local` / `Auditor@12345`
 

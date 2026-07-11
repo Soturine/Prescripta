@@ -213,7 +213,7 @@ def _get_batch_or_404(db: Session, batch_id: int) -> ClinicalImportBatchModel:
     if batch is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Importação clinica não encontrada.",
+            detail="Importação clínica não encontrada.",
         )
     return batch
 

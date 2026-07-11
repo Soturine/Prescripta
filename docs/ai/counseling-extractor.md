@@ -15,7 +15,7 @@
 ## Providers
 
 - `GPTProvider`: OpenAI-compatible quando provider e chave/base estiverem configurados.
-- `GeminiProvider`: demonstrativo com fallback nesta versao.
+- `GeminiProvider`: demonstrativo com fallback nesta versão.
 - `LlamaProvider`: OpenAI-compatible para endpoint local/gateway confiavel.
 - `FallbackDeterministicProvider`: extrai termos apenas dos trechos recebidos.
 

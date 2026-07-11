@@ -12,6 +12,6 @@ Campos proibidos: diagnostico novo, validação automatica, decisão de tratamen
 
 Regras: tudo deve permanecer `pending_review` ate revisão humana.
 
-Fallback: extracao deterministica simples por termos conhecidos.
+Fallback: extração deterministica simples por termos conhecidos.
 
 Teste: a resposta não pode aplicar dado direto ao paciente.

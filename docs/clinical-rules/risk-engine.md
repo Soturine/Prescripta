@@ -26,7 +26,7 @@ O motor passa a considerar, quando os dados existem:
 - fatores neuropsiquiatricos;
 - fatores reprodutivos/ginecologicos;
 - regra especifica rifampicina/rifabutina + contraceptivo hormonal;
-- identificadores apenas para matching/deduplicacao, nunca para decisão clinica.
+- identificadores apenas para matching/deduplicacao, nunca para decisão clínica.
 
 Alertas novos sao de revisão profissional. O motor não afirma que todo antibiotico corta anticoncepcional e não cria contraindicao psiquiatrica generica sem fonte.
 

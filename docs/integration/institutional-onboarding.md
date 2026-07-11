@@ -37,6 +37,6 @@ hospitalares sem API, contrato, permissao e configuração.
 
 - Não fazer scraping agressivo.
 - Não automatizar login em portal.
-- Não importar dado real sem permissao e seguranca.
+- Não importar dado real sem permissao e segurança.
 - Não prometer integracao automatica.
 - Não permitir que IA altere dado importado sem revisão humana.

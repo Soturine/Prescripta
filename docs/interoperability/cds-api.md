@@ -6,7 +6,7 @@ Endpoint:
 POST /api/cds/prescription-check
 ```
 
-Permissoes: `admin`, `medico`, `enfermagem`.
+Permissoes: `admin`, `médico`, `enfermagem`.
 
 ## Entrada
 
@@ -35,5 +35,5 @@ Permissoes: `admin`, `medico`, `enfermagem`.
 }
 ```
 
-O endpoint usa o motor deterministico, não chama IA automaticamente e não salva dados clinicos permanentes quando `persist=false`.
+O endpoint usa o motor deterministico, não chama IA automaticamente e não salva dados clínicos permanentes quando `persist=false`.
 

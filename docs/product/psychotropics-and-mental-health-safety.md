@@ -1,4 +1,4 @@
-# Psicotropicos E Seguranca Neuropsiquiatrica
+# Psicotrópicos E Segurança Neuropsiquiatrica
 
 A v0.8.3 amplia a leitura de fatores neuropsiquiatricos sem transformar o
 sistema em ferramenta diagnostica.
@@ -14,7 +14,7 @@ e substancias.
 ## Regras Demonstrativas
 
 - ISRS/SNRI + IMAO exige revisão por risco grave.
-- Serotonergicos combinados geram alerta de sindrome serotoninergica.
+- Serotoninérgicos combinados geram alerta de sindrome serotoninergica.
 - Antidepressivo com histórico de bipolaridade/mania gera alerta de revisão
   profissional para risco de virada maniaca/hipomania.
 - Sedativos com alcool/atividade de risco geram alerta de sedacao e queda.

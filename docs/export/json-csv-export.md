@@ -24,5 +24,5 @@ Regras:
 
 Permissões:
 
-- `admin`, `medico` e `auditor` podem exportar dados clínicos conforme rota.
+- `admin`, `médico` e `auditor` podem exportar dados clínicos conforme rota.
 - `admin` e `auditor` podem exportar auditoria.

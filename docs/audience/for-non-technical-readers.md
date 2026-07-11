@@ -13,7 +13,7 @@ equipe de saude a revisar uma prescrição com mais contexto e rastreabilidade.
 - Alerta: aviso para revisão profissional. Ele não e uma ordem automatica.
 - Auditoria: registro do que foi visto, gerado, baixado ou decidido.
 - IA explicativa: recurso que ajuda a explicar informacoes ja levantadas pelo
-  sistema, sem tomar decisão clinica.
+  sistema, sem tomar decisão clínica.
 
 ## Por Que Dados Completos Importam
 

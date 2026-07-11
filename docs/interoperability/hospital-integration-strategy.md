@@ -4,7 +4,7 @@ Prescripta esta preparado por adapters, não por scraping.
 
 ## Integracao real futura exige
 
-- API oficial ou contrato tecnico com hospital/clinica/convenio.
+- API oficial ou contrato tecnico com hospital/clínica/convenio.
 - Credenciais institucionais seguras.
 - Base legal, consentimento e governanca LGPD.
 - Mapeamento terminologico validado.

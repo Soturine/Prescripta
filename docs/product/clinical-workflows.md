@@ -1,4 +1,4 @@
-# Fluxos Clinicos
+# Fluxos Clínicos
 
 ## Checagem De Prescrição
 
@@ -6,8 +6,8 @@
 2. Informe dose, frequencia, via e duracao.
 3. O backend monta `PrescriptionContextBundle` e `PatientKnowledgeBundle`.
 4. O motor calcula alertas deterministicos.
-5. A UI mostra visao clinica por padrao.
-6. Relatorios e IA explicativa podem ser acionados sem alterar decisão.
+5. A UI mostra visão clínica por padrão.
+6. Relatórios e IA explicativa podem ser acionados sem alterar decisão.
 
 ## Histórico Do Paciente
 
@@ -16,10 +16,10 @@ anteriores, importacoes aceitas, perfil funcional e eventos de protocolo.
 
 ## Protocolos
 
-Protocolos sao versionados. Cada execução guarda protocolo, versao, contexto,
+Protocolos sao versionados. Cada execução guarda protocolo, versão, contexto,
 passos, calculos, paciente selecionado, flags e relatório gerado.
 
-## Relatorios
+## Relatórios
 
-Relatorios usam bundles fechados, hash e metadados de IA/fallback. A narrativa
+Relatórios usam bundles fechados, hash e metadados de IA/fallback. A narrativa
 pode ser assistida por IA, mas o conteudo decisorio vem do backend.

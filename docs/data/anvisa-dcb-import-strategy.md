@@ -4,8 +4,8 @@ Prescripta v0.5.0 cria a arquitetura de consulta, mas não implementa importaç�
 
 ## Fluxo alvo
 
-1. Usuario digita princípio ativo ou nome comercial.
-2. Sistema procura no catalogo local.
+1. Usuário digita princípio ativo ou nome comercial.
+2. Sistema procura no catálogo local.
 3. Se não encontrar, gera link assistido para Anvisa/Bulario e referencia DCB.
 4. Se dados forem criados a partir da consulta, entram como `pending_review`.
 5. Revisor humano valida antes de mudar para `curated` ou `validated`.
@@ -14,7 +14,7 @@ Prescripta v0.5.0 cria a arquitetura de consulta, mas não implementa importaç�
 
 `GET /api/medication-sources/anvisa/search?q=dipirona`
 
-Retorna `local_match` quando encontra no catalogo local ou `assisted_lookup` quando deve abrir consulta oficial.
+Retorna `local_match` quando encontra no catálogo local ou `assisted_lookup` quando deve abrir consulta oficial.
 
 ## Limites
 
