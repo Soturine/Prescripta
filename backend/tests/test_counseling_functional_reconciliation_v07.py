@@ -226,7 +226,9 @@ def test_patient_functional_profile_endpoint_audits_updates(
 
     assert response.status_code == 200
     assert response.json()["drives_regularly"] is True
-    assert any(event["action"] == "patient.functional_profile.update" for event in audit.json())
+    assert any(
+        event["action"] == "patient.functional_profile.update" for event in audit.json()["items"]
+    )
 
 
 def test_granular_reconciliation_detects_conflict_and_records_item_decisions(
@@ -292,7 +294,10 @@ def test_granular_reconciliation_detects_conflict_and_records_item_decisions(
     assert accepted.json()["decision"] == "accepted"
 
     audit = client.get("/api/audit", headers=headers)
-    assert any(event["action"] == "clinical_reconciliation.item.accepted" for event in audit.json())
+    assert any(
+        event["action"] == "clinical_reconciliation.item.accepted"
+        for event in audit.json()["items"]
+    )
 
 
 def test_auditor_can_view_reconciliation_but_cannot_decide(

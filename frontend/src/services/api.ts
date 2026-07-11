@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { AuditRecord, DashboardSummary } from "../types/audit";
+import type { AuditPage, AuditRecord, DashboardSummary } from "../types/audit";
 import type {
   AICredentialPayload,
   AICredentialStatus,
@@ -360,7 +360,7 @@ export async function explainPrescription(payload: PrescriptionExplanationPayloa
 }
 
 export async function fetchAudit(filters: AuditFilters = {}) {
-  const response = await api.get<AuditRecord[]>("/audit", { params: filters });
+  const response = await api.get<AuditPage>("/audit", { params: filters });
   return response.data;
 }
 

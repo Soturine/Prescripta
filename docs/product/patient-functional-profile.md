@@ -26,4 +26,4 @@ Campos:
 
 ## UI
 
-O detalhe do paciente tem card de perfil funcional com estados `Sim`, `Nao` e `Nao informado`.
+O detalhe do paciente tem card de perfil funcional com estados `Sim`, `Não` e `Não informado`.

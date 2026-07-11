@@ -15,6 +15,16 @@ export type AuditRecord = {
   details: Record<string, unknown>;
 };
 
+export type AuditPage = {
+  items: AuditRecord[];
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_previous: boolean;
+};
+
 export type DashboardSummary = {
   patient_count: number;
   medication_count: number;

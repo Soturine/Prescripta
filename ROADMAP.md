@@ -1,5 +1,12 @@
 # Roadmap
 
+## v8.6.0 — consolidação e recovery de CI
+
+- checker e release gate multiplataforma;
+- backend Ubuntu/Windows, frontend, smoke e readiness;
+- paginação completa da auditoria;
+- documentação de produto, qualidade e limitações.
+
 ## v0.8.5 — entregue
 
 - auditoria integral, consistência textual e licença;
@@ -91,16 +98,16 @@
 ### v0.8.3 - Clinical Intelligence, Histórico Longitudinal e IA Assistida
 
 - Protocolos versionados e integrados a `GeneratedReport`.
-- Relatorios de protocolo em PDF, JSON e CSV por execução.
-- Auditoria avancada com filtros especificos de protocolo.
-- Histórico clínico do paciente com laudos/documentos, extracao assistida,
+- Relatórios de protocolo em PDF, JSON e CSV por execução.
+- Auditoria avançada com filtros específicos de protocolo.
+- Histórico clínico do paciente com laudos/documentos, extração assistida,
   revisão humana, timeline e `PatientKnowledgeBundle`.
 - Checagem usando peso, idade, altura/IMC, alergias, medicamentos atuais,
-  condicoes, perfil funcional e histórico revisado quando houver regra.
-- Catalogo farmacológico ampliavel com busca por fonte, importação em lote e
+  condições, perfil funcional e histórico revisado quando houver regra.
+- Catálogo farmacológico ampliável com busca por fonte, importação em lote e
   fila de curadoria.
-- IA por modulo com prompts versionados e bundles minimizados.
-- Visao clinica/tecnica no frontend e documentacao por audiência.
+- IA por módulo com prompts versionados e bundles minimizados.
+- Visão clínica/tecnica no frontend e documentação por audiência.
 
 ## Próximas Versões
 
@@ -110,8 +117,8 @@
 - PostgreSQL.
 - Migrações.
 - Deploy demonstrativo e instalação mais profissional.
-- Backup/restore e separacao dev/prod.
-- Hardening de seguranca de ambiente.
+- Backup/restore e separação dev/prod.
+- Hardening de segurança de ambiente.
 
 ### v1.0.0 - Versão final de portfólio
 

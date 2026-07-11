@@ -1,11 +1,11 @@
-# Arquitetura de Interoperabilidade Clinica
+# Arquitetura de Interoperabilidade Clínica
 
 Prescripta v0.6.0 cria uma camada demonstrativa de Ports & Adapters em `backend/app/integrations`.
 
 ## Principios
 
 - Adapters recebem dados externos e produzem registros internos pendentes.
-- Portas definem contratos para paciente, medicamentos, alergias, condicoes, observacoes, prescricoes e documentos.
+- Portas definem contratos para paciente, medicamentos, alergias, condições, observacoes, prescricoes e documentos.
 - Importação exige consentimento ou base legal aplicavel.
 - Nenhum dado importado entra automaticamente no perfil definitivo.
 - Aceite/rejeicao dependem de revisão humana e auditoria.
@@ -16,7 +16,7 @@ Prescripta v0.6.0 cria uma camada demonstrativa de Ports & Adapters em `backend/
 - `ports/`: contratos com `Protocol`.
 - `adapters/fhir`: importação demonstrativa de Bundle e recursos comuns.
 - `adapters/json`: payload generico simples.
-- `adapters/csv`: CSV de medicamentos/condicoes simples.
+- `adapters/csv`: CSV de medicamentos/condições simples.
 - `adapters/mock`: fonte hospitalar simulada.
 - `mapping/`: mapeamento FHIR, interno e terminologico.
 - `services/`: consentimento, auditoria, matching, deduplicacao e orquestracao.

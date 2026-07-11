@@ -32,6 +32,11 @@ def test_audit_filters_and_paginates_in_sql(db_session: Session):
     )
     assert len(result) == 1
     assert result[0].action == "prescription.check"
+    items, total = AuditRepository(db_session).list_filtered(
+        action="prescription", specialty="psychiatry", page=2, page_size=1, include_total=True
+    )
+    assert len(items) == 1
+    assert total == 3
 
 
 def test_clinical_document_duplicate_is_explicit(db_session: Session):

@@ -24,7 +24,7 @@ Fonte pública observada: `https://github.com/RicoToro/SafeDose`. No momento da 
 | IA explicativa responsável | Multi-provider opcional, fallback determinístico e sem poder de alterar decisão. | Melhor |
 | Alternativas terapêuticas | Opções cadastradas avaliadas pelo motor de risco antes de aparecerem. | Melhor |
 | Autenticação | JWT, hash Argon2 e `/auth/me`. | Melhor |
-| Perfis de usuário | `admin`, `medico`, `enfermagem` e `auditor` com rotas protegidas. | Melhor |
+| Perfis de usuário | `admin`, `médico`, `enfermagem` e `auditor` com rotas protegidas. | Melhor |
 | Auditoria | Eventos com usuário, perfil, recurso, status, risco e triagem rápida. | Melhor |
 | Arquitetura frontend/backend | FastAPI separado de React; frontend consome API real. | Melhor |
 | Testes | Pytest, Ruff, TypeScript e build validando a release. | Melhor |

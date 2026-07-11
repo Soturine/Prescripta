@@ -79,7 +79,9 @@ def test_ai_credential_is_masked_and_never_returned_in_api_or_audit(
     assert saved.json()["masked_api_key"] == "sk-t...1234"
     assert secret not in saved.text
     assert secret not in audit.text
-    assert any(event["action"] == "ai_configuration.credential_saved" for event in audit.json())
+    assert any(
+        event["action"] == "ai_configuration.credential_saved" for event in audit.json()["items"]
+    )
 
 
 def test_external_calls_disabled_prevents_provider_call_and_uses_fallback(

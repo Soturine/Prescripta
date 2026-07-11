@@ -10,11 +10,11 @@ A v0.8.3 adiciona uma area longitudinal no paciente.
 - FHIR Bundle.
 - Laudo manual estruturado.
 
-## Extracao Assistida
+## Extração Assistida
 
 `ClinicalDocumentExtractor` usa provider ativo quando permitido e fallback
 deterministico simples quando não ha IA. Ele pode extrair medicamentos,
-alergias, condicoes, exames, sintomas, eventos adversos, histórico mental,
+alergias, condições, exames, sintomas, eventos adversos, histórico mental,
 gravidez/lactacao e observacoes.
 
 ## Revisão Humana
@@ -25,5 +25,5 @@ timeline e no bundle do paciente.
 
 ## PatientKnowledgeBundle
 
-O bundle minimiza dados antes de IA/relatório/protocolo. Por padrao, não envia
-identificadores pessoais. Ele carrega apenas o necessario para o modulo.
+O bundle minimiza dados antes de IA/relatório/protocolo. Por padrão, não envia
+identificadores pessoais. Ele carrega apenas o necessario para o módulo.

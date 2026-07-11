@@ -5,7 +5,7 @@ O modo sem histórico deixa claro quando a analise esta limitada por dados ausen
 Mensagem base:
 
 ```text
-Historico clinico incompleto. A analise sera baseada em medicamento, dose, duracao, efeitos principais e dados minimos disponiveis.
+Histórico clínico incompleto. A analise sera baseada em medicamento, dose, duracao, efeitos principais e dados minimos disponiveis.
 ```
 
 Dados faltantes listados:

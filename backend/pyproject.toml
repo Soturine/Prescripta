@@ -1,6 +1,6 @@
 [project]
 name = "prescripta-backend"
-version = "0.8.5"
+version = "8.6.0"
 description = "Educational prescription safety API for Prescripta."
 license = { text = "Apache-2.0" }
 requires-python = ">=3.12"

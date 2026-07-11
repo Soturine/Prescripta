@@ -73,7 +73,7 @@ def test_protocol_run_generates_report_and_uses_patient_context(
     assert reports.status_code == 200
     assert reports.json()[0]["report_type"] == "protocol_run_report"
     assert audit.status_code == 200
-    assert {event["action"] for event in audit.json()} >= {
+    assert {event["action"] for event in audit.json()["items"]} >= {
         "protocol.run",
         "protocol.report_generated",
         "protocol.report_downloaded",

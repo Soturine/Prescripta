@@ -59,7 +59,7 @@ def test_prescription_check_endpoint_blocks_allergy_and_writes_audit(
     audit_response = client.get("/api/audit", headers=headers)
     assert audit_response.status_code == 200
     prescription_events = [
-        event for event in audit_response.json() if event["action"] == "prescription.check"
+        event for event in audit_response.json()["items"] if event["action"] == "prescription.check"
     ]
     assert len(prescription_events) == 1
     assert prescription_events[0]["user_email"] == "admin@test.local"

@@ -6,11 +6,11 @@ de IA.
 ## O Que Verificar
 
 - Eventos de checagem, alerta, protocolo, relatório, download e exportacao.
-- Hashes e metadados de relatorios gerados.
+- Hashes e metadados de relatórios gerados.
 - Provider/modelo de IA e se houve fallback.
 - Itens importados ou extraidos que ficaram `pending_review`.
 - Aceites/rejeicoes humanas em reconciliacao e documentos.
-- Filtros por paciente, usuario, protocolo, fonte, versao, severidade e data.
+- Filtros por paciente, usuário, protocolo, fonte, versão, severidade e data.
 
 ## O Que A Auditoria Não Deve Fazer
 

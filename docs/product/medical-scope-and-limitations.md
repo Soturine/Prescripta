@@ -2,14 +2,14 @@
 
 Prescripta e uma ferramenta educacional/demonstrativa. Ele não e dispositivo
 médico validado e não deve ser usado para atendimento real sem validação,
-contrato, seguranca, curadoria clinica e aprovacao institucional.
+contrato, segurança, curadoria clínica e aprovacao institucional.
 
 ## O Que O Sistema Faz
 
 - Organiza dados de paciente, medicamentos, documentos e importacoes.
 - Aplica regras deterministicas cadastradas.
 - Mostra alertas, dados considerados e dados faltantes.
-- Gera relatorios e auditoria.
+- Gera relatórios e auditoria.
 - Permite IA assistiva com fonte e fallback.
 
 ## O Que O Sistema Não Faz

@@ -1,13 +1,14 @@
 # Prescripta
 
-![Versão](https://img.shields.io/badge/versão-v0.8.5-087f8c)
+![Versão](https://img.shields.io/badge/versão-v8.6.0-087f8c)
+![CI](https://github.com/Soturine/Prescripta/actions/workflows/ci.yml/badge.svg)
 ![Backend](https://img.shields.io/badge/backend-FastAPI-009688)
 ![Frontend](https://img.shields.io/badge/frontend-React-149eca)
 ![Testes](https://img.shields.io/badge/qualidade-pytest%20%7C%20Ruff%20%7C%20TypeScript-16a34a)
 ![Licença](https://img.shields.io/badge/licença-Apache--2.0-f59e0b)
 
 O Prescripta é um produto demonstrativo de portfólio healthtech para organizar contexto, checar
-regras rastreáveis e documentar revisão de prescrições. A v0.8.5 consolida backend, frontend,
+regras rastreáveis e documentar revisão de prescrições. A v8.6.0 consolida backend, frontend,
 catálogo, dose, psicotrópicos, policy, IA assistiva, relatórios e auditoria em uma experiência mais
 coesa e transparente.
 
@@ -31,6 +32,9 @@ coesa e transparente.
 É uma aplicação web com API FastAPI, frontend React e persistência SQLAlchemy. Ela reúne dados
 fictícios do paciente, exposição informada, regras determinísticas, evidências, orientações e trilha
 de auditoria. A inteligência artificial é opcional, minimizada e substituível por fallback local.
+
+O [tour do produto](docs/product/product-tour.md) percorre os fluxos principais. O índice
+[Documentação do Prescripta](docs/README.md) conecta guias clínicos, técnicos e por audiência.
 
 ## Que problema resolve
 
@@ -172,33 +176,33 @@ Consulte [contratos](docs/integration/adapter-contracts.md),
 
 ## Screenshots reais
 
-Capturas feitas na aplicação v0.8.5 rodando localmente com seeds fictícios:
+Capturas feitas na aplicação v8.6.0 rodando localmente com banco temporário e seeds fictícios. Cada
+arquivo foi gerado novamente; o checker rejeita hashes duplicados nesta versão.
 
-![Dashboard administrativo real](docs/assets/v0.8.5/dashboard-admin-v0.8.5.png)
-*Dashboard administrativo com métricas de qualidade do catálogo.*
+<table><tr><td><img src="docs/assets/v8.6.0/dashboard-clinical-v8.6.0.png" width="440" alt="Dashboard clínico"></td><td><img src="docs/assets/v8.6.0/dashboard-admin-v8.6.0.png" width="440" alt="Dashboard administrativo"></td></tr><tr><td>Dashboard clínico</td><td>Dashboard administrativo</td></tr></table>
 
-![Paciente e histórico real](docs/assets/v0.8.5/patient-history-v0.8.5.png)
-*Histórico e dados demonstrativos, sem paciente real.*
+<table><tr><td><img src="docs/assets/v8.6.0/patients-list-v8.6.0.png" width="440" alt="Lista de pacientes"></td><td><img src="docs/assets/v8.6.0/patient-details-v8.6.0.png" width="440" alt="Detalhes do paciente"></td></tr><tr><td>Pacientes</td><td>Histórico e documentos</td></tr></table>
 
-![Checagem clínica real](docs/assets/v0.8.5/prescription-clinical-v0.8.5.png)
-*Visão clínica padrão da checagem.*
+<table><tr><td><img src="docs/assets/v8.6.0/medications-catalog-v8.6.0.png" width="440" alt="Catálogo"></td><td><img src="docs/assets/v8.6.0/medication-curation-v8.6.0.png" width="440" alt="Curadoria"></td></tr><tr><td>Catálogo farmacológico</td><td>Fila de curadoria</td></tr></table>
 
-![Dose Intelligence real](docs/assets/v0.8.5/dose-intelligence-v0.8.5.png)
-*Fórmula, inputs, status e revisão da regra.*
+<table><tr><td><img src="docs/assets/v8.6.0/prescription-clinical-v8.6.0.png" width="440" alt="Checagem clínica"></td><td><img src="docs/assets/v8.6.0/prescription-technical-v8.6.0.png" width="440" alt="Checagem técnica"></td></tr><tr><td>Visão clínica</td><td>Visão técnica</td></tr></table>
 
-![Auditoria real](docs/assets/v0.8.5/audit-v0.8.5.png)
-*Filtros, eventos e trilha auditável.*
+<table><tr><td><img src="docs/assets/v8.6.0/dose-intelligence-v8.6.0.png" width="280" alt="Dose Intelligence"></td><td><img src="docs/assets/v8.6.0/psychotropic-safety-v8.6.0.png" width="280" alt="Psychotropic Safety"></td><td><img src="docs/assets/v8.6.0/prescribing-policy-v8.6.0.png" width="280" alt="Policy"></td></tr><tr><td>Dose</td><td>Psicotrópicos</td><td>Policy</td></tr></table>
 
-![Interface móvel real](docs/assets/v0.8.5/mobile-v0.8.5.png)
-*Drawer móvel e largura de 390 px.*
+<table><tr><td><img src="docs/assets/v8.6.0/protocols-list-v8.6.0.png" width="280" alt="Protocolos"></td><td><img src="docs/assets/v8.6.0/imports-v8.6.0.png" width="280" alt="Importações"></td><td><img src="docs/assets/v8.6.0/reports-v8.6.0.png" width="280" alt="Relatórios"></td></tr><tr><td>Protocolos</td><td>Importações</td><td>Relatórios</td></tr></table>
+
+<table><tr><td><img src="docs/assets/v8.6.0/audit-v8.6.0.png" width="280" alt="Auditoria"></td><td><img src="docs/assets/v8.6.0/ai-settings-v8.6.0.png" width="280" alt="IA"></td><td><img src="docs/assets/v8.6.0/users-specialties-v8.6.0.png" width="280" alt="Usuários"></td></tr><tr><td>Auditoria</td><td>IA assistiva</td><td>Usuários e especialidades</td></tr></table>
+
+<table><tr><td><img src="docs/assets/v8.6.0/mobile-v8.6.0.png" width="260" alt="Mobile"></td><td><img src="docs/assets/v8.6.0/tablet-v8.6.0.png" width="420" alt="Tablet"></td></tr><tr><td>390 × 844</td><td>768 × 1024</td></tr></table>
 
 ## GIFs
 
-![Fluxo principal](docs/assets/v0.8.5/prescripta-v0.8.5-main-demo.gif)
+![Fluxo principal](docs/assets/v8.6.0/prescripta-v8.6.0-main-demo.gif)
 
-Também estão disponíveis fluxos [clínico](docs/assets/v0.8.5/prescripta-v0.8.5-clinical-workflow.gif),
-[administrativo/auditoria](docs/assets/v0.8.5/prescripta-v0.8.5-admin-audit.gif) e
-[IA assistiva](docs/assets/v0.8.5/prescripta-v0.8.5-ai-assisted-flow.gif).
+Também estão disponíveis fluxos [clínico](docs/assets/v8.6.0/prescripta-v8.6.0-clinical-flow.gif),
+[administrativo](docs/assets/v8.6.0/prescripta-v8.6.0-admin-flow.gif),
+[auditoria](docs/assets/v8.6.0/prescripta-v8.6.0-audit-flow.gif) e
+[mobile](docs/assets/v8.6.0/prescripta-v8.6.0-mobile-flow.gif).
 
 ## Instalação rápida
 
@@ -235,7 +239,7 @@ frontend 5173 por padrão.
 | Perfil | E-mail | Senha |
 | --- | --- | --- |
 | Admin | `admin@prescripta.local` | `Admin@12345` |
-| Médico geral | `medico@prescripta.local` | `Medico@12345` |
+| Médico geral | `médico@prescripta.local` | `Médico@12345` |
 | Anestesiologia | `anestesia@prescripta.local` | `Anestesia@12345` |
 | Psiquiatria | `psiquiatria@prescripta.local` | `Psiquiatria@12345` |
 | Auditoria | `auditor@prescripta.local` | `Auditor@12345` |

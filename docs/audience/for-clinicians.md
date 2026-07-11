@@ -1,6 +1,6 @@
-# Prescripta Para Medicos
+# Prescripta Para Médicos
 
-Esta visao resume como usar o Prescripta em fluxo clínico demonstrativo.
+Esta visão resume como usar o Prescripta em fluxo clínico demonstrativo.
 
 ## Fluxo Recomendado
 

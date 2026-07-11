@@ -252,7 +252,7 @@ class MedicationModel(Base):
         String(40), default="pending_review", nullable=False
     )
     policy_source_refs: Mapped[list[str]] = mapped_column(JSON, default=list)
-    policy_version: Mapped[str] = mapped_column(String(40), default="v0.8.5-demo", nullable=False)
+    policy_version: Mapped[str] = mapped_column(String(40), default="v8.6.0-demo", nullable=False)
     source_version: Mapped[str | None] = mapped_column(String(80), nullable=True)
     institution_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     policy_effective_from: Mapped[datetime | None] = mapped_column(

@@ -1,13 +1,13 @@
 # Medication Counseling Summary
 
-`MedicationCounselingSummary` e o resumo pratico de seguranca do medicamento.
+`MedicationCounselingSummary` e o resumo pratico de segurança do medicamento.
 
 Ele não decide risco e não altera o resultado da prescrição. O motor deterministico continua sendo a fonte de `status`, `risk_level`, bloqueio, dose critica e recomendacao final.
 
 ## Campos principais
 
 - medicamento ou princípio ativo;
-- `source_id`, fonte, URL, jurisdição e versao;
+- `source_id`, fonte, URL, jurisdição e versão;
 - `validation_status`: `pending_review`, `curated`, `validated`, `rejected`, `obsolete`;
 - `generated_by`: `ai_provider`, `fallback_deterministic`, `manual_curated`, `seed_demo`;
 - efeitos principais, avisos de atividades, sinais de alerta e monitoramento;

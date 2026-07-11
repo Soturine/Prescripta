@@ -18,3 +18,13 @@ class AuditRead(BaseModel):
     risk_level: str | None
     status: str | None
     details: dict
+
+
+class AuditPage(BaseModel):
+    items: list[AuditRead]
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+    has_next: bool
+    has_previous: bool

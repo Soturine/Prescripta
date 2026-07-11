@@ -1,11 +1,11 @@
 # Consentimento e LGPD em Importacoes
 
-Importacoes clinicas exigem:
+Importacoes clínicas exigem:
 
 - confirmacao de autorizacao do paciente ou base legal aplicavel;
 - finalidade da importação;
 - origem dos dados;
-- usuario autenticado;
+- usuário autenticado;
 - registro de auditoria.
 
 Dados reais não devem ser usados na demo publica. Identificadores sensiveis devem ser armazenados com hash quando aplicavel e exibidos apenas mascarados.

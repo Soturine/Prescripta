@@ -11,7 +11,7 @@ Medicamentos podem registrar:
 - nivel de metabolismo hepatico;
 - interacoes CYP;
 - notas farmacodinamicas/farmacocineticas;
-- interpretacao clinica.
+- interpretacao clínica.
 
 O motor gera revisão quando eliminacao renal/metabolismo hepatico relevantes encontram fator renal/hepatico do paciente.
 

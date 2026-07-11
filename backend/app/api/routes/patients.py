@@ -7,6 +7,7 @@ from app.core.auth import require_roles
 from app.database.models import (
     PatientClinicalDocumentModel,
     PatientDocumentExtractionModel,
+    PatientIdentifierModel,
     UserModel,
 )
 from app.database.session import get_db
@@ -55,8 +56,15 @@ PatientManager = Annotated[UserModel, Depends(require_roles(UserRole.ADMIN, User
 @router.get("", response_model=list[PatientRead])
 def list_patients(db: DbSession, _current_user: PatientReader) -> list[PatientRead]:
     patients = PatientRepository(db).list()
+    identifiers_by_patient: dict[int, list[PatientIdentifierModel]] = {}
+    if patients:
+        identifiers = db.query(PatientIdentifierModel).filter(
+            PatientIdentifierModel.patient_id.in_([patient.id for patient in patients])
+        ).order_by(PatientIdentifierModel.is_primary.desc(), PatientIdentifierModel.id).all()
+        for identifier in identifiers:
+            identifiers_by_patient.setdefault(identifier.patient_id, []).append(identifier)
     for patient in patients:
-        _attach_patient_metadata(db, patient)
+        _attach_patient_metadata(db, patient, identifiers_by_patient.get(patient.id, []))
     return patients
 
 
@@ -367,7 +375,7 @@ def review_patient_document_extraction(
     if extraction is None or extraction.patient_id != patient_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Extracao clinica não encontrada.",
+            detail="Extração clínica não encontrada.",
         )
     return PatientHistoryService(db).review_extraction(
         patient,
@@ -510,9 +518,13 @@ def _triage_value(
     return existing
 
 
-def _attach_patient_metadata(db: Session, patient) -> None:
+def _attach_patient_metadata(db: Session, patient, identifiers=None) -> None:
     patient.clinical_profile_badge = clinical_profile_badge(
         patient.clinical_profile_completeness_score or 0
     )
-    patient.identifiers = PatientIdentifierService(db).list_for_patient(patient.id)
+    patient.identifiers = (
+        identifiers
+        if identifiers is not None
+        else PatientIdentifierService(db).list_for_patient(patient.id)
+    )
     patient.possible_duplicate_matches = []
