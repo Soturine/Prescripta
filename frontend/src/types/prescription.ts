@@ -190,6 +190,41 @@ export type PrescriptionCheckResult = {
     technical_details_available: boolean;
   };
   technical_details: Record<string, unknown>;
+  dose_intelligence: {
+    status: string;
+    calculated_dose: number | null;
+    calculated_unit: string;
+    calculation_formula: string;
+    calculation_basis: string;
+    usual_range: { low: number | null; high: number | null };
+    max_limits: Record<string, number | null>;
+    alerts: Array<Record<string, unknown>>;
+    missing_data: string[];
+    validation_status: string;
+    requires_human_review: boolean;
+    educational_notice: string;
+  };
+  psychotropic_safety: Array<{
+    code: string;
+    title: string;
+    description: string;
+    severity: RiskLevel;
+    recommendation: string;
+    policy_status: string;
+    source_ids: string[];
+  }>;
+  prescribing_policy: {
+    status: string;
+    prescriber_profile: Record<string, unknown>;
+    required_specialties: string[];
+    recommended_specialties: string[];
+    prescription_form_requirements: string[];
+    warnings: string[];
+    institutional_notes: string[];
+    source_refs: string[];
+    requires_human_review: boolean;
+    educational_notice: string;
+  };
 };
 
 export type PrescriptionExplanationPayload = PrescriptionCheckResult & {
