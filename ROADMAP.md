@@ -52,19 +52,33 @@
 - Scripts Windows de setup, dev, reset demo e checagem de instalação.
 - Benchmark SafeDose v0.8.1 e registro de prompts de relatório.
 
+### v0.8.2 - Protocolos Rápidos, Frontend Polish e README de Produto
+
+- Central de Protocolos Rápidos com anafilaxia, PCR, convulsão, hipoglicemia,
+  dor torácica/SCA, broncoespasmo e intoxicação medicamentosa.
+- Execução auditada, contexto mínimo, evidência, relatório, PDF e exportações
+  JSON/CSV para protocolos.
+- IA explicando protocolo sem alterar fluxo, fonte, dose ou decisão.
+- README reestruturado como onboarding de produto e portfólio.
+- Docs novas de protocolos, UX, quickstart, troubleshooting, jornada inicial,
+  créditos de assets e benchmark v0.8.2.
+- Frontend com polish visual, loading/empty states melhores, dashboard e tela
+  Protocolos.
+
 ## Próximas Versões
 
-### v0.8.x - Protocolos rápidos / emergência, se priorizado
+### v0.8.3 - Ajustes finos de protocolos e UX, se necessário
 
-- Apenas com fonte/protocolo validado e revisão clínica.
-- Possíveis fluxos: PCR, anafilaxia, IAM, crise convulsiva e cálculo por peso.
+- Revisão clínica externa dos protocolos demonstrativos.
+- Versionamento de protocolos em banco.
+- Ajustes de screenshots, copy e responsividade após uso real.
 
 ### v0.9.0 - Docker/PostgreSQL/deploy
 
 - Docker Compose.
 - PostgreSQL.
 - Migrações.
-- Deploy demonstrativo.
+- Deploy demonstrativo e instalação mais profissional.
 
 ### v1.0.0 - Versão final de portfólio
 

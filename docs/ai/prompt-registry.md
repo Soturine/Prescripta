@@ -9,6 +9,20 @@ Os prompts de relatório ficam versionados por tipo:
 | Reconciliação | `report_reconciliation_v0.8.1` |
 | Auditoria | `report_audit_v0.8.1` |
 
+## Protocolos v0.8.2
+
+A explicação de protocolos rápidos usa instrução runtime em
+`EmergencyProtocolService`. Ela não é um prompt de relatório e não altera a
+estrutura do protocolo. A resposta aceita apenas narrativa:
+
+- `simple_explanation`;
+- `professional_summary`;
+- `safety_note`;
+- `cited_evidence_refs`.
+
+Referências citadas precisam existir nos passos do protocolo, caso contrário o
+backend aciona fallback local.
+
 ## Regras
 
 - Prompt recebe apenas `ReportEvidenceBundle`.

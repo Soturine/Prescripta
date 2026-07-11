@@ -37,6 +37,13 @@ Chamadas externas usam retry/backoff apenas para timeouts, falhas de rede,
 HTTP 429 e HTTP 5xx. Depois de falhas repetidas, o provider entra em degradação
 temporária e o fluxo usa fallback local.
 
+## Protocolos Rápidos
+
+Na v0.8.2, a IA também pode explicar protocolos rápidos. O payload enviado é
+minimizado: estrutura do protocolo, referências permitidas e contexto informado.
+O backend rejeita resposta que cite referência inexistente e usa fallback local.
+A IA não pode alterar etapa, dose, fonte ou decisão.
+
 ## Variáveis
 
 ```env

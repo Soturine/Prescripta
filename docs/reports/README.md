@@ -1,6 +1,6 @@
 # Relatórios
 
-O Prescripta v0.8.1 possui um motor central de relatórios em
+O Prescripta v0.8.2 possui um motor central de relatórios em
 `backend/app/reports`.
 
 ## Tipos
@@ -9,6 +9,7 @@ O Prescripta v0.8.1 possui um motor central de relatórios em
 - Orientações ao Paciente.
 - Relatório de Reconciliação Clínica.
 - Relatório de Auditoria.
+- Relatório simples de Protocolo Rápido, derivado do evento auditado.
 
 ## Modos
 
@@ -42,3 +43,9 @@ A tela **Relatórios** permite selecionar um item do histórico e abrir:
 
 Relatórios não exportam API Key, segredo, token ou payload sensível completo.
 IA externa recebe dados minimizados por padrão.
+
+## Protocolos v0.8.2
+
+A Central de Protocolos gera preview/PDF simples e exporta JSON/CSV do evento de
+execução. O relatório de protocolo não permite que IA altere o fluxo; ele usa a
+estrutura fixa do protocolo e os detalhes auditados em `protocol.run`.

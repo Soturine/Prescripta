@@ -12,11 +12,13 @@ para integração clínica.
 - `v0.7.1`: hardening, configuração de IA via UI, qualidade textual e fechamento de lacunas.
 - `v0.8.0`: relatórios, exportação e auditoria avançada.
 - `v0.8.1`: prontidão de produto, UX, IA hardening, docs, assets e amarração clínica.
+- `v0.8.2`: protocolos rápidos/emergência demonstrativos, frontend polish, README forte,
+  docs de onboarding e assets públicos ampliados.
 
 ## Próximas Versões
 
-- `v0.8.x`: protocolos rápidos/emergência apenas se houver fonte validada e escopo revisado.
-- `v0.9.0`: Docker/PostgreSQL/deploy.
+- `v0.8.3`: ajustes finos de protocolos/UX se revisão clínica apontar melhorias.
+- `v0.9.0`: Docker/PostgreSQL/migrações/deploy.
 - `v1.0.0`: versão final de portfólio.
 
 ## Limites
@@ -24,4 +26,4 @@ para integração clínica.
 - Não é dispositivo médico validado.
 - Não substitui avaliação profissional.
 - Não implementa integração hospitalar real sem API oficial, contrato, segurança e LGPD.
-- Não implementa emergência/protocolo rápido sem fonte/protocolo validado.
+- Protocolos rápidos seguem educacionais, demonstrativos e dependentes de julgamento humano.
