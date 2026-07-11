@@ -1,6 +1,6 @@
 # Estrategia de Integracao Hospitalar
 
-Prescripta esta preparado por adapters, nao por scraping.
+Prescripta esta preparado por adapters, n?o por scraping.
 
 ## Integracao real futura exige
 
@@ -8,7 +8,7 @@ Prescripta esta preparado por adapters, nao por scraping.
 - Credenciais institucionais seguras.
 - Base legal, consentimento e governanca LGPD.
 - Mapeamento terminologico validado.
-- Auditoria, logs, trilhas de aceite/rejeicao e revisao humana.
+- Auditoria, logs, trilhas de aceite/rejeicao e revis?o humana.
 
 ## Fora de escopo v0.6.0
 

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import require_roles
 from app.core.config import settings
-from app.database.models import PrescriptionAuditModel, UserModel
+from app.database.models import PatientFunctionalProfileModel, PrescriptionAuditModel, UserModel
 from app.database.session import get_db
 from app.domain.medication import Medication
 from app.domain.patient import Patient
@@ -26,8 +26,11 @@ from app.services.ai_explainer import AIExplainer
 from app.services.alternative_service import AlternativeService
 from app.services.audit_service import AuditService
 from app.services.clinical_context_graph import build_clinical_context_graph
+from app.services.dose_intelligence import DoseIntelligenceService
 from app.services.patient_counseling_service import PatientCounselingService
 from app.services.patient_history_service import PatientHistoryService
+from app.services.prescribing_policy import PrescribingPolicyService
+from app.services.psychotropic_safety import PsychotropicSafetyService
 from app.services.risk_engine import RiskEngine
 
 router = APIRouter(prefix="/prescriptions", tags=["prescriptions"])
@@ -93,6 +96,58 @@ def check_prescription(
         contextual_activity_answer=payload.contextual_activity_answer,
     )
     patient_knowledge_bundle = PatientHistoryService(db).knowledge_bundle(patient_record)
+    functional_profile = (
+        db.query(PatientFunctionalProfileModel)
+        .filter(PatientFunctionalProfileModel.patient_id == patient_record.id)
+        .first()
+    )
+    dose_rule = {
+        "calculation_basis": medication.dose_calculation_basis,
+        "dose_unit": medication.dose_unit,
+        "dose_per_basis": medication.dose_mg_per_kg,
+        "usual_low": medication.usual_dose_low,
+        "usual_high": medication.usual_dose_high,
+        "max_daily": medication.max_daily_dose_mg,
+        "max_per_procedure": medication.max_per_procedure,
+        "validation_status": medication.dose_rule_validation_status,
+        "source_refs": medication.dose_source_refs or [],
+    }
+    dose_intelligence = (
+        DoseIntelligenceService().evaluate(dose_rule, patient, prescription).to_dict()
+    )
+    psychotropic_safety = [
+        signal.to_dict()
+        for signal in PsychotropicSafetyService().evaluate(
+            medication, patient, functional_profile=functional_profile
+        )
+    ]
+    prescribing_policy = (
+        PrescribingPolicyService()
+        .evaluate(current_user, medication, prescription, patient)
+        .to_dict()
+    )
+    AuditService(db).record_action(
+        user=current_user,
+        action="prescription.clinical_intelligence_evaluated",
+        resource_type="prescription",
+        resource_id=str(audit.id),
+        status=prescribing_policy["status"],
+        risk_level=result.risk_level.value,
+        details={
+            "specialty": current_user.specialty_code,
+            "policy_type": medication.policy_type,
+            "policy_strength": medication.policy_strength,
+            "dose_rule_id": f"medication:{medication.id}:dose",
+            "psychotropic_signal_code": [item["code"] for item in psychotropic_safety],
+            "prescriber_policy_status": prescribing_policy["status"],
+            "credential_verification_status": current_user.credential_verification_status,
+            "high_alert_category": medication.high_alert_category,
+        },
+    )
+    audit.dose_intelligence = dose_intelligence
+    audit.psychotropic_safety = psychotropic_safety
+    audit.prescribing_policy = prescribing_policy
+    db.commit()
     patient_data_considered = result.dose_summary.get("patient_data_considered", [])
     technical_details = {
         "dose_summary": result.dose_summary,
@@ -101,6 +156,9 @@ def check_prescription(
         "clinical_context_graph": result.clinical_context_graph,
         "patient_knowledge_bundle": patient_knowledge_bundle,
         "rules_fired": [alert.code for alert in result.alerts],
+        "dose_intelligence": dose_intelligence,
+        "psychotropic_safety": psychotropic_safety,
+        "prescribing_policy": prescribing_policy,
     }
     clinical_view = {
         "status": result.status.value,
@@ -118,6 +176,9 @@ def check_prescription(
             for alert in result.alerts
         ],
         "technical_details_available": True,
+        "dose_intelligence": dose_intelligence,
+        "psychotropic_safety": psychotropic_safety,
+        "prescribing_policy": prescribing_policy,
     }
 
     return PrescriptionCheckResponse(
@@ -140,6 +201,9 @@ def check_prescription(
         patient_knowledge_bundle=patient_knowledge_bundle,
         clinical_view=clinical_view,
         technical_details=technical_details,
+        dose_intelligence=dose_intelligence,
+        psychotropic_safety=psychotropic_safety,
+        prescribing_policy=prescribing_policy,
     )
 
 
@@ -178,7 +242,7 @@ def patient_counseling_for_audit(
     if audit is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Checagem de prescricao nao encontrada.",
+            detail="Checagem de prescri??o n?o encontrada.",
         )
     patient_record = PatientRepository(db).get(audit.patient_id) if audit.patient_id else None
     medication_record = (
@@ -187,7 +251,7 @@ def patient_counseling_for_audit(
     if patient_record is None or medication_record is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Paciente ou medicamento da checagem nao encontrado.",
+            detail="Paciente ou medicamento da checagem n?o encontrado.",
         )
     return PatientCounselingService(db).build_for_prescription(
         patient_record,

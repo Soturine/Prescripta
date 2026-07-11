@@ -1,2 +1,1 @@
 """Generic JSON demonstrative adapters."""
-

@@ -63,10 +63,7 @@ def test_controlled_clinical_fields_replace_generic_values() -> None:
 
     assert normalized["renal_condition"] == "funcao_renal_a_revisar"
     assert normalized["cardiac_condition"] == "risco_cardiovascular_a_revisar"
-    assert (
-        normalized["gastrointestinal_history"]
-        == "historico_gastrointestinal_a_revisar"
-    )
+    assert normalized["gastrointestinal_history"] == "historico_gastrointestinal_a_revisar"
 
 
 def test_anvisa_lookup_uses_local_catalog_first_and_assisted_link_fallback(

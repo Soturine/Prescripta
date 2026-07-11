@@ -145,8 +145,7 @@ class AIReportComposer:
                 ),
                 patient_guidance=" ".join(guidance_parts),
                 evidence_summary=(
-                    "Evidencias usadas: "
-                    + ", ".join(source.source_id for source in bundle.sources)
+                    "Evidencias usadas: " + ", ".join(source.source_id for source in bundle.sources)
                     if bundle.sources
                     else "Nao ha fonte adicional cadastrada no bundle."
                 ),

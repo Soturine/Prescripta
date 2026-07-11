@@ -81,6 +81,9 @@ class ReportEvidenceBundleBuilder:
             "human_review_required": audit.status != "liberado" or audit.risk_level != "baixo",
             "missing_data": missing_data,
             "counseling_summary_available": counseling is not None,
+            "dose_intelligence": dict(getattr(audit, "dose_intelligence", {}) or {}),
+            "psychotropic_safety": list(getattr(audit, "psychotropic_safety", []) or []),
+            "prescribing_policy": dict(getattr(audit, "prescribing_policy", {}) or {}),
         }
         if counseling is not None:
             metadata["patient_counseling"] = {
@@ -91,9 +94,9 @@ class ReportEvidenceBundleBuilder:
                 "requires_review": counseling.requires_review,
             }
         if patient is not None:
-            metadata["patient_knowledge_bundle"] = PatientHistoryService(
-                self.db
-            ).knowledge_bundle(patient, include_identifiable=False)
+            metadata["patient_knowledge_bundle"] = PatientHistoryService(self.db).knowledge_bundle(
+                patient, include_identifiable=False
+            )
             metadata["patient_knowledge_bundle_used"] = True
 
         return ReportEvidenceBundle(
@@ -220,9 +223,9 @@ class ReportEvidenceBundleBuilder:
             "patient_knowledge_bundle_used": patient is not None,
         }
         if patient is not None:
-            metadata["patient_knowledge_bundle"] = PatientHistoryService(
-                self.db
-            ).knowledge_bundle(patient)
+            metadata["patient_knowledge_bundle"] = PatientHistoryService(self.db).knowledge_bundle(
+                patient
+            )
         return ReportEvidenceBundle(
             report_type="protocol_run_report",
             report_mode=report_mode,
@@ -384,9 +387,7 @@ class ReportEvidenceBundleBuilder:
                 evidence_type="audit_record",
             )
         return ReportSource(
-            source_id=self._source_id(
-                f"medication_{medication.id}_{medication.active_ingredient}"
-            ),
+            source_id=self._source_id(f"medication_{medication.id}_{medication.active_ingredient}"),
             source_name=medication.knowledge_source
             or medication.evidence_source_type
             or "Cadastro interno Prescripta",

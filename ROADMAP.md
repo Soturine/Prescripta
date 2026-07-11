@@ -1,5 +1,21 @@
 # Roadmap
 
+## v0.8.4 — entregue
+
+- qualidade textual e README com imagens;
+- Dose Intelligence;
+- segurança psicotrópica ampliada;
+- motor de política do prescritor;
+- especialidades e credenciais demo;
+- documentação aprofundada por audiência.
+
+## v0.9.0 — próximo ciclo
+
+- Docker Compose, PostgreSQL e Alembic/migrações;
+- deploy demonstrativo, backup/restore e armazenamento binário;
+- OCR real e curadoria clínica externa;
+- validação futura de CRM/RQE somente com API oficial, contrato, segurança e base legal.
+
 ## Entregue
 
 ### v0.5.0 - Catálogo Brasil/Anvisa + princípio ativo
@@ -65,19 +81,19 @@
 - Frontend com polish visual, loading/empty states melhores, dashboard e tela
   Protocolos.
 
-### v0.8.3 - Clinical Intelligence, Historico Longitudinal e IA Assistida
+### v0.8.3 - Clinical Intelligence, Hist?rico Longitudinal e IA Assistida
 
 - Protocolos versionados e integrados a `GeneratedReport`.
-- Relatorios de protocolo em PDF, JSON e CSV por execucao.
+- Relatorios de protocolo em PDF, JSON e CSV por execu??o.
 - Auditoria avancada com filtros especificos de protocolo.
-- Historico clinico do paciente com laudos/documentos, extracao assistida,
-  revisao humana, timeline e `PatientKnowledgeBundle`.
+- Hist?rico cl?nico do paciente com laudos/documentos, extracao assistida,
+  revis?o humana, timeline e `PatientKnowledgeBundle`.
 - Checagem usando peso, idade, altura/IMC, alergias, medicamentos atuais,
-  condicoes, perfil funcional e historico revisado quando houver regra.
-- Catalogo farmacologico ampliavel com busca por fonte, importacao em lote e
+  condicoes, perfil funcional e hist?rico revisado quando houver regra.
+- Catalogo farmacol?gico ampliavel com busca por fonte, importa??o em lote e
   fila de curadoria.
 - IA por modulo com prompts versionados e bundles minimizados.
-- Visao clinica/tecnica no frontend e documentacao por audiencia.
+- Visao clinica/tecnica no frontend e documentacao por audi?ncia.
 
 ## Próximas Versões
 

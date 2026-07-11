@@ -1,2 +1,1 @@
 """Mock hospital demonstrative adapter."""
-

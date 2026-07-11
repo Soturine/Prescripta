@@ -1,7 +1,7 @@
 # Assets v0.8.3
 
 Screenshots e GIFs capturados da aplicacao local com dados demonstrativos
-artificiais. Nao usar dados reais de pacientes.
+artificiais. N?o usar dados reais de pacientes.
 
 ## Screenshots
 

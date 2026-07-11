@@ -29,4 +29,3 @@ class ConsentService:
         self.db.add(record)
         self.db.flush()
         return record
-

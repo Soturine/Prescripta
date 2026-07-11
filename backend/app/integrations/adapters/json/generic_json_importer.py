@@ -62,4 +62,3 @@ class GenericJsonImporter:
                 }
             )
         return records
-

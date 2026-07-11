@@ -99,5 +99,3 @@ class PatientMatchingService:
                 )
 
         return sorted(candidates.values(), key=lambda item: item.score, reverse=True)
-
-

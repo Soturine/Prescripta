@@ -10,5 +10,5 @@ Exemplos:
 - `risco_sedacao`
 - `risco_serotoninergico`
 
-Alertas sao de revisao profissional, nao contraindicacoes automaticas. A IA pode explicar o alerta gerado, mas nao pode criar regra nova nem reduzir risco.
+Alertas sao de revis?o profissional, n?o contraindicacoes automaticas. A IA pode explicar o alerta gerado, mas n?o pode criar regra nova nem reduzir risco.
 

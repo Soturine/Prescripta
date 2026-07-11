@@ -28,7 +28,9 @@ class SimplePDFRenderer:
             )
             stream = self._content_stream(page_lines)
             objects.append(
-                b"<< /Length " + str(len(stream)).encode("ascii") + b" >>\nstream\n"
+                b"<< /Length "
+                + str(len(stream)).encode("ascii")
+                + b" >>\nstream\n"
                 + stream
                 + b"\nendstream"
             )

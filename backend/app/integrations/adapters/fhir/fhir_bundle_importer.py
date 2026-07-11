@@ -25,4 +25,3 @@ class FhirBundleImporter:
                 }
             )
         return records
-

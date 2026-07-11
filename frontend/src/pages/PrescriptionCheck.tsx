@@ -44,6 +44,7 @@ import type {
   MissingDataMode,
   PatientCounselingResponse,
   PrescriptionCheckPayload,
+  PrescriptionCheckResult,
   PrescriptionExplanationPayload,
 } from "../types/prescription";
 import type { DecisionEvidenceItem, DecisionTimelineItem, ReportPreview } from "../types/report";
@@ -338,6 +339,13 @@ export default function PrescriptionCheck() {
 
           <DoseAccumulationCard summary={checkMutation.data.dose_summary} />
 
+          <ClinicalIntelligenceCards
+            dose={checkMutation.data.dose_intelligence}
+            policy={checkMutation.data.prescribing_policy}
+            psychotropic={checkMutation.data.psychotropic_safety}
+            technical={isTechnicalMode}
+          />
+
           <PatientDataConsideredCard
             clinicalView={checkMutation.data.clinical_view}
             patientBundle={checkMutation.data.patient_knowledge_bundle}
@@ -470,6 +478,47 @@ export default function PrescriptionCheck() {
           ) : null}
         </section>
       ) : null}
+    </div>
+  );
+}
+
+function ClinicalIntelligenceCards({
+  dose,
+  policy,
+  psychotropic,
+  technical,
+}: {
+  dose: PrescriptionCheckResult["dose_intelligence"];
+  policy: PrescriptionCheckResult["prescribing_policy"];
+  psychotropic: PrescriptionCheckResult["psychotropic_safety"];
+  technical: boolean;
+}) {
+  return (
+    <div className="grid gap-4 xl:grid-cols-3">
+      <section className="rounded-lg border border-cyan-100 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-bold text-ink">Dose Intelligence</h2>
+        <p className="mt-2 text-sm text-slate-600">Status: {dose.status}</p>
+        <p className="mt-1 text-sm text-slate-600">
+          Faixa calculada: {dose.calculated_dose ?? "dados insuficientes"} {dose.calculated_unit}
+        </p>
+        <p className="mt-3 text-xs leading-5 text-slate-500">{dose.educational_notice}</p>
+        {technical ? <pre className="mt-3 overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-100">{JSON.stringify(dose, null, 2)}</pre> : null}
+      </section>
+      <section className="rounded-lg border border-violet-100 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-bold text-ink">Segurança psicotrópica</h2>
+        <p className="mt-2 text-sm text-slate-600">{psychotropic.length} sinal(is) para revisão.</p>
+        <ul className="mt-3 grid gap-2 text-sm text-slate-700">
+          {psychotropic.slice(0, 4).map((signal) => <li key={signal.code}>{signal.title}</li>)}
+        </ul>
+        {technical ? <pre className="mt-3 overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-100">{JSON.stringify(psychotropic, null, 2)}</pre> : null}
+      </section>
+      <section className="rounded-lg border border-amber-100 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-bold text-ink">Política de prescrição</h2>
+        <p className="mt-2 text-sm font-semibold text-slate-700">{policy.status}</p>
+        <p className="mt-2 text-sm text-slate-600">Requer revisão: {policy.requires_human_review ? "Sim" : "Não"}</p>
+        {policy.warnings.map((warning) => <p className="mt-2 text-xs text-amber-900" key={warning}>{warning}</p>)}
+        {technical ? <pre className="mt-3 overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-100">{JSON.stringify(policy, null, 2)}</pre> : null}
+      </section>
     </div>
   );
 }

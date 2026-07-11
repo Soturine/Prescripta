@@ -13,15 +13,15 @@ e substancias.
 
 ## Regras Demonstrativas
 
-- ISRS/SNRI + IMAO exige revisao por risco grave.
+- ISRS/SNRI + IMAO exige revis?o por risco grave.
 - Serotonergicos combinados geram alerta de sindrome serotoninergica.
-- Antidepressivo com historico de bipolaridade/mania gera alerta de revisao
+- Antidepressivo com hist?rico de bipolaridade/mania gera alerta de revis?o
   profissional para risco de virada maniaca/hipomania.
 - Sedativos com alcool/atividade de risco geram alerta de sedacao e queda.
-- Medicamentos que reduzem limiar convulsivo com historico de convulsao geram
+- Medicamentos que reduzem limiar convulsivo com hist?rico de convulsao geram
   alerta.
-- Litio com fator renal/AINE/diuretico gera alerta de monitoramento.
+- L?tio com fator renal/AINE/diuretico gera alerta de monitoramento.
 
 ## Linguagem
 
-O sistema nao conclui diagnostico. Ele aponta necessidade de revisao contextual.
+O sistema n?o conclui diagnostico. Ele aponta necessidade de revis?o contextual.

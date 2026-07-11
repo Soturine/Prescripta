@@ -1,12 +1,12 @@
 # Estrategia de Consulta Anvisa/DCB
 
-Prescripta v0.5.0 cria a arquitetura de consulta, mas nao implementa importacao automatica completa.
+Prescripta v0.5.0 cria a arquitetura de consulta, mas n?o implementa importa??o automatica completa.
 
 ## Fluxo alvo
 
-1. Usuario digita principio ativo ou nome comercial.
+1. Usuario digita princ?pio ativo ou nome comercial.
 2. Sistema procura no catalogo local.
-3. Se nao encontrar, gera link assistido para Anvisa/Bulario e referencia DCB.
+3. Se n?o encontrar, gera link assistido para Anvisa/Bulario e referencia DCB.
 4. Se dados forem criados a partir da consulta, entram como `pending_review`.
 5. Revisor humano valida antes de mudar para `curated` ou `validated`.
 
@@ -21,4 +21,4 @@ Retorna `local_match` quando encontra no catalogo local ou `assisted_lookup` qua
 - Sem scraping agressivo.
 - Sem promessa de API publica universal.
 - Sem uso de openFDA/DailyMed como fonte primaria para BR.
-- Cache demonstrativo e registros pendentes de revisao.
+- Cache demonstrativo e registros pendentes de revis?o.

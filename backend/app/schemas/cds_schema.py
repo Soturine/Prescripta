@@ -29,4 +29,3 @@ class CDSPrescriptionCheckResponse(BaseModel):
     cards: list[CDSCard]
     audit_id: str
     educational_notice: str
-

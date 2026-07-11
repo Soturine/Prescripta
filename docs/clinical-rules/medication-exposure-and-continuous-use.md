@@ -14,5 +14,5 @@ Alertas novos:
 - `MONITORING_REQUIRED`
 - `PROLONGED_USE_REVIEW`
 
-Esses alertas sao demonstrativos e pedem revisao profissional.
+Esses alertas sao demonstrativos e pedem revis?o profissional.
 

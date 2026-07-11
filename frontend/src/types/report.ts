@@ -31,6 +31,14 @@ export type DecisionEvidenceItem = {
   source_id?: string;
   source_name?: string;
   jurisdiction?: string;
+  specialty?: string;
+  policy_type?: string;
+  policy_strength?: string;
+  dose_rule_id?: string;
+  psychotropic_signal_code?: string;
+  prescriber_policy_status?: string;
+  credential_verification_status?: string;
+  high_alert_category?: string;
   validation_status?: string;
   evidence_summary?: string;
   evidence_type?: string;

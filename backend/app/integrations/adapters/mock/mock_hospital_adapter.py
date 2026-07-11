@@ -23,4 +23,3 @@ class MockHospitalAdapter:
             "observations": [{"name": "creatinina", "value": "pendente de revisao"}],
             "documents": [{"title": "Resumo clinico mock"}],
         }
-

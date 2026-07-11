@@ -30,4 +30,3 @@ class IntegrationAuditService:
         self.db.add(record)
         self.db.flush()
         return record
-

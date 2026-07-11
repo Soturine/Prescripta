@@ -101,9 +101,7 @@ def _patient_from_payload(payload: CDSPrescriptionCheckRequest) -> Patient:
         diabetes=bool(patient_payload.get("diabetes", False)),
         pregnancy_or_lactation=patient_payload.get("pregnancy_or_lactation"),
         mental_health_factors=patient_payload.get("mental_health_factors") or [],
-        reproductive_gynecologic_factors=patient_payload.get(
-            "reproductive_gynecologic_factors"
-        )
+        reproductive_gynecologic_factors=patient_payload.get("reproductive_gynecologic_factors")
         or [],
         adverse_reactions=patient_payload.get("adverse_reactions") or [],
         clinical_profile_completeness_score=float(
@@ -162,4 +160,3 @@ def _indicator(risk_level: str) -> str:
         "moderado": "info",
         "baixo": "info",
     }.get(risk_level, "info")
-

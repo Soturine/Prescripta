@@ -170,12 +170,8 @@ class FallbackDeterministicProvider:
                 {"hipotensao", "hipotensao_ortostatica", "sincope_desmaio"} & set(effects)
             ),
             "gastrointestinal_effects": categories["gastrointestinal"],
-            "renal_effects": [
-                item for item in categories["renal_hepatic"] if "renal" in item
-            ],
-            "hepatic_effects": [
-                item for item in categories["renal_hepatic"] if "hepat" in item
-            ],
+            "renal_effects": [item for item in categories["renal_hepatic"] if "renal" in item],
+            "hepatic_effects": [item for item in categories["renal_hepatic"] if "hepat" in item],
             "reproductive_contraceptive_effects": [
                 item
                 for item in categories["sexual_reproductive"]

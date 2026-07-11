@@ -7,6 +7,11 @@ export type User = {
   role: UserRole;
   is_active: boolean;
   created_at: string;
+  specialty_code: string | null;
+  crm_demo: string | null;
+  crm_uf: string | null;
+  rqe_demo: string | null;
+  credential_verification_status: string;
 };
 
 export type UserCreatePayload = {
@@ -15,4 +20,8 @@ export type UserCreatePayload = {
   password: string;
   role: UserRole;
   is_active: boolean;
+  specialty_code?: string | null;
+  crm_demo?: string | null;
+  crm_uf?: string | null;
+  rqe_demo?: string | null;
 };

@@ -83,6 +83,9 @@ class PrescriptionCheckResponse(BaseModel):
     patient_knowledge_bundle: dict = Field(default_factory=dict)
     clinical_view: dict = Field(default_factory=dict)
     technical_details: dict = Field(default_factory=dict)
+    dose_intelligence: dict = Field(default_factory=dict)
+    psychotropic_safety: list[dict] = Field(default_factory=list)
+    prescribing_policy: dict = Field(default_factory=dict)
 
 
 class PrescriptionExplainPatient(BaseModel):

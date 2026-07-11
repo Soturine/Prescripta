@@ -1,6 +1,6 @@
 # patient_history_summary_v0.8.3
 
-Objetivo: resumir historico longitudinal revisado.
+Objetivo: resumir hist?rico longitudinal revisado.
 
 Entrada: `PatientKnowledgeBundle` minimizado, documentos revisados, importacoes
 aceitas, medicamentos atuais, alergias, eventos e perfil funcional.

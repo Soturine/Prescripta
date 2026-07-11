@@ -40,9 +40,7 @@ def decision_timeline(bundle: ReportEvidenceBundle) -> list[dict[str, Any]]:
                 "order": 5,
                 "title": "Narrativa assistida",
                 "status": (
-                    "IA externa habilitada"
-                    if ai_context.allow_external_ai
-                    else "fallback local"
+                    "IA externa habilitada" if ai_context.allow_external_ai else "fallback local"
                 ),
                 "details": {
                     "provider": ai_context.provider,

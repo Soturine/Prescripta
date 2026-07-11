@@ -89,7 +89,6 @@ class PatientRead(PatientBase):
     clinical_profile_completeness_score: float = 0
     clinical_profile_badge: str = "Perfil clínico incompleto"
 
-
     identifiers: list[PatientIdentifierRead] = Field(default_factory=list)
     possible_duplicate_matches: list[dict] = Field(default_factory=list)
 

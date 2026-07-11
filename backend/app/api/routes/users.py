@@ -9,7 +9,13 @@ from app.database.models import UserModel
 from app.database.session import get_db
 from app.domain.user import UserRole
 from app.repositories.user_repository import UserRepository
-from app.schemas.user_schema import UserCreate, UserRead, UserRoleUpdate, UserStatusUpdate
+from app.schemas.user_schema import (
+    UserClinicalProfileUpdate,
+    UserCreate,
+    UserRead,
+    UserRoleUpdate,
+    UserStatusUpdate,
+)
 from app.services.audit_service import AuditService
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -36,6 +42,11 @@ def create_user(payload: UserCreate, db: DbSession, current_user: AdminUser) -> 
         hashed_password=hash_password(payload.password),
         role=payload.role.value,
         is_active=payload.is_active,
+        specialty_code=payload.specialty_code,
+        crm_demo=payload.crm_demo,
+        crm_uf=payload.crm_uf.upper() if payload.crm_uf else None,
+        rqe_demo=payload.rqe_demo,
+        credential_verification_status="demo_unverified",
     )
     AuditService(db).record_action(
         user=current_user,
@@ -67,6 +78,34 @@ def update_user_status(
         details={"email": updated.email, "is_active": updated.is_active},
     )
     return updated
+
+
+@router.patch("/{user_id}/clinical-profile", response_model=UserRead)
+def update_user_clinical_profile(
+    user_id: int,
+    payload: UserClinicalProfileUpdate,
+    db: DbSession,
+    current_user: AdminUser,
+) -> UserRead:
+    user = UserRepository(db).get(user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
+    for field, value in payload.model_dump().items():
+        setattr(user, field, value)
+    user.credential_verification_status = "demo_unverified"
+    db.commit()
+    db.refresh(user)
+    AuditService(db).record_action(
+        user=current_user,
+        action="user.clinical_profile_update",
+        resource_type="user",
+        resource_id=str(user.id),
+        details={
+            "specialty": user.specialty_code,
+            "credential_verification_status": "demo_unverified",
+        },
+    )
+    return user
 
 
 @router.patch("/{user_id}/role", response_model=UserRead)

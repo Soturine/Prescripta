@@ -8,13 +8,13 @@ regras de seguranca, fallback e teste esperado.
 
 | Modulo | Prompt | Arquivo |
 | --- | --- | --- |
-| Checagem de prescricao | `prescription_explanation_v0.8.3` | `backend/app/ai/prompts/prescription_explanation_v0.8.3.md` |
-| Orientacao ao paciente | `patient_guidance_v0.8.3` | `backend/app/ai/prompts/patient_guidance_v0.8.3.md` |
+| Checagem de prescri??o | `prescription_explanation_v0.8.3` | `backend/app/ai/prompts/prescription_explanation_v0.8.3.md` |
+| Orienta??o ao paciente | `patient_guidance_v0.8.3` | `backend/app/ai/prompts/patient_guidance_v0.8.3.md` |
 | Relatorios | `report_narrative_v0.8.3` | `backend/app/ai/prompts/report_narrative_v0.8.3.md` |
 | Protocolos | `protocol_explanation_v0.8.3` | `backend/app/ai/prompts/protocol_explanation_v0.8.3.md` |
 | Medicamentos | `medication_knowledge_extraction_v0.8.3` | `backend/app/ai/prompts/medication_knowledge_extraction_v0.8.3.md` |
 | Laudos/documentos | `clinical_document_extraction_v0.8.3` | `backend/app/ai/prompts/clinical_document_extraction_v0.8.3.md` |
-| Historico do paciente | `patient_history_summary_v0.8.3` | `backend/app/ai/prompts/patient_history_summary_v0.8.3.md` |
+| Hist?rico do paciente | `patient_history_summary_v0.8.3` | `backend/app/ai/prompts/patient_history_summary_v0.8.3.md` |
 | Auditoria | `audit_summary_v0.8.3` | `backend/app/ai/prompts/audit_summary_v0.8.3.md` |
 
 ## v0.8.2
@@ -27,7 +27,7 @@ existentes nos passos do protocolo.
 
 | Tipo | Prompt |
 | --- | --- |
-| Prescricao tecnica | `report_prescription_analysis_v0.8.1` |
+| Prescri??o tecnica | `report_prescription_analysis_v0.8.1` |
 | Orientacoes ao paciente | `report_patient_guidance_v0.8.1` |
 | Reconciliacao | `report_reconciliation_v0.8.1` |
 | Auditoria | `report_audit_v0.8.1` |
@@ -38,13 +38,13 @@ existentes nos passos do protocolo.
 - IA deve retornar JSON validado.
 - Campos inesperados ou reservados acionam fallback.
 - Fontes citadas precisam existir no bundle.
-- IA nao altera risco, status, dose, duracao, bloqueio, fonte, protocolo ou
-  decisao.
+- IA n?o altera risco, status, dose, duracao, bloqueio, fonte, protocolo ou
+  decis?o.
 - Dado extraido entra como `pending_review`.
-- Dado identificavel nao deve ser enviado por padrao.
+- Dado identificavel n?o deve ser enviado por padrao.
 
 ## Localizacao
 
 - Prompts v0.8.3: `backend/app/ai/prompts/`
 - Relatorios runtime: `backend/app/reports/templates.py`
-- Composer de relatorio: `backend/app/reports/ai_report_composer.py`
+- Composer de relat?rio: `backend/app/reports/ai_report_composer.py`

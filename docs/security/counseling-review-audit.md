@@ -11,14 +11,14 @@ Eventos auditados na v0.7.0:
 
 ## Permissoes
 
-- Admin e medico: gerar/revisar resumos, editar perfil funcional e decidir reconciliacao.
+- Admin e m?dico: gerar/revisar resumos, editar perfil funcional e decidir reconciliacao.
 - Enfermagem: visualizar orientacoes e importacoes conforme regras existentes.
-- Auditor: visualizar importacoes/reconciliacao e auditoria; nao decide item.
+- Auditor: visualizar importacoes/reconciliacao e auditoria; n?o decide item.
 
 ## Dados sensiveis
 
-Nao registrar senha, credencial de portal ou dado real de paciente. Os seeds e exemplos permanecem demonstrativos.
+N?o registrar senha, credencial de portal ou dado real de paciente. Os seeds e exemplos permanecem demonstrativos.
 
 ## IA
 
-Geracao por IA ou fallback fica `pending_review` e exige revisao humana para `curated` ou `validated`. A IA nao altera status da prescricao, risco, bloqueio ou recomendacao final.
+Geracao por IA ou fallback fica `pending_review` e exige revis?o humana para `curated` ou `validated`. A IA n?o altera status da prescri??o, risco, bloqueio ou recomendacao final.

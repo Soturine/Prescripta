@@ -121,8 +121,7 @@ class AIExplainer:
                     )
                 except Exception as exc:  # pragma: no cover - defensive runtime fallback
                     fallback_reason = (
-                        "IA externa indisponível; fallback local acionado "
-                        f"({type(exc).__name__})."
+                        f"IA externa indisponível; fallback local acionado ({type(exc).__name__})."
                     )
             elif config.provider != "fallback":
                 fallback_reason = "Chamadas externas de IA desabilitadas; fallback local acionado."

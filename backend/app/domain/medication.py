@@ -54,6 +54,28 @@ class Medication:
     evidence_source_url: str | None = None
     dose_mg_per_kg: float | None = None
     dose_by_weight_enabled: bool = False
+    usual_dose_low: float | None = None
+    usual_dose_high: float | None = None
+    max_single_dose: float | None = None
+    max_per_procedure: float | None = None
+    dose_calculation_basis: str = "fixed"
+    dose_unit: str = "mg"
+    dose_rule_validation_status: str = "pending_review"
+    dose_source_refs: list[str] | None = None
+    controlled_substance: bool = False
+    controlled_substance_list: str | None = None
+    prescription_form_type: str | None = None
+    high_alert_category: str | None = None
+    recommended_specialty_codes: list[str] | None = None
+    required_specialty_codes: list[str] | None = None
+    requires_second_review: bool = False
+    requires_institutional_protocol: bool = False
+    policy_type: str = "demo_policy"
+    policy_strength: str = "warning_only"
+    policy_validation_status: str = "pending_review"
+    policy_source_refs: list[str] | None = None
+    psychotropic_class: str | None = None
+    psychotropic_profile: dict | None = None
 
     @classmethod
     def from_record(cls, record: Any) -> "Medication":
@@ -73,6 +95,34 @@ class Medication:
             evidence_source_url=record.evidence_source_url,
             dose_mg_per_kg=getattr(record, "dose_mg_per_kg", None),
             dose_by_weight_enabled=bool(getattr(record, "dose_by_weight_enabled", False)),
+            usual_dose_low=getattr(record, "usual_dose_low", None),
+            usual_dose_high=getattr(record, "usual_dose_high", None),
+            max_single_dose=getattr(record, "max_single_dose", None),
+            max_per_procedure=getattr(record, "max_per_procedure", None),
+            dose_calculation_basis=getattr(record, "dose_calculation_basis", "fixed"),
+            dose_unit=getattr(record, "dose_unit", "mg"),
+            dose_rule_validation_status=getattr(
+                record, "dose_rule_validation_status", "pending_review"
+            ),
+            dose_source_refs=list(getattr(record, "dose_source_refs", []) or []),
+            controlled_substance=bool(getattr(record, "controlled_substance", False)),
+            controlled_substance_list=getattr(record, "controlled_substance_list", None),
+            prescription_form_type=getattr(record, "prescription_form_type", None),
+            high_alert_category=getattr(record, "high_alert_category", None),
+            recommended_specialty_codes=list(
+                getattr(record, "recommended_specialty_codes", []) or []
+            ),
+            required_specialty_codes=list(getattr(record, "required_specialty_codes", []) or []),
+            requires_second_review=bool(getattr(record, "requires_second_review", False)),
+            requires_institutional_protocol=bool(
+                getattr(record, "requires_institutional_protocol", False)
+            ),
+            policy_type=getattr(record, "policy_type", "demo_policy"),
+            policy_strength=getattr(record, "policy_strength", "warning_only"),
+            policy_validation_status=getattr(record, "policy_validation_status", "pending_review"),
+            policy_source_refs=list(getattr(record, "policy_source_refs", []) or []),
+            psychotropic_class=getattr(record, "psychotropic_class", None),
+            psychotropic_profile=dict(getattr(record, "psychotropic_profile", {}) or {}),
             max_daily_dose_mg=record.max_daily_dose_mg,
             max_duration_days=record.max_duration_days,
             max_cumulative_dose_mg=record.max_cumulative_dose_mg,
@@ -93,16 +143,12 @@ class Medication:
             metabolism_organs=list(record.metabolism_organs or []),
             elimination_organs=list(record.elimination_organs or []),
             renal_elimination_level=getattr(record, "renal_elimination_level", "nao_informado"),
-            hepatic_metabolism_level=getattr(
-                record, "hepatic_metabolism_level", "nao_informado"
-            ),
+            hepatic_metabolism_level=getattr(record, "hepatic_metabolism_level", "nao_informado"),
             cyp_interactions=list(getattr(record, "cyp_interactions", []) or []),
             pharmacodynamic_notes=getattr(record, "pharmacodynamic_notes", None),
             pharmacokinetic_notes=getattr(record, "pharmacokinetic_notes", None),
             clinical_interpretation=getattr(record, "clinical_interpretation", None),
-            neuropsychiatric_cautions=list(
-                getattr(record, "neuropsychiatric_cautions", []) or []
-            ),
+            neuropsychiatric_cautions=list(getattr(record, "neuropsychiatric_cautions", []) or []),
             reproductive_cautions=list(getattr(record, "reproductive_cautions", []) or []),
             organs_involved=list(record.organs_involved or []),
             relevant_adverse_effects=list(record.relevant_adverse_effects or []),

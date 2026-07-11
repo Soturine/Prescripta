@@ -15,6 +15,15 @@ import type { UserCreatePayload, UserRole } from "../types/user";
 import { formatDateTime, formatRole } from "../utils/formatters";
 
 const roles: UserRole[] = ["admin", "medico", "enfermagem", "auditor"];
+const specialties = [
+  ["general_practice", "Medicina geral"],
+  ["anesthesiology", "Anestesiologia"],
+  ["psychiatry", "Psiquiatria"],
+  ["neurology", "Neurologia"],
+  ["oncology", "Oncologia"],
+  ["emergency_medicine", "Medicina de emergência"],
+  ["intensive_care", "Terapia intensiva"],
+] as const;
 
 export default function Users() {
   const queryClient = useQueryClient();
@@ -24,6 +33,10 @@ export default function Users() {
     password: "",
     role: "medico",
     is_active: true,
+    specialty_code: "general_practice",
+    crm_demo: null,
+    crm_uf: null,
+    rqe_demo: null,
   });
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users"],
@@ -32,7 +45,10 @@ export default function Users() {
   const createMutation = useMutation({
     mutationFn: createUser,
     onSuccess: async () => {
-      setForm({ name: "", email: "", password: "", role: "medico", is_active: true });
+      setForm({
+        name: "", email: "", password: "", role: "medico", is_active: true,
+        specialty_code: "general_practice", crm_demo: null, crm_uf: null, rqe_demo: null,
+      });
       await queryClient.invalidateQueries({ queryKey: ["users"] });
       await queryClient.invalidateQueries({ queryKey: ["audit"] });
     },
@@ -117,7 +133,29 @@ export default function Users() {
                 ))}
               </select>
             </label>
+            <label className="grid gap-1.5">
+              <span className="label">Especialidade demo</span>
+              <select className="field" disabled={form.role !== "medico"} value={form.specialty_code ?? ""} onChange={(event) => setForm((value) => ({ ...value, specialty_code: event.target.value || null }))}>
+                <option value="">Não informada</option>
+                {specialties.map(([code, label]) => <option key={code} value={code}>{label}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-1.5">
+              <span className="label">CRM demo</span>
+              <input className="field" placeholder="Somente dado fictício" value={form.crm_demo ?? ""} onChange={(event) => setForm((value) => ({ ...value, crm_demo: event.target.value || null }))} />
+            </label>
+            <label className="grid gap-1.5">
+              <span className="label">UF</span>
+              <input className="field" maxLength={2} value={form.crm_uf ?? ""} onChange={(event) => setForm((value) => ({ ...value, crm_uf: event.target.value.toUpperCase() || null }))} />
+            </label>
+            <label className="grid gap-1.5">
+              <span className="label">RQE demo</span>
+              <input className="field" value={form.rqe_demo ?? ""} onChange={(event) => setForm((value) => ({ ...value, rqe_demo: event.target.value || null }))} />
+            </label>
           </div>
+          <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+            Esta versão não consulta CRM/CFM. Use apenas dados fictícios.
+          </p>
           <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
             <input
               checked={form.is_active}
@@ -151,6 +189,7 @@ export default function Users() {
                     <th className="px-4 py-3">Nome</th>
                     <th className="px-4 py-3">E-mail</th>
                     <th className="px-4 py-3">Perfil</th>
+                    <th className="px-4 py-3">Perfil clínico demo</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">Criado em</th>
                     <th className="px-4 py-3 text-right">Ações</th>
@@ -178,6 +217,12 @@ export default function Users() {
                             </option>
                           ))}
                         </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p>{user.specialty_code ?? "Não informado"}</p>
+                        <span className="mt-1 inline-flex rounded bg-amber-50 px-2 py-1 text-xs font-bold text-amber-900">
+                          Credencial demo não verificada
+                        </span>
                       </td>
                       <td className="px-4 py-3">{user.is_active ? "Ativo" : "Inativo"}</td>
                       <td className="px-4 py-3">{formatDateTime(user.created_at)}</td>

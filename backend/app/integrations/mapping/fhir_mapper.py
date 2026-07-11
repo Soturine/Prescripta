@@ -96,4 +96,3 @@ class FhirMappingService:
             },
             "confidence": 0.8,
         }
-

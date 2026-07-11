@@ -1,7 +1,7 @@
-# Escopo Medico E Limitacoes
+# Escopo M?dico E Limitacoes
 
-Prescripta e uma ferramenta educacional/demonstrativa. Ele nao e dispositivo
-medico validado e nao deve ser usado para atendimento real sem validacao,
+Prescripta e uma ferramenta educacional/demonstrativa. Ele n?o e dispositivo
+m?dico validado e n?o deve ser usado para atendimento real sem valida??o,
 contrato, seguranca, curadoria clinica e aprovacao institucional.
 
 ## O Que O Sistema Faz
@@ -12,16 +12,16 @@ contrato, seguranca, curadoria clinica e aprovacao institucional.
 - Gera relatorios e auditoria.
 - Permite IA assistiva com fonte e fallback.
 
-## O Que O Sistema Nao Faz
+## O Que O Sistema N?o Faz
 
-- Nao diagnostica.
-- Nao libera prescricao.
-- Nao altera dose ou risco por IA.
-- Nao substitui bula, Anvisa, protocolo institucional ou julgamento profissional.
-- Nao acessa sistema hospitalar sem API, contrato, permissao e configuracao.
+- N?o diagnostica.
+- N?o libera prescri??o.
+- N?o altera dose ou risco por IA.
+- N?o substitui bula, Anvisa, protocolo institucional ou julgamento profissional.
+- N?o acessa sistema hospitalar sem API, contrato, permissao e configura??o.
 
-## Fontes E Jurisdicao
+## Fontes E Jurisdi??o
 
 Para contexto brasileiro, fontes como Anvisa, Bulario Eletronico e DCB devem ter
 prioridade. Fontes internacionais podem ajudar como referencia secundaria, desde
-que marcadas com jurisdicao e status de validacao.
+que marcadas com jurisdi??o e status de valida??o.

@@ -102,7 +102,7 @@ class ReportService:
     def protocol_run_preview(self, run_id: int) -> ReportPreview:
         run = self._protocol_run_or_error(run_id)
         bundle = self.builder.protocol_run_bundle(run)
-        return self._preview(title=f"Relatorio de Protocolo - {run.protocol_title}", bundle=bundle)
+        return self._preview(title=f"Relat?rio de Protocolo - {run.protocol_title}", bundle=bundle)
 
     def prescription_bundle(
         self,
