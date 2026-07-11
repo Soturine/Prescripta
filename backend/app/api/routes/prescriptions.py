@@ -27,6 +27,7 @@ from app.services.alternative_service import AlternativeService
 from app.services.audit_service import AuditService
 from app.services.clinical_context_graph import build_clinical_context_graph
 from app.services.patient_counseling_service import PatientCounselingService
+from app.services.patient_history_service import PatientHistoryService
 from app.services.risk_engine import RiskEngine
 
 router = APIRouter(prefix="/prescriptions", tags=["prescriptions"])
@@ -91,6 +92,33 @@ def check_prescription(
         medication_record,
         contextual_activity_answer=payload.contextual_activity_answer,
     )
+    patient_knowledge_bundle = PatientHistoryService(db).knowledge_bundle(patient_record)
+    patient_data_considered = result.dose_summary.get("patient_data_considered", [])
+    technical_details = {
+        "dose_summary": result.dose_summary,
+        "compatibility": result.compatibility,
+        "rag_evidence": rag_evidence,
+        "clinical_context_graph": result.clinical_context_graph,
+        "patient_knowledge_bundle": patient_knowledge_bundle,
+        "rules_fired": [alert.code for alert in result.alerts],
+    }
+    clinical_view = {
+        "status": result.status.value,
+        "risk_level": result.risk_level.value,
+        "primary_recommendation": result.recommendation,
+        "patient_data_considered": patient_data_considered,
+        "missing_data": patient_knowledge_bundle.get("missing_data", []),
+        "relevant_alerts": [
+            {
+                "code": alert.code,
+                "title": alert.title,
+                "severity": alert.severity.value,
+                "recommendation": alert.recommendation,
+            }
+            for alert in result.alerts
+        ],
+        "technical_details_available": True,
+    }
 
     return PrescriptionCheckResponse(
         status=result.status.value,
@@ -109,6 +137,9 @@ def check_prescription(
         patient_counseling=patient_counseling,
         missing_data_mode=patient_counseling.missing_data_mode,
         contextual_question=patient_counseling.functional_context.question,
+        patient_knowledge_bundle=patient_knowledge_bundle,
+        clinical_view=clinical_view,
+        technical_details=technical_details,
     )
 
 

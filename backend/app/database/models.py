@@ -226,6 +226,8 @@ class MedicationModel(Base):
     pharmaceutical_form: Mapped[str | None] = mapped_column(String(120), nullable=True)
     evidence_source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     max_daily_dose_mg: Mapped[float] = mapped_column(Float, nullable=False)
+    dose_mg_per_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    dose_by_weight_enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
     max_duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_cumulative_dose_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
     continuous_use: Mapped[bool] = mapped_column(default=False, nullable=False)
@@ -674,3 +676,215 @@ class GeneratedReportModel(Base):
     file_hash: Mapped[str | None] = mapped_column(String(128), nullable=True)
     status: Mapped[str] = mapped_column(String(40), default="generated", nullable=False)
     metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class EmergencyProtocolVersionModel(Base):
+    __tablename__ = "emergency_protocol_versions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    protocol_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    slug: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(180), nullable=False)
+    category: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    severity: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    version: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    jurisdiction: Mapped[str] = mapped_column(String(20), default="BR", nullable=False)
+    source_name: Mapped[str] = mapped_column(String(220), nullable=False)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    source_version: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    validation_status: Mapped[str] = mapped_column(
+        String(40), default="demo_curated", nullable=False, index=True
+    )
+    reviewed_by: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    effective_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    deprecated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False, index=True)
+    snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class EmergencyProtocolRunModel(Base):
+    __tablename__ = "emergency_protocol_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    protocol_version_id: Mapped[int] = mapped_column(
+        ForeignKey("emergency_protocol_versions.id"), nullable=False, index=True
+    )
+    protocol_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    protocol_title: Mapped[str] = mapped_column(String(180), nullable=False)
+    protocol_category: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    protocol_severity: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    protocol_version: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    patient_id: Mapped[int | None] = mapped_column(ForeignKey("patients.id"), nullable=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    audit_event_id: Mapped[int | None] = mapped_column(ForeignKey("audit_events.id"), nullable=True)
+    context: Mapped[dict] = mapped_column(JSON, default=dict)
+    selected_step_orders: Mapped[list[int]] = mapped_column(JSON, default=list)
+    patient_context_summary: Mapped[dict] = mapped_column(JSON, default=dict)
+    triage_flags: Mapped[list[str]] = mapped_column(JSON, default=list)
+    calculated_values: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    evidence_refs: Mapped[list[str]] = mapped_column(JSON, default=list)
+    timeline: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String(40), default="recorded", nullable=False, index=True)
+    ai_provider: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    ai_model: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    fallback_used: Mapped[bool] = mapped_column(default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class EmergencyProtocolRunStepModel(Base):
+    __tablename__ = "emergency_protocol_run_steps"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    run_id: Mapped[int] = mapped_column(
+        ForeignKey("emergency_protocol_runs.id"), nullable=False, index=True
+    )
+    step_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(String(180), nullable=False)
+    evidence_ref: Mapped[str] = mapped_column(String(120), nullable=False)
+    checked: Mapped[bool] = mapped_column(default=False, nullable=False)
+    checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class EmergencyProtocolRunReportModel(Base):
+    __tablename__ = "emergency_protocol_run_reports"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    run_id: Mapped[int] = mapped_column(
+        ForeignKey("emergency_protocol_runs.id"), nullable=False, index=True
+    )
+    generated_report_id: Mapped[int] = mapped_column(
+        ForeignKey("generated_reports.id"), nullable=False, index=True
+    )
+    report_type: Mapped[str] = mapped_column(
+        String(80), default="protocol_run_report", nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class PatientClinicalTimelineEventModel(Base):
+    __tablename__ = "patient_clinical_timeline_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), nullable=False, index=True)
+    event_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(180), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    source_type: Mapped[str] = mapped_column(String(80), default="manual", nullable=False)
+    source_system: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    event_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    validation_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False, index=True
+    )
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class PatientClinicalDocumentModel(Base):
+    __tablename__ = "patient_clinical_documents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), nullable=False, index=True)
+    document_type: Mapped[str] = mapped_column(String(80), default="clinical_note", nullable=False)
+    title: Mapped[str] = mapped_column(String(180), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    source_type: Mapped[str] = mapped_column(String(80), default="manual_text", nullable=False)
+    source_system: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    document_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    uploaded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    uploaded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    raw_text: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    structured_payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    extracted_entities: Mapped[dict] = mapped_column(JSON, default=dict)
+    confidence: Mapped[float] = mapped_column(Float, default=0, nullable=False)
+    validation_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False, index=True
+    )
+    review_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False, index=True
+    )
+    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    file_hash: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    storage_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+
+class PatientDocumentExtractionModel(Base):
+    __tablename__ = "patient_document_extractions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), nullable=False, index=True)
+    document_id: Mapped[int] = mapped_column(
+        ForeignKey("patient_clinical_documents.id"), nullable=False, index=True
+    )
+    provider: Mapped[str] = mapped_column(String(80), default="fallback", nullable=False)
+    model: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    extracted_entities: Mapped[dict] = mapped_column(JSON, default=dict)
+    confidence: Mapped[float] = mapped_column(Float, default=0, nullable=False)
+    validation_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False, index=True
+    )
+    review_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False, index=True
+    )
+    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class PatientMedicationHistoryModel(Base):
+    __tablename__ = "patient_medication_history"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), nullable=False, index=True)
+    medication_name: Mapped[str] = mapped_column(String(180), nullable=False, index=True)
+    active_ingredient: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), default="historical", nullable=False)
+    source_document_id: Mapped[int | None] = mapped_column(
+        ForeignKey("patient_clinical_documents.id"), nullable=True
+    )
+    validation_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class MedicationKnowledgeCurationModel(Base):
+    __tablename__ = "medication_knowledge_curation_queue"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    query: Mapped[str] = mapped_column(String(180), nullable=False, index=True)
+    source_name: Mapped[str] = mapped_column(String(180), default="fonte_informada", nullable=False)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    source_text_excerpt: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    extracted_payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    provider: Mapped[str] = mapped_column(String(80), default="fallback", nullable=False)
+    model: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    validation_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False, index=True
+    )
+    review_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False, index=True
+    )
+    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )

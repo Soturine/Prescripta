@@ -89,6 +89,12 @@ export type AuditFilters = {
   patient?: string;
   medication?: string;
   active_ingredient?: string;
+  protocol?: string;
+  protocol_category?: string;
+  protocol_severity?: string;
+  protocol_version?: string;
+  execution?: string;
+  report_type?: string;
   action?: string;
   resource_type?: string;
   risk_level?: string;

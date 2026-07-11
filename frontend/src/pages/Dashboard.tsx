@@ -109,6 +109,26 @@ export default function Dashboard() {
         })}
       </section>
 
+      <section className="rounded-lg border border-cyan-100 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-bold text-ink">Comece por aqui</h2>
+        <div className="mt-4 grid gap-3 md:grid-cols-5">
+          {[
+            ["1", "Abra o paciente"],
+            ["2", "Revise histórico/laudos"],
+            ["3", "Cheque a prescrição"],
+            ["4", "Gere orientação/relatório"],
+            ["5", "Use protocolo rápido se necessário"],
+          ].map(([step, label]) => (
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-4" key={step}>
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 text-sm font-bold text-ocean">
+                {step}
+              </span>
+              <p className="mt-3 text-sm font-bold text-ink">{label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>

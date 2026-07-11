@@ -10,6 +10,7 @@ from app.database.models import UserModel
 from app.database.session import get_db
 from app.domain.user import UserRole
 from app.reports.pdf_renderer import SimplePDFRenderer
+from app.reports.service import ReportNotFoundError, ReportService
 from app.schemas.protocol_schema import (
     EmergencyProtocolRead,
     ProtocolEvidenceRead,
@@ -46,14 +47,75 @@ def list_protocols(
     return EmergencyProtocolService(db).list_protocols(category=category)
 
 
+@router.get("/runs/{run_id}/report.pdf")
+def protocol_run_report_pdf(
+    run_id: int,
+    db: DbSession,
+    current_user: ProtocolRunner,
+) -> Response:
+    try:
+        content, report = ReportService(db).generate_protocol_run_pdf(run_id, user=current_user)
+    except ReportNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return _download(
+        content,
+        "application/pdf",
+        f"prescripta-protocolo-run-{run_id}-{report.id}.pdf",
+    )
+
+
+@router.get("/runs/{run_id}/report.json")
+def protocol_run_report_json(
+    run_id: int,
+    db: DbSession,
+    current_user: ProtocolReader,
+) -> Response:
+    try:
+        content = ReportService(db).export_protocol_run_json(run_id, user=current_user)
+    except ReportNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return _download(content, "application/json", f"protocolo-run-{run_id}.json")
+
+
+@router.get("/runs/{run_id}/report.csv")
+def protocol_run_report_csv(
+    run_id: int,
+    db: DbSession,
+    current_user: ProtocolReader,
+) -> Response:
+    try:
+        content = ReportService(db).export_protocol_run_csv(run_id, user=current_user)
+    except ReportNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return _download(content, "text/csv; charset=utf-8", f"protocolo-run-{run_id}.csv")
+
+
 @router.get("/{protocol_id}", response_model=EmergencyProtocolRead)
 def get_protocol(
     protocol_id: str,
     db: DbSession,
-    _current_user: ProtocolReader,
+    current_user: ProtocolReader,
 ) -> EmergencyProtocolRead:
     try:
-        return EmergencyProtocolService(db).get_protocol(protocol_id)
+        protocol = EmergencyProtocolService(db).get_protocol(protocol_id)
+        from app.services.audit_service import AuditService
+
+        AuditService(db).record_action(
+            user=current_user,
+            action="protocol.viewed",
+            resource_type="protocol",
+            resource_id=protocol.id,
+            status="viewed",
+            details={
+                "protocol_id": protocol.id,
+                "protocol_title": protocol.title,
+                "category": protocol.category,
+                "severity_level": protocol.severity_level,
+                "validation_status": protocol.validation_status,
+                "secret_logged": False,
+            },
+        )
+        return protocol
     except ProtocolNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
@@ -117,11 +179,21 @@ def protocol_report(
 def protocol_report_pdf(
     protocol_id: str,
     db: DbSession,
-    _current_user: ProtocolReader,
+    current_user: ProtocolReader,
     run_id: int | None = Query(default=None, gt=0),
 ) -> Response:
     try:
         preview = EmergencyProtocolService(db).report(protocol_id, run_id=run_id)
+        if run_id is not None:
+            content, report = ReportService(db).generate_protocol_run_pdf(
+                run_id,
+                user=current_user,
+            )
+            return _download(
+                content,
+                "application/pdf",
+                f"prescripta-protocolo-{protocol_id}-{report.id}.pdf",
+            )
     except ProtocolNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except ProtocolValidationError as exc:
@@ -129,6 +201,8 @@ def protocol_report_pdf(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(exc),
         ) from exc
+    except ReportNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     pdf = SimplePDFRenderer().render(preview.report_lines)
     return _download(pdf, "application/pdf", f"prescripta-protocolo-{protocol_id}.pdf")
 
@@ -150,10 +224,10 @@ def protocol_event_json(
     protocol_id: str,
     run_id: int,
     db: DbSession,
-    _current_user: ProtocolReader,
+    current_user: ProtocolReader,
 ) -> Response:
     try:
-        content = EmergencyProtocolService(db).export_event_json(protocol_id, run_id)
+        content = EmergencyProtocolService(db).export_event_json(protocol_id, run_id, current_user)
     except ProtocolNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except ProtocolValidationError as exc:
@@ -169,10 +243,10 @@ def protocol_event_csv(
     protocol_id: str,
     run_id: int,
     db: DbSession,
-    _current_user: ProtocolReader,
+    current_user: ProtocolReader,
 ) -> Response:
     try:
-        content = EmergencyProtocolService(db).export_event_csv(protocol_id, run_id)
+        content = EmergencyProtocolService(db).export_event_csv(protocol_id, run_id, current_user)
     except ProtocolNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except ProtocolValidationError as exc:

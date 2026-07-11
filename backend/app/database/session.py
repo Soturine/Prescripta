@@ -59,6 +59,8 @@ def _ensure_sqlite_v04_columns() -> None:
             "pharmaceutical_form": "VARCHAR(120)",
             "evidence_source_url": "VARCHAR(500)",
             "max_duration_days": "INTEGER",
+            "dose_mg_per_kg": "FLOAT",
+            "dose_by_weight_enabled": "BOOLEAN NOT NULL DEFAULT 0",
             "max_cumulative_dose_mg": "FLOAT",
             "continuous_use": "BOOLEAN NOT NULL DEFAULT 0",
             "monitoring_required": "BOOLEAN NOT NULL DEFAULT 0",

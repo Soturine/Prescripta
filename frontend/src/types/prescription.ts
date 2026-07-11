@@ -1,4 +1,5 @@
 import type { MedicationCounselingSummary } from "./medication";
+import type { PatientKnowledgeBundle } from "./patient";
 
 export type RiskLevel = "baixo" | "moderado" | "alto" | "critico";
 export type PrescriptionStatus = "liberado" | "atencao" | "bloqueado";
@@ -54,6 +55,23 @@ export type DoseSummary = {
     clinical_interpretation: string | null;
   };
   condition_specific_limits: Record<string, number>;
+  weight_based_rule?: {
+    enabled: boolean;
+    dose_mg_per_kg: number | null;
+    patient_weight_kg: number | null;
+    calculated_limit_mg_per_day: number | null;
+    calculated_daily_dose_mg: number;
+    was_considered: boolean;
+  };
+  anthropometrics?: {
+    age: number | null;
+    age_group: string;
+    weight_kg: number;
+    height_cm: number | null;
+    bmi: number | null;
+    bmi_considered: boolean;
+  };
+  patient_data_considered?: Array<{ label: string; value: string }>;
 };
 
 export type Compatibility = {
@@ -156,6 +174,22 @@ export type PrescriptionCheckResult = {
   patient_counseling: PatientCounselingResponse | null;
   missing_data_mode: MissingDataMode | null;
   contextual_question: ContextualQuestion | null;
+  patient_knowledge_bundle: PatientKnowledgeBundle;
+  clinical_view: {
+    status: PrescriptionStatus;
+    risk_level: RiskLevel;
+    primary_recommendation: string;
+    patient_data_considered: Array<{ label: string; value: string }>;
+    missing_data: string[];
+    relevant_alerts: Array<{
+      code: string;
+      title: string;
+      severity: RiskLevel;
+      recommendation: string;
+    }>;
+    technical_details_available: boolean;
+  };
+  technical_details: Record<string, unknown>;
 };
 
 export type PrescriptionExplanationPayload = PrescriptionCheckResult & {
@@ -203,6 +237,7 @@ export type PrescriptionExplanationPayload = PrescriptionCheckResult & {
   rag_evidence: RagEvidence[];
   clinical_context_graph: ClinicalContextGraph;
   alternatives: AlternativeMedication[];
+  patient_knowledge_bundle?: PatientKnowledgeBundle;
 };
 
 export type PrescriptionExplanationResult = {

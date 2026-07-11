@@ -24,18 +24,27 @@ import type { ApiHealth } from "../types/health";
 import type {
   AdverseEffectTaxonomyEntry,
   Medication,
+  MedicationBulkImportPayload,
   MedicationCounselingGeneratePayload,
   MedicationCounselingReviewPayload,
   MedicationCounselingSummary,
+  MedicationKnowledgeCurationItem,
+  MedicationKnowledgeLookupPayload,
+  MedicationKnowledgeReviewPayload,
   MedicationPayload,
 } from "../types/medication";
 import type {
   ClinicalContextGraph,
   Patient,
+  PatientClinicalDocument,
+  PatientClinicalDocumentPayload,
+  PatientDocumentExtraction,
+  PatientDocumentReviewPayload,
   PatientFunctionalProfile,
   PatientFunctionalProfilePayload,
   PatientIdentifier,
   PatientIdentifierPayload,
+  PatientKnowledgeBundle,
   PatientPayload,
   QuickTriagePayload,
 } from "../types/patient";
@@ -183,6 +192,48 @@ export async function updatePatientFunctionalProfile(
   return response.data;
 }
 
+export async function fetchPatientDocuments(id: number) {
+  const response = await api.get<PatientClinicalDocument[]>(`/patients/${id}/documents`);
+  return response.data;
+}
+
+export async function createPatientDocument(
+  id: number,
+  payload: PatientClinicalDocumentPayload,
+) {
+  const response = await api.post<PatientClinicalDocument>(`/patients/${id}/documents`, payload);
+  return response.data;
+}
+
+export async function extractPatientDocument(id: number, documentId: number) {
+  const response = await api.post<PatientDocumentExtraction>(
+    `/patients/${id}/documents/${documentId}/extract`,
+  );
+  return response.data;
+}
+
+export async function reviewPatientDocumentExtraction(
+  id: number,
+  extractionId: number,
+  payload: PatientDocumentReviewPayload,
+) {
+  const response = await api.post<PatientDocumentExtraction>(
+    `/patients/${id}/document-extractions/${extractionId}/review`,
+    payload,
+  );
+  return response.data;
+}
+
+export async function fetchPatientTimeline(id: number) {
+  const response = await api.get<Array<Record<string, unknown>>>(`/patients/${id}/timeline`);
+  return response.data;
+}
+
+export async function fetchPatientKnowledgeBundle(id: number) {
+  const response = await api.get<PatientKnowledgeBundle>(`/patients/${id}/knowledge-bundle`);
+  return response.data;
+}
+
 export async function fetchMedications() {
   const response = await api.get<Medication[]>("/medications");
   return response.data;
@@ -227,6 +278,41 @@ export async function updateMedication(id: number, payload: MedicationPayload) {
 export async function fetchAdverseEffectTaxonomy() {
   const response = await api.get<AdverseEffectTaxonomyEntry[]>(
     "/medications/adverse-effect-taxonomy",
+  );
+  return response.data;
+}
+
+export async function lookupMedicationKnowledge(payload: MedicationKnowledgeLookupPayload) {
+  const response = await api.post<MedicationKnowledgeCurationItem>(
+    "/medications/knowledge/lookup",
+    payload,
+  );
+  return response.data;
+}
+
+export async function bulkImportMedicationKnowledge(payload: MedicationBulkImportPayload) {
+  const response = await api.post<MedicationKnowledgeCurationItem[]>(
+    "/medications/knowledge/bulk-import",
+    payload,
+  );
+  return response.data;
+}
+
+export async function fetchMedicationCurationQueue(reviewStatus?: string) {
+  const response = await api.get<MedicationKnowledgeCurationItem[]>(
+    "/medications/knowledge/curation-queue",
+    { params: reviewStatus ? { review_status: reviewStatus } : undefined },
+  );
+  return response.data;
+}
+
+export async function reviewMedicationKnowledge(
+  itemId: number,
+  payload: MedicationKnowledgeReviewPayload,
+) {
+  const response = await api.post<MedicationKnowledgeCurationItem>(
+    `/medications/knowledge/curation-queue/${itemId}/review`,
+    payload,
   );
   return response.data;
 }
@@ -288,8 +374,8 @@ export async function fetchAuditEvidence(eventId: number) {
   return response.data;
 }
 
-export async function fetchReports() {
-  const response = await api.get<GeneratedReport[]>("/reports");
+export async function fetchReports(params?: { report_type?: string; target_type?: string }) {
+  const response = await api.get<GeneratedReport[]>("/reports", { params });
   return response.data;
 }
 
@@ -388,6 +474,13 @@ export async function downloadProtocolReportPdf(id: string, runId?: number | nul
   );
 }
 
+export async function downloadProtocolRunReportPdf(runId: number) {
+  return downloadFromApi(
+    `/protocols/runs/${runId}/report.pdf`,
+    `prescripta-protocolo-run-${runId}.pdf`,
+  );
+}
+
 export async function exportPrescriptionJson(auditId: number, anonymized = false) {
   return downloadFromApi(
     `/exports/prescriptions/${auditId}.json`,
@@ -430,14 +523,14 @@ export async function exportReportJson(reportId: number) {
 
 export async function exportProtocolRunJson(id: string, runId: number) {
   return downloadFromApi(
-    `/protocols/${id}/events/${runId}.json`,
+    `/protocols/runs/${runId}/report.json`,
     `protocolo-${id}-${runId}.json`,
   );
 }
 
 export async function exportProtocolRunCsv(id: string, runId: number) {
   return downloadFromApi(
-    `/protocols/${id}/events/${runId}.csv`,
+    `/protocols/runs/${runId}/report.csv`,
     `protocolo-${id}-${runId}.csv`,
   );
 }

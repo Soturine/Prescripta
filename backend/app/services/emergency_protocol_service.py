@@ -5,9 +5,19 @@ from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import BaseModel, Field, ValidationError, field_validator
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.database.models import AuditEventModel, UserModel
+from app.database.models import (
+    AuditEventModel,
+    EmergencyProtocolRunModel,
+    EmergencyProtocolRunReportModel,
+    EmergencyProtocolRunStepModel,
+    EmergencyProtocolVersionModel,
+    PatientClinicalTimelineEventModel,
+    PatientModel,
+    UserModel,
+)
 from app.reports.csv_exporter import export_csv_bytes
 from app.reports.json_exporter import export_json_bytes
 from app.schemas.protocol_schema import (
@@ -16,17 +26,20 @@ from app.schemas.protocol_schema import (
     ProtocolEvidenceRead,
     ProtocolExplainResponse,
     ProtocolReportPreview,
-    ProtocolRunEventExport,
     ProtocolRunRequest,
     ProtocolRunResponse,
 )
 from app.services.ai_settings import AIConfigurationError, AISettingsService
 from app.services.audit_service import AuditService
+from app.services.patient_history_service import PatientHistoryService
 
 PROTOCOL_EDUCATIONAL_NOTICE = (
     "Protocolo demonstrativo para apoio educacional/controlado; não substitui "
     "protocolo institucional, regulação médica, bula ou decisão profissional."
 )
+
+
+PROTOCOL_LIBRARY_VERSION = "v0.8.3-demo-curated"
 
 
 class ProtocolNotFoundError(ValueError):
@@ -101,24 +114,92 @@ class EmergencyProtocolService:
         user: UserModel,
     ) -> ProtocolRunResponse:
         protocol = self.get_protocol(protocol_id)
-        self._validate_context(protocol, payload.context)
-        calculations = self._calculations(protocol, payload.context)
-        flags = self._triage_flags(protocol, payload.context, calculations)
+        patient = self.db.get(PatientModel, payload.patient_id) if payload.patient_id else None
+        if payload.patient_id and patient is None:
+            raise ProtocolValidationError("Paciente selecionado nao encontrado.")
+        context = self._context_with_patient(payload.context, patient)
+        self._validate_context(protocol, context)
+        protocol_version = self._ensure_protocol_version(protocol)
+        patient_context_summary = self._patient_context_summary(patient)
+        calculations = self._calculations(protocol, context)
+        flags = self._triage_flags(protocol, context, calculations)
+        flags.extend(self._patient_context_flags(patient_context_summary))
+        flags = flags[:14]
         timeline = self._timeline(protocol, payload)
         evidence = self.evidence(protocol.id)
+        run = EmergencyProtocolRunModel(
+            protocol_version_id=protocol_version.id,
+            protocol_id=protocol.id,
+            protocol_title=protocol.title,
+            protocol_category=protocol.category,
+            protocol_severity=protocol.severity_level,
+            protocol_version=protocol_version.version,
+            patient_id=patient.id if patient else None,
+            user_id=user.id,
+            context=context,
+            selected_step_orders=list(payload.selected_step_orders),
+            patient_context_summary=patient_context_summary,
+            triage_flags=flags,
+            calculated_values=[item.model_dump(mode="json") for item in calculations],
+            evidence_refs=[item.evidence_ref for item in evidence],
+            timeline=timeline,
+            status="recorded",
+            fallback_used=True,
+        )
+        self.db.add(run)
+        self.db.flush()
+        selected_steps = set(payload.selected_step_orders)
+        for step in protocol.steps:
+            checked = step.order in selected_steps
+            self.db.add(
+                EmergencyProtocolRunStepModel(
+                    run_id=run.id,
+                    step_order=step.order,
+                    title=step.title,
+                    evidence_ref=step.evidence_ref,
+                    checked=checked,
+                    checked_at=datetime.now(UTC) if checked else None,
+                )
+            )
+        if patient is not None:
+            self.db.add(
+                PatientClinicalTimelineEventModel(
+                    patient_id=patient.id,
+                    event_type="protocol_run",
+                    title=f"Protocolo executado: {protocol.title}",
+                    summary="Execucao auditavel de protocolo rapido com contexto do paciente.",
+                    source_type="protocol",
+                    source_system="prescripta",
+                    payload={
+                        "run_id": run.id,
+                        "protocol_id": protocol.id,
+                        "protocol_version": protocol_version.version,
+                        "triage_flags": flags,
+                    },
+                    validation_status="reviewed",
+                    created_by=user.id,
+                )
+            )
+        self.db.commit()
+        self.db.refresh(run)
         event = AuditService(self.db).record_action(
             user=user,
             action="protocol.run",
-            resource_type="protocol",
-            resource_id=protocol.id,
+            resource_type="protocol_run",
+            resource_id=str(run.id),
             status="recorded",
             risk_level=_risk_level(protocol.severity_level),
             details={
+                "run_id": run.id,
                 "protocol_id": protocol.id,
                 "protocol_title": protocol.title,
                 "category": protocol.category,
                 "severity_level": protocol.severity_level,
-                "context": _safe_context(payload.context),
+                "protocol_version": protocol_version.version,
+                "protocol_version_id": protocol_version.id,
+                "patient_id": patient.id if patient else None,
+                "patient_context_summary": patient_context_summary,
+                "context": context,
                 "notes_present": bool(payload.notes),
                 "triage_flags": flags,
                 "calculated_values": [item.model_dump(mode="json") for item in calculations],
@@ -130,17 +211,43 @@ class EmergencyProtocolService:
                 "secret_logged": False,
             },
         )
+        run.audit_event_id = event.id
+        self.db.commit()
+        for step in protocol.steps:
+            if step.order in selected_steps:
+                AuditService(self.db).record_action(
+                    user=user,
+                    action="protocol.step_checked",
+                    resource_type="protocol_run",
+                    resource_id=str(run.id),
+                    status="checked",
+                    risk_level=_risk_level(protocol.severity_level),
+                    details={
+                        "run_id": run.id,
+                        "protocol_id": protocol.id,
+                        "protocol_version": protocol_version.version,
+                        "step_order": step.order,
+                        "step_title": step.title,
+                        "evidence_ref": step.evidence_ref,
+                        "patient_id": patient.id if patient else None,
+                        "secret_logged": False,
+                    },
+                )
         return ProtocolRunResponse(
-            run_id=event.id,
+            run_id=run.id,
+            audit_event_id=event.id,
             protocol_id=protocol.id,
+            protocol_version=protocol_version.version,
             title=protocol.title,
             status="recorded",
             warning_level=protocol.severity_level,
+            patient_id=patient.id if patient else None,
+            patient_context_summary=patient_context_summary,
             triage_flags=flags,
             calculated_values=calculations,
             timeline=timeline,
             evidence=evidence,
-            audit_notice=f"Evento de protocolo registrado na auditoria #{event.id}.",
+            audit_notice=f"Execucao #{run.id} registrada na auditoria #{event.id}.",
             educational_notice=PROTOCOL_EDUCATIONAL_NOTICE,
         )
 
@@ -182,9 +289,9 @@ class EmergencyProtocolService:
 
         AuditService(self.db).record_action(
             user=user,
-            action="protocol.explain",
-            resource_type="protocol",
-            resource_id=protocol.id,
+            action="protocol.explained_by_ai",
+            resource_type="protocol_run" if run_id else "protocol",
+            resource_id=str(run_id) if run_id else protocol.id,
             status="fallback" if used_fallback else "ai_generated",
             risk_level=_risk_level(protocol.severity_level),
             details={
@@ -212,18 +319,22 @@ class EmergencyProtocolService:
 
     def report(self, protocol_id: str, run_id: int | None = None) -> ProtocolReportPreview:
         protocol = self.get_protocol(protocol_id)
-        event = self._run_event(run_id, protocol.id) if run_id else None
-        context = (event.details or {}).get("context", {}) if event else {}
+        run = self._run_model(run_id, protocol.id) if run_id else None
+        context = run.context if run else {}
         calculations = [
             ProtocolCalculatedValue.model_validate(item)
-            for item in ((event.details or {}).get("calculated_values", []) if event else [])
+            for item in (run.calculated_values if run else [])
         ]
-        flags = list((event.details or {}).get("triage_flags", []) if event else [])
-        timeline = list((event.details or {}).get("timeline", []) if event else self._timeline(protocol))
+        flags = list(run.triage_flags if run else [])
+        timeline = list(run.timeline if run else self._timeline(protocol))
+        patient_context_summary = dict(run.patient_context_summary or {}) if run else {}
+        protocol_version = run.protocol_version if run else _protocol_version(protocol)
+        latest_report_id = self._latest_generated_report_id(run.id) if run else None
         evidence = self.evidence(protocol.id)
         lines = [
             "Prescripta - Relatório de Protocolo Rápido",
             f"Protocolo: {protocol.title}",
+            f"Versao do protocolo: {protocol_version}",
             f"Categoria: {protocol.category}",
             f"Severidade: {protocol.severity_level}",
             f"Fonte: {protocol.source_name}",
@@ -242,6 +353,21 @@ class EmergencyProtocolService:
             "Linha do tempo estruturada:",
             *[f"{item['order']}. {item['title']} - {item['status']}" for item in timeline],
         ]
+        if patient_context_summary:
+            lines.extend(
+                [
+                    "",
+                    "Dados do paciente considerados:",
+                    f"- Referencia: {patient_context_summary.get('patient_reference', '-')}",
+                    f"- Idade: {patient_context_summary.get('age_years', '-')}",
+                    f"- Peso: {patient_context_summary.get('weight_kg', '-')}",
+                    f"- Altura/IMC: {patient_context_summary.get('height_cm', '-')} / {patient_context_summary.get('bmi', '-')}",
+                    f"- Alergias: {', '.join(patient_context_summary.get('allergies', []) or ['-'])}",
+                    f"- Medicamentos em uso: {', '.join(patient_context_summary.get('current_medications', []) or ['-'])}",
+                    f"- Fatores neuropsiquiatricos: {', '.join(patient_context_summary.get('mental_health_factors', []) or ['-'])}",
+                    f"- Dados faltantes: {', '.join(patient_context_summary.get('missing_data', []) or ['-'])}",
+                ]
+            )
         if flags:
             lines.extend(["", "Flags do contexto:", *[f"- {flag}" for flag in flags]])
         if calculations:
@@ -251,6 +377,9 @@ class EmergencyProtocolService:
             "protocol": protocol.model_dump(mode="json"),
             "run_id": run_id,
             "context": context,
+            "patient_id": run.patient_id if run else None,
+            "patient_context_summary": patient_context_summary,
+            "protocol_version": protocol_version,
             "triage_flags": flags,
             "calculated_values": [item.model_dump(mode="json") for item in calculations],
             "timeline": timeline,
@@ -260,7 +389,9 @@ class EmergencyProtocolService:
         return ProtocolReportPreview(
             title=f"Relatório de Protocolo - {protocol.title}",
             protocol_id=protocol.id,
+            protocol_version=protocol_version,
             run_id=run_id,
+            generated_report_id=latest_report_id,
             generated_at=datetime.now(UTC),
             report_lines=lines,
             report_payload=payload,
@@ -268,28 +399,59 @@ class EmergencyProtocolService:
             evidence=evidence,
         )
 
-    def export_event_json(self, protocol_id: str, run_id: int) -> bytes:
+    def export_event_json(self, protocol_id: str, run_id: int, user: UserModel | None = None) -> bytes:
         protocol = self.get_protocol(protocol_id)
-        event = self._run_event(run_id, protocol.id)
-        payload = ProtocolRunEventExport.model_validate(event).model_dump(mode="json")
+        run = self._run_model(run_id, protocol.id)
+        payload = self._run_export_payload(run)
+        if user is not None:
+            AuditService(self.db).record_action(
+                user=user,
+                action="protocol.exported_json",
+                resource_type="protocol_run",
+                resource_id=str(run.id),
+                status="exported",
+                details={
+                    "run_id": run.id,
+                    "protocol_id": protocol.id,
+                    "protocol_version": run.protocol_version,
+                    "patient_id": run.patient_id,
+                    "secret_logged": False,
+                },
+            )
         return export_json_bytes("protocol_run", payload)
 
-    def export_event_csv(self, protocol_id: str, run_id: int) -> bytes:
+    def export_event_csv(self, protocol_id: str, run_id: int, user: UserModel | None = None) -> bytes:
         protocol = self.get_protocol(protocol_id)
-        event = self._run_event(run_id, protocol.id)
-        details = event.details or {}
+        run = self._run_model(run_id, protocol.id)
         rows = [
             {
-                "run_id": event.id,
+                "run_id": run.id,
                 "protocol_id": protocol.id,
                 "protocol_title": protocol.title,
-                "created_at": event.created_at.isoformat(),
-                "status": event.status,
-                "risk_level": event.risk_level,
-                "triage_flags": "; ".join(details.get("triage_flags", [])),
-                "evidence_refs": "; ".join(details.get("evidence_refs", [])),
+                "protocol_version": run.protocol_version,
+                "created_at": run.created_at.isoformat(),
+                "status": run.status,
+                "risk_level": _risk_level(run.protocol_severity),
+                "patient_id": run.patient_id,
+                "triage_flags": "; ".join(run.triage_flags or []),
+                "evidence_refs": "; ".join(run.evidence_refs or []),
             }
         ]
+        if user is not None:
+            AuditService(self.db).record_action(
+                user=user,
+                action="protocol.exported_csv",
+                resource_type="protocol_run",
+                resource_id=str(run.id),
+                status="exported",
+                details={
+                    "run_id": run.id,
+                    "protocol_id": protocol.id,
+                    "protocol_version": run.protocol_version,
+                    "patient_id": run.patient_id,
+                    "secret_logged": False,
+                },
+            )
         return export_csv_bytes(rows)
 
     def _validate_context(self, protocol: EmergencyProtocolRead, context: dict[str, Any]) -> None:
@@ -412,6 +574,159 @@ class EmergencyProtocolService:
             cited_evidence_refs=[step.evidence_ref for step in protocol.steps[:3]],
         )
 
+    def _ensure_protocol_version(
+        self, protocol: EmergencyProtocolRead
+    ) -> EmergencyProtocolVersionModel:
+        version_label = _protocol_version(protocol)
+        version = self.db.scalar(
+            select(EmergencyProtocolVersionModel).where(
+                EmergencyProtocolVersionModel.protocol_id == protocol.id,
+                EmergencyProtocolVersionModel.version == version_label,
+                EmergencyProtocolVersionModel.is_active.is_(True),
+            )
+        )
+        if version is not None:
+            return version
+        version = EmergencyProtocolVersionModel(
+            protocol_id=protocol.id,
+            slug=protocol.slug,
+            title=protocol.title,
+            category=protocol.category,
+            severity=protocol.severity_level,
+            version=version_label,
+            jurisdiction=protocol.jurisdiction,
+            source_name=protocol.source_name,
+            source_url=protocol.source_url,
+            source_version=protocol.source_version,
+            validation_status=protocol.validation_status,
+            reviewed_by="Prescripta demo clinical review",
+            reviewed_at=datetime.now(UTC),
+            effective_from=datetime.now(UTC),
+            is_active=True,
+            snapshot=protocol.model_dump(mode="json"),
+        )
+        self.db.add(version)
+        self.db.flush()
+        return version
+
+    def _context_with_patient(
+        self, context: dict[str, Any], patient: PatientModel | None
+    ) -> dict[str, Any]:
+        safe = _safe_context(context)
+        if patient is None:
+            return safe
+        if patient.weight_kg is not None and _empty(safe.get("weight_kg")):
+            safe["weight_kg"] = patient.weight_kg
+        if patient.age is not None and _empty(safe.get("age_years")):
+            safe["age_years"] = patient.age
+        if patient.height_cm is not None and _empty(safe.get("height_cm")):
+            safe["height_cm"] = patient.height_cm
+        safe["patient_selected"] = True
+        return safe
+
+    def _patient_context_summary(self, patient: PatientModel | None) -> dict[str, Any]:
+        if patient is None:
+            return {}
+        bundle = PatientHistoryService(self.db).knowledge_bundle(patient)
+        structured = bundle.get("structured_profile", {})
+        clinical = structured.get("clinical_flags", {})
+        height = structured.get("height_cm")
+        weight = structured.get("weight_kg")
+        bmi = None
+        if height and weight:
+            bmi = round(float(weight) / ((float(height) / 100) ** 2), 1)
+        return {
+            "patient_id": patient.id,
+            "patient_reference": f"P-{patient.id:05d}",
+            "age_years": structured.get("age_years"),
+            "weight_kg": weight,
+            "height_cm": height,
+            "bmi": bmi,
+            "allergies": structured.get("allergies", []),
+            "current_medications": structured.get("current_medications", []),
+            "comorbidities": structured.get("comorbidities", []),
+            "mental_health_factors": structured.get("mental_health_factors", []),
+            "reproductive_gynecologic_factors": structured.get(
+                "reproductive_gynecologic_factors", []
+            ),
+            "clinical_flags": clinical,
+            "reviewed_documents": len(bundle.get("reviewed_documents", [])),
+            "recent_events": bundle.get("timeline", [])[:5],
+            "missing_data": bundle.get("missing_data", []),
+            "limitations": bundle.get("limitations", []),
+        }
+
+    def _patient_context_flags(self, summary: dict[str, Any]) -> list[str]:
+        if not summary:
+            return []
+        flags: list[str] = []
+        if summary.get("allergies"):
+            flags.append(
+                "Paciente tem alergias registradas; revisar exposicoes e medicamentos do protocolo."
+            )
+        if summary.get("current_medications"):
+            flags.append(
+                "Medicamentos em uso foram considerados como contexto, sem alterar etapas automaticamente."
+            )
+        if summary.get("mental_health_factors"):
+            flags.append(
+                "Fatores neuropsiquiatricos registrados exigem revisao contextual profissional."
+            )
+        clinical = summary.get("clinical_flags") or {}
+        for key, label in {
+            "renal": "funcao renal",
+            "hepatic": "funcao hepatica",
+            "cardiac": "contexto cardiaco",
+            "gastrointestinal": "historico gastrointestinal",
+        }.items():
+            value = clinical.get(key)
+            if value and value != "unknown":
+                flags.append(f"{label.title()} registrada: revisar cautelas do protocolo.")
+        if summary.get("missing_data"):
+            flags.append("Ha dados faltantes do paciente; interpretar o protocolo com cautela.")
+        return flags[:6]
+
+    def _latest_generated_report_id(self, run_id: int) -> int | None:
+        link = self.db.scalar(
+            select(EmergencyProtocolRunReportModel)
+            .where(EmergencyProtocolRunReportModel.run_id == run_id)
+            .order_by(EmergencyProtocolRunReportModel.created_at.desc())
+        )
+        return link.generated_report_id if link else None
+
+    def _run_export_payload(self, run: EmergencyProtocolRunModel) -> dict[str, Any]:
+        return {
+            "run_id": run.id,
+            "audit_event_id": run.audit_event_id,
+            "protocol_id": run.protocol_id,
+            "protocol_title": run.protocol_title,
+            "protocol_category": run.protocol_category,
+            "protocol_severity": run.protocol_severity,
+            "protocol_version": run.protocol_version,
+            "patient_id": run.patient_id,
+            "user_id": run.user_id,
+            "created_at": run.created_at.isoformat(),
+            "status": run.status,
+            "context": run.context,
+            "patient_context_summary": run.patient_context_summary,
+            "selected_step_orders": run.selected_step_orders,
+            "triage_flags": run.triage_flags,
+            "calculated_values": run.calculated_values,
+            "timeline": run.timeline,
+            "evidence_refs": run.evidence_refs,
+            "secret_logged": False,
+        }
+
+    def _run_model(self, run_id: int | None, protocol_id: str) -> EmergencyProtocolRunModel:
+        if run_id is None:
+            raise ProtocolValidationError("Informe a execucao do protocolo.")
+        run = self.db.get(EmergencyProtocolRunModel, run_id)
+        if run is None:
+            raise ProtocolNotFoundError("Execucao de protocolo nao encontrada.")
+        if run.protocol_id != protocol_id:
+            raise ProtocolValidationError("Execucao nao pertence ao protocolo informado.")
+        return run
+
     def _run_event(self, run_id: int | None, protocol_id: str) -> AuditEventModel:
         if run_id is None:
             raise ProtocolValidationError("Informe o evento de execução do protocolo.")
@@ -444,6 +759,11 @@ def _protocol_payload(protocol: EmergencyProtocolRead) -> dict[str, Any]:
         "source_url": protocol.source_url,
         "disclaimer": protocol.disclaimer,
     }
+
+
+def _protocol_version(protocol: EmergencyProtocolRead) -> str:
+    reviewed = protocol.last_reviewed_at.replace("/", "-").replace(" ", "-")
+    return f"{PROTOCOL_LIBRARY_VERSION}-{protocol.id}-{reviewed}"
 
 
 def _risk_level(severity: str) -> str:

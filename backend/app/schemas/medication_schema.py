@@ -15,6 +15,8 @@ class MedicationBase(BaseModel):
     pharmaceutical_form: str | None = Field(default=None, max_length=120)
     evidence_source_url: str | None = Field(default=None, max_length=500)
     max_daily_dose_mg: float = Field(gt=0)
+    dose_mg_per_kg: float | None = Field(default=None, gt=0)
+    dose_by_weight_enabled: bool = False
     max_duration_days: int | None = Field(default=None, gt=0, le=365)
     max_cumulative_dose_mg: float | None = Field(default=None, gt=0)
     continuous_use: bool = False
@@ -69,6 +71,8 @@ class MedicationUpdate(BaseModel):
     pharmaceutical_form: str | None = Field(default=None, max_length=120)
     evidence_source_url: str | None = Field(default=None, max_length=500)
     max_daily_dose_mg: float | None = Field(default=None, gt=0)
+    dose_mg_per_kg: float | None = Field(default=None, gt=0)
+    dose_by_weight_enabled: bool | None = None
     max_duration_days: int | None = Field(default=None, gt=0, le=365)
     max_cumulative_dose_mg: float | None = Field(default=None, gt=0)
     continuous_use: bool | None = None

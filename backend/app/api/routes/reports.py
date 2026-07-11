@@ -30,8 +30,13 @@ AuditReportManager = Annotated[UserModel, Depends(require_roles(UserRole.ADMIN, 
 
 
 @router.get("", response_model=list[GeneratedReportRead])
-def list_reports(db: DbSession, _current_user: ReportReader) -> list[GeneratedReportRead]:
-    return ReportService(db).list_reports()
+def list_reports(
+    db: DbSession,
+    _current_user: ReportReader,
+    report_type: str | None = None,
+    target_type: str | None = None,
+) -> list[GeneratedReportRead]:
+    return ReportService(db).list_reports(report_type=report_type, target_type=target_type)
 
 
 @router.get("/prescriptions/{audit_id}/preview", response_model=ReportPreview)
@@ -99,6 +104,31 @@ def prescription_evidence(audit_id: int, db: DbSession, _current_user: ReportRea
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
+@router.get("/protocol-runs/{run_id}/preview", response_model=ReportPreview)
+def protocol_run_report_preview(
+    run_id: int,
+    db: DbSession,
+    _current_user: ReportReader,
+) -> ReportPreview:
+    try:
+        return ReportService(db).protocol_run_preview(run_id)
+    except ReportNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.get("/protocol-runs/{run_id}/pdf")
+def protocol_run_report_pdf(
+    run_id: int,
+    db: DbSession,
+    current_user: ReportManager,
+) -> Response:
+    try:
+        content, report = ReportService(db).generate_protocol_run_pdf(run_id, user=current_user)
+    except ReportNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return _pdf_response(content, f"prescripta-protocolo-{run_id}-relatorio-{report.id}.pdf")
+
+
 @router.get("/imports/{import_id}/reconciliation.pdf")
 def reconciliation_report_pdf(
     import_id: int,
@@ -124,6 +154,12 @@ def audit_report_pdf(
     user: str | None = None,
     patient: str | None = None,
     medication: str | None = None,
+    protocol: str | None = None,
+    protocol_category: str | None = None,
+    protocol_severity: str | None = None,
+    protocol_version: str | None = None,
+    execution: str | None = None,
+    report_type: str | None = None,
     risk_level: str | None = None,
     status_filter: str | None = Query(default=None, alias="status"),
     ai_provider: str | None = None,
@@ -139,6 +175,12 @@ def audit_report_pdf(
         user=user,
         patient=patient,
         medication=medication,
+        protocol=protocol,
+        protocol_category=protocol_category,
+        protocol_severity=protocol_severity,
+        protocol_version=protocol_version,
+        execution=execution,
+        report_type=report_type,
         risk_level=risk_level,
         status=status_filter,
         ai_provider=ai_provider,

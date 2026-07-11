@@ -81,6 +81,7 @@ export type ProtocolEvidence = {
 export type ProtocolContext = Record<string, string | number | boolean | string[] | null>;
 
 export type ProtocolRunPayload = {
+  patient_id?: number | null;
   context: ProtocolContext;
   selected_step_orders?: number[];
   notes?: string | null;
@@ -88,10 +89,14 @@ export type ProtocolRunPayload = {
 
 export type ProtocolRunResult = {
   run_id: number;
+  audit_event_id?: number | null;
   protocol_id: string;
+  protocol_version: string;
   title: string;
   status: string;
   warning_level: ProtocolWarningLevel;
+  patient_id?: number | null;
+  patient_context_summary: Record<string, unknown>;
   triage_flags: string[];
   calculated_values: ProtocolCalculatedValue[];
   timeline: Array<Record<string, unknown>>;
@@ -122,7 +127,9 @@ export type ProtocolExplainResult = {
 export type ProtocolReportPreview = {
   title: string;
   protocol_id: string;
+  protocol_version?: string | null;
   run_id?: number | null;
+  generated_report_id?: number | null;
   generated_at: string;
   report_lines: string[];
   report_payload: Record<string, unknown>;

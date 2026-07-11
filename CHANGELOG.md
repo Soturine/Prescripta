@@ -9,6 +9,47 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 - v0.9.0: Docker/PostgreSQL/migrações/deploy demo.
 - v1.0.0: versão final de portfólio.
 
+## [0.8.3] - 2026-07-11
+
+### Added
+
+- Protocolos versionados em banco, execucao com paciente opcional, passos
+  executados e relatorio persistido em `GeneratedReport` como
+  `protocol_run_report`.
+- Endpoints de relatorio de protocolo em PDF, JSON e CSV por `run_id`, alem de
+  filtro `/api/reports?target_type=protocol_run`.
+- Auditoria de protocolo com filtros por protocolo, categoria, severidade,
+  versao, execucao, relatorio, paciente, usuario, fonte, IA/fallback e data.
+- Historico clinico longitudinal com documentos, extracao assistida, revisao
+  humana, timeline e `PatientKnowledgeBundle` minimizado.
+- Checagem com dados do paciente considerados, regra por peso, idade/faixa
+  etaria, altura/IMC e bundle clinico sem dado identificavel por padrao.
+- Regras demonstrativas para psicotropicos, serotonergicos, IMAO,
+  bipolaridade/mania, litio/renal/AINEs e limiar convulsivo.
+- Catalogo farmacologico ampliavel com busca assistida por fonte, importacao em
+  lote e fila de curadoria.
+- Prompts v0.8.3 por modulo em `backend/app/ai/prompts`.
+- Frontend com visao clinica/tecnica, historico/laudos no paciente, curadoria de
+  medicamentos, protocolos com contexto do paciente e dashboard orientado a
+  tarefa.
+- Documentacao por audiencia, escopo medico, fluxos clinicos, IA, historico do
+  paciente, psicotropicos e onboarding institucional.
+
+### Security
+
+- IA continua impedida de alterar risco, dose, status, protocolo, bloqueio ou
+  decisao final.
+- Dados extraidos de documentos e fontes farmacologicas ficam `pending_review`.
+- Bundles enviados a IA sao minimizados e sem identificadores por padrao.
+- API Key nao e exposta em frontend, auditoria, relatorio ou exportacao.
+
+### Tests
+
+- Cobertura para relatorio de protocolo em `GeneratedReport`, filtros de
+  auditoria, contexto de paciente em protocolo, documentos pendentes, revisao
+  humana, bundle do paciente, regra por peso, IMC, psicotropicos, IA minimizada,
+  importacao de catalogo e curadoria.
+
 ## [0.8.2] - 2026-07-11
 
 ### Added

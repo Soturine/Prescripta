@@ -16,6 +16,7 @@ ReportType = Literal[
     "patient_guidance",
     "reconciliation",
     "audit",
+    "protocol_run_report",
 ]
 ReportMode = Literal[
     "complete_internal",
@@ -86,6 +87,7 @@ class ReportEvidenceBundle(BaseModel):
     generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     patient_context: ReportPatientContext | None = None
     prescription_result: ReportPrescriptionResult | None = None
+    protocol_run_result: dict[str, Any] | None = None
     reconciliation_result: dict[str, Any] | None = None
     audit_result: dict[str, Any] | None = None
     rules_fired: list[str] = Field(default_factory=list)

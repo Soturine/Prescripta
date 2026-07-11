@@ -251,8 +251,11 @@ class AIExplainer:
         return f"{alert.title}: {explanation} Recomendação cadastrada: {alert.recommendation}"
 
     def _build_context(self, payload: PrescriptionExplainRequest, requester_role: str) -> dict:
+        patient = payload.patient.model_dump()
+        patient["name"] = f"Paciente #{payload.patient.id or 'sem_id'}"
+        patient["birth_date"] = None
         return {
-            "patient": payload.patient.model_dump(),
+            "patient": patient,
             "medication": payload.medication.model_dump(),
             "dose_mg": payload.dose_mg,
             "frequency_per_day": payload.frequency_per_day,
@@ -266,11 +269,25 @@ class AIExplainer:
             "compatibility": payload.compatibility,
             "patient_factors_considered": payload.patient_factors_considered,
             "medication_factors_considered": payload.medication_factors_considered,
+            "patient_knowledge_bundle": self._minimized_patient_bundle(
+                payload.patient_knowledge_bundle
+            ),
             "rag_evidence": payload.rag_evidence,
             "clinical_context_graph": payload.clinical_context_graph,
             "alternatives": payload.alternatives,
             "requester_role": requester_role,
         }
+
+    def _minimized_patient_bundle(self, bundle: dict) -> dict:
+        if not bundle:
+            return {}
+        safe = dict(bundle)
+        structured = dict(safe.get("structured_profile") or {})
+        structured.pop("name", None)
+        safe["structured_profile"] = structured
+        safe.pop("identifiers", None)
+        safe["send_identifiable_data"] = False
+        return safe
 
     def _coerce_questions(self, raw_questions: Any) -> list[str]:
         if not isinstance(raw_questions, list):

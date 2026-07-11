@@ -87,6 +87,7 @@ class ProtocolEvidenceRead(BaseModel):
 
 
 class ProtocolRunRequest(BaseModel):
+    patient_id: int | None = Field(default=None, gt=0)
     context: dict[str, Any] = Field(default_factory=dict)
     selected_step_orders: list[int] = Field(default_factory=list)
     notes: str | None = Field(default=None, max_length=1000)
@@ -94,10 +95,14 @@ class ProtocolRunRequest(BaseModel):
 
 class ProtocolRunResponse(BaseModel):
     run_id: int
+    audit_event_id: int | None = None
     protocol_id: str
+    protocol_version: str
     title: str
     status: str
     warning_level: WarningLevel
+    patient_id: int | None = None
+    patient_context_summary: dict[str, Any] = Field(default_factory=dict)
     triage_flags: list[str] = Field(default_factory=list)
     calculated_values: list[ProtocolCalculatedValue] = Field(default_factory=list)
     timeline: list[dict[str, Any]] = Field(default_factory=list)
@@ -128,7 +133,9 @@ class ProtocolExplainResponse(BaseModel):
 class ProtocolReportPreview(BaseModel):
     title: str
     protocol_id: str
+    protocol_version: str | None = None
     run_id: int | None = None
+    generated_report_id: int | None = None
     generated_at: datetime
     report_lines: list[str]
     report_payload: dict[str, Any]

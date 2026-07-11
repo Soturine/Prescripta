@@ -65,6 +65,10 @@ export default function Audit() {
           <FilterInput label="Paciente" value={draft.patient} onChange={(patient) => setDraft({ ...draft, patient })} />
           <FilterInput label="Medicamento" value={draft.medication} onChange={(medication) => setDraft({ ...draft, medication })} />
           <FilterInput label="Princípio ativo" value={draft.active_ingredient} onChange={(active_ingredient) => setDraft({ ...draft, active_ingredient })} />
+          <FilterInput label="Protocolo" value={draft.protocol} onChange={(protocol) => setDraft({ ...draft, protocol })} />
+          <FilterInput label="Categoria protocolo" value={draft.protocol_category} onChange={(protocol_category) => setDraft({ ...draft, protocol_category })} />
+          <FilterInput label="Versão protocolo" value={draft.protocol_version} onChange={(protocol_version) => setDraft({ ...draft, protocol_version })} />
+          <FilterInput label="Execução" value={draft.execution} onChange={(execution) => setDraft({ ...draft, execution })} />
           <FilterInput label="Tipo de evento" value={draft.action} onChange={(action) => setDraft({ ...draft, action })} />
           <FilterInput label="Risco" value={draft.risk_level} onChange={(risk_level) => setDraft({ ...draft, risk_level })} />
           <FilterInput label="Status" value={draft.status} onChange={(status) => setDraft({ ...draft, status })} />
@@ -229,6 +233,10 @@ function labelFilterKey(key: string) {
     jurisdiction: "Jurisdição",
     medication: "Medicamento",
     patient: "Paciente",
+    protocol: "Protocolo",
+    protocol_category: "Categoria protocolo",
+    protocol_version: "Versão protocolo",
+    execution: "Execução",
     risk_level: "Risco",
     sort: "Ordenação",
     source: "Fonte",

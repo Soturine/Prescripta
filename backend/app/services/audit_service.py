@@ -59,6 +59,10 @@ class AuditService:
                 "source": medication.evidence_source_type,
                 "jurisdiction": medication.source_jurisdiction,
                 "validation_status": medication.validation_status,
+                "patient_data_considered": result.dose_summary.get(
+                    "patient_data_considered", []
+                ),
+                "secret_logged": False,
             },
         )
         for alert in result.alerts:
@@ -80,6 +84,7 @@ class AuditService:
                     "source": medication.evidence_source_type,
                     "jurisdiction": medication.source_jurisdiction,
                     "validation_status": medication.validation_status,
+                    "secret_logged": False,
                 },
             )
         return prescription_audit

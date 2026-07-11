@@ -80,6 +80,9 @@ class PrescriptionCheckResponse(BaseModel):
     patient_counseling: PatientCounselingResponse | None = None
     missing_data_mode: MissingDataMode | None = None
     contextual_question: ContextualQuestion | None = None
+    patient_knowledge_bundle: dict = Field(default_factory=dict)
+    clinical_view: dict = Field(default_factory=dict)
+    technical_details: dict = Field(default_factory=dict)
 
 
 class PrescriptionExplainPatient(BaseModel):
@@ -165,6 +168,7 @@ class PrescriptionExplainRequest(BaseModel):
     clinical_context_graph: dict = Field(default_factory=dict)
     alternatives: list[dict] = Field(default_factory=list)
     patient_counseling: PatientCounselingResponse | None = None
+    patient_knowledge_bundle: dict = Field(default_factory=dict)
 
 
 class PrescriptionExplainResponse(BaseModel):

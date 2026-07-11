@@ -57,6 +57,46 @@ def decision_timeline(bundle: ReportEvidenceBundle) -> list[dict[str, Any]]:
                 "details": {"bundle_hash": bundle.hash()},
             },
         ]
+    if bundle.protocol_run_result is not None:
+        result = bundle.protocol_run_result
+        return [
+            {
+                "order": 1,
+                "title": "Protocolo selecionado",
+                "status": result.get("protocol_title"),
+                "details": {
+                    "protocol_id": result.get("protocol_id"),
+                    "protocol_version": result.get("protocol_version"),
+                },
+            },
+            {
+                "order": 2,
+                "title": "Contexto do paciente avaliado",
+                "status": "com paciente" if result.get("patient_id") else "sem paciente vinculado",
+                "details": result.get("patient_context_summary") or {},
+            },
+            {
+                "order": 3,
+                "title": "Passos do protocolo revisados",
+                "status": f"{len(result.get('selected_step_orders') or [])} passo(s) marcado(s)",
+                "details": {"timeline": result.get("timeline") or []},
+            },
+            {
+                "order": 4,
+                "title": "Flags e calculos registrados",
+                "status": f"{len(result.get('triage_flags') or [])} flag(s)",
+                "details": {
+                    "triage_flags": result.get("triage_flags") or [],
+                    "calculated_values": result.get("calculated_values") or [],
+                },
+            },
+            {
+                "order": 5,
+                "title": "Relatorio de protocolo gerado",
+                "status": "registrado",
+                "details": {"bundle_hash": bundle.hash()},
+            },
+        ]
     if bundle.reconciliation_result is not None:
         return [
             {

@@ -9,12 +9,16 @@ import SourceBadge from "../components/SourceBadge";
 import { useAuth } from "../context/AuthContext";
 import {
   createMedication,
+  bulkImportMedicationKnowledge,
   fetchAdverseEffectTaxonomy,
   fetchActiveIngredients,
+  fetchMedicationCurationQueue,
   fetchMedicationCounselingSummary,
   fetchMedications,
   generateMedicationCounselingSummary,
+  lookupMedicationKnowledge,
   lookupAnvisaSource,
+  reviewMedicationKnowledge,
   reviewMedicationCounselingSummary,
   searchMedicationCatalog,
   updateMedication,
@@ -22,6 +26,7 @@ import {
 import type {
   AdverseEffectTaxonomyEntry,
   Medication,
+  MedicationKnowledgeCurationItem,
   MedicationCounselingSummary,
   MedicationPayload,
 } from "../types/medication";
@@ -36,6 +41,10 @@ export default function Medications() {
   const [catalogQuery, setCatalogQuery] = useState("Novalgina");
   const [medicationFilter, setMedicationFilter] = useState("");
   const [sourceFilter, setSourceFilter] = useState("todos");
+  const [knowledgeSourceText, setKnowledgeSourceText] = useState("");
+  const [bulkImportText, setBulkImportText] = useState(
+    '[{"active_ingredient":"amoxicilina","therapeutic_class":"antibiotico","jurisdiction":"BR"}]',
+  );
   const queryClient = useQueryClient();
   const { data: medications = [], isLoading } = useQuery({
     queryKey: ["medications"],
@@ -48,6 +57,10 @@ export default function Medications() {
   const { data: adverseEffectTaxonomy = [] } = useQuery({
     queryKey: ["adverse-effect-taxonomy"],
     queryFn: fetchAdverseEffectTaxonomy,
+  });
+  const { data: curationQueue = [] } = useQuery({
+    queryKey: ["medication-curation-queue"],
+    queryFn: () => fetchMedicationCurationQueue("pending_review"),
   });
   const { data: counselingSummary } = useQuery({
     queryKey: ["medications", counselingMedication?.id, "counseling-summary"],
@@ -120,6 +133,43 @@ export default function Medications() {
       await queryClient.invalidateQueries({
         queryKey: ["medications", counselingMedication?.id, "counseling-summary"],
       });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const lookupKnowledgeMutation = useMutation({
+    mutationFn: () =>
+      lookupMedicationKnowledge({
+        query: catalogQuery,
+        source_name: "fonte_informada",
+        source_url: anvisaLookup?.source_url ?? null,
+        source_text: knowledgeSourceText || null,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["medication-curation-queue"] });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const bulkImportMutation = useMutation({
+    mutationFn: () =>
+      bulkImportMedicationKnowledge({
+        source_name: "importacao_lote_v083",
+        items: JSON.parse(bulkImportText) as Array<Record<string, unknown>>,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["medication-curation-queue"] });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const reviewKnowledgeMutation = useMutation({
+    mutationFn: (payload: { item: MedicationKnowledgeCurationItem; decision: "approve" | "reject" }) =>
+      reviewMedicationKnowledge(payload.item.id, {
+        decision: payload.decision,
+        edited_payload: payload.item.extracted_payload,
+        justification: `Curadoria ${payload.decision} v0.8.3.`,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["medication-curation-queue"] });
+      await queryClient.invalidateQueries({ queryKey: ["active-ingredients"] });
       await queryClient.invalidateQueries({ queryKey: ["audit"] });
     },
   });
@@ -237,6 +287,115 @@ export default function Medications() {
                 </a>
               </div>
             ) : null}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+        <div className="rounded-lg border border-cyan-100 bg-white p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <RefreshCw aria-hidden="true" className="mt-1 h-5 w-5 text-ocean" />
+            <div>
+              <h2 className="text-lg font-bold text-ink">Busca assistida por fonte</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Cole texto de bula/fonte ou use a busca oficial como referência. A estruturação fica
+                pendente de curadoria humana.
+              </p>
+            </div>
+          </div>
+          <label className="mt-4 grid gap-1.5">
+            <span className="label">Texto da fonte</span>
+            <textarea
+              className="field min-h-28"
+              onChange={(event) => setKnowledgeSourceText(event.target.value)}
+              placeholder="Cole trecho de fonte, bula, DCB ou base institucional."
+              value={knowledgeSourceText}
+            />
+          </label>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              className="btn-primary"
+              disabled={!canManageMedication || lookupKnowledgeMutation.isPending}
+              onClick={() => lookupKnowledgeMutation.mutate()}
+              type="button"
+            >
+              <Search aria-hidden="true" className="h-4 w-4" />
+              Estruturar fonte
+            </button>
+            <button
+              className="btn-secondary"
+              disabled={!canManageMedication || bulkImportMutation.isPending}
+              onClick={() => bulkImportMutation.mutate()}
+              type="button"
+            >
+              <Database aria-hidden="true" className="h-4 w-4" />
+              Importar lote
+            </button>
+          </div>
+          <label className="mt-4 grid gap-1.5">
+            <span className="label">CSV/JSON em lote</span>
+            <textarea
+              className="field min-h-24 font-mono text-xs"
+              onChange={(event) => setBulkImportText(event.target.value)}
+              value={bulkImportText}
+            />
+          </label>
+          {lookupKnowledgeMutation.data ? (
+            <div className="mt-4 rounded-lg border border-cyan-100 bg-cyan-50 p-3 text-sm text-cyan-950">
+              Item #{lookupKnowledgeMutation.data.id} enviado para curadoria como{" "}
+              {lookupKnowledgeMutation.data.review_status}.
+            </div>
+          ) : null}
+          {lookupKnowledgeMutation.isError || bulkImportMutation.isError ? (
+            <p className="mt-3 text-sm font-semibold text-danger">
+              Não foi possível estruturar/importar. Confira o JSON e a fonte.
+            </p>
+          ) : null}
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-bold text-ink">Fila de curadoria</h2>
+          <div className="mt-4 grid max-h-[420px] gap-3 overflow-auto pr-1">
+            {curationQueue.length ? (
+              curationQueue.map((item) => (
+                <article className="rounded-lg border border-slate-100 bg-slate-50 p-4" key={item.id}>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="font-bold text-ink">{item.query}</p>
+                      <p className="mt-1 text-xs font-semibold text-slate-500">
+                        {item.provider} · {item.validation_status} · {item.source_name}
+                      </p>
+                    </div>
+                    {canManageMedication ? (
+                      <div className="flex gap-2">
+                        <button
+                          className="btn-secondary bg-white"
+                          disabled={reviewKnowledgeMutation.isPending}
+                          onClick={() => reviewKnowledgeMutation.mutate({ item, decision: "approve" })}
+                          type="button"
+                        >
+                          <CheckCircle aria-hidden="true" className="h-4 w-4" />
+                          Aprovar
+                        </button>
+                        <button
+                          className="btn-secondary bg-white"
+                          disabled={reviewKnowledgeMutation.isPending}
+                          onClick={() => reviewKnowledgeMutation.mutate({ item, decision: "reject" })}
+                          type="button"
+                        >
+                          Rejeitar
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                  <pre className="mt-3 max-h-36 overflow-auto rounded-lg bg-white p-3 text-xs text-slate-700">
+                    {JSON.stringify(item.extracted_payload, null, 2)}
+                  </pre>
+                </article>
+              ))
+            ) : (
+              <p className="text-sm text-slate-600">Fila pendente vazia.</p>
+            )}
           </div>
         </div>
       </section>
@@ -380,7 +539,14 @@ export default function Medications() {
                         />
                       </td>
                       <td className="px-4 py-3">{medication.therapeutic_class}</td>
-                      <td className="px-4 py-3">{formatDose(medication.max_daily_dose_mg)}</td>
+                      <td className="px-4 py-3">
+                        {formatDose(medication.max_daily_dose_mg)}
+                        {medication.dose_by_weight_enabled && medication.dose_mg_per_kg ? (
+                          <span className="mt-1 block text-xs font-semibold text-cyan-800">
+                            {medication.dose_mg_per_kg} mg/kg
+                          </span>
+                        ) : null}
+                      </td>
                       <td className="px-4 py-3">
                         {[
                           medication.renal_caution ? "renal" : "",

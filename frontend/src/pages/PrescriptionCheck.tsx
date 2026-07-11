@@ -53,6 +53,7 @@ export default function PrescriptionCheck() {
   const { user } = useAuth();
   const [lastPayload, setLastPayload] = useState<PrescriptionCheckPayload | null>(null);
   const [anonymizedReport, setAnonymizedReport] = useState(false);
+  const [viewMode, setViewMode] = useState<"clinical" | "technical">("clinical");
   const { data: patients = [], isLoading: loadingPatients } = useQuery({
     queryKey: ["patients"],
     queryFn: fetchPatients,
@@ -118,6 +119,7 @@ export default function PrescriptionCheck() {
     : undefined;
   const canGenerateTechnical = user?.role === "admin" || user?.role === "medico";
   const canExport = canGenerateTechnical;
+  const isTechnicalMode = viewMode === "technical";
 
   async function handleSubmit(payload: PrescriptionCheckPayload) {
     setLastPayload(payload);
@@ -209,6 +211,24 @@ export default function PrescriptionCheck() {
                 <RiskBadge level={checkMutation.data.risk_level} />
                 <CompatibilityBadge level={checkMutation.data.compatibility.level} />
               </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                className={viewMode === "clinical" ? "btn-primary" : "btn-secondary"}
+                onClick={() => setViewMode("clinical")}
+                type="button"
+              >
+                <ShieldCheck aria-hidden="true" className="h-4 w-4" />
+                Modo clinico
+              </button>
+              <button
+                className={viewMode === "technical" ? "btn-primary" : "btn-secondary"}
+                onClick={() => setViewMode("technical")}
+                type="button"
+              >
+                <FileJson aria-hidden="true" className="h-4 w-4" />
+                Modo tecnico
+              </button>
             </div>
             <div className="mt-4 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
               <div>
@@ -318,10 +338,18 @@ export default function PrescriptionCheck() {
 
           <DoseAccumulationCard summary={checkMutation.data.dose_summary} />
 
-          <ReportSummaryCard
-            isLoading={reportPreviewQuery.isLoading}
-            preview={reportPreviewQuery.data ?? null}
+          <PatientDataConsideredCard
+            clinicalView={checkMutation.data.clinical_view}
+            patientBundle={checkMutation.data.patient_knowledge_bundle}
+            technical={isTechnicalMode}
           />
+
+          {isTechnicalMode ? (
+            <ReportSummaryCard
+              isLoading={reportPreviewQuery.isLoading}
+              preview={reportPreviewQuery.data ?? null}
+            />
+          ) : null}
 
           <div className="grid gap-4 xl:grid-cols-2">
             <PatientCounselingCard counseling={checkMutation.data.patient_counseling} />
@@ -333,6 +361,7 @@ export default function PrescriptionCheck() {
             <PracticalSafetySummaryCard counseling={checkMutation.data.patient_counseling} />
           </div>
 
+          {isTechnicalMode ? (
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-bold text-ink">Compatibilidade paciente–medicação</h2>
             <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -352,22 +381,29 @@ export default function PrescriptionCheck() {
               </ul>
             ) : null}
           </section>
+          ) : null}
 
+          {isTechnicalMode ? (
           <div className="grid gap-4 lg:grid-cols-2">
             <PatientRiskFactorsCard factors={checkMutation.data.patient_factors_considered} />
             <MedicationOrganProcessingCard factors={checkMutation.data.medication_factors_considered} />
           </div>
+          ) : null}
 
-          <RagEvidencePanel evidence={checkMutation.data.rag_evidence} />
+          {isTechnicalMode ? <RagEvidencePanel evidence={checkMutation.data.rag_evidence} /> : null}
 
+          {isTechnicalMode ? (
           <div className="grid gap-4 xl:grid-cols-2">
             <DecisionEvidenceCard evidence={evidenceQuery.data ?? []} />
             <DecisionTimelineCard timeline={timelineQuery.data ?? []} />
           </div>
+          ) : null}
 
           <AlternativeMedicationsCard alternatives={checkMutation.data.alternatives} />
 
-          <ClinicalContextGraphCard graph={checkMutation.data.clinical_context_graph} />
+          {isTechnicalMode ? (
+            <ClinicalContextGraphCard graph={checkMutation.data.clinical_context_graph} />
+          ) : null}
 
           {checkMutation.data.alerts.length > 0 ? (
             <div className="grid gap-3">
@@ -435,6 +471,85 @@ export default function PrescriptionCheck() {
         </section>
       ) : null}
     </div>
+  );
+}
+
+function PatientDataConsideredCard({
+  clinicalView,
+  patientBundle,
+  technical,
+}: {
+  clinicalView: {
+    patient_data_considered: Array<{ label: string; value: string }>;
+    missing_data: string[];
+    relevant_alerts: Array<{ code: string; title: string; severity: string; recommendation: string }>;
+  };
+  patientBundle: { reviewed_documents?: Array<Record<string, unknown>>; timeline?: Array<Record<string, unknown>> };
+  technical: boolean;
+}) {
+  const considered = clinicalView.patient_data_considered ?? [];
+  return (
+    <section className="rounded-lg border border-cyan-100 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-ink">Dados do paciente considerados</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Peso, idade, altura, alergias, medicamentos, condições e histórico revisado entram como
+            contexto quando há regra cadastrada.
+          </p>
+        </div>
+        <span className="w-fit rounded-lg bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-900">
+          {technical ? "detalhes técnicos visíveis" : "visão clínica"}
+        </span>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {considered.length ? (
+          considered.map((item) => (
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3" key={item.label}>
+              <p className="text-xs font-bold uppercase tracking-normal text-slate-500">
+                {item.label}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-ink">{item.value}</p>
+            </div>
+          ))
+        ) : (
+          <p className="text-sm text-slate-600">Nenhum dado contextual disponível.</p>
+        )}
+      </div>
+      {clinicalView.missing_data.length ? (
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <h3 className="text-sm font-bold text-amber-950">Dados faltantes</h3>
+          <p className="mt-2 text-sm leading-6 text-amber-950">
+            {clinicalView.missing_data.join(", ")}
+          </p>
+        </div>
+      ) : null}
+      {technical ? (
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+            <h3 className="text-sm font-bold text-ink">Bundle do paciente</h3>
+            <p className="mt-2 text-sm text-slate-600">
+              Documentos revisados: {patientBundle.reviewed_documents?.length ?? 0}
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Eventos na linha do tempo: {patientBundle.timeline?.length ?? 0}
+            </p>
+          </div>
+          <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+            <h3 className="text-sm font-bold text-ink">Alertas relevantes</h3>
+            <div className="mt-2 grid gap-2 text-sm text-slate-600">
+              {clinicalView.relevant_alerts.length
+                ? clinicalView.relevant_alerts.slice(0, 4).map((alert) => (
+                    <p key={alert.code}>
+                      {alert.title}: {alert.recommendation}
+                    </p>
+                  ))
+                : "Sem alertas relevantes."}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 }
 

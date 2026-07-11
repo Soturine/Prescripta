@@ -24,6 +24,8 @@ const medicationSchema = z.object({
   pharmaceutical_form: z.string().optional(),
   evidence_source_url: z.string().optional(),
   max_daily_dose_mg: z.number().positive("Informe a dose máxima."),
+  dose_mg_per_kg: z.number().positive().optional(),
+  dose_by_weight_enabled: z.boolean(),
   max_duration_days: z.number().positive().optional(),
   max_cumulative_dose_mg: z.number().positive().optional(),
   continuous_use: z.boolean(),
@@ -96,6 +98,8 @@ export default function MedicationForm({
       pharmaceutical_form: initialMedication?.pharmaceutical_form ?? "",
       evidence_source_url: initialMedication?.evidence_source_url ?? "",
       max_daily_dose_mg: initialMedication?.max_daily_dose_mg ?? 1000,
+      dose_mg_per_kg: initialMedication?.dose_mg_per_kg ?? undefined,
+      dose_by_weight_enabled: initialMedication?.dose_by_weight_enabled ?? false,
       max_duration_days: initialMedication?.max_duration_days ?? undefined,
       max_cumulative_dose_mg: initialMedication?.max_cumulative_dose_mg ?? undefined,
       continuous_use: initialMedication?.continuous_use ?? false,
@@ -154,6 +158,8 @@ export default function MedicationForm({
       pharmaceutical_form: values.pharmaceutical_form || null,
       evidence_source_url: values.evidence_source_url || null,
       max_daily_dose_mg: values.max_daily_dose_mg,
+      dose_mg_per_kg: values.dose_mg_per_kg ?? null,
+      dose_by_weight_enabled: values.dose_by_weight_enabled,
       max_duration_days: values.max_duration_days ?? null,
       max_cumulative_dose_mg: values.max_cumulative_dose_mg ?? null,
       continuous_use: values.continuous_use,
@@ -205,6 +211,8 @@ export default function MedicationForm({
         pharmaceutical_form: "",
         evidence_source_url: "",
         max_daily_dose_mg: 1000,
+        dose_mg_per_kg: undefined,
+        dose_by_weight_enabled: false,
         max_duration_days: undefined,
         max_cumulative_dose_mg: undefined,
         continuous_use: false,
@@ -301,6 +309,28 @@ export default function MedicationForm({
           {errors.max_daily_dose_mg ? (
             <span className="text-xs text-danger">{errors.max_daily_dose_mg.message}</span>
           ) : null}
+        </label>
+
+        <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
+          <input
+            className="h-4 w-4 accent-ocean"
+            type="checkbox"
+            {...register("dose_by_weight_enabled")}
+          />
+          Dose por kg ativa
+        </label>
+
+        <label className="grid gap-1.5">
+          <span className="label">Dose mg/kg/dia</span>
+          <input
+            className="field"
+            min="0"
+            step="0.01"
+            type="number"
+            {...register("dose_mg_per_kg", {
+              setValueAs: (value) => (value === "" ? undefined : Number(value)),
+            })}
+          />
         </label>
 
         <label className="grid gap-1.5">

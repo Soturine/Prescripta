@@ -11,6 +11,8 @@ from app.database.models import (
     AuditEventModel,
     ClinicalImportBatchModel,
     ConsentRecordModel,
+    EmergencyProtocolRunModel,
+    EmergencyProtocolVersionModel,
     MedicationCounselingSummaryModel,
     MedicationModel,
     PatientFunctionalProfileModel,
@@ -27,6 +29,7 @@ from app.reports.schemas import (
     ReportSource,
 )
 from app.services.ai_settings import AISettingsService
+from app.services.patient_history_service import PatientHistoryService
 
 
 class ReportEvidenceBundleBuilder:
@@ -87,6 +90,11 @@ class ReportEvidenceBundleBuilder:
                 "generated_by": counseling.generated_by,
                 "requires_review": counseling.requires_review,
             }
+        if patient is not None:
+            metadata["patient_knowledge_bundle"] = PatientHistoryService(
+                self.db
+            ).knowledge_bundle(patient, include_identifiable=False)
+            metadata["patient_knowledge_bundle_used"] = True
 
         return ReportEvidenceBundle(
             report_type=report_type,
@@ -162,6 +170,68 @@ class ReportEvidenceBundleBuilder:
                 "errors": list(batch.errors or []),
                 "anonymized": anonymized,
             },
+        )
+
+    def protocol_run_bundle(
+        self,
+        run: EmergencyProtocolRunModel,
+        *,
+        report_mode: str = "technical_audit",
+    ) -> ReportEvidenceBundle:
+        patient = self.db.get(PatientModel, run.patient_id) if run.patient_id else None
+        version = self.db.get(EmergencyProtocolVersionModel, run.protocol_version_id)
+        patient_context = self._patient_context(patient, anonymized=False)
+        patient_reference = patient_context.patient_reference if patient_context else None
+        source = ReportSource(
+            source_id=f"protocol_{run.protocol_id}_{run.protocol_version}",
+            source_name=version.source_name if version else run.protocol_title,
+            jurisdiction=version.jurisdiction if version else "BR",
+            validation_status=version.validation_status if version else "demo_curated",
+            evidence_type="emergency_protocol",
+            source_url=version.source_url if version else None,
+            reviewed_at=(
+                version.reviewed_at.isoformat() if version and version.reviewed_at else None
+            ),
+        )
+        result = {
+            "run_id": run.id,
+            "audit_event_id": run.audit_event_id,
+            "protocol_id": run.protocol_id,
+            "protocol_title": run.protocol_title,
+            "protocol_category": run.protocol_category,
+            "protocol_severity": run.protocol_severity,
+            "protocol_version": run.protocol_version,
+            "patient_id": run.patient_id,
+            "patient_reference": patient_reference,
+            "context": run.context,
+            "patient_context_summary": run.patient_context_summary,
+            "selected_step_orders": run.selected_step_orders,
+            "triage_flags": run.triage_flags,
+            "calculated_values": run.calculated_values,
+            "timeline": run.timeline,
+            "evidence_refs": run.evidence_refs,
+            "created_at": run.created_at.isoformat(),
+        }
+        metadata: dict[str, Any] = {
+            "run_id": run.id,
+            "protocol_id": run.protocol_id,
+            "protocol_version": run.protocol_version,
+            "target_type": "protocol_run",
+            "patient_knowledge_bundle_used": patient is not None,
+        }
+        if patient is not None:
+            metadata["patient_knowledge_bundle"] = PatientHistoryService(
+                self.db
+            ).knowledge_bundle(patient)
+        return ReportEvidenceBundle(
+            report_type="protocol_run_report",
+            report_mode=report_mode,
+            patient_context=patient_context,
+            protocol_run_result=result,
+            rules_fired=list(run.evidence_refs or []),
+            sources=[source],
+            ai_context=self._ai_context(),
+            metadata=metadata,
         )
 
     def audit_bundle(
