@@ -11,11 +11,11 @@ version: "v0.7.0-demo"
 
 # Sertralina Demo
 
-Trecho demonstrativo para v0.7.0. A fonte e interna e pendente de revisao humana.
+Trecho demonstrativo para v0.7.0. A fonte e interna e pendente de revis?o humana.
 
-Eventos relevantes para orientacao: insonia ou sonolencia, alteracao de apetite, alteracao
+Eventos relevantes para orienta??o: insonia ou sonolencia, alteracao de apetite, alteracao
 de humor, baixa libido, disfuncao sexual e dor de cabeca. Em associacao com outros agentes
 serotoninergicos, revisar risco serotoninergico.
 
-Orientacao pratica: acompanhar mudancas de sono, humor, apetite e funcao sexual. Procurar
+Orienta??o pratica: acompanhar mudancas de sono, humor, apetite e funcao sexual. Procurar
 atendimento se houver agitacao intensa, piora importante ou sinais de reacao relevante.

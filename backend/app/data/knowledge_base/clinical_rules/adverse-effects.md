@@ -1,12 +1,12 @@
 ---
 jurisdiction: BR
-source_name: Regra interna demonstrativa - historico clinico controlado
+source_name: Regra interna demonstrativa - hist?rico cl?nico controlado
 source_url:
 evidence_type: demo_seed
 validation_status: demo
 active_ingredient:
 commercial_names: []
-extracted_sections: [reacoes adversas, historico gastrointestinal]
+extracted_sections: [reacoes adversas, hist?rico gastrointestinal]
 retrieved_at: 2026-07-03
 version: v0.5.0-demo
 ---

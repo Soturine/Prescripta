@@ -1,6 +1,6 @@
 # protocol_explanation_v0.8.3
 
-Objetivo: explicar racional e limitacoes de uma execucao de protocolo.
+Objetivo: explicar racional e limitacoes de uma execu??o de protocolo.
 
 Entrada: protocolo, versao, passos, contexto minimo, paciente selecionado,
 flags, calculos demonstrativos e evidencias.
@@ -11,7 +11,7 @@ Saida JSON: `simple_explanation`, `professional_summary`, `missing_context`,
 Campos proibidos: novo passo, nova dose, alteracao de ordem, alteracao de
 severidade, autorizacao de conduta.
 
-Regras: nao mudar a estrutura do protocolo e citar apenas evidencias presentes.
+Regras: n?o mudar a estrutura do protocolo e citar apenas evidencias presentes.
 
 Fallback: explicacao local com aviso educacional.
 

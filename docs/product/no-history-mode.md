@@ -1,6 +1,6 @@
-# Modo Sem Historico
+# Modo Sem Hist?rico
 
-O modo sem historico deixa claro quando a analise esta limitada por dados ausentes.
+O modo sem hist?rico deixa claro quando a analise esta limitada por dados ausentes.
 
 Mensagem base:
 
@@ -20,7 +20,7 @@ Dados faltantes listados:
 
 ## Regras
 
-- Falta de historico nao bloqueia automaticamente.
+- Falta de hist?rico n?o bloqueia automaticamente.
 - O backend retorna `does_not_block_flow = true`.
 - O risco personalizado fica explicitamente limitado.
 - A UI mostra card `Dados faltantes` na checagem.

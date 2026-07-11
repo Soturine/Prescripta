@@ -1,7 +1,7 @@
 # Onboarding Institucional
 
-Prescripta foi preparado para acoplamento institucional, mas nao acessa sistemas
-hospitalares sem API, contrato, permissao e configuracao.
+Prescripta foi preparado para acoplamento institucional, mas n?o acessa sistemas
+hospitalares sem API, contrato, permissao e configura??o.
 
 ## Caminhos De Integracao
 
@@ -30,13 +30,13 @@ hospitalares sem API, contrato, permissao e configuracao.
 3. Mapear pacientes, medicamentos, exames, laudos e prescricoes.
 4. Configurar adapters em ambiente de homologacao.
 5. Testar com dados artificiais ou anonimizados.
-6. Ativar auditoria e revisao humana.
-7. Documentar fonte, jurisdicao, status de validacao e fallback.
+6. Ativar auditoria e revis?o humana.
+7. Documentar fonte, jurisdi??o, status de valida??o e fallback.
 
-## O Que Nao Fazer
+## O Que N?o Fazer
 
-- Nao fazer scraping agressivo.
-- Nao automatizar login em portal.
-- Nao importar dado real sem permissao e seguranca.
-- Nao prometer integracao automatica.
-- Nao permitir que IA altere dado importado sem revisao humana.
+- N?o fazer scraping agressivo.
+- N?o automatizar login em portal.
+- N?o importar dado real sem permissao e seguranca.
+- N?o prometer integracao automatica.
+- N?o permitir que IA altere dado importado sem revis?o humana.

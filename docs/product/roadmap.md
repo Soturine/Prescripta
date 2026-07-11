@@ -14,8 +14,8 @@ para integração clínica.
 - `v0.8.1`: prontidão de produto, UX, IA hardening, docs, assets e amarração clínica.
 - `v0.8.2`: protocolos rápidos/emergência demonstrativos, frontend polish, README forte,
   docs de onboarding e assets públicos ampliados.
-- `v0.8.3`: inteligencia clinica assistida, historico longitudinal do paciente,
-  protocolos integrados a `GeneratedReport`, catalogo farmacologico ampliavel,
+- `v0.8.3`: inteligencia clinica assistida, hist?rico longitudinal do paciente,
+  protocolos integrados a `GeneratedReport`, catalogo farmacol?gico ampliavel,
   prompts por modulo e frontend com visao clinica/tecnica.
 
 ## Próximas Versões

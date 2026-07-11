@@ -1,4 +1,4 @@
-# Vocabulario Clinico Controlado
+# Vocabulario Cl?nico Controlado
 
 O objetivo da v0.5.0 e remover campos livres genericos como `renal`, `cardiaco` e `gastrointestinal`.
 
@@ -27,7 +27,7 @@ O objetivo da v0.5.0 e remover campos livres genericos como `renal`, `cardiaco` 
 
 - `funcao_renal_a_revisar` -> Funcao renal a revisar
 - `risco_cardiovascular_a_revisar` -> Risco cardiovascular a revisar
-- `historico_gastrointestinal_a_revisar` -> Historico gastrointestinal a revisar
+- `historico_gastrointestinal_a_revisar` -> Hist?rico gastrointestinal a revisar
 - `sangramento_gastrointestinal` -> Sangramento gastrointestinal
 
 ## Normalizacao

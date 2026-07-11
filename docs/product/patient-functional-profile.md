@@ -13,13 +13,13 @@ Campos:
 - cuidador responsavel;
 - atividade de alta atencao;
 - alcool frequente;
-- historico de quedas;
+- hist?rico de quedas;
 - baixa tolerancia a sedacao ou tontura.
 
 ## Regras
 
-- O perfil nao e obrigatorio para prescrever.
-- Dados ausentes geram alerta geral, nao bloqueio automatico.
+- O perfil n?o e obrigatorio para prescrever.
+- Dados ausentes geram alerta geral, n?o bloqueio automatico.
 - Medicamento com tontura, sedacao, hipotensao ou reflexos aciona pergunta contextual quando atividades sao desconhecidas.
 - Direcao, maquinas, altura e quedas geram orientacoes personalizadas quando o perfil existir.
 - Alteracoes sao auditadas.
