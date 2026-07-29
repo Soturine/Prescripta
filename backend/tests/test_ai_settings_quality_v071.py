@@ -145,7 +145,7 @@ def test_external_calls_disabled_prevents_provider_call_and_uses_fallback(
     def fail_post(*_args, **_kwargs):
         raise AssertionError("External provider should not be called")
 
-    monkeypatch.setattr("app.services.ai_settings.httpx.post", fail_post)
+    monkeypatch.setattr("app.services.ai_settings.AISettingsService._request_outbound", fail_post)
     explained = client.post(
         "/api/prescriptions/explain",
         headers=headers,
@@ -187,10 +187,20 @@ def test_selected_model_is_used_by_real_external_ai_call(
         },
     )
 
-    def fake_post(_url, *, headers, json, timeout):
-        captured["model"] = json["model"]
+    def fake_post(
+        _service,
+        _config,
+        _method,
+        _url,
+        *,
+        headers,
+        json_body,
+        timeout_seconds,
+        **_kwargs,
+    ):
+        captured["model"] = json_body["model"]
         assert "Authorization" in headers
-        assert timeout == 30
+        assert timeout_seconds == 30
         return FakeResponse(
             {
                 "choices": [
@@ -207,7 +217,7 @@ def test_selected_model_is_used_by_real_external_ai_call(
             }
         )
 
-    monkeypatch.setattr("app.services.ai_settings.httpx.post", fake_post)
+    monkeypatch.setattr("app.services.ai_settings.AISettingsService._request_outbound", fake_post)
     explained = client.post(
         "/api/prescriptions/explain",
         headers=headers,
@@ -237,13 +247,17 @@ def test_model_cache_refresh_uses_previous_cache_when_provider_fails(
     def fake_get_success(*_args, **_kwargs):
         return FakeResponse({"data": [{"id": "gpt-cache-test"}]})
 
-    monkeypatch.setattr("app.services.ai_settings.httpx.get", fake_get_success)
+    monkeypatch.setattr(
+        "app.services.ai_settings.AISettingsService._request_outbound", fake_get_success
+    )
     refreshed = client.get("/api/settings/ai/models?provider=openai&refresh=true", headers=headers)
 
     def fake_get_error(*_args, **_kwargs):
         raise RuntimeError("provider down")
 
-    monkeypatch.setattr("app.services.ai_settings.httpx.get", fake_get_error)
+    monkeypatch.setattr(
+        "app.services.ai_settings.AISettingsService._request_outbound", fake_get_error
+    )
     cached = client.get("/api/settings/ai/models?provider=openai&refresh=true", headers=headers)
 
     assert refreshed.status_code == 200
@@ -278,10 +292,10 @@ def test_custom_model_requires_connection_test_before_activation(
     }
     blocked = client.post("/api/settings/ai/select-model", headers=headers, json=payload)
 
-    def fake_post(_url, *, headers, json, timeout):
+    def fake_post(*_args, **_kwargs):
         return FakeResponse({"choices": [{"message": {"content": '{"ok":true}'}}]})
 
-    monkeypatch.setattr("app.services.ai_settings.httpx.post", fake_post)
+    monkeypatch.setattr("app.services.ai_settings.AISettingsService._request_outbound", fake_post)
     tested = client.post(
         "/api/settings/ai/test",
         headers=headers,

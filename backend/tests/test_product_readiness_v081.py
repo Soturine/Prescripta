@@ -81,7 +81,7 @@ def test_ai_connection_retries_transient_provider_errors(
             raise httpx.TimeoutException("timeout")
         return FakeResponse({"choices": [{"message": {"content": '{"ok":true}'}}]})
 
-    monkeypatch.setattr("app.services.ai_settings.httpx.post", fake_post)
+    monkeypatch.setattr("app.services.ai_settings.AISettingsService._request_outbound", fake_post)
     monkeypatch.setattr("app.services.ai_settings.time.sleep", lambda _seconds: None)
 
     tested = client.post(
@@ -113,7 +113,7 @@ def test_ai_health_exposes_open_circuit_after_repeated_transient_failures(
     def fail_post(*_args, **_kwargs):
         raise httpx.TimeoutException("timeout")
 
-    monkeypatch.setattr("app.services.ai_settings.httpx.post", fail_post)
+    monkeypatch.setattr("app.services.ai_settings.AISettingsService._request_outbound", fail_post)
     monkeypatch.setattr("app.services.ai_settings.time.sleep", lambda _seconds: None)
 
     for _index in range(3):
