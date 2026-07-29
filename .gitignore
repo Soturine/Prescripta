@@ -4,7 +4,11 @@ venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.pytest-tmp/
+.hypothesis/
 .ruff_cache/
+.coverage
+coverage.xml
 *.db
 *.sqlite3
 *.tsbuildinfo

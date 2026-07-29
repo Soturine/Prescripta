@@ -1,5 +1,8 @@
 from decimal import Decimal
 
+from hypothesis import given
+from hypothesis import strategies as st
+
 from app.domain.dose import AdministrationKind, MedicationDoseInput, convert_mass
 from app.domain.prescription import PrescriptionInput
 from app.services.dose_intelligence import DoseIntelligenceService
@@ -34,6 +37,27 @@ def test_mass_conversion_is_explicit_and_lossless_for_supported_units():
     assert convert_mass(Decimal("1000"), "mcg", "mg") == Decimal("1.000")
     assert convert_mass(Decimal("1"), "mg", "mcg") == Decimal("1E+3")
     assert convert_mass(Decimal("1"), "mL", "mg") is None
+
+
+@given(
+    value=st.decimals(
+        min_value=Decimal("0.000001"),
+        max_value=Decimal("1000000000"),
+        places=6,
+        allow_nan=False,
+        allow_infinity=False,
+    ),
+    source=st.sampled_from(("g", "mg", "mcg", "ug", "µg", "ng")),
+    target=st.sampled_from(("g", "mg", "mcg", "ug", "µg", "ng")),
+)
+def test_mass_conversion_round_trip_preserves_any_supported_positive_quantity(
+    value: Decimal,
+    source: str,
+    target: str,
+):
+    converted = convert_mass(value, source, target)
+    assert converted is not None
+    assert convert_mass(converted, target, source) == value
 
 
 def test_structured_microgram_dose_is_compared_in_milligrams():
