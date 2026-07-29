@@ -58,6 +58,11 @@ for path in ROOT.rglob("*"):
         (".git/", ".tmp/", ".venv/", "frontend/node_modules/", "frontend/dist/")
     ):
         continue
+    if relative.startswith("docs/releases/") and relative not in {
+        f"docs/releases/{LABEL}.md",
+        "docs/releases/README.md",
+    }:
+        continue
     if relative in historical_files or relative.startswith(historical_prefixes):
         continue
     for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):

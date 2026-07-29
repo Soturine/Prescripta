@@ -85,6 +85,7 @@ export default function Users() {
     const term = search.trim().toLocaleLowerCase("pt-BR");
     return users.filter((user) => !term || `${user.name} ${user.email} ${formatRole(user.role)}`.toLocaleLowerCase("pt-BR").includes(term));
   }, [search, users]);
+  const isMedicalProfile = profileUser?.role === "medico";
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -172,7 +173,7 @@ export default function Users() {
                 <label className="flex min-h-12 items-start gap-3 rounded-xl border border-slate-200 p-3 text-sm" key={capability}><input checked={profileCapabilities.includes(capability)} className="mt-0.5 h-4 w-4 accent-ocean" onChange={() => toggleCapability(capability)} type="checkbox" /><span><span className="block font-bold text-ink">{CAPABILITY_LABELS[capability]}</span><span className="mt-0.5 block text-xs text-slate-500">{capability}</span></span></label>
               ))}
             </div>
-            {profileUser.role === "medico" ? <div className="mt-4"><Field label="Especialidades (códigos separados por vírgula)"><input className="field" onChange={(event) => setSpecialties(event.target.value)} value={specialties} /></Field></div> : null}
+            {isMedicalProfile ? <div className="mt-4"><Field label="Especialidades (códigos separados por vírgula)"><input className="field" onChange={(event) => setSpecialties(event.target.value)} value={specialties} /></Field></div> : null}
             {profileMutation.isError ? <p className="field-error mt-3" role="alert">O backend recusou a combinação de profissão, especialidade ou capacidade.</p> : null}
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button className="btn-secondary" onClick={() => setProfileUser(null)} type="button">Cancelar</button><button className="btn-primary" disabled={profileMutation.isPending} onClick={() => profileMutation.mutate({ user: profileUser, capabilities: profileCapabilities, specialty_codes: specialties.split(",").map((item) => item.trim()).filter(Boolean) })} type="button"><ShieldCheck aria-hidden="true" className="h-4 w-4" />Salvar menor privilégio</button></div>
           </div>

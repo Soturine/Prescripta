@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Executa gates, envia a main e aguarda CI verde antes da tag."""
+"""Executa gates, envia a main sem force e aguarda CI/Security verdes antes da tag."""
 
 from __future__ import annotations
 
@@ -32,6 +32,7 @@ for checker in (
     "check_markdown_links.py",
     "check_assets.py",
     "check_version_consistency.py",
+    "check_npm_audit.py",
 ):
     run(sys.executable, f"scripts/{checker}")
 run(sys.executable, "-m", "ruff", "check", ".", "--no-cache", cwd=ROOT / "backend")
@@ -39,43 +40,67 @@ run(
     sys.executable,
     "-m",
     "pytest",
-    "--maxfail=1",
+    "--cov=app",
+    "--cov-branch",
+    "--cov-report=term-missing",
+    "--cov-fail-under=80",
     f"--basetemp={ROOT / '.tmp' / 'pytest'}",
     cwd=ROOT / "backend",
 )
 run("npm", "ci", cwd=ROOT / "frontend")
 run("npm", "run", "lint", cwd=ROOT / "frontend")
 run("npm", "run", "typecheck", cwd=ROOT / "frontend")
-run("npm", "run", "test", "--", "--run", cwd=ROOT / "frontend")
+run("npm", "run", "test:coverage", cwd=ROOT / "frontend")
 run("npm", "run", "build", cwd=ROOT / "frontend")
+run("npm", "run", "test:e2e", cwd=ROOT / "frontend")
 run("git", "diff", "--check")
 
 sha = run("git", "rev-parse", "HEAD", capture=True)
 run("git", "fetch", "origin")
-if run("git", "rev-parse", "origin/main", capture=True) != sha:
-    raise SystemExit("origin/main avançou; faça rebase e repita todos os gates.")
+remote_sha = run("git", "rev-parse", "origin/main", capture=True)
+ancestry = subprocess.run(
+    ("git", "merge-base", "--is-ancestor", remote_sha, sha), cwd=ROOT, check=False
+)
+if ancestry.returncode:
+    raise SystemExit(
+        "origin/main não é ancestral do HEAD; integre a mudança remota sem force e repita os gates."
+    )
 run("git", "push", "origin", "main")
-for _ in range(60):
+for _ in range(90):
     raw = run(
         "gh",
         "run",
         "list",
-        "--workflow",
-        "ci.yml",
         "--commit",
         sha,
         "--json",
-        "databaseId,status,conclusion,url",
+        "databaseId,status,conclusion,url,workflowName,headSha",
         "--limit",
-        "1",
+        "20",
         capture=True,
     )
     runs = json.loads(raw or "[]")
-    if runs and runs[0]["status"] == "completed":
-        item = runs[0]
-        if item["conclusion"] != "success":
-            raise SystemExit(f"CI falhou: {item['url']}")
-        print(f"CI verde para v{VERSION}: {item['url']}\nA tag pode ser criada.")
+    required = {
+        item["workflowName"]: item
+        for item in runs
+        if item.get("headSha") == sha and item.get("workflowName") in {"CI", "Security"}
+    }
+    failed = [
+        item for item in required.values()
+        if item["status"] == "completed" and item["conclusion"] != "success"
+    ]
+    if failed:
+        details = ", ".join(f"{item['workflowName']}: {item['url']}" for item in failed)
+        raise SystemExit(f"Workflow obrigatório falhou: {details}")
+    if set(required) == {"CI", "Security"} and all(
+        item["status"] == "completed" and item["conclusion"] == "success"
+        for item in required.values()
+    ):
+        evidence = "\n".join(
+            f"- {name}: run {item['databaseId']} — {item['url']}"
+            for name, item in sorted(required.items())
+        )
+        print(f"CI e Security verdes para v{VERSION} no SHA {sha}:\n{evidence}\nA tag pode ser criada.")
         sys.exit(0)
     time.sleep(10)
-raise SystemExit("Timeout aguardando GitHub Actions; não crie a tag.")
+raise SystemExit("Timeout aguardando CI e Security no SHA final; não crie a tag.")
