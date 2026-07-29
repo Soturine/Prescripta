@@ -35,6 +35,7 @@ from app.schemas.ai_settings_schema import (
     AIProviderModelRead,
     AISettingsRead,
 )
+from app.services.safe_url import UnsafeOutboundURLError, validate_outbound_base_url
 
 MODEL_CACHE_TTL = timedelta(hours=24)
 AI_RETRY_ATTEMPTS = 3
@@ -257,6 +258,8 @@ class AISettingsService:
         provider = self._normalize_provider(payload.provider)
         api_key = (payload.api_key or "").strip() or None
         base_url = (payload.base_url or "").strip() or None
+        if base_url:
+            base_url = self._validated_base_url(provider, base_url)
         if provider in {"openai", "gemini", "openai_compatible"} and not api_key:
             raise AIConfigurationError("Informe uma API Key para este provider.")
 
@@ -331,7 +334,11 @@ class AISettingsService:
         row.use_json_mode = payload.use_json_mode
         row.updated_by = user.id
         if payload.base_url:
-            self._upsert_base_url(provider, payload.base_url, user)
+            self._upsert_base_url(
+                provider,
+                self._validated_base_url(provider, payload.base_url),
+                user,
+            )
         self._audit(
             user,
             "model_selected",
@@ -482,6 +489,8 @@ class AISettingsService:
         credential = self._credential(provider)
         base_url = base_url_override or (credential.base_url if credential else None)
         base_url = base_url or self._env_base_url(provider)
+        if base_url:
+            base_url = self._validated_base_url(provider, base_url)
         if enable_external_calls is not None:
             external_calls = bool(enable_external_calls)
         elif row:
@@ -824,6 +833,17 @@ class AISettingsService:
             raise AIConfigurationError("Base URL é obrigatória para provider OpenAI-compatible.")
         base = config.base_url.rstrip("/")
         return base if base.endswith("/v1") else f"{base}/v1"
+
+    def _validated_base_url(self, provider: str, base_url: str) -> str:
+        try:
+            return validate_outbound_base_url(
+                base_url,
+                environment=self.settings.environment,
+                allowed_hosts=self.settings.ai_allowed_hosts,
+                allow_local_development=provider == "ollama",
+            )
+        except UnsafeOutboundURLError as exc:
+            raise AIConfigurationError(str(exc)) from exc
 
     def _settings_row(self) -> AIProviderSettingsModel | None:
         return self.db.scalar(select(AIProviderSettingsModel).order_by(AIProviderSettingsModel.id))

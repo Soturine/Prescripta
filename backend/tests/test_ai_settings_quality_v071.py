@@ -30,34 +30,43 @@ def _headers(client: TestClient, db_session: Session, auth_headers) -> dict[str,
     return auth_headers("admin@prescripta.local", "Admin@12345")
 
 
-def _explain_payload() -> dict[str, Any]:
-    return {
-        "patient": {"name": "Paciente Teste", "age": 44, "weight_kg": 70},
-        "medication": {
-            "brand_name": "Teste",
-            "active_ingredient": "teste",
-            "therapeutic_class": "analgesico",
+def _explain_payload(client: TestClient, headers: dict[str, str]) -> dict[str, Any]:
+    patient = client.post(
+        "/api/patients",
+        headers=headers,
+        json={
+            "name": "Paciente IA Settings",
+            "age": 44,
+            "weight_kg": 70,
+            "allergies": [],
+            "comorbidities": [],
+            "current_medications": [],
+        },
+    ).json()
+    medication = client.post(
+        "/api/medications",
+        headers=headers,
+        json={
+            "brand_name": "IA Settings Demo",
+            "active_ingredient": "ia settings demo",
+            "therapeutic_class": "teste",
             "max_daily_dose_mg": 1000,
             "allowed_routes": ["oral"],
             "contraindications": [],
         },
-        "dose_mg": 100,
-        "frequency_per_day": 1,
-        "route": "oral",
-        "status": "liberado",
-        "risk_level": "baixo",
-        "alerts": [],
-        "recommendation": "Revisar conforme protocolo local.",
-        "human_review_required": False,
-        "user_profile": "medico",
-        "dose_summary": {},
-        "compatibility": {},
-        "patient_factors_considered": [],
-        "medication_factors_considered": [],
-        "rag_evidence": [],
-        "clinical_context_graph": {},
-        "alternatives": [],
-    }
+    ).json()
+    checked = client.post(
+        "/api/prescriptions/check",
+        headers=headers,
+        json={
+            "patient_id": patient["id"],
+            "medication_id": medication["id"],
+            "dose_mg": 100,
+            "frequency_per_day": 1,
+            "route": "oral",
+        },
+    ).json()
+    return {"audit_id": checked["audit_id"]}
 
 
 def test_ai_credential_is_masked_and_never_returned_in_api_or_audit(
@@ -116,7 +125,11 @@ def test_external_calls_disabled_prevents_provider_call_and_uses_fallback(
         raise AssertionError("External provider should not be called")
 
     monkeypatch.setattr("app.services.ai_settings.httpx.post", fail_post)
-    explained = client.post("/api/prescriptions/explain", headers=headers, json=_explain_payload())
+    explained = client.post(
+        "/api/prescriptions/explain",
+        headers=headers,
+        json=_explain_payload(client, headers),
+    )
 
     assert selected.status_code == 200
     assert explained.status_code == 200
@@ -174,7 +187,11 @@ def test_selected_model_is_used_by_real_external_ai_call(
         )
 
     monkeypatch.setattr("app.services.ai_settings.httpx.post", fake_post)
-    explained = client.post("/api/prescriptions/explain", headers=headers, json=_explain_payload())
+    explained = client.post(
+        "/api/prescriptions/explain",
+        headers=headers,
+        json=_explain_payload(client, headers),
+    )
 
     assert explained.status_code == 200
     assert captured["model"] == "gpt-selected-test"

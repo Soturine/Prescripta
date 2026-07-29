@@ -109,15 +109,8 @@ def _explain_payload(
     medication: dict[str, Any],
     check_result: dict[str, Any],
 ) -> dict[str, Any]:
-    return {
-        **check_result,
-        "patient": patient,
-        "medication": medication,
-        "dose_mg": 400,
-        "frequency_per_day": 2,
-        "route": "oral",
-        "user_profile": "medico",
-    }
+    del patient, medication
+    return {"audit_id": check_result["audit_id"]}
 
 
 def test_ai_explainer_returns_deterministic_fallback_without_api_key() -> None:

@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import hashlib
-import json
 from datetime import UTC, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.core.version import APP_VERSION_LABEL, REPORT_TEMPLATE_VERSION
+from app.services.canonical_json import CANONICAL_HASH_ALGORITHM, canonical_sha256
 
 PRESCRIPTA_VERSION = APP_VERSION_LABEL
 
@@ -101,14 +100,11 @@ class ReportEvidenceBundle(BaseModel):
         return payload
 
     def hash(self) -> str:
-        encoded = json.dumps(
-            self.stable_payload(),
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-            default=str,
-        ).encode("utf-8")
-        return hashlib.sha256(encoded).hexdigest()
+        return canonical_sha256(self.stable_payload())
+
+    @property
+    def hash_algorithm(self) -> str:
+        return CANONICAL_HASH_ALGORITHM
 
 
 class ReportNarrativeSchema(BaseModel):

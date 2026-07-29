@@ -67,4 +67,5 @@ def test_prescription_check_endpoint_blocks_allergy_and_writes_audit(
         event for event in audit_response.json()["items"] if event["action"] == "prescription.check"
     ]
     assert len(prescription_events) == 1
-    assert prescription_events[0]["user_email"] == "admin@test.local"
+    assert prescription_events[0]["user_email"] is None
+    assert prescription_events[0]["user_id"] is not None

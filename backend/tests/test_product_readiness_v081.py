@@ -62,8 +62,7 @@ def test_health_endpoint_reports_readiness_without_secret(client: TestClient) ->
     response = client.get("/api/health")
 
     assert response.status_code == 200
-    assert response.json()["version"] == "0.8.6"
-    assert response.json()["database"] == "ok"
+    assert response.json() == {"status": "ok"}
     assert "secret" not in response.text.lower()
 
 

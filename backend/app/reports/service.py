@@ -33,6 +33,7 @@ from app.reports.schemas import (
 )
 from app.reports.templates import REPORT_TITLES
 from app.services.audit_service import AuditService
+from app.services.object_authorization import ObjectAuthorizationService
 
 
 class ReportNotFoundError(ValueError):
@@ -56,10 +57,25 @@ class ReportService:
         if target_type:
             stmt = stmt.where(GeneratedReportModel.target_type == target_type)
         stmt = stmt.order_by(GeneratedReportModel.generated_at.desc())
-        return list(self.db.scalars(stmt))
+        reports = list(self.db.scalars(stmt))
+        current_user = self.db.info.get("current_user")
+        if current_user is None:
+            return reports
+        return [
+            report
+            for report in reports
+            if self._can_access_generated_report(report, current_user)
+        ]
 
     def get_report(self, report_id: int) -> GeneratedReportModel | None:
-        return self.db.get(GeneratedReportModel, report_id)
+        report = self.db.get(GeneratedReportModel, report_id)
+        current_user = self.db.info.get("current_user")
+        if report and current_user and not self._can_access_generated_report(report, current_user):
+            ObjectAuthorizationService(self.db).record_denied(
+                current_user, resource_type="report", resource_id=str(report_id)
+            )
+            return None
+        return report
 
     def prescription_preview(
         self,
@@ -654,7 +670,32 @@ class ReportService:
         audit = self.db.get(PrescriptionAuditModel, audit_id)
         if audit is None:
             raise ReportNotFoundError("Checagem de prescricao nao encontrada.")
+        current_user = self.db.info.get("current_user")
+        if (
+            current_user is not None
+            and audit.patient_id is not None
+            and not ObjectAuthorizationService(self.db).require_patient(
+                current_user, audit.patient_id
+            )
+        ):
+            raise ReportNotFoundError("Checagem de prescricao nao encontrada.")
         return audit
+
+    def _can_access_generated_report(
+        self, report: GeneratedReportModel, user: UserModel
+    ) -> bool:
+        if report.target_type != "prescription_audit":
+            return user.role in {"admin", "auditor"}
+        try:
+            audit_id = int(report.target_id)
+        except (TypeError, ValueError):
+            return False
+        audit = self.db.get(PrescriptionAuditModel, audit_id)
+        return bool(
+            audit
+            and audit.patient_id
+            and ObjectAuthorizationService(self.db).can_access_patient(user, audit.patient_id)
+        )
 
     def _batch_or_error(self, import_id: int) -> ClinicalImportBatchModel:
         batch = self.db.get(ClinicalImportBatchModel, import_id)

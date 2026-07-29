@@ -25,15 +25,19 @@ from app.api.routes import (
 from app.api.routes import (
     settings as settings_routes,
 )
-from app.core.config import settings
+from app.core.auth import require_roles
+from app.core.config import settings, validate_runtime_settings
 from app.core.version import APP_VERSION
+from app.database.models import UserModel
 from app.database.seed import seed_demo_data
 from app.database.session import SessionLocal, get_db, init_db
+from app.domain.user import UserRole
 from app.services.ai_settings import AIConfigurationError, AISettingsService
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    validate_runtime_settings(settings)
     init_db()
     if settings.auto_seed:
         db = SessionLocal()
@@ -81,6 +85,17 @@ app.include_router(settings_routes.router, prefix=settings.api_prefix)
 @app.get("/health", tags=["health"])
 @app.get(f"{settings.api_prefix}/health", tags=["health"])
 def health(db: Annotated[Session, Depends(get_db)]) -> dict[str, object]:
+    del db
+    return {"status": "ok"}
+
+
+@app.get(f"{settings.api_prefix}/readiness", tags=["health"])
+def readiness(
+    db: Annotated[Session, Depends(get_db)],
+    _current_user: Annotated[
+        UserModel, Depends(require_roles(UserRole.ADMIN, UserRole.AUDITOR))
+    ],
+) -> dict[str, object]:
     database_status = "ok"
     ai_provider = settings.ai_provider
     external_ai_enabled = settings.ai_enable_external_calls
@@ -94,6 +109,7 @@ def health(db: Annotated[Session, Depends(get_db)]) -> dict[str, object]:
     except Exception:  # pragma: no cover - defensive readiness path
         database_status = "error"
     return {
+        "status": "ready" if database_status == "ok" else "degraded",
         "app": settings.app_name,
         "version": APP_VERSION,
         "environment": settings.environment,

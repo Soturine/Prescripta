@@ -3,7 +3,7 @@ from typing import Any
 
 from app.domain.clinical_intelligence import PrescribingPolicyResult
 
-PRESCRIBING_ROLES = {"admin", "medico"}
+PRESCRIBING_ROLES = {"medico"}
 
 
 class PrescribingPolicyService:

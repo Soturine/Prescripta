@@ -1,10 +1,11 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.database.models import PatientModel
+from app.database.models import PatientAccessGrantModel, PatientModel
 from app.schemas.patient_schema import PatientCreate, PatientUpdate
 from app.services.clinical_profile import clinical_profile_badge, normalize_patient_payload
 from app.services.normalizer import normalize_text
+from app.services.object_authorization import ObjectAuthorizationService
 
 
 class PatientRepository:
@@ -12,10 +13,24 @@ class PatientRepository:
         self.db = db
 
     def list(self) -> list[PatientModel]:
-        return list(self.db.scalars(select(PatientModel).order_by(PatientModel.name)))
+        statement = select(PatientModel)
+        current_user = self.db.info.get("current_user")
+        if current_user is not None:
+            statement = statement.where(
+                ObjectAuthorizationService(self.db).patient_scope(current_user)
+            )
+        return list(self.db.scalars(statement.order_by(PatientModel.name)))
 
     def get(self, patient_id: int) -> PatientModel | None:
-        return self.db.get(PatientModel, patient_id)
+        patient = self.db.get(PatientModel, patient_id)
+        current_user = self.db.info.get("current_user")
+        if (
+            patient is not None
+            and current_user is not None
+            and not ObjectAuthorizationService(self.db).require_patient(current_user, patient_id)
+        ):
+            return None
+        return patient
 
     def count(self) -> int:
         return self.db.scalar(select(func.count(PatientModel.id))) or 0
@@ -32,8 +47,22 @@ class PatientRepository:
 
     def create(self, data: PatientCreate) -> PatientModel:
         values = normalize_patient_payload(data.model_dump())
+        current_user = self.db.info.get("current_user")
+        if current_user is not None:
+            values["institution_id"] = current_user.institution_id
+            values["created_by_user_id"] = current_user.id
         patient = PatientModel(**values)
         self.db.add(patient)
+        self.db.flush()
+        if current_user is not None:
+            self.db.add(
+                PatientAccessGrantModel(
+                    patient_id=patient.id,
+                    user_id=current_user.id,
+                    permission="owner",
+                    reason="patient_creator",
+                )
+            )
         self.db.commit()
         self.db.refresh(patient)
         self._attach_badge(patient)

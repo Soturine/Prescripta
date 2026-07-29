@@ -19,6 +19,8 @@ class UserRead(BaseModel):
     crm_uf: str | None = None
     rqe_demo: str | None = None
     credential_verification_status: str = "demo_unverified"
+    institution_id: str = "demo"
+    mfa_enabled: bool = False
 
 
 class UserCreate(BaseModel):
@@ -32,6 +34,7 @@ class UserCreate(BaseModel):
     crm_uf: str | None = Field(default=None, min_length=2, max_length=2)
     rqe_demo: str | None = Field(default=None, max_length=40)
     credential_verification_status: str = "demo_unverified"
+    institution_id: str = Field(default="demo", min_length=1, max_length=100)
 
 
 class UserClinicalProfileUpdate(BaseModel):

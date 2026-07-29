@@ -30,6 +30,7 @@ class UserRepository:
         crm_uf: str | None = None,
         rqe_demo: str | None = None,
         credential_verification_status: str = "demo_unverified",
+        institution_id: str = "demo",
     ) -> UserModel:
         user = UserModel(
             name=name,
@@ -42,6 +43,7 @@ class UserRepository:
             crm_uf=crm_uf,
             rqe_demo=rqe_demo,
             credential_verification_status=credential_verification_status,
+            institution_id=institution_id,
         )
         self.db.add(user)
         self.db.commit()

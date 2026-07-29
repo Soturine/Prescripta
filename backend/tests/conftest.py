@@ -62,6 +62,7 @@ def create_test_user(db_session: Session) -> Callable[..., UserModel]:
         role: UserRole = UserRole.ADMIN,
         is_active: bool = True,
         name: str = "Usuario Teste",
+        institution_id: str = "demo",
     ) -> UserModel:
         return UserRepository(db_session).create(
             name=name,
@@ -69,6 +70,7 @@ def create_test_user(db_session: Session) -> Callable[..., UserModel]:
             hashed_password=hash_password(password),
             role=role.value,
             is_active=is_active,
+            institution_id=institution_id,
         )
 
     return factory

@@ -29,6 +29,7 @@ from app.reports.schemas import (
     ReportSource,
 )
 from app.services.ai_settings import AISettingsService
+from app.services.clinical_snapshot import clinical_snapshot_hash
 from app.services.patient_history_service import PatientHistoryService
 
 
@@ -44,6 +45,155 @@ class ReportEvidenceBundleBuilder:
         report_mode: str = "complete_internal",
         anonymized: bool = False,
     ) -> ReportEvidenceBundle:
+        if not audit.clinical_snapshot:
+            raise ValueError("A decisão não possui snapshot clínico imutável.")
+        return self._prescription_bundle_from_snapshot(
+            audit,
+            report_type=report_type,
+            report_mode=report_mode,
+            anonymized=anonymized,
+        )
+
+    def _prescription_bundle_from_snapshot(
+        self,
+        audit: PrescriptionAuditModel,
+        *,
+        report_type: str,
+        report_mode: str,
+        anonymized: bool,
+    ) -> ReportEvidenceBundle:
+        snapshot = dict(audit.clinical_snapshot)
+        algorithm, actual_hash = clinical_snapshot_hash(snapshot)
+        if audit.hash_algorithm != algorithm or audit.snapshot_hash != actual_hash:
+            raise ValueError("Falha de integridade no snapshot clínico da decisão.")
+
+        patient = dict(snapshot.get("patient") or {})
+        medication = dict(snapshot.get("medication") or {})
+        prescription = dict(snapshot.get("prescription") or {})
+        dose = dict(prescription.get("dose") or {})
+        decision = dict(snapshot.get("decision") or {})
+        legacy = dict(snapshot.get("legacy_result") or {})
+        modules = dict(snapshot.get("modules") or {})
+        source_payloads = list(decision.get("source_snapshot") or [])
+        sources = [
+            ReportSource(
+                source_id=str(source.get("source_id") or f"snapshot_source_{index}"),
+                source_name=str(
+                    source.get("source_name")
+                    or source.get("source_type")
+                    or source.get("source_id")
+                    or "Fonte registrada no snapshot"
+                ),
+                jurisdiction=str(source.get("jurisdiction") or "BR"),
+                validation_status=str(source.get("validation_status") or "unknown"),
+                evidence_type=str(source.get("source_type") or "clinical_snapshot"),
+                source_url=source.get("source_url"),
+            )
+            for index, source in enumerate(source_payloads)
+            if isinstance(source, dict)
+        ]
+        if not sources:
+            sources = [
+                ReportSource(
+                    source_id="immutable_clinical_snapshot",
+                    source_name="Snapshot imutável da decisão",
+                    validation_status="internal",
+                    evidence_type="clinical_snapshot",
+                )
+            ]
+        default_source_id = sources[0].source_id
+        alerts = [
+            self._alert_evidence(alert, default_source_id)
+            for alert in list(legacy.get("alerts") or [])
+            if isinstance(alert, dict)
+        ]
+        daily_mass = dose.get("daily_mass_mg")
+        amount = dose.get("amount")
+        amount_unit = dose.get("amount_unit") or "unidade não informada"
+        frequency = dose.get("frequency_per_day")
+        duration_days = prescription.get("duration_days")
+        accumulated = None
+        if daily_mass is not None and duration_days:
+            accumulated = float(daily_mass) * int(duration_days)
+        patient_id = patient.get("patient_id")
+        patient_reference = (
+            f"Paciente #P-{int(patient_id):05d}" if patient_id is not None else "Paciente externo"
+        )
+        age = patient.get("age_at_evaluation")
+        missing_data = list(decision.get("missing_data") or [])
+        patient_context = ReportPatientContext(
+            patient_reference=patient_reference,
+            age_group=self._age_group(int(age) if age is not None else None),
+            sex_or_reproductive_context=(
+                "pregnancy_or_lactation"
+                if patient.get("pregnancy_or_lactation") is True
+                else "not_informed"
+                if patient.get("pregnancy_or_lactation") is None
+                else "not_applicable_or_negative"
+            ),
+            clinical_profile={
+                "renal": patient.get("renal_condition") or "unknown",
+                "hepatic": patient.get("hepatic_condition") or "unknown",
+                "cardiac": patient.get("cardiac_condition") or "unknown",
+                "hypertension": patient.get("hypertension"),
+                "diabetes": patient.get("diabetes"),
+            },
+            missing_data=missing_data,
+        )
+        return ReportEvidenceBundle(
+            report_type=report_type,
+            report_mode=report_mode,
+            generated_at=datetime.now(UTC),
+            patient_context=patient_context,
+            prescription_result=ReportPrescriptionResult(
+                risk_level=str(legacy.get("risk_level") or "unknown"),
+                status=str(legacy.get("status") or "unknown"),
+                medication_name=str(medication.get("brand_name") or audit.medication_name),
+                active_ingredient=medication.get("active_ingredient"),
+                commercial_name=medication.get("brand_name"),
+                dose_per_administration=f"{amount} {amount_unit}",
+                frequency=(f"{frequency}x ao dia" if frequency else "não aplicável"),
+                route=str(prescription.get("route") or "não informada"),
+                daily_dose=(
+                    f"{daily_mass} mg/dia"
+                    if daily_mass is not None
+                    else f"dimensão {dose.get('dimension') or 'não suportada'}"
+                ),
+                accumulated_dose=(f"{accumulated:g} mg" if accumulated is not None else None),
+                duration=(f"{duration_days} dias" if duration_days else None),
+                continuous_use=dose.get("administration_kind") == "continuous",
+                alerts=alerts,
+            ),
+            rules_fired=[str(item.get("code")) for item in decision.get("findings") or []],
+            sources=self._unique_sources(sources),
+            ai_context=self._ai_context(),
+            metadata={
+                "audit_id": audit.id,
+                "checked_at": snapshot.get("captured_at"),
+                "snapshot_hash": audit.snapshot_hash,
+                "hash_algorithm": audit.hash_algorithm,
+                "snapshot_schema_version": audit.snapshot_schema_version,
+                "correlation_id": audit.correlation_id,
+                "decision": decision,
+                "human_review_required": bool(decision.get("human_review_required", True)),
+                "missing_data": missing_data,
+                "dose_intelligence": dict(modules.get("dose_intelligence") or {}),
+                "psychotropic_safety": list(modules.get("psychotropic_safety") or []),
+                "prescribing_policy": dict(modules.get("prescribing_policy") or {}),
+                "anonymized": anonymized,
+                "clinical_data_source": "immutable_snapshot_only",
+            },
+        )
+
+    def _legacy_prescription_bundle_removed(
+        self,
+        audit: PrescriptionAuditModel,
+        *,
+        report_type: str = "prescription_analysis",
+        report_mode: str = "complete_internal",
+        anonymized: bool = False,
+    ) -> ReportEvidenceBundle:
+        """Código histórico mantido temporariamente sem rota de execução."""
         patient = self.db.get(PatientModel, audit.patient_id) if audit.patient_id else None
         medication = (
             self.db.get(MedicationModel, audit.medication_id) if audit.medication_id else None

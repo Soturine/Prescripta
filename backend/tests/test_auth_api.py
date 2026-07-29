@@ -141,4 +141,5 @@ def test_doctor_can_check_prescription_and_audit_keeps_user(
 
     audit = client.get("/api/audit", headers=admin_headers).json()["items"]
     prescription_events = [event for event in audit if event["action"] == "prescription.check"]
-    assert prescription_events[0]["user_email"] == "medico@test.local"
+    assert prescription_events[0]["user_email"] is None
+    assert prescription_events[0]["user_id"] is not None

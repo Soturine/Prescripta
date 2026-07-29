@@ -1,6 +1,17 @@
 from datetime import UTC, date, datetime
 
-from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    event,
+    inspect,
+)
 from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -11,6 +22,10 @@ class PatientModel(Base):
     __tablename__ = "patients"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    institution_id: Mapped[str] = mapped_column(String(100), default="demo", nullable=False)
+    created_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
     name: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
     birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -667,6 +682,9 @@ class UserModel(Base):
     email: Mapped[str] = mapped_column(String(220), nullable=False, unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(512), nullable=False)
     role: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    institution_id: Mapped[str] = mapped_column(String(100), default="demo", nullable=False)
+    mfa_enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
+    mfa_secret_encrypted: Mapped[str | None] = mapped_column(String(512), nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     specialty_code: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
     crm_demo: Mapped[str | None] = mapped_column(String(40), nullable=True)
@@ -680,6 +698,30 @@ class UserModel(Base):
     )
 
 
+class PatientAccessGrantModel(Base):
+    __tablename__ = "patient_access_grants"
+    __table_args__ = (UniqueConstraint("patient_id", "user_id", "permission"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    permission: Mapped[str] = mapped_column(String(40), default="clinical", nullable=False)
+    active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    reason: Mapped[str | None] = mapped_column(String(220), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class LoginThrottleModel(Base):
+    __tablename__ = "login_throttles"
+
+    identifier_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    failure_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    window_started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class PrescriptionAuditModel(Base):
     __tablename__ = "prescription_audits"
 
@@ -691,8 +733,8 @@ class PrescriptionAuditModel(Base):
     user_email: Mapped[str | None] = mapped_column(String(220), nullable=True)
     patient_name: Mapped[str] = mapped_column(String(160), nullable=False)
     medication_name: Mapped[str] = mapped_column(String(160), nullable=False)
-    dose_mg: Mapped[float] = mapped_column(Float, nullable=False)
-    frequency_per_day: Mapped[int] = mapped_column(Integer, nullable=False)
+    dose_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    frequency_per_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
     route: Mapped[str] = mapped_column(String(80), nullable=False)
     duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     indication: Mapped[str | None] = mapped_column(String(180), nullable=True)
@@ -705,6 +747,42 @@ class PrescriptionAuditModel(Base):
     dose_intelligence: Mapped[dict] = mapped_column(JSON, default=dict)
     psychotropic_safety: Mapped[list[dict]] = mapped_column(JSON, default=list)
     prescribing_policy: Mapped[dict] = mapped_column(JSON, default=dict)
+    dose_input: Mapped[dict] = mapped_column(JSON, default=dict)
+    clinical_decision: Mapped[dict] = mapped_column(JSON, default=dict)
+    clinical_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    snapshot_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    hash_algorithm: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    snapshot_schema_version: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    correlation_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+
+
+class CDSIdempotencyModel(Base):
+    __tablename__ = "cds_idempotency"
+    __table_args__ = (UniqueConstraint("user_id", "idempotency_key"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    response_payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+@event.listens_for(PrescriptionAuditModel, "before_update")
+def _preserve_immutable_clinical_snapshot(_mapper, _connection, target) -> None:
+    state = inspect(target)
+    immutable_fields = {
+        "clinical_snapshot",
+        "snapshot_hash",
+        "hash_algorithm",
+        "snapshot_schema_version",
+        "clinical_decision",
+        "correlation_id",
+    }
+    if any(state.attrs[field].history.has_changes() for field in immutable_fields):
+        raise ValueError("O snapshot clínico e sua decisão são imutáveis.")
 
 
 class AuditEventModel(Base):

@@ -135,6 +135,13 @@ def test_policy_block_changes_aggregate_decision() -> None:
     assert any(finding.module == "prescribing_policy" for finding in result.envelope.findings)
 
 
+def test_admin_role_is_not_treated_as_a_clinical_prescriber() -> None:
+    result = evaluate(user=user(role="admin"))
+
+    assert result.prescribing_policy["status"] == "blocked_by_policy"
+    assert result.envelope.decision_status == DecisionStatus.BLOCKED
+
+
 def test_dose_above_maximum_blocks_aggregate_decision() -> None:
     result = evaluate(prescription=prescription(dose_mg=1001))
 

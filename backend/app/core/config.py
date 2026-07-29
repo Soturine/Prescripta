@@ -25,6 +25,9 @@ class Settings:
     ai_api_key: str = os.getenv("PRESCRIPTA_AI_API_KEY", "")
     ai_model: str = os.getenv("PRESCRIPTA_AI_MODEL", "")
     ai_base_url: str = os.getenv("PRESCRIPTA_AI_BASE_URL", "")
+    ai_allowed_hosts: list[str] = field(
+        default_factory=lambda: _split_origins(os.getenv("PRESCRIPTA_AI_ALLOWED_HOSTS", ""))
+    )
     ai_timeout_seconds: int = int(os.getenv("PRESCRIPTA_AI_TIMEOUT_SECONDS", "30"))
     ai_enable_external_calls: bool = (
         os.getenv("PRESCRIPTA_AI_ENABLE_EXTERNAL_CALLS", "false").lower() == "true"
@@ -53,3 +56,30 @@ class Settings:
 
 
 settings = Settings()
+
+
+class UnsafeRuntimeConfiguration(RuntimeError):
+    pass
+
+
+def validate_runtime_settings(app_settings: Settings) -> None:
+    environment = app_settings.environment.strip().lower()
+    if environment in {"development", "dev", "local", "test", "testing"}:
+        return
+    errors: list[str] = []
+    if app_settings.secret_key == "prescripta-local-demo-secret-change-before-production":
+        errors.append("PRESCRIPTA_SECRET_KEY usa o valor demonstrativo")
+    if app_settings.database_url.startswith("sqlite"):
+        errors.append("SQLite não é permitido fora de ambiente local/teste")
+    if app_settings.auto_seed:
+        errors.append("PRESCRIPTA_AUTO_SEED deve estar desabilitado")
+    if any("localhost" in origin or "127.0.0.1" in origin for origin in app_settings.cors_origins):
+        errors.append("CORS contém origem local")
+    if "*" in app_settings.cors_origins:
+        errors.append("CORS curinga não é permitido")
+    if app_settings.ai_enable_external_calls and not app_settings.config_encryption_key:
+        errors.append("chave de criptografia ausente para credenciais externas")
+    if errors:
+        raise UnsafeRuntimeConfiguration(
+            "Configuração insegura para ambiente não local: " + "; ".join(errors)
+        )

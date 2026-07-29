@@ -300,3 +300,7 @@ class PrescriptionExplainResponse(BaseModel):
     missing_patient_data: list[str] = Field(default_factory=list)
     rag_sources: list[str] = Field(default_factory=list)
     how_to_explain_to_patient: str | None = None
+
+
+class PrescriptionExplainByAuditRequest(BaseModel):
+    audit_id: int = Field(gt=0)

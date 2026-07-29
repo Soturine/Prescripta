@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from app.database.models import PatientModel
+from app.database.models import MedicationModel, PatientModel
 from app.domain.user import UserRole
 
 
@@ -146,15 +146,30 @@ def test_cds_prescription_check_persist_false_does_not_create_patient(
     db_session,
 ) -> None:
     headers = _headers(client, create_test_user, auth_headers, UserRole.MEDICO)
+    db_session.add(
+        MedicationModel(
+            brand_name="Rifampicina Demo",
+            active_ingredient="rifampicina",
+            therapeutic_class="rifamicina",
+            max_daily_dose_mg=600,
+            allowed_routes=["oral"],
+            contraindications=[],
+            validation_status="demo",
+            dose_source_refs=["demo:rifampicina:dose"],
+            policy_source_refs=["demo:rifampicina:policy"],
+        )
+    )
+    db_session.commit()
     before_count = db_session.query(PatientModel).count()
     response = client.post(
         "/api/cds/prescription-check",
         headers=headers,
         json={
             "patient": {
-                "name": "Paciente CDS",
                 "age": 30,
                 "weight_kg": 70,
+                "hypertension": False,
+                "diabetes": False,
                 "reproductive_gynecologic_factors": ["uso_anticoncepcional_hormonal"],
             },
             "medication_request": {
@@ -163,8 +178,10 @@ def test_cds_prescription_check_persist_false_does_not_create_patient(
                 "frequency_per_day": 1,
                 "route": "oral",
                 "duration_days": 5,
-                "max_daily_dose_mg": 600,
             },
+            "allergies": [],
+            "conditions": [],
+            "current_medications": [],
             "persist": False,
         },
     )
@@ -172,5 +189,65 @@ def test_cds_prescription_check_persist_false_does_not_create_patient(
 
     assert response.status_code == 200
     assert response.json()["cards"]
-    assert response.json()["audit_id"].startswith("demo-")
+    assert response.json()["audit_id"].startswith("cds-")
+    assert response.json()["decision"]["decision_status"] != "evaluated_no_issue"
     assert after_count == before_count
+
+
+def test_cds_rejects_client_supplied_clinical_rule(
+    client: TestClient, create_test_user, auth_headers
+):
+    headers = _headers(client, create_test_user, auth_headers, UserRole.MEDICO)
+    response = client.post(
+        "/api/cds/prescription-check",
+        headers=headers,
+        json={
+            "patient": {"weight_kg": 70},
+            "medication_request": {
+                "active_ingredient": "rifampicina",
+                "dose_mg": 1,
+                "frequency_per_day": 1,
+                "route": "oral",
+                "max_daily_dose_mg": 999999,
+            },
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_cds_is_idempotent_per_user_and_rejects_key_reuse(
+    client: TestClient, create_test_user, auth_headers, db_session
+):
+    headers = _headers(client, create_test_user, auth_headers, UserRole.MEDICO) | {
+        "Idempotency-Key": "cds-test-1"
+    }
+    db_session.add(
+        MedicationModel(
+            brand_name="Dose Demo",
+            active_ingredient="dose demo",
+            therapeutic_class="teste",
+            max_daily_dose_mg=10,
+            allowed_routes=["oral"],
+            contraindications=[],
+        )
+    )
+    db_session.commit()
+    body = {
+        "patient": {"weight_kg": 70},
+        "medication_request": {
+            "active_ingredient": "dose demo",
+            "dose_mg": 1,
+            "frequency_per_day": 1,
+            "route": "oral",
+        },
+    }
+    first = client.post("/api/cds/prescription-check", headers=headers, json=body)
+    repeated = client.post("/api/cds/prescription-check", headers=headers, json=body)
+    changed = client.post(
+        "/api/cds/prescription-check",
+        headers=headers,
+        json=body | {"allergies": []},
+    )
+    assert first.status_code == repeated.status_code == 200
+    assert first.json() == repeated.json()
+    assert changed.status_code == 409

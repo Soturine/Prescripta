@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -16,8 +16,13 @@ DbSession = Annotated[Session, Depends(get_db)]
 BearerToken = Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)]
 
 
-def get_current_user(credentials: BearerToken, db: DbSession) -> UserModel:
-    if credentials is None:
+def get_current_user(
+    credentials: BearerToken,
+    db: DbSession,
+    session_cookie: Annotated[str | None, Cookie(alias="prescripta_session")] = None,
+) -> UserModel:
+    token = credentials.credentials if credentials is not None else session_cookie
+    if token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciais ausentes.",
@@ -25,7 +30,7 @@ def get_current_user(credentials: BearerToken, db: DbSession) -> UserModel:
         )
 
     try:
-        payload = decode_access_token(credentials.credentials)
+        payload = decode_access_token(token)
         user_id = int(payload.get("sub", "0"))
     except (TypeError, ValueError):
         raise HTTPException(
@@ -46,6 +51,7 @@ def get_current_user(credentials: BearerToken, db: DbSession) -> UserModel:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuário inativo.",
         )
+    db.info["current_user"] = user
     return user
 
 

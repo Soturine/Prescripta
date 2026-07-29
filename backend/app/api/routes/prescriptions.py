@@ -20,7 +20,7 @@ from app.schemas.prescription_schema import (
     PatientCounselingResponse,
     PrescriptionCheckRequest,
     PrescriptionCheckResponse,
-    PrescriptionExplainRequest,
+    PrescriptionExplainByAuditRequest,
     PrescriptionExplainResponse,
 )
 from app.services.ai_explainer import AIExplainer
@@ -28,6 +28,8 @@ from app.services.alternative_service import AlternativeService
 from app.services.audit_service import AuditService
 from app.services.clinical_context_graph import build_clinical_context_graph
 from app.services.clinical_decision_orchestrator import ClinicalDecisionOrchestrator
+from app.services.clinical_snapshot import build_clinical_snapshot
+from app.services.object_authorization import ObjectAuthorizationService
 from app.services.patient_counseling_service import PatientCounselingService
 from app.services.patient_history_service import PatientHistoryService
 
@@ -108,7 +110,6 @@ def check_prescription(
         prescription,
         should_include=should_include_alternatives,
     )
-    audit = AuditService(db).record_check(patient, medication, prescription, result, current_user)
     patient_counseling = PatientCounselingService(db).build_for_prescription(
         patient_record,
         medication_record,
@@ -117,31 +118,57 @@ def check_prescription(
     dose_intelligence = evaluation.dose_intelligence
     psychotropic_safety = evaluation.psychotropic_safety
     prescribing_policy = evaluation.prescribing_policy
-    AuditService(db).record_action(
-        user=current_user,
-        action="prescription.clinical_intelligence_evaluated",
-        resource_type="prescription",
-        resource_id=str(audit.id),
-        status=prescribing_policy["status"],
-        risk_level=result.risk_level.value,
-        details={
-            "decision_status": evaluation.envelope.decision_status.value,
-            "coverage_status": evaluation.envelope.coverage.status.value,
-            "correlation_id": evaluation.envelope.correlation_id,
-            "specialty": current_user.specialty_code,
-            "policy_type": medication.policy_type,
-            "policy_strength": medication.policy_strength,
-            "dose_rule_id": f"medication:{medication.id}:dose",
-            "psychotropic_signal_code": [item["code"] for item in psychotropic_safety],
-            "prescriber_policy_status": prescribing_policy["status"],
-            "credential_verification_status": current_user.credential_verification_status,
-            "high_alert_category": medication.high_alert_category,
-        },
+    snapshot = build_clinical_snapshot(
+        patient=patient,
+        medication=medication,
+        prescription=prescription,
+        result=result,
+        decision=evaluation.envelope,
+        dose_intelligence=dose_intelligence,
+        psychotropic_safety=psychotropic_safety,
+        prescribing_policy=prescribing_policy,
+        rag_evidence=rag_evidence,
+        patient_knowledge_bundle=patient_knowledge_bundle,
     )
-    audit.dose_intelligence = dose_intelligence
-    audit.psychotropic_safety = psychotropic_safety
-    audit.prescribing_policy = prescribing_policy
-    db.commit()
+    audit_service = AuditService(db, auto_commit=False)
+    try:
+        audit = audit_service.record_check(
+            patient,
+            medication,
+            prescription,
+            result,
+            current_user,
+            clinical_snapshot=snapshot,
+            clinical_decision=evaluation.envelope.to_dict(),
+            dose_intelligence=dose_intelligence,
+            psychotropic_safety=psychotropic_safety,
+            prescribing_policy=prescribing_policy,
+        )
+        audit_service.record_action(
+            user=current_user,
+            action="prescription.clinical_intelligence_evaluated",
+            resource_type="prescription",
+            resource_id=str(audit.id),
+            status=prescribing_policy["status"],
+            risk_level=result.risk_level.value,
+            details={
+                "decision_status": evaluation.envelope.decision_status.value,
+                "coverage_status": evaluation.envelope.coverage.status.value,
+                "correlation_id": evaluation.envelope.correlation_id,
+                "specialty": current_user.specialty_code,
+                "policy_type": medication.policy_type,
+                "policy_strength": medication.policy_strength,
+                "dose_rule_id": f"medication:{medication.id}:dose",
+                "psychotropic_signal_code": [item["code"] for item in psychotropic_safety],
+                "prescriber_policy_status": prescribing_policy["status"],
+                "credential_verification_status": current_user.credential_verification_status,
+                "high_alert_category": medication.high_alert_category,
+            },
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     patient_data_considered = result.dose_summary.get("patient_data_considered", [])
     technical_details = {
         "dose_summary": result.dose_summary,
@@ -207,21 +234,30 @@ def check_prescription(
 
 @router.post("/explain", response_model=PrescriptionExplainResponse)
 def explain_prescription(
-    payload: PrescriptionExplainRequest,
+    payload: PrescriptionExplainByAuditRequest,
     db: DbSession,
     current_user: PrescriptionChecker,
 ) -> PrescriptionExplainResponse:
-    explanation = AIExplainer(settings, db).explain(payload, requester_role=current_user.role)
+    audit = db.get(PrescriptionAuditModel, payload.audit_id)
+    if audit is None or not audit.clinical_snapshot:
+        raise HTTPException(status_code=404, detail="Decisão clínica não encontrada.")
+    if audit.patient_id and not ObjectAuthorizationService(db).require_patient(
+        current_user, audit.patient_id
+    ):
+        raise HTTPException(status_code=404, detail="Decisão clínica não encontrada.")
+    explanation = AIExplainer(settings, db).explain_snapshot(
+        audit.clinical_snapshot, requester_role=current_user.role
+    )
     AuditService(db).record_action(
         user=current_user,
         action="prescription.explain",
         resource_type="prescription",
-        resource_id=str(payload.audit_id) if payload.audit_id else None,
-        status=payload.status,
-        risk_level=payload.risk_level,
+        resource_id=str(payload.audit_id),
+        status=str(audit.clinical_decision.get("decision_status")),
+        risk_level=audit.risk_level,
         details={
             "audit_id": payload.audit_id,
-            "alerts_count": len(payload.alerts),
+            "alerts_count": len(audit.alerts or []),
             "critical_alert_codes": explanation.critical_alert_codes,
             "provider": explanation.provider,
             "used_fallback": explanation.used_fallback,

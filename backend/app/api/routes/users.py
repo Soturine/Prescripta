@@ -47,6 +47,7 @@ def create_user(payload: UserCreate, db: DbSession, current_user: AdminUser) -> 
         crm_uf=payload.crm_uf.upper() if payload.crm_uf else None,
         rqe_demo=payload.rqe_demo,
         credential_verification_status="demo_unverified",
+        institution_id=payload.institution_id,
     )
     AuditService(db).record_action(
         user=current_user,

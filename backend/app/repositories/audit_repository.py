@@ -149,18 +149,26 @@ class AuditRepository:
     def count(self) -> int:
         return self.db.scalar(select(func.count(PrescriptionAuditModel.id))) or 0
 
-    def create_prescription_check(self, **values: object) -> PrescriptionAuditModel:
+    def create_prescription_check(
+        self, *, commit: bool = True, **values: object
+    ) -> PrescriptionAuditModel:
         audit = PrescriptionAuditModel(**values)
         self.db.add(audit)
-        self.db.commit()
-        self.db.refresh(audit)
+        if commit:
+            self.db.commit()
+            self.db.refresh(audit)
+        else:
+            self.db.flush()
         return audit
 
-    def create_event(self, **values: object) -> AuditEventModel:
+    def create_event(self, *, commit: bool = True, **values: object) -> AuditEventModel:
         event = AuditEventModel(**values)
         self.db.add(event)
-        self.db.commit()
-        self.db.refresh(event)
+        if commit:
+            self.db.commit()
+            self.db.refresh(event)
+        else:
+            self.db.flush()
         return event
 
     def alerts_by_severity(self) -> dict[str, int]:

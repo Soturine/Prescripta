@@ -141,6 +141,136 @@ class AIExplainer:
             used_fallback=True,
         )
 
+    def explain_snapshot(
+        self,
+        snapshot: dict[str, Any],
+        *,
+        requester_role: str,
+    ) -> PrescriptionExplainResponse:
+        decision = dict(snapshot.get("decision") or {})
+        legacy = dict(snapshot.get("legacy_result") or {})
+        findings = [item for item in decision.get("findings") or [] if isinstance(item, dict)]
+        context = self._minimized_snapshot(snapshot, requester_role)
+        used_fallback = True
+        provider = "fallback"
+        model = None
+        draft: ExplanationDraft | None = None
+        if self.db is not None:
+            ai_service = AISettingsService(self.db, self.settings)
+            config = ai_service.runtime_config()
+            if config.enable_external_calls:
+                try:
+                    raw = ai_service.complete_json(
+                        system_instructions=SYSTEM_INSTRUCTIONS,
+                        payload=context,
+                        purpose="prescription_explanation_from_snapshot",
+                        config=config,
+                    )
+                    draft = self._draft_from_json(raw)
+                    provider = config.provider
+                    model = config.model
+                    used_fallback = False
+                except Exception:
+                    draft = None
+        if draft is None:
+            status = str(decision.get("decision_status") or "insufficient_data")
+            coverage = str((decision.get("coverage") or {}).get("status") or "not_covered")
+            finding_titles = [str(item.get("title") or item.get("code")) for item in findings]
+            summary = (
+                "A prescrição foi bloqueada e exige revisão humana. "
+                if status == "blocked"
+                else "A decisão exige revisão humana. "
+                if decision.get("human_review_required", True)
+                else "Nenhum problema foi identificado dentro da cobertura registrada. "
+            )
+            summary += " ".join(finding_titles[:5]) or str(decision.get("recommendation") or "")
+            draft = ExplanationDraft(
+                simple_explanation=summary.strip(),
+                technical_summary=(
+                    f"Decisão canônica: {status}. Cobertura: {coverage}. "
+                    f"Foram registrados {len(findings)} achados no snapshot imutável."
+                ),
+                review_questions=list(decision.get("required_actions") or [])[:6]
+                or ["Quais dados ou fontes precisam ser confirmados antes de prosseguir?"],
+            )
+        critical_codes = [
+            str(item.get("code"))
+            for item in findings
+            if item.get("severity") == "critico" or item.get("hard_block") is True
+        ]
+        source_labels = [
+            str(source.get("source_id"))
+            for source in decision.get("source_snapshot") or []
+            if isinstance(source, dict) and source.get("source_id")
+        ]
+        return PrescriptionExplainResponse(
+            provider=provider,
+            model=model,
+            used_fallback=used_fallback,
+            simple_explanation=draft.simple_explanation,
+            technical_summary=draft.technical_summary,
+            review_questions=draft.review_questions,
+            educational_notice=EDUCATIONAL_NOTICE,
+            prescription_status=str(legacy.get("status") or "atencao"),
+            risk_level=str(legacy.get("risk_level") or "baixo"),
+            critical_alert_codes=critical_codes,
+            missing_patient_data=list(decision.get("missing_data") or []),
+            rag_sources=source_labels,
+        )
+
+    def _minimized_snapshot(self, snapshot: dict[str, Any], requester_role: str) -> dict:
+        patient = dict(snapshot.get("patient") or {})
+        medication = dict(snapshot.get("medication") or {})
+        prescription = dict(snapshot.get("prescription") or {})
+        decision = dict(snapshot.get("decision") or {})
+        return {
+            "patient_context": {
+                key: patient.get(key)
+                for key in (
+                    "age_at_evaluation",
+                    "weight_kg",
+                    "height_cm",
+                    "sex_for_dosing_calculation",
+                    "allergies",
+                    "comorbidities",
+                    "current_medications",
+                    "renal_condition",
+                    "hepatic_condition",
+                    "cardiac_condition",
+                    "pregnancy_or_lactation",
+                )
+            },
+            "medication": {
+                key: medication.get(key)
+                for key in (
+                    "active_ingredient",
+                    "therapeutic_class",
+                    "source_jurisdiction",
+                    "validation_status",
+                )
+            },
+            "prescription": {
+                "dose": prescription.get("dose"),
+                "route": prescription.get("route"),
+                "duration_days": prescription.get("duration_days"),
+            },
+            "decision": {
+                key: decision.get(key)
+                for key in (
+                    "decision_status",
+                    "highest_severity",
+                    "coverage",
+                    "findings",
+                    "required_actions",
+                    "missing_data",
+                    "recommendation",
+                    "human_review_required",
+                )
+            },
+            "requester_role": requester_role,
+            "send_identifiable_data": False,
+        }
+
     def _draft_from_json(self, raw: dict) -> ExplanationDraft:
         draft = ExplanationDraft(
             simple_explanation=str(raw.get("simple_explanation") or "").strip(),

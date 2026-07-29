@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from pathlib import Path
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
@@ -23,14 +24,41 @@ def get_db() -> Generator[Session, None, None]:
 def init_db() -> None:
     from app.database import models  # noqa: F401
 
+    local_environment = settings.environment.lower() in {
+        "development",
+        "dev",
+        "local",
+        "test",
+        "testing",
+    }
+    if not local_environment:
+        _verify_migration_head()
+        return
     Base.metadata.create_all(bind=engine)
     if settings.database_url.startswith("sqlite"):
         _ensure_sqlite_v04_columns()
 
 
+def _verify_migration_head() -> None:
+    from alembic.config import Config
+    from alembic.runtime.migration import MigrationContext
+    from alembic.script import ScriptDirectory
+
+    config = Config(str(Path(__file__).parents[2] / "alembic.ini"))
+    expected = ScriptDirectory.from_config(config).get_current_head()
+    with engine.connect() as connection:
+        current = MigrationContext.configure(connection).get_current_revision()
+    if current != expected:
+        raise RuntimeError(
+            f"Schema não migrado: revisão atual={current!r}, revisão esperada={expected!r}."
+        )
+
+
 def _ensure_sqlite_v04_columns() -> None:
     column_specs = {
         "patients": {
+            "institution_id": "VARCHAR(100) NOT NULL DEFAULT 'demo'",
+            "created_by_user_id": "INTEGER",
             "phone": "VARCHAR(80)",
             "email": "VARCHAR(220)",
             "mother_name": "VARCHAR(160)",
@@ -48,6 +76,11 @@ def _ensure_sqlite_v04_columns() -> None:
             "clinical_profile_reviewed_at": "DATETIME",
             "clinical_profile_completeness_score": "FLOAT NOT NULL DEFAULT 0",
             "sex_for_dosing_calculation": "VARCHAR(20)",
+        },
+        "users": {
+            "institution_id": "VARCHAR(100) NOT NULL DEFAULT 'demo'",
+            "mfa_enabled": "BOOLEAN NOT NULL DEFAULT 0",
+            "mfa_secret_encrypted": "VARCHAR(512)",
         },
         "medications": {
             "active_ingredient_id": "INTEGER",
@@ -101,6 +134,13 @@ def _ensure_sqlite_v04_columns() -> None:
         "prescription_audits": {
             "duration_days": "INTEGER",
             "indication": "VARCHAR(180)",
+            "dose_input": "JSON DEFAULT '{}'",
+            "clinical_decision": "JSON DEFAULT '{}'",
+            "clinical_snapshot": "JSON DEFAULT '{}'",
+            "snapshot_hash": "VARCHAR(64)",
+            "hash_algorithm": "VARCHAR(80)",
+            "snapshot_schema_version": "VARCHAR(80)",
+            "correlation_id": "VARCHAR(80)",
         },
     }
     with engine.begin() as connection:
