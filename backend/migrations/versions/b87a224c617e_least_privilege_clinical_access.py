@@ -218,7 +218,6 @@ def upgrade() -> None:
             sa.Integer(),
             sa.ForeignKey("patients.id"),
             nullable=False,
-            unique=True,
         ),
         sa.Column("institution_id", sa.String(length=100), nullable=False),
         sa.Column("purpose", sa.String(length=40), nullable=False),
