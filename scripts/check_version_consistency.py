@@ -54,7 +54,9 @@ for path in ROOT.rglob("*"):
     relative = path.relative_to(ROOT).as_posix()
     if relative == "scripts/check_version_consistency.py":
         continue
-    if relative.startswith((".git/", ".venv/", "frontend/node_modules/", "frontend/dist/")):
+    if relative.startswith(
+        (".git/", ".tmp/", ".venv/", "frontend/node_modules/", "frontend/dist/")
+    ):
         continue
     if relative in historical_files or relative.startswith(historical_prefixes):
         continue
