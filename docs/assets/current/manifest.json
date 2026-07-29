@@ -1,0 +1,62 @@
+{
+  "version": "0.8.7",
+  "generator": "scripts/capture-current-assets.mjs",
+  "assets": [
+    {
+      "file": "audit-v0.8.7.png",
+      "bytes": 99677,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "5821a9d2fe6b73845e07294af6fb7296dafff661dc6fd48db28a2074a75c9af5"
+    },
+    {
+      "file": "clinical-decision-v0.8.7.png",
+      "bytes": 101607,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "b29c40e5f7e72d95039bf0f3db6203ca80feee1f750c0e8acfa95a62b89165c4"
+    },
+    {
+      "file": "dashboard-v0.8.7.png",
+      "bytes": 101478,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "b40f078787ff346526c55010a577e15a5a6ba561a32f14ae2b88cdc3695d351c"
+    },
+    {
+      "file": "mobile-v0.8.7.png",
+      "bytes": 35507,
+      "width": 390,
+      "height": 844,
+      "sha256": "33da35d3d05762f63ba7fb5931e01f750aeea910c4cc428deab7169e663f9790"
+    },
+    {
+      "file": "patient-workspace-v0.8.7.png",
+      "bytes": 87944,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "d1654334a73b68a35dacfe73685f6cd397342ca571b2cced1e19c7889fe2f29a"
+    },
+    {
+      "file": "pharmacy-review-v0.8.7.png",
+      "bytes": 97641,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "a50716b6c3e3905959b2f723f204b40cdb8ed3ef9572b878982328c8ff4ababd"
+    },
+    {
+      "file": "prescripta-overview-v0.8.7.gif",
+      "bytes": 267754,
+      "width": 960,
+      "height": 667,
+      "sha256": "9fb5540dbd29fe0d6cc36ac7cd34a3cee1dfb5c00a64faa60395c91dd28a32a0"
+    },
+    {
+      "file": "prescription-check-v0.8.7.png",
+      "bytes": 101393,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "30c40be7c68a96ade278a4ec311f36c6e015b5dcbdd861f36afdfb34bd816176"
+    }
+  ]
+}

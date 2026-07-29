@@ -12,7 +12,7 @@ revisão humana, relatórios e auditoria em uma interface FastAPI + React.
 > usado em atendimento real. Não substitui avaliação profissional, bula, protocolo, autoridade
 > sanitária ou decisão institucional. Use somente dados fictícios.
 
-![Dashboard atual do Prescripta](docs/assets/current/dashboard-readiness.png)
+![Fluxo demonstrativo atual do Prescripta, com dashboard, paciente, decisão clínica e revisão farmacêutica](docs/assets/current/prescripta-overview-v0.8.7.gif)
 
 ## O que é — e o que não é
 
@@ -39,6 +39,16 @@ interna usa busca lexical indexada, não um RAG clinicamente validado.
   e fallback local;
 - PDF/JSON/CSV, paginação, manifesto de truncamento e auditoria pseudonimizada;
 - Alembic, PostgreSQL em CI, testes automatizados, SAST/SCA, secret scan e SBOM.
+
+## Galeria
+
+| Workspace profissional | Paciente autorizado |
+| --- | --- |
+| ![Dashboard profissional organizado pelas capacidades concedidas](docs/assets/current/dashboard-v0.8.7.png) | ![Workspace longitudinal de paciente fictício autorizado](docs/assets/current/patient-workspace-v0.8.7.png) |
+| Decisão clínica | Revisão farmacêutica |
+| ![Resultado determinístico com cobertura, abstention e auditoria](docs/assets/current/clinical-decision-v0.8.7.png) | ![Workspace demonstrativo de reconciliação farmacêutica](docs/assets/current/pharmacy-review-v0.8.7.png) |
+
+A [galeria corrente e seu manifesto SHA-256](docs/assets/current/manifest.json) também incluem checagem estruturada, auditoria e mobile.
 
 ## Instalação local
 
@@ -107,7 +117,7 @@ O [modelo de ameaça](docs/security/threat-model.md), o
 - [IA](docs/ai/multi-provider-ai.md) e [busca lexical](docs/rag/clinical-rag.md)
 - [testes](docs/testing/ci-and-release-gates.md) e [operações](docs/operations/README.md)
 - [auditorias históricas](docs/audits/README.md), [changelog](CHANGELOG.md) e
-  [releases](docs/releases/v0.8.6.md)
+  [índice de releases](docs/releases/README.md)
 
 ## Testes
 
@@ -118,8 +128,11 @@ cd backend
 cd ..\frontend
 npm run lint
 npm run typecheck
-npm run test -- --run
+npm run test:coverage
 npm run build
+npm run test:e2e
+cd ..
+python scripts/check_assets.py
 ```
 
 Os gates completos estão em `.github/workflows/ci.yml`, `.github/workflows/security.yml` e nos scripts

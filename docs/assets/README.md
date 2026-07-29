@@ -1,6 +1,6 @@
 # Assets
 
-- `docs/assets/current/`: cópias dos screenshots/GIF usados no README atual.
+- `docs/assets/current/`: screenshots/GIF gerados deterministicamente para a vitrine atual, acompanhados de `manifest.json` com SHA-256, dimensões e peso.
 - `docs/assets/v0.8.2/`: captura da release v0.8.2, incluindo protocolos.
 - `docs/assets/v0.8.1/`: captura da release v0.8.1.
 - Pastas antigas permanecem como histórico visual.
@@ -28,5 +28,19 @@
 
 Os assets devem ser capturados a partir da aplicação local atual sempre que uma
 release alterar UI, fluxos ou textos visíveis.
+
+## Captura corrente
+
+Na raiz do repositório, com dependências backend/frontend e Chromium do Playwright instalados:
+
+```powershell
+node scripts/capture-current-assets.mjs
+python scripts/check_assets.py
+```
+
+O capturador usa banco temporário e seed fictício, aguarda readiness, autentica por cookie HttpOnly,
+recusa erros inesperados do navegador, gera o GIF com `ffmpeg` e só substitui `current/` após concluir
+todas as capturas e o manifesto. A sondagem anônima inicial de `/api/auth/me` com `401` é a única
+exceção específica de console, pois faz parte do bootstrap esperado da tela de login.
 
 Créditos e licenças ficam em `docs/assets/credits.md`.
