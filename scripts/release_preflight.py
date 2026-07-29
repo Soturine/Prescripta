@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+NPM = "npm.cmd" if sys.platform == "win32" else "npm"
 (ROOT / ".tmp").mkdir(exist_ok=True)
 
 
@@ -47,12 +48,12 @@ run(
     f"--basetemp={ROOT / '.tmp' / 'pytest'}",
     cwd=ROOT / "backend",
 )
-run("npm", "ci", cwd=ROOT / "frontend")
-run("npm", "run", "lint", cwd=ROOT / "frontend")
-run("npm", "run", "typecheck", cwd=ROOT / "frontend")
-run("npm", "run", "test:coverage", cwd=ROOT / "frontend")
-run("npm", "run", "build", cwd=ROOT / "frontend")
-run("npm", "run", "test:e2e", cwd=ROOT / "frontend")
+run(NPM, "ci", cwd=ROOT / "frontend")
+run(NPM, "run", "lint", cwd=ROOT / "frontend")
+run(NPM, "run", "typecheck", cwd=ROOT / "frontend")
+run(NPM, "run", "test:coverage", cwd=ROOT / "frontend")
+run(NPM, "run", "build", cwd=ROOT / "frontend")
+run(NPM, "run", "test:e2e", cwd=ROOT / "frontend")
 run("git", "diff", "--check")
 
 sha = run("git", "rev-parse", "HEAD", capture=True)
