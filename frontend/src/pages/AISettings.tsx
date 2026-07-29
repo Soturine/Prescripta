@@ -42,8 +42,8 @@ const providerOrder: AIProviderId[] = [
 
 export default function AISettings() {
   const queryClient = useQueryClient();
-  const { canAccess } = useAuth();
-  const canManage = canAccess(["admin"]);
+  const { can } = useAuth();
+  const canManage = can("ai.settings.manage");
   const [provider, setProvider] = useState<AIProviderId>("fallback");
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);

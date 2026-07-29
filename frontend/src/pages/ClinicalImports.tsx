@@ -126,9 +126,9 @@ const fhirDemo = JSON.stringify(fhirScenarios.medication.bundle, null, 2);
 const csvDemo = "record_type,value\nmedication,Novalgina\ncondition,renal\n";
 
 export default function ClinicalImports() {
-  const { canAccess } = useAuth();
-  const canReview = canAccess(["admin", "medico"]);
-  const canExport = canAccess(["admin", "medico", "auditor"]);
+  const { can } = useAuth();
+  const canReview = can("reconciliation.review");
+  const canExport = can("report.read");
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [mode, setMode] = useState<"json" | "fhir" | "csv">("json");

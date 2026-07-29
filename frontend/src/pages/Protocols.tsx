@@ -43,8 +43,8 @@ import type {
 type FieldValues = Record<string, string>;
 
 export default function Protocols() {
-  const { canAccess } = useAuth();
-  const canRun = canAccess(["admin", "medico", "enfermagem"]);
+  const { canAny } = useAuth();
+  const canRun = canAny("prescription.check", "nursing.protocol_prescribe");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [category, setCategory] = useState("todos");
   const [search, setSearch] = useState("");

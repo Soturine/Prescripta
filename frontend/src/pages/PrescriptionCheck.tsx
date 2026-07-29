@@ -21,11 +21,15 @@ import DoseAccumulationCard from "../components/DoseAccumulationCard";
 import EmptyState from "../components/EmptyState";
 import LoadingState from "../components/LoadingState";
 import MedicationOrganProcessingCard from "../components/MedicationOrganProcessingCard";
+import PageHeader from "../components/PageHeader";
 import PatientRiskFactorsCard from "../components/PatientRiskFactorsCard";
 import PrescriptionForm from "../components/PrescriptionForm";
 import RagEvidencePanel from "../components/RagEvidencePanel";
 import RiskBadge from "../components/RiskBadge";
 import SourceBadge from "../components/SourceBadge";
+import Badge from "../components/ui/Badge";
+import Modal from "../components/ui/Modal";
+import StatusPanel from "../components/ui/StatusPanel";
 import { useAuth } from "../context/AuthContext";
 import {
   checkPrescription,
@@ -38,6 +42,7 @@ import {
   fetchPrescriptionTimeline,
   fetchMedications,
   fetchPatients,
+  requestDecisionOverride,
 } from "../services/api";
 import type {
   FunctionalContextSummary,
@@ -51,10 +56,12 @@ import type { DecisionEvidenceItem, DecisionTimelineItem, ReportPreview } from "
 
 export default function PrescriptionCheck() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { can } = useAuth();
   const [lastPayload, setLastPayload] = useState<PrescriptionCheckPayload | null>(null);
   const [anonymizedReport, setAnonymizedReport] = useState(false);
   const [viewMode, setViewMode] = useState<"clinical" | "technical">("clinical");
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideReason, setOverrideReason] = useState("");
   const { data: patients = [], isLoading: loadingPatients } = useQuery({
     queryKey: ["patients"],
     queryFn: fetchPatients,
@@ -112,15 +119,31 @@ export default function PrescriptionCheck() {
       await queryClient.invalidateQueries({ queryKey: ["audit"] });
     },
   });
+  const overrideMutation = useMutation({
+    mutationFn: () => requestDecisionOverride(Number(auditId), overrideReason),
+    onSuccess: async () => {
+      setOverrideOpen(false);
+      setOverrideReason("");
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
 
   const isLoading = loadingPatients || loadingMedications;
   const hasRequiredData = patients.length > 0 && medications.length > 0;
   const selectedMedication = lastPayload
     ? medications.find((item) => item.id === lastPayload.medication_id)
     : undefined;
-  const canGenerateTechnical = user?.role === "admin" || user?.role === "medico";
-  const canExport = canGenerateTechnical;
+  const canGenerateTechnical = can("report.create");
+  const canGenerateGuidance = can("patient_guidance.create");
+  const canExport = can("report.read");
   const isTechnicalMode = viewMode === "technical";
+  const overrideAllowed = Boolean(
+    checkMutation.data
+      && can("prescription.override")
+      && checkMutation.data.decision.override_policy.allowed
+      && checkMutation.data.decision.decision_status !== "blocked"
+      && checkMutation.data.decision.highest_severity !== "critico",
+  );
 
   async function handleSubmit(payload: PrescriptionCheckPayload) {
     setLastPayload(payload);
@@ -157,11 +180,12 @@ export default function PrescriptionCheck() {
 
   return (
     <div className="grid gap-6">
-      <header>
-        <h1 className="text-3xl font-bold tracking-normal text-ink">Checagem de prescrição</h1>
-      </header>
+      <PageHeader
+        title="Checagem de prescrição"
+        description="Fluxo orientado por paciente autorizado, dose dimensional, cobertura e decisão persistida. IA só fica disponível depois da decisão."
+      />
 
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="surface-card p-4 sm:p-6">
         {isLoading ? <LoadingState label="Carregando dados" /> : null}
         {!isLoading && !hasRequiredData ? (
           <EmptyState title="Cadastre ao menos um paciente e um medicamento" />
@@ -174,16 +198,13 @@ export default function PrescriptionCheck() {
             patients={patients}
           />
         ) : null}
-        {checkMutation.isError ? (
-          <p className="mt-3 text-sm font-semibold text-danger">
-            Não foi possível verificar a prescrição.
-          </p>
-        ) : null}
+        {checkMutation.isError ? <div className="mt-4"><StatusPanel title="A checagem não foi executada" tone="danger">Revise os campos dimensionais, o vínculo com o paciente e tente novamente. Nenhuma decisão foi presumida no frontend.</StatusPanel></div> : null}
       </section>
 
       {checkMutation.data ? (
         <section className="grid gap-4">
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <DecisionBanner result={checkMutation.data} />
+          <div className="surface-card p-5 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-lg font-bold text-ink">Resultado</h2>
@@ -212,6 +233,12 @@ export default function PrescriptionCheck() {
                 >
                   <FileJson aria-hidden="true" className="h-4 w-4" />
                   Modo técnico
+                </button>
+              ) : null}
+              {overrideAllowed ? (
+                <button className="btn-secondary" onClick={() => setOverrideOpen(true)} type="button">
+                  <AlertTriangle aria-hidden="true" className="h-4 w-4" />
+                  Solicitar override
                 </button>
               ) : null}
             </div>
@@ -287,18 +314,20 @@ export default function PrescriptionCheck() {
                     : "Baixar relatório técnico"}
                 </button>
               ) : null}
-              <button
-                className="btn-secondary"
-                disabled={patientGuidanceMutation.isPending}
-                onClick={() => patientGuidanceMutation.mutate()}
-                title="Baixar orientação ao paciente"
-                type="button"
-              >
-                <FileText aria-hidden="true" className="h-4 w-4" />
-                {patientGuidanceMutation.isPending
-                  ? "Gerando..."
-                  : "Baixar orientação ao paciente"}
-              </button>
+              {canGenerateGuidance ? (
+                <button
+                  className="btn-secondary"
+                  disabled={patientGuidanceMutation.isPending}
+                  onClick={() => patientGuidanceMutation.mutate()}
+                  title="Baixar orientação ao paciente"
+                  type="button"
+                >
+                  <FileText aria-hidden="true" className="h-4 w-4" />
+                  {patientGuidanceMutation.isPending
+                    ? "Gerando..."
+                    : "Baixar orientação ao paciente"}
+                </button>
+              ) : null}
               {canExport ? (
                 <button
                   className="btn-secondary"
@@ -462,8 +491,70 @@ export default function PrescriptionCheck() {
           ) : null}
         </section>
       ) : null}
+
+      <Modal
+        description="O achado original e sua severidade permanecem imutáveis. A solicitação exige segundo revisor independente."
+        onClose={() => setOverrideOpen(false)}
+        open={overrideOpen}
+        title="Solicitar override clínico"
+      >
+        <label className="grid gap-1.5">
+          <span className="label">Justificativa clínica detalhada</span>
+          <textarea className="field min-h-32 resize-y" maxLength={2000} minLength={10} onChange={(event) => setOverrideReason(event.target.value)} value={overrideReason} />
+          <span className="field-hint">Mínimo de 10 caracteres. Não inclua identificadores desnecessários.</span>
+        </label>
+        {overrideMutation.isError ? <p className="field-error mt-3" role="alert">A policy recusou a solicitação ou já existe um override para esta decisão.</p> : null}
+        {overrideMutation.isSuccess ? <p className="mt-3 text-sm font-bold text-emerald-700" role="status">Solicitação registrada para segundo revisor.</p> : null}
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button className="btn-secondary" onClick={() => setOverrideOpen(false)} type="button">Cancelar</button>
+          <button className="btn-primary" disabled={overrideReason.trim().length < 10 || overrideMutation.isPending} onClick={() => overrideMutation.mutate()} type="button">{overrideMutation.isPending ? "Registrando…" : "Registrar solicitação"}</button>
+        </div>
+      </Modal>
     </div>
   );
+}
+
+function DecisionBanner({ result }: { result: PrescriptionCheckResult }) {
+  const presentation = {
+    evaluated_no_issue: { title: "Avaliado: nenhum achado acionável", tone: "success" as const },
+    not_evaluated: { title: "Não avaliado", tone: "warning" as const },
+    insufficient_data: { title: "Dados insuficientes", tone: "warning" as const },
+    insufficient_coverage: { title: "Cobertura insuficiente", tone: "warning" as const },
+    review_required: { title: "Revisão necessária", tone: "danger" as const },
+    blocked: { title: "Prescrição bloqueada", tone: "critical" as const },
+  }[result.decision.decision_status];
+
+  return (
+    <StatusPanel title={presentation.title} tone={presentation.tone}>
+      <p>{result.decision.recommendation}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Badge tone={result.decision.coverage.sufficient ? "success" : "warning"}>Cobertura: {coverageLabel(result.decision.coverage.status)}</Badge>
+        <Badge>Decisão #{result.audit_id}</Badge>
+        <RiskBadge level={result.decision.highest_severity} />
+      </div>
+      {result.decision.required_actions.length ? (
+        <div className="mt-4">
+          <p className="text-xs font-extrabold uppercase tracking-[0.1em]">Ações necessárias</p>
+          <ul className="mt-2 grid gap-1.5 text-sm">{result.decision.required_actions.map((action) => <li className="flex gap-2" key={action}><span aria-hidden="true">•</span><span>{action}</span></li>)}</ul>
+        </div>
+      ) : null}
+    </StatusPanel>
+  );
+}
+
+function coverageLabel(value: string) {
+  const labels: Record<string, string> = {
+    covered: "avaliada",
+    partially_covered: "parcial",
+    not_covered: "não avaliada",
+    unknown_medication: "medicamento desconhecido",
+    rule_pending_review: "regra pendente",
+    source_expired: "fonte expirada",
+    required_context_missing: "contexto ausente",
+    unsupported_dose_dimension: "dimensão não suportada",
+    terminology_unresolved: "terminologia não resolvida",
+  };
+  return labels[value] ?? value;
 }
 
 function ClinicalIntelligenceCards({

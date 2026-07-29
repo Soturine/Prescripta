@@ -5,7 +5,10 @@ import { useMemo, useState } from "react";
 import EmptyState from "../components/EmptyState";
 import LoadingState from "../components/LoadingState";
 import MedicationForm from "../components/MedicationForm";
+import PageHeader from "../components/PageHeader";
 import SourceBadge from "../components/SourceBadge";
+import Badge from "../components/ui/Badge";
+import StatusPanel from "../components/ui/StatusPanel";
 import { useAuth } from "../context/AuthContext";
 import {
   createMedication,
@@ -33,9 +36,9 @@ import type {
 import { formatDose, joinList } from "../utils/formatters";
 
 export default function Medications() {
-  const { canAccess } = useAuth();
-  const canManageMedication = canAccess(["admin"]);
-  const canReviewCounseling = canAccess(["admin", "medico"]);
+  const { can } = useAuth();
+  const canManageMedication = can("medication.manage");
+  const canReviewCounseling = can("medication.manage");
   const [selectedMedication, setSelectedMedication] = useState<Medication | undefined>();
   const [counselingMedication, setCounselingMedication] = useState<Medication | undefined>();
   const [catalogQuery, setCatalogQuery] = useState("Novalgina");
@@ -46,7 +49,7 @@ export default function Medications() {
     '[{"active_ingredient":"amoxicilina","therapeutic_class":"antibiotico","jurisdiction":"BR"}]',
   );
   const queryClient = useQueryClient();
-  const { data: medications = [], isLoading } = useQuery({
+  const { data: medications = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["medications"],
     queryFn: fetchMedications,
   });
@@ -184,9 +187,14 @@ export default function Medications() {
 
   return (
     <div className="grid gap-6">
-      <header>
-        <h1 className="text-3xl font-bold tracking-normal text-ink">Medicamentos</h1>
-      </header>
+      <PageHeader
+        description="Catálogo demonstrativo com princípio ativo, aliases, evidência, políticas de dose e status de validação explícito."
+        title="Medicamentos e evidências"
+      />
+
+      <StatusPanel title="Status da evidência permanece visível" tone="info">
+        Itens demo, pendentes ou curados não são apresentados como validados. Fontes brasileiras têm prioridade contextual e toda estruturação assistida exige revisão humana.
+      </StatusPanel>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -502,14 +510,43 @@ export default function Medications() {
           </div>
         </div>
         {isLoading ? <LoadingState label="Carregando medicamentos" /> : null}
+        {isError ? (
+          <StatusPanel actions={<button className="btn-secondary" onClick={() => void refetch()} type="button">Tentar novamente</button>} title="Não foi possível carregar o catálogo" tone="danger">
+            Nenhum dado foi presumido. Verifique a conexão e repita a consulta.
+          </StatusPanel>
+        ) : null}
         {!isLoading && medications.length === 0 ? (
           <EmptyState title="Nenhum medicamento cadastrado" />
         ) : null}
         {!isLoading && medications.length > 0 && filteredMedications.length === 0 ? (
           <EmptyState title="Nenhum medicamento corresponde aos filtros" />
         ) : null}
-        {!isLoading && filteredMedications.length > 0 ? (
-          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        {!isLoading && !isError && filteredMedications.length > 0 ? (
+          <>
+          <div className="grid gap-3 lg:hidden">
+            {filteredMedications.map((medication) => (
+              <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" key={medication.id}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div><h3 className="font-extrabold text-ink">{medication.brand_name}</h3><p className="mt-1 text-sm text-slate-600">{medication.active_ingredient} · {medication.therapeutic_class}</p></div>
+                  <SourceBadge jurisdiction={medication.source_jurisdiction} source={medication.evidence_source_type} status={medication.validation_status} />
+                </div>
+                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <div><dt className="label">Dose máxima</dt><dd className="mt-1 font-bold text-ink">{formatDose(medication.max_daily_dose_mg)}</dd></div>
+                  <div><dt className="label">Vias</dt><dd className="mt-1 text-slate-700">{joinList(medication.allowed_routes) || "-"}</dd></div>
+                  <div className="col-span-2"><dt className="label">Aliases</dt><dd className="mt-1 text-slate-700">{joinList(medication.commercial_aliases) || "-"}</dd></div>
+                </dl>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {medication.dose_by_weight_enabled ? <Badge tone="warning">Regra por peso</Badge> : null}
+                  {medication.validation_status !== "validated" ? <Badge tone="warning">Não validado</Badge> : <Badge tone="success">Validado</Badge>}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button className="btn-secondary" onClick={() => setCounselingMedication(medication)} type="button"><BookOpen aria-hidden="true" className="h-4 w-4" />Orientações</button>
+                  {canManageMedication ? <button className="btn-secondary" onClick={() => setSelectedMedication(medication)} type="button"><Pencil aria-hidden="true" className="h-4 w-4" />Editar</button> : null}
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="hidden overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm lg:block">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1240px] text-left text-sm">
                 <thead className="bg-slate-50 text-xs font-bold uppercase tracking-normal text-slate-500">
@@ -588,6 +625,7 @@ export default function Medications() {
               </table>
             </div>
           </div>
+          </>
         ) : null}
       </section>
     </div>

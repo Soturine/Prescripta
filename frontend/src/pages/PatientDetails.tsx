@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle2, FileText, Sparkles } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FileText, ShieldCheck, Sparkles, UsersRound } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -7,32 +7,49 @@ import ClinicalContextGraphCard from "../components/ClinicalContextGraphCard";
 import ClinicalProfileCard from "../components/ClinicalProfileCard";
 import FunctionalProfileCard from "../components/FunctionalProfileCard";
 import LoadingState from "../components/LoadingState";
+import PageHeader from "../components/PageHeader";
 import PatientForm from "../components/PatientForm";
 import QuickTriageForm from "../components/QuickTriageForm";
+import Badge from "../components/ui/Badge";
+import Modal from "../components/ui/Modal";
+import StatusPanel from "../components/ui/StatusPanel";
 import { useAuth } from "../context/AuthContext";
 import {
+  createPatientAccessGrant,
   fetchPatient,
+  fetchPatientAccessGrants,
+  fetchPatientCareTeam,
   fetchPatientClinicalContext,
   fetchPatientDocuments,
   fetchPatientFunctionalProfile,
   fetchPatientKnowledgeBundle,
+  fetchPatientPsychologicalContext,
   fetchPatientTimeline,
   createPatientDocument,
   extractPatientDocument,
   reviewPatientDocumentExtraction,
+  revokePatientAccessGrant,
   quickTriagePatient,
+  updatePatientPsychologicalContext,
   updatePatientFunctionalProfile,
   updatePatient,
 } from "../services/api";
+import type { CareTeamMembership, PatientAccessGrant } from "../types/access";
 import type {
   PatientFunctionalProfilePayload,
   PatientPayload,
+  PatientPsychologicalContext,
+  PatientPsychologicalContextPayload,
   QuickTriagePayload,
 } from "../types/patient";
+import type { Capability } from "../types/user";
 
 export default function PatientDetails() {
-  const { canAccess } = useAuth();
-  const canManagePatient = canAccess(["admin", "medico"]);
+  const { can } = useAuth();
+  const canManagePatient = can("patient.write");
+  const canReadPsychology = can("patient.sensitive_psychology.read");
+  const canWritePsychology = can("psychology.context.write");
+  const canManageAccess = can("access.manage");
   const queryClient = useQueryClient();
   const params = useParams();
   const patientId = Number(params.patientId);
@@ -67,6 +84,22 @@ export default function PatientDetails() {
     queryKey: ["patients", patientId, "knowledge-bundle"],
     queryFn: () => fetchPatientKnowledgeBundle(patientId),
     enabled: Number.isFinite(patientId),
+  });
+  const psychologyQuery = useQuery({
+    queryKey: ["patients", patientId, "psychological-context"],
+    queryFn: () => fetchPatientPsychologicalContext(patientId),
+    enabled: Number.isFinite(patientId) && canReadPsychology,
+    retry: false,
+  });
+  const { data: accessGrants = [] } = useQuery({
+    queryKey: ["patients", patientId, "access-grants"],
+    queryFn: () => fetchPatientAccessGrants(patientId),
+    enabled: Number.isFinite(patientId) && canManageAccess,
+  });
+  const { data: careTeam = [] } = useQuery({
+    queryKey: ["patients", patientId, "care-team"],
+    queryFn: () => fetchPatientCareTeam(patientId),
+    enabled: Number.isFinite(patientId) && canManageAccess,
   });
   const updateMutation = useMutation({
     mutationFn: (payload: PatientPayload) => updatePatient(patientId, payload),
@@ -133,6 +166,41 @@ export default function PatientDetails() {
       await queryClient.invalidateQueries({ queryKey: ["audit"] });
     },
   });
+  const psychologyMutation = useMutation({
+    mutationFn: (payload: PatientPsychologicalContextPayload) =>
+      updatePatientPsychologicalContext(patientId, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["patients", patientId, "psychological-context"],
+      });
+      await queryClient.invalidateQueries({ queryKey: ["patients", patientId] });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const grantMutation = useMutation({
+    mutationFn: (payload: {
+      user_id: number;
+      capability: string;
+      purpose: string;
+      reason: string;
+    }) => createPatientAccessGrant(patientId, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["patients", patientId, "access-grants"],
+      });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+  const revokeGrantMutation = useMutation({
+    mutationFn: ({ grantId, reason }: { grantId: number; reason: string }) =>
+      revokePatientAccessGrant(grantId, reason),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["patients", patientId, "access-grants"],
+      });
+      await queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
 
   if (isLoading) {
     return <LoadingState label="Carregando paciente" />;
@@ -154,18 +222,35 @@ export default function PatientDetails() {
 
   return (
     <div className="grid gap-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-normal text-ink">{patient.name}</h1>
-          <p className="mt-1 text-sm text-slate-500">Cadastro de paciente</p>
-        </div>
-        <Link className="btn-secondary w-fit" to="/patients">
-          <ArrowLeft aria-hidden="true" className="h-4 w-4" />
-          Voltar
-        </Link>
-      </header>
+      <PageHeader
+        actions={
+          <Link className="btn-secondary w-fit" to="/patients">
+            <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+            Voltar à lista
+          </Link>
+        }
+        description="Workspace clínico longitudinal. Cada segmento respeita vínculo, finalidade e capacidade explícitos."
+        title={patient.name}
+      />
 
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <nav aria-label="Seções do paciente" className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+        <div className="flex min-w-max gap-1">
+          {[
+            ["#profile", "Perfil"],
+            ["#documents", "Documentos"],
+            ["#functional", "Perfil funcional"],
+            ["#psychology", "Contexto psicológico"],
+            ["#access", "Equipe e acesso"],
+            ["#activity", "Atividade"],
+          ].map(([href, label]) => (
+            <a className="rounded-xl px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 hover:text-ink" href={href} key={href}>
+              {label}
+            </a>
+          ))}
+        </div>
+      </nav>
+
+      <section className="scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" id="profile">
         {canManagePatient ? (
           <>
             <PatientForm
@@ -217,7 +302,7 @@ export default function PatientDetails() {
 
       <ClinicalProfileCard patient={patient} />
 
-      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      <section className="scroll-mt-28 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]" id="documents">
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-ocean">
@@ -333,7 +418,7 @@ export default function PatientDetails() {
         </div>
 
         <div className="grid content-start gap-4">
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="scroll-mt-28 rounded-lg border border-slate-200 bg-white p-5 shadow-sm" id="activity">
             <div className="flex items-center gap-3">
               <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-ocean" />
               <h2 className="text-lg font-bold text-ink">PatientKnowledgeBundle</h2>
@@ -368,16 +453,43 @@ export default function PatientDetails() {
         </div>
       </section>
 
-      {functionalProfile ? (
-        <FunctionalProfileCard
-          canManage={canManagePatient}
-          isSaving={functionalProfileMutation.isPending}
-          onSubmit={async (payload) => {
-            await functionalProfileMutation.mutateAsync(payload);
-          }}
-          profile={functionalProfile}
-        />
-      ) : null}
+      <div className="scroll-mt-28" id="functional">
+        {functionalProfile ? (
+          <FunctionalProfileCard
+            canManage={canManagePatient}
+            isSaving={functionalProfileMutation.isPending}
+            onSubmit={async (payload) => {
+              await functionalProfileMutation.mutateAsync(payload);
+            }}
+            profile={functionalProfile}
+          />
+        ) : null}
+      </div>
+
+      <PsychologySection
+        canRead={canReadPsychology}
+        canWrite={canWritePsychology}
+        context={psychologyQuery.data}
+        isError={psychologyQuery.isError}
+        isLoading={psychologyQuery.isLoading}
+        isSaving={psychologyMutation.isPending}
+        onSave={async (payload) => psychologyMutation.mutateAsync(payload)}
+        saveError={psychologyMutation.isError}
+        saveSuccess={psychologyMutation.isSuccess}
+      />
+
+      <AccessSection
+        canManage={canManageAccess}
+        careTeam={careTeam}
+        grants={accessGrants}
+        isCreating={grantMutation.isPending}
+        isRevoking={revokeGrantMutation.isPending}
+        mutationError={grantMutation.isError || revokeGrantMutation.isError}
+        onCreate={async (payload) => grantMutation.mutateAsync(payload)}
+        onRevoke={async (grantId, reason) =>
+          revokeGrantMutation.mutateAsync({ grantId, reason })
+        }
+      />
 
       {canManagePatient ? (
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -397,5 +509,241 @@ export default function PatientDetails() {
 
       {clinicalContext ? <ClinicalContextGraphCard graph={clinicalContext} /> : null}
     </div>
+  );
+}
+
+function PsychologySection({
+  canRead,
+  canWrite,
+  context,
+  isError,
+  isLoading,
+  isSaving,
+  onSave,
+  saveError,
+  saveSuccess,
+}: {
+  canRead: boolean;
+  canWrite: boolean;
+  context?: PatientPsychologicalContext;
+  isError: boolean;
+  isLoading: boolean;
+  isSaving: boolean;
+  onSave: (payload: PatientPsychologicalContextPayload) => Promise<unknown>;
+  saveError: boolean;
+  saveSuccess: boolean;
+}) {
+  if (!canRead) {
+    return (
+      <div className="scroll-mt-28" id="psychology">
+        <StatusPanel title="Segmento psicológico protegido" tone="info">
+          Este perfil não possui a capacidade de leitura do contexto psicológico. Nenhum conteúdo sensível foi consultado.
+        </StatusPanel>
+      </div>
+    );
+  }
+
+  return (
+    <section className="scroll-mt-28 rounded-2xl border border-violet-200 bg-white p-5 shadow-sm" id="psychology">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <ShieldCheck aria-hidden="true" className="h-5 w-5 text-violet-700" />
+            <h2 className="text-lg font-extrabold text-ink">Contexto psicológico segmentado</h2>
+          </div>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            Acesso auditado por finalidade. Somente fatores minimizados de segurança medicamentosa seguem para o perfil clínico; notas confidenciais não seguem para IA ou relatórios.
+          </p>
+        </div>
+        <Badge tone="ai">Conteúdo sensível</Badge>
+      </div>
+
+      {isLoading ? <div className="skeleton mt-5 h-28 rounded-xl" aria-label="Carregando contexto psicológico" /> : null}
+      {!isLoading && isError && !canWrite ? (
+        <p className="mt-5 text-sm text-slate-600">Não há contexto disponível para a finalidade de tratamento neste vínculo.</p>
+      ) : null}
+      {!isLoading && (context || canWrite) ? (
+        <form
+          className="mt-5 grid gap-4"
+          key={context?.updated_at ?? "new-context"}
+          onSubmit={async (event) => {
+            event.preventDefault();
+            const data = new FormData(event.currentTarget);
+            await onSave({
+              purpose: "treatment",
+              medication_safety_factors: String(data.get("medication_safety_factors") ?? "")
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean),
+              confidential_notes: String(data.get("confidential_notes") ?? "").trim() || null,
+              consent_status: String(data.get("consent_status")) as PatientPsychologicalContextPayload["consent_status"],
+              policy_reference: String(data.get("policy_reference") ?? "").trim() || null,
+            });
+          }}
+        >
+          <label className="grid gap-1.5">
+            <span className="label">Fatores de segurança medicamentosa</span>
+            <input className="field" defaultValue={context?.medication_safety_factors.join(", ") ?? ""} disabled={!canWrite} name="medication_safety_factors" placeholder="Ex.: dificuldade de adesão, risco de sedação" />
+            <span className="text-xs text-slate-500">Separe os fatores controlados por vírgula. Não inclua diagnóstico narrativo.</span>
+          </label>
+          <label className="grid gap-1.5">
+            <span className="label">Notas confidenciais</span>
+            <textarea className="field min-h-28" defaultValue={context?.confidential_notes ?? ""} disabled={!canWrite} name="confidential_notes" />
+          </label>
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="grid gap-1.5">
+              <span className="label">Base de consentimento</span>
+              <select className="field" defaultValue={context?.consent_status ?? "policy_required"} disabled={!canWrite} name="consent_status">
+                <option value="recorded">Consentimento registrado</option>
+                <option value="waived_by_policy">Dispensado por política</option>
+                <option value="policy_required">Política exige registro</option>
+              </select>
+            </label>
+            <label className="grid gap-1.5">
+              <span className="label">Referência da política</span>
+              <input className="field" defaultValue={context?.policy_reference ?? ""} disabled={!canWrite} name="policy_reference" />
+            </label>
+          </div>
+          {canWrite ? (
+            <button className="btn-primary w-fit" disabled={isSaving} type="submit">
+              {isSaving ? "Salvando…" : "Salvar segmento protegido"}
+            </button>
+          ) : null}
+          {saveError ? <p className="text-sm font-semibold text-danger" role="alert">Não foi possível salvar o contexto.</p> : null}
+          {saveSuccess ? <p className="text-sm font-semibold text-mint" role="status">Contexto salvo e acesso auditado.</p> : null}
+        </form>
+      ) : null}
+    </section>
+  );
+}
+
+const GRANTABLE_CAPABILITIES: Capability[] = [
+  "patient.read",
+  "patient.write",
+  "patient.sensitive_psychology.read",
+  "psychology.context.write",
+  "prescription.check",
+];
+
+function AccessSection({
+  canManage,
+  careTeam,
+  grants,
+  isCreating,
+  isRevoking,
+  mutationError,
+  onCreate,
+  onRevoke,
+}: {
+  canManage: boolean;
+  careTeam: CareTeamMembership[];
+  grants: PatientAccessGrant[];
+  isCreating: boolean;
+  isRevoking: boolean;
+  mutationError: boolean;
+  onCreate: (payload: { user_id: number; capability: string; purpose: string; reason: string }) => Promise<unknown>;
+  onRevoke: (grantId: number, reason: string) => Promise<unknown>;
+}) {
+  const [revoking, setRevoking] = useState<PatientAccessGrant | null>(null);
+
+  if (!canManage) {
+    return (
+      <div className="scroll-mt-28" id="access">
+        <StatusPanel title="Vínculo assistencial aplicado" tone="success">
+          Os dados exibidos neste workspace já estão limitados ao vínculo, à finalidade e às capacidades da sessão. A gestão dos grants é restrita aos responsáveis autorizados.
+        </StatusPanel>
+      </div>
+    );
+  }
+
+  return (
+    <section className="scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" id="access">
+      <div className="flex items-start gap-3">
+        <UsersRound aria-hidden="true" className="mt-0.5 h-5 w-5 text-ocean" />
+        <div>
+          <h2 className="text-lg font-extrabold text-ink">Equipe, vínculo e grants</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">Conceda somente capacidades que o profissional já possui. Toda alteração registra motivo e auditoria.</p>
+        </div>
+      </div>
+
+      <form
+        className="mt-5 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2 xl:grid-cols-4"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          const form = event.currentTarget;
+          const data = new FormData(form);
+          await onCreate({
+            user_id: Number(data.get("user_id")),
+            capability: String(data.get("capability")),
+            purpose: "treatment",
+            reason: String(data.get("reason")),
+          });
+          form.reset();
+        }}
+      >
+        <label className="grid gap-1.5">
+          <span className="label">ID do profissional</span>
+          <input className="field" min="1" name="user_id" required type="number" />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="label">Capacidade</span>
+          <select className="field" name="capability">
+            {GRANTABLE_CAPABILITIES.map((capability) => <option key={capability} value={capability}>{capability}</option>)}
+          </select>
+        </label>
+        <label className="grid gap-1.5 md:col-span-2">
+          <span className="label">Motivo do vínculo</span>
+          <input className="field" minLength={8} name="reason" placeholder="Motivo assistencial auditável" required />
+        </label>
+        <button className="btn-primary w-fit" disabled={isCreating} type="submit">{isCreating ? "Concedendo…" : "Conceder acesso"}</button>
+      </form>
+      {mutationError ? <p className="mt-3 text-sm font-semibold text-danger" role="alert">A operação foi recusada. Confirme o profissional, a capacidade e o motivo.</p> : null}
+
+      <div className="mt-5 grid gap-5 xl:grid-cols-2">
+        <div>
+          <h3 className="text-sm font-extrabold text-ink">Grants individuais ({grants.length})</h3>
+          <div className="mt-3 grid gap-2">
+            {grants.length ? grants.map((grant) => (
+              <article className="rounded-xl border border-slate-200 p-3" key={grant.id}>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div><p className="font-bold text-ink">Profissional #{grant.user_id}</p><p className="mt-1 text-sm text-slate-600">{grant.capability} · {grant.purpose}</p></div>
+                  <Badge tone={grant.revoked_at ? "neutral" : "success"}>{grant.revoked_at ? "Revogado" : "Ativo"}</Badge>
+                </div>
+                {grant.reason ? <p className="mt-2 text-sm text-slate-600">{grant.reason}</p> : null}
+                {!grant.revoked_at ? <button className="btn-secondary mt-3" onClick={() => setRevoking(grant)} type="button">Revogar grant</button> : null}
+              </article>
+            )) : <p className="text-sm text-slate-600">Nenhum grant individual registrado.</p>}
+          </div>
+        </div>
+        <div>
+          <h3 className="text-sm font-extrabold text-ink">Equipe assistencial ({careTeam.length})</h3>
+          <div className="mt-3 grid gap-2">
+            {careTeam.length ? careTeam.map((member) => (
+              <article className="rounded-xl border border-slate-200 p-3" key={member.id}>
+                <div className="flex flex-wrap items-start justify-between gap-2"><p className="font-bold text-ink">Profissional #{member.user_id}</p><Badge tone={member.revoked_at ? "neutral" : "info"}>{member.revoked_at ? "Encerrado" : member.care_role}</Badge></div>
+                <p className="mt-1 text-sm text-slate-600">{member.team_code} · {member.capabilities.join(", ")}</p>
+              </article>
+            )) : <p className="text-sm text-slate-600">Nenhum vínculo de equipe registrado.</p>}
+          </div>
+        </div>
+      </div>
+
+      <Modal onClose={() => setRevoking(null)} open={Boolean(revoking)} title="Revogar acesso ao paciente">
+        <form
+          className="grid gap-4"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (!revoking) return;
+            const reason = String(new FormData(event.currentTarget).get("reason"));
+            await onRevoke(revoking.id, reason);
+            setRevoking(null);
+          }}
+        >
+          <p className="text-sm leading-6 text-slate-600">A revogação é imediata e auditada. O histórico do grant será preservado.</p>
+          <label className="grid gap-1.5"><span className="label">Motivo da revogação</span><textarea className="field min-h-24" minLength={8} name="reason" required /></label>
+          <div className="flex flex-wrap justify-end gap-2"><button className="btn-secondary" onClick={() => setRevoking(null)} type="button">Cancelar</button><button className="btn-danger" disabled={isRevoking} type="submit">{isRevoking ? "Revogando…" : "Confirmar revogação"}</button></div>
+        </form>
+      </Modal>
+    </section>
   );
 }
