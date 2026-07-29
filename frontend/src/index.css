@@ -1,10 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #102033;
+  --color-ocean: #155e75;
+  --color-mint: #0f766e;
+  --color-warning: #a16207;
+  --color-danger: #b91c1c;
+  --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
 
 :root {
   --color-clinical: #087f8c;
-  --color-ink: #102033;
   --radius-card: 0.875rem;
   --shadow-card: 0 12px 30px -22px rgba(15, 23, 42, 0.38);
   --motion-fast: 160ms;
@@ -42,7 +48,7 @@ select {
 
 @layer components {
   .field {
-    @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-ocean focus:ring-2 focus:ring-ocean/15 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400;
+    @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-hidden transition placeholder:text-slate-400 hover:border-slate-300 focus:border-ocean focus:ring-2 focus:ring-ocean/15 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400;
   }
 
   .label {

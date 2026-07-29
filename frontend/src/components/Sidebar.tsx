@@ -22,7 +22,7 @@ export default function Sidebar() {
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
               [
-                "inline-flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean",
+                "inline-flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ocean",
                 isActive
                   ? "bg-ocean text-white shadow-soft"
                   : "text-slate-600 hover:bg-cyan-50 hover:text-ink",
@@ -48,7 +48,7 @@ export default function Sidebar() {
           <Menu aria-hidden="true" className="h-5 w-5" />
         </button>
       </div>
-      {open ? <button aria-label="Fechar menu" className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-sm lg:hidden" onClick={() => setOpen(false)} type="button" /> : null}
+      {open ? <button aria-label="Fechar menu" className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-xs lg:hidden" onClick={() => setOpen(false)} type="button" /> : null}
       <aside className={`${open ? "translate-x-0" : "-translate-x-full"} fixed inset-y-0 left-0 z-50 w-[min(88vw,19rem)] border-r border-slate-200 bg-white p-5 shadow-2xl transition-transform lg:sticky lg:top-0 lg:z-20 lg:min-h-screen lg:w-72 lg:translate-x-0 lg:shadow-none`}>
         <div className="flex h-full flex-col gap-7">
           <div className="flex items-start justify-between">
