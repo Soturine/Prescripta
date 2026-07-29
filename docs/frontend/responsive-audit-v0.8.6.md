@@ -1,4 +1,4 @@
-# Auditoria responsiva v8.6.0
+# Auditoria responsiva v0.8.6
 
 O shell foi verificado em 1440×900, 768×1024 e 390×844 durante a captura. Desktop mantém sidebar;
 tablet e mobile usam drawer. Tabelas extensas preservam rolagem interna, evitando ampliar o body.

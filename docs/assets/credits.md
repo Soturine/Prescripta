@@ -1,10 +1,10 @@
 # Créditos de Assets
 
-## v8.6.0
+## v0.8.6
 
-As 25 capturas e cinco GIFs em `docs/assets/v8.6.0/` foram gerados novamente sobre a aplicação
+As 25 capturas e cinco GIFs em `docs/assets/v0.8.6/` foram gerados novamente sobre a aplicação
 rodando com banco temporário, dados demo e chamadas externas de IA desativadas. O roteiro
-reprodutível é `scripts/capture-v860-assets.mjs`. Não foram usados recursos externos.
+reprodutível é `scripts/capture-v086-assets.mjs`. Não foram usados recursos externos.
 
 ## v0.8.5
 

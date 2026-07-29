@@ -10,11 +10,11 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
-      command: "python -c \"from pathlib import Path; Path('playwright-v860.db').unlink(missing_ok=True)\" && python -m uvicorn app.main:app --host 127.0.0.1 --port 8013",
+      command: "python -c \"from pathlib import Path; Path('playwright-v086.db').unlink(missing_ok=True)\" && python -m uvicorn app.main:app --host 127.0.0.1 --port 8013",
       cwd: "../backend",
       url: "http://127.0.0.1:8013/api/health",
       env: {
-        PRESCRIPTA_DATABASE_URL: "sqlite:///./playwright-v860.db",
+        PRESCRIPTA_DATABASE_URL: "sqlite:///./playwright-v086.db",
         PRESCRIPTA_CORS_ORIGINS: "http://127.0.0.1:5177",
         PRESCRIPTA_AI_ENABLE_EXTERNAL_CALLS: "false",
       },

@@ -1,4 +1,4 @@
-# Auditoria de acessibilidade v8.6.0
+# Auditoria de acessibilidade v0.8.6
 
 Foram revisados foco visível, labels, alvos de toque, contraste semântico, drawer e preferência por
 movimento reduzido. A navegação principal usa elementos interativos nativos e o modo técnico não é

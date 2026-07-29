@@ -1,6 +1,6 @@
 # Roadmap
 
-## v8.6.0 — consolidação e recovery de CI
+## v0.8.6 — consolidação e recovery de CI
 
 - checker e release gate multiplataforma;
 - backend Ubuntu/Windows, frontend, smoke e readiness;

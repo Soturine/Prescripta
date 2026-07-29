@@ -5,7 +5,7 @@
 Cada caso de uso deve abrir uma sessão, coordenar `add`/`flush`, confirmar uma vez e fazer rollback
 integral em erro. Repositories não devem decidir isoladamente quando uma operação composta termina.
 
-## Estado v8.6.0
+## Estado v0.8.6
 
 Checagem, relatório, protocolo, documento, curadoria, importação e policy foram inventariados. A base
 legada ainda contém commits internos em auditoria e serviços; portanto a migração está `partial`.
