@@ -60,6 +60,13 @@ for path in ROOT.rglob("*"):
         continue
     for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         if wrong_pattern.search(line):
+            transparent_correction = (
+                relative == f"docs/releases/{LABEL}.md"
+                and "release histórica" in line.lower()
+                and "numerada incorretamente" in line.lower()
+            )
+            if transparent_correction:
+                continue
             errors.append(f"referência corrente incorreta em {relative}:{number}")
 
 if errors:

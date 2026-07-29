@@ -1,6 +1,36 @@
 # Changelog
 
+## [0.8.6] - 2026-07-29
+
+### Segurança clínica e integridade
+
+- Decisão canônica com cobertura explícita, abstention e precedência de `CRITICAL`/hard block.
+- Dose dimensional sem peso, limite ou sexo imputado silenciosamente.
+- Snapshot clínico imutável, JSON canônico versionado e relatórios históricos snapshot-only.
+- CDS resolve medicamento, rulesets e fontes no backend e usa idempotência persistente.
+- Override separado da decisão, com justificativa, proibição para crítico/hard block e segundo revisor.
+
+### Segurança da aplicação e dados
+
+- Autorização por instituição/grant de paciente e testes BOLA negativos.
+- Cookie HttpOnly, lockout persistente, MFA TOTP opcional, startup seguro e health mínimo.
+- SSRF com HTTPS/allowlist/IP público, explicação de IA por `audit_id`, minimização e circuit breaker
+  compartilhado no banco.
+- Terminologia clínica centralizada sem substring como match confirmado, idade derivada da data de
+  nascimento, paginação e manifesto de exportação.
+
+### Banco, qualidade e governança
+
+- Alembic com upgrade/downgrade/check, PostgreSQL em CI e unit of work com rollback testado.
+- Ruff, ESLint/React Hooks/acessibilidade, typecheck, Vitest, Playwright, cobertura de branches com gate
+  de 80%, property-based testing, CodeQL, SCA, gitleaks e SBOM.
+- `SECURITY.md`, `CODEOWNERS`, Dependabot, threat model, hazard log e runbooks operacionais.
+- Claims corrigidos para demo educacional, compatibilidade parcial e busca lexical não validada.
+
 ## [8.6.0] - 2026-07-11
+
+> Esta publicação histórica usou numeração incorreta. Seu conteúdo permanece preservado e não inclui
+> retroativamente os hardenings acima. A linha correta e consolidada é `v0.8.6`.
 
 ### Corrigido
 
