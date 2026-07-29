@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 
 export default function Modal({
   open,
@@ -15,6 +15,8 @@ export default function Modal({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
 
   useEffect(() => {
     const dialog = ref.current;
@@ -25,8 +27,8 @@ export default function Modal({
 
   return (
     <dialog
-      aria-describedby={description ? "modal-description" : undefined}
-      aria-labelledby="modal-title"
+      aria-describedby={description ? descriptionId : undefined}
+      aria-labelledby={titleId}
       className="m-auto max-h-[calc(100dvh-2rem)] w-[min(94vw,42rem)] rounded-t-3xl border border-slate-200 bg-white p-0 text-ink shadow-2xl backdrop:bg-slate-950/45 sm:rounded-3xl"
       onCancel={(event) => {
         event.preventDefault();
@@ -37,8 +39,8 @@ export default function Modal({
     >
       <div className="sticky top-0 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
         <div>
-          <h2 className="text-lg font-extrabold" id="modal-title">{title}</h2>
-          {description ? <p className="mt-1 text-sm text-slate-600" id="modal-description">{description}</p> : null}
+          <h2 className="text-lg font-extrabold" id={titleId}>{title}</h2>
+          {description ? <p className="mt-1 text-sm text-slate-600" id={descriptionId}>{description}</p> : null}
         </div>
         <button aria-label="Fechar" className="icon-button" onClick={onClose} type="button">
           <X aria-hidden="true" className="h-5 w-5" />

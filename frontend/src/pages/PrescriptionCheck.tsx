@@ -148,7 +148,11 @@ export default function PrescriptionCheck() {
   async function handleSubmit(payload: PrescriptionCheckPayload) {
     setLastPayload(payload);
     explanationMutation.reset();
-    await checkMutation.mutateAsync(payload);
+    try {
+      await checkMutation.mutateAsync(payload);
+    } catch {
+      // O estado da mutation apresenta o erro sem criar rejection não tratada no submit.
+    }
   }
 
   async function handleContextualAnswer(answer: string) {
@@ -157,7 +161,11 @@ export default function PrescriptionCheck() {
     }
     const nextPayload = { ...lastPayload, contextual_activity_answer: answer };
     setLastPayload(nextPayload);
-    await checkMutation.mutateAsync(nextPayload);
+    try {
+      await checkMutation.mutateAsync(nextPayload);
+    } catch {
+      // A decisão anterior permanece visível; nenhuma resposta contextual é presumida.
+    }
   }
 
   function buildExplanationPayload(): PrescriptionExplanationPayload | null {
@@ -173,7 +181,11 @@ export default function PrescriptionCheck() {
     if (!payload) {
       return;
     }
-    await explanationMutation.mutateAsync(payload);
+    try {
+      await explanationMutation.mutateAsync(payload);
+    } catch {
+      // A falha explicativa não altera a decisão clínica persistida.
+    }
   }
 
   const canExplain = Boolean(buildExplanationPayload());
