@@ -273,6 +273,17 @@ class ClinicalDecisionOrchestrator:
                 reasons=reasons,
                 source_ids=source_ids,
             )
+        if any(
+            str(item.get("validation_status") or "").lower() == "expired"
+            for item in rag_evidence
+        ):
+            return ClinicalCoverage(
+                status=CoverageStatus.SOURCE_EXPIRED,
+                evaluated=evaluated,
+                not_evaluated=[{"module": "sources", "reason": "fonte expirada"}],
+                reasons=["Uma fonte recuperada está fora de sua vigência declarada."],
+                source_ids=source_ids,
+            )
         validation_statuses = {
             medication.validation_status,
             str(dose.get("validation_status") or "unknown"),

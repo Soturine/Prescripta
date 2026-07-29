@@ -2,7 +2,8 @@ from dataclasses import dataclass
 
 from app.domain.alert import Alert, RiskLevel
 from app.domain.medication import Medication
-from app.services.text import normalize_text
+from app.services.normalizer import normalize_text
+from app.services.terminology import terminology
 
 
 @dataclass(frozen=True)
@@ -62,8 +63,7 @@ def _medication_terms(medication: Medication) -> set[str]:
 
 
 def _matches(value: str, terms: set[str]) -> bool:
-    normalized = normalize_text(value)
-    return any(normalized == term or normalized in term or term in normalized for term in terms)
+    return terminology.any_confirmed_match([value], terms)
 
 
 def check_interactions(
@@ -81,8 +81,8 @@ def check_interactions(
         side_b = normalize_text(rule.medication_b)
         new_matches_a = _matches(side_a, new_terms)
         new_matches_b = _matches(side_b, new_terms)
-        current_matches_a = any(side_a == current or side_a in current for current in current_terms)
-        current_matches_b = any(side_b == current or side_b in current for current in current_terms)
+        current_matches_a = terminology.any_confirmed_match([side_a], current_terms)
+        current_matches_b = terminology.any_confirmed_match([side_b], current_terms)
 
         if (new_matches_a and current_matches_b) or (new_matches_b and current_matches_a):
             alerts.append(

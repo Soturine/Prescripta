@@ -75,6 +75,7 @@ def evaluate(**kwargs: object):
         prescription=kwargs.get("prescription", prescription()),
         user=kwargs.get("user", user()),
         missing_context=kwargs.get("missing_context", []),
+        rag_evidence=kwargs.get("rag_evidence", []),
     )
 
 
@@ -110,6 +111,21 @@ def test_missing_context_returns_abstention_instead_of_false_green() -> None:
     assert result.envelope.coverage.status == CoverageStatus.REQUIRED_CONTEXT_MISSING
     assert result.envelope.missing_data == ["alergias", "condição renal"]
     assert "Dados insuficientes" in result.envelope.recommendation
+
+
+def test_expired_retrieved_source_prevents_favorable_decision() -> None:
+    result = evaluate(
+        rag_evidence=[
+            {
+                "source_id": "kb:expired:1",
+                "validation_status": "expired",
+                "version": "1",
+            }
+        ]
+    )
+
+    assert result.envelope.coverage.status == CoverageStatus.SOURCE_EXPIRED
+    assert result.envelope.decision_status == DecisionStatus.INSUFFICIENT_COVERAGE
 
 
 def test_critical_psychotropic_signal_blocks_aggregate_decision() -> None:

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
+from datetime import date
+from functools import lru_cache
 from pathlib import Path
 
 from app.services.normalizer import normalize_terms
@@ -8,6 +11,14 @@ from app.services.normalizer import normalize_terms
 KNOWLEDGE_ROOT = Path(__file__).resolve().parents[1] / "data" / "knowledge_base"
 EDUCATIONAL_NOTICE = (
     "Base interna demonstrativa, sem validade clínica completa. Use apenas para explicação."
+)
+INDEX_VERSION = "lexical-index-v1"
+PROMPT_INJECTION_MARKERS = (
+    "ignore previous",
+    "ignore todas",
+    "system prompt",
+    "developer message",
+    "assistant:",
 )
 
 
@@ -22,6 +33,10 @@ class KnowledgeHit:
     def to_dict(self) -> dict:
         return {
             "source": self.source,
+            "source_id": self.metadata.get("source_id"),
+            "chunk_id": self.metadata.get("chunk_id"),
+            "source_hash": self.metadata.get("source_hash"),
+            "index_version": INDEX_VERSION,
             "excerpt": self.excerpt,
             "score": self.score,
             "matched_terms": self.matched_terms,
@@ -36,43 +51,69 @@ class KnowledgeHit:
             "extracted_sections": self.metadata.get("extracted_sections", []),
             "retrieved_at": self.metadata.get("retrieved_at"),
             "version": self.metadata.get("version", "v0.5.0-demo"),
+            "valid_until": self.metadata.get("valid_until"),
         }
 
 
-def _documents() -> list[tuple[str, str, dict]]:
-    documents: list[tuple[str, str, dict]] = []
+@dataclass(frozen=True)
+class KnowledgeChunk:
+    source: str
+    content: str
+    terms: frozenset[str]
+    metadata: dict
+
+
+@lru_cache(maxsize=1)
+def build_index() -> tuple[KnowledgeChunk, ...]:
+    chunks: list[KnowledgeChunk] = []
+    seen_hashes: set[str] = set()
     if not KNOWLEDGE_ROOT.exists():
-        return documents
-    for path in KNOWLEDGE_ROOT.rglob("*.md"):
+        return ()
+    for path in sorted(KNOWLEDGE_ROOT.rglob("*.md")):
         raw_content = path.read_text(encoding="utf-8")
         metadata, content = _extract_frontmatter(raw_content)
         metadata.setdefault("source_name", path.stem)
         metadata.setdefault("validation_status", "demo")
         metadata.setdefault("evidence_type", "demo_seed")
         metadata.setdefault("jurisdiction", "BR")
-        documents.append(
-            (
-                path.relative_to(KNOWLEDGE_ROOT).as_posix(),
-                content,
-                metadata,
+        source = path.relative_to(KNOWLEDGE_ROOT).as_posix()
+        source_hash = hashlib.sha256(raw_content.encode("utf-8")).hexdigest()
+        for index, chunk in enumerate(_split_chunks(content), start=1):
+            chunk_hash = hashlib.sha256(chunk.encode("utf-8")).hexdigest()
+            if chunk_hash in seen_hashes or _contains_prompt_injection(chunk):
+                continue
+            seen_hashes.add(chunk_hash)
+            chunk_metadata = {
+                **metadata,
+                "source_id": f"kb:{source}:{index}",
+                "chunk_id": f"{source_hash[:12]}:{index}",
+                "source_hash": source_hash,
+            }
+            chunks.append(
+                KnowledgeChunk(
+                    source=source,
+                    content=chunk,
+                    terms=frozenset(normalize_terms(chunk.split())),
+                    metadata=chunk_metadata,
+                )
             )
-        )
-    return documents
+    return tuple(chunks)
 
 
 def retrieve(query_terms: list[str], limit: int = 5) -> list[KnowledgeHit]:
     normalized_terms = normalize_terms(query_terms)
     hits: list[KnowledgeHit] = []
-    for source, content, metadata in _documents():
-        normalized_content_terms = set(normalize_terms(content.split()))
-        matched = sorted({term for term in normalized_terms if term in normalized_content_terms})
+    for chunk in build_index():
+        matched = sorted({term for term in normalized_terms if term in chunk.terms})
         if not matched:
             continue
-        excerpt = _excerpt(content, matched)
+        metadata = dict(chunk.metadata)
+        if _is_expired(metadata.get("valid_until")):
+            metadata["validation_status"] = "expired"
         hits.append(
             KnowledgeHit(
-                source=source,
-                excerpt=excerpt,
+                source=chunk.source,
+                excerpt=chunk.content[:700],
                 score=round(len(matched) / max(len(set(normalized_terms)), 1), 2),
                 matched_terms=matched,
                 metadata=metadata,
@@ -81,13 +122,34 @@ def retrieve(query_terms: list[str], limit: int = 5) -> list[KnowledgeHit]:
     return sorted(hits, key=lambda hit: hit.score, reverse=True)[:limit]
 
 
-def _excerpt(content: str, matched_terms: list[str]) -> str:
+def _split_chunks(content: str, max_chars: int = 1000) -> list[str]:
     paragraphs = [paragraph.strip() for paragraph in content.split("\n\n") if paragraph.strip()]
+    chunks: list[str] = []
+    current = ""
     for paragraph in paragraphs:
-        paragraph_terms = set(normalize_terms(paragraph.split()))
-        if paragraph_terms & set(matched_terms):
-            return paragraph[:700]
-    return content[:700]
+        candidate = f"{current}\n\n{paragraph}".strip()
+        if current and len(candidate) > max_chars:
+            chunks.append(current)
+            current = paragraph
+        else:
+            current = candidate
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def _contains_prompt_injection(content: str) -> bool:
+    normalized = " ".join(normalize_terms(content.split()))
+    return any(marker in normalized for marker in PROMPT_INJECTION_MARKERS)
+
+
+def _is_expired(value: object) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        return date.fromisoformat(value) < date.today()
+    except ValueError:
+        return True
 
 
 def _extract_frontmatter(content: str) -> tuple[dict, str]:

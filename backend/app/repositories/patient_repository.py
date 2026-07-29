@@ -2,7 +2,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.database.models import PatientAccessGrantModel, PatientModel
-from app.schemas.patient_schema import PatientCreate, PatientUpdate
+from app.schemas.patient_schema import PatientCreate, PatientUpdate, age_on_date
 from app.services.clinical_profile import clinical_profile_badge, normalize_patient_payload
 from app.services.normalizer import normalize_text
 from app.services.object_authorization import ObjectAuthorizationService
@@ -12,14 +12,15 @@ class PatientRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def list(self) -> list[PatientModel]:
+    def list(self, *, offset: int = 0, limit: int = 50) -> list[PatientModel]:
         statement = select(PatientModel)
         current_user = self.db.info.get("current_user")
         if current_user is not None:
             statement = statement.where(
                 ObjectAuthorizationService(self.db).patient_scope(current_user)
             )
-        return list(self.db.scalars(statement.order_by(PatientModel.name)))
+        statement = statement.order_by(PatientModel.name).offset(offset).limit(limit)
+        return list(self.db.scalars(statement))
 
     def get(self, patient_id: int) -> PatientModel | None:
         patient = self.db.get(PatientModel, patient_id)
@@ -33,11 +34,23 @@ class PatientRepository:
         return patient
 
     def count(self) -> int:
-        return self.db.scalar(select(func.count(PatientModel.id))) or 0
+        statement = select(func.count(PatientModel.id))
+        current_user = self.db.info.get("current_user")
+        if current_user is not None:
+            statement = statement.where(
+                ObjectAuthorizationService(self.db).patient_scope(current_user)
+            )
+        return self.db.scalar(statement) or 0
 
     def find_duplicate(self, data: PatientCreate) -> PatientModel | None:
         normalized_name = normalize_text(data.name)
-        for patient in self.list():
+        statement = select(PatientModel)
+        current_user = self.db.info.get("current_user")
+        if current_user is not None:
+            statement = statement.where(
+                ObjectAuthorizationService(self.db).patient_scope(current_user)
+            )
+        for patient in self.db.scalars(statement):
             same_name = normalize_text(patient.name) == normalized_name
             same_birth = patient.birth_date and patient.birth_date == data.birth_date
             same_age = data.age is not None and patient.age == data.age
@@ -47,6 +60,8 @@ class PatientRepository:
 
     def create(self, data: PatientCreate) -> PatientModel:
         values = normalize_patient_payload(data.model_dump())
+        if values.get("birth_date") is not None:
+            values["age"] = None
         current_user = self.db.info.get("current_user")
         if current_user is not None:
             values["institution_id"] = current_user.institution_id
@@ -70,6 +85,14 @@ class PatientRepository:
 
     def update(self, patient: PatientModel, data: PatientUpdate) -> PatientModel:
         values = normalize_patient_payload(data.model_dump(exclude_unset=True))
+        effective_birth_date = values.get("birth_date", patient.birth_date)
+        supplied_age = values.get("age")
+        if effective_birth_date is not None:
+            if supplied_age is not None and supplied_age != age_on_date(effective_birth_date):
+                raise ValueError(
+                    "Idade divergente da data de nascimento na data clínica atual."
+                )
+            values["age"] = None
         for field, value in values.items():
             setattr(patient, field, value)
         self.db.commit()

@@ -34,16 +34,13 @@ class Patient:
 
     @property
     def computed_age(self) -> int | None:
-        if self.age is not None:
-            return self.age
-        if self.birth_date is None:
-            return None
-
-        today = date.today()
-        years = today.year - self.birth_date.year
-        if (today.month, today.day) < (self.birth_date.month, self.birth_date.day):
-            years -= 1
-        return years
+        if self.birth_date is not None:
+            today = date.today()
+            years = today.year - self.birth_date.year
+            if (today.month, today.day) < (self.birth_date.month, self.birth_date.day):
+                years -= 1
+            return years
+        return self.age
 
     @classmethod
     def from_record(cls, record: Any) -> "Patient":

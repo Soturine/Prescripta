@@ -10,8 +10,14 @@ class MedicationRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def list(self) -> list[MedicationModel]:
-        return list(self.db.scalars(select(MedicationModel).order_by(MedicationModel.brand_name)))
+    def list(self, *, offset: int = 0, limit: int = 50) -> list[MedicationModel]:
+        statement = (
+            select(MedicationModel)
+            .order_by(MedicationModel.brand_name)
+            .offset(offset)
+            .limit(limit)
+        )
+        return list(self.db.scalars(statement))
 
     def get(self, medication_id: int) -> MedicationModel | None:
         return self.db.get(MedicationModel, medication_id)

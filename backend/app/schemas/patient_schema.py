@@ -4,6 +4,14 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
+def age_on_date(birth_date: date, clinical_date: date | None = None) -> int:
+    reference = clinical_date or date.today()
+    years = reference.year - birth_date.year
+    if (reference.month, reference.day) < (birth_date.month, birth_date.day):
+        years -= 1
+    return years
+
+
 class PatientBase(BaseModel):
     name: str = Field(min_length=2, max_length=160)
     birth_date: date | None = None
@@ -33,6 +41,14 @@ class PatientBase(BaseModel):
     def ensure_age_or_birth_date(self) -> "PatientBase":
         if self.age is None and self.birth_date is None:
             raise ValueError("Informe idade ou data de nascimento.")
+        if self.birth_date is not None:
+            calculated_age = age_on_date(self.birth_date)
+            if calculated_age < 0:
+                raise ValueError("A data de nascimento não pode estar no futuro.")
+            if self.age is not None and self.age != calculated_age:
+                raise ValueError(
+                    "Idade divergente da data de nascimento na data clínica atual."
+                )
         return self
 
 
@@ -64,6 +80,15 @@ class PatientUpdate(BaseModel):
     reproductive_gynecologic_factors: list[str] | None = None
     adverse_reactions: list[str] | None = None
     clinical_notes: str | None = None
+
+    @model_validator(mode="after")
+    def reject_divergent_age(self) -> "PatientUpdate":
+        if self.birth_date is not None and self.age is not None:
+            if self.age != age_on_date(self.birth_date):
+                raise ValueError(
+                    "Idade divergente da data de nascimento na data clínica atual."
+                )
+        return self
 
 
 class PatientIdentifierCreate(BaseModel):

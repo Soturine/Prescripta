@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.auth import require_roles
@@ -43,8 +43,13 @@ CounselingManager = Annotated[
 
 
 @router.get("", response_model=list[MedicationRead])
-def list_medications(db: DbSession, _current_user: MedicationReader) -> list[MedicationRead]:
-    return MedicationRepository(db).list()
+def list_medications(
+    db: DbSession,
+    _current_user: MedicationReader,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=100),
+) -> list[MedicationRead]:
+    return MedicationRepository(db).list(offset=(page - 1) * page_size, limit=page_size)
 
 
 @router.post("", response_model=MedicationRead, status_code=status.HTTP_201_CREATED)

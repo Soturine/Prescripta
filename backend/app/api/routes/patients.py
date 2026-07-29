@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.auth import require_roles
@@ -54,8 +54,13 @@ PatientManager = Annotated[UserModel, Depends(require_roles(UserRole.ADMIN, User
 
 
 @router.get("", response_model=list[PatientRead])
-def list_patients(db: DbSession, _current_user: PatientReader) -> list[PatientRead]:
-    patients = PatientRepository(db).list()
+def list_patients(
+    db: DbSession,
+    _current_user: PatientReader,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=100),
+) -> list[PatientRead]:
+    patients = PatientRepository(db).list(offset=(page - 1) * page_size, limit=page_size)
     identifiers_by_patient: dict[int, list[PatientIdentifierModel]] = {}
     if patients:
         identifiers = db.query(PatientIdentifierModel).filter(
@@ -120,7 +125,12 @@ def update_patient(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
         )
-    updated = repository.update(patient, payload)
+    try:
+        updated = repository.update(patient, payload)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
     _attach_patient_metadata(db, updated)
     AuditService(db).record_action(
         user=current_user,

@@ -31,3 +31,26 @@ def test_blocks_when_patient_has_allergy_to_active_ingredient() -> None:
     assert alerts
     assert alerts[0].severity == RiskLevel.CRITICAL
     assert alerts[0].code == "ALLERGY_BLOCK"
+
+
+def test_does_not_block_on_unconfirmed_substring() -> None:
+    patient = Patient(
+        id=1,
+        name="Paciente teste",
+        birth_date=None,
+        age=35,
+        weight_kg=70,
+        height_cm=170,
+        allergies=["ibu"],
+    )
+    medication = Medication(
+        id=1,
+        brand_name="Ibuprofeno Demo",
+        active_ingredient="ibuprofeno",
+        therapeutic_class="anti-inflamatório",
+        max_daily_dose_mg=1200,
+        allowed_routes=["oral"],
+        contraindications=[],
+    )
+
+    assert check_allergies(patient, medication) == []

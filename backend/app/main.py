@@ -84,8 +84,7 @@ app.include_router(settings_routes.router, prefix=settings.api_prefix)
 
 @app.get("/health", tags=["health"])
 @app.get(f"{settings.api_prefix}/health", tags=["health"])
-def health(db: Annotated[Session, Depends(get_db)]) -> dict[str, object]:
-    del db
+def health() -> dict[str, object]:
     return {"status": "ok"}
 
 

@@ -19,3 +19,17 @@ def test_alerts_when_demo_interaction_matches_current_medication() -> None:
     assert alerts
     assert alerts[0].severity == RiskLevel.CRITICAL
     assert alerts[0].code == "DRUG_INTERACTION"
+
+
+def test_does_not_alert_on_unconfirmed_medication_substring() -> None:
+    medication = Medication(
+        id=1,
+        brand_name="Ibuprofeno Demo",
+        active_ingredient="ibuprofeno",
+        therapeutic_class="anti-inflamatório",
+        max_daily_dose_mg=1200,
+        allowed_routes=["oral"],
+        contraindications=[],
+    )
+
+    assert check_interactions(medication, ["varf"]) == []
