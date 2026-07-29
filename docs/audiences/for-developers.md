@@ -1,23 +1,23 @@
-# Prescripta Para Desenvolvedores E TI
+# Guia para desenvolvedores
 
-Prescripta usa FastAPI, Pydantic, SQLAlchemy, React, TypeScript e Vite.
+O Prescripta usa FastAPI, Pydantic, SQLAlchemy, React, TypeScript e Vite.
 
-## Pontos De Entrada
+## Pontos de entrada
 
 - Backend: `backend/app`.
 - Entidades: `backend/app/domain` e `backend/app/database/models.py`.
 - Regras: `backend/app/services`.
-- Integracoes: `backend/app/integrations`.
+- Integrações: `backend/app/integrations`.
 - Relatórios: `backend/app/reports`.
 - Frontend: `frontend/src`.
 - Docs: `docs`.
 
-## Convencoes Importantes
+## Convenções importantes
 
 - Regra clínica fica em services, não em rotas FastAPI nem componentes React.
 - IA não decide risco, dose, status ou protocolo.
-- Dados extraidos por IA entram como `pending_review`.
-- Backend e a fonte real de autorizacao.
+- Dados extraídos por IA entram como `pending_review`.
+- O backend é a fonte real de autorização.
 - API Key nunca vai para frontend, logs, relatórios ou auditoria.
 
 ## Comandos
@@ -25,11 +25,14 @@ Prescripta usa FastAPI, Pydantic, SQLAlchemy, React, TypeScript e Vite.
 ```powershell
 cd backend
 ..\.venv\Scripts\python -m ruff check . --no-cache
-..\.venv\Scripts\python -m pytest
+..\.venv\Scripts\python -m pytest --basetemp=..\.tmp\pytest
 ```
 
 ```powershell
 cd frontend
 npm run lint
+npm run typecheck
 npm run build
 ```
+
+Consulte também o [guia de TI e integrações](for-it-and-integrations.md) e o `AGENTS.md` na raiz.
