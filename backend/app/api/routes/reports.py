@@ -192,10 +192,11 @@ def audit_report_pdf(
         date_to=date_to,
         text=text,
     )
-    events = AuditRepository(db).list_filtered(**filters, page_size=500)
+    events, manifest = AuditRepository(db).list_all_filtered(**filters)
     content, report = ReportService(db).generate_audit_pdf(
         events,
         filters=filters,
+        manifest=manifest,
         user=current_user,
     )
     return _pdf_response(content, f"prescripta-auditoria-{report.id}.pdf")

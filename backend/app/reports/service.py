@@ -111,8 +111,9 @@ class ReportService:
         events: list[AuditEventModel],
         *,
         filters: dict[str, Any],
+        manifest: dict[str, Any] | None = None,
     ) -> ReportPreview:
-        bundle = self.builder.audit_bundle(events, filters=filters)
+        bundle = self.builder.audit_bundle(events, filters=filters, manifest=manifest)
         return self._preview(title=REPORT_TITLES["audit"], bundle=bundle)
 
     def protocol_run_preview(self, run_id: int) -> ReportPreview:
@@ -219,9 +220,10 @@ class ReportService:
         events: list[AuditEventModel],
         *,
         filters: dict[str, Any],
+        manifest: dict[str, Any] | None = None,
         user: UserModel,
     ) -> tuple[bytes, GeneratedReportModel]:
-        preview = self.audit_preview(events, filters=filters)
+        preview = self.audit_preview(events, filters=filters, manifest=manifest)
         pdf = self._pdf_from_preview(preview)
         report = self._persist_generated_report(
             report_type="audit",
@@ -386,9 +388,10 @@ class ReportService:
         events: list[AuditEventModel],
         *,
         filters: dict[str, Any],
+        manifest: dict[str, Any] | None = None,
         user: UserModel,
     ) -> bytes:
-        bundle = self.builder.audit_bundle(events, filters=filters)
+        bundle = self.builder.audit_bundle(events, filters=filters, manifest=manifest)
         content = export_json_bytes("audit_events", self._bundle_export_payload(bundle))
         self._record_export(
             user=user,
@@ -404,10 +407,16 @@ class ReportService:
         events: list[AuditEventModel],
         *,
         filters: dict[str, Any],
+        manifest: dict[str, Any] | None = None,
         user: UserModel,
     ) -> bytes:
-        bundle = self.builder.audit_bundle(events, filters=filters)
+        bundle = self.builder.audit_bundle(events, filters=filters, manifest=manifest)
         rows = list(bundle.audit_result.get("events", [])) if bundle.audit_result else []
+        export_manifest = (bundle.audit_result or {}).get("export_manifest", {})
+        for row in rows:
+            row["export_total_available"] = export_manifest.get("total_available")
+            row["export_returned"] = export_manifest.get("returned")
+            row["export_truncated"] = export_manifest.get("truncated")
         content = export_csv_bytes(rows)
         self._record_export(
             user=user,

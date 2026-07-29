@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.orm import Session
@@ -138,6 +139,35 @@ class AuditRepository:
         statement = statement.order_by(order).offset((page - 1) * page_size).limit(page_size)
         items = list(self.db.scalars(statement))
         return (items, total) if include_total else items
+
+    def list_all_filtered(
+        self,
+        *,
+        batch_size: int = 500,
+        max_items: int = 10_000,
+        **filters: Any,
+    ) -> tuple[list[AuditEventModel], dict[str, int | bool]]:
+        events: list[AuditEventModel] = []
+        page = 1
+        total = 0
+        while len(events) < max_items:
+            remaining = max_items - len(events)
+            items, total = self.list_filtered(
+                **filters,
+                page=page,
+                page_size=min(batch_size, remaining),
+                include_total=True,
+            )
+            events.extend(items)
+            if not items or len(events) >= total:
+                break
+            page += 1
+        return events, {
+            "total_available": total,
+            "returned": len(events),
+            "truncated": len(events) < total,
+            "maximum_export_items": max_items,
+        }
 
     def list_prescription_checks(self) -> list[PrescriptionAuditModel]:
         return list(

@@ -135,8 +135,10 @@ def export_audit_json(
         date_to=date_to,
         text=text,
     )
-    events = AuditRepository(db).list_filtered(**filters, page_size=500)
-    content = ReportService(db).export_audit_json(events, filters=filters, user=current_user)
+    events, manifest = AuditRepository(db).list_all_filtered(**filters)
+    content = ReportService(db).export_audit_json(
+        events, filters=filters, manifest=manifest, user=current_user
+    )
     return _download(content, "application/json", "audit-events.json")
 
 
@@ -181,8 +183,10 @@ def export_audit_csv(
         date_to=date_to,
         text=text,
     )
-    events = AuditRepository(db).list_filtered(**filters, page_size=500)
-    content = ReportService(db).export_audit_csv(events, filters=filters, user=current_user)
+    events, manifest = AuditRepository(db).list_all_filtered(**filters)
+    content = ReportService(db).export_audit_csv(
+        events, filters=filters, manifest=manifest, user=current_user
+    )
     return _download(content, "text/csv; charset=utf-8", "audit-events.csv")
 
 

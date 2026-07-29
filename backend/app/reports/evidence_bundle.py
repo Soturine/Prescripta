@@ -4,7 +4,7 @@ import re
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database.models import (
@@ -13,8 +13,6 @@ from app.database.models import (
     ConsentRecordModel,
     EmergencyProtocolRunModel,
     EmergencyProtocolVersionModel,
-    MedicationCounselingSummaryModel,
-    MedicationModel,
     PatientFunctionalProfileModel,
     PatientModel,
     PrescriptionAuditModel,
@@ -185,96 +183,6 @@ class ReportEvidenceBundleBuilder:
             },
         )
 
-    def _legacy_prescription_bundle_removed(
-        self,
-        audit: PrescriptionAuditModel,
-        *,
-        report_type: str = "prescription_analysis",
-        report_mode: str = "complete_internal",
-        anonymized: bool = False,
-    ) -> ReportEvidenceBundle:
-        """Código histórico mantido temporariamente sem rota de execução."""
-        patient = self.db.get(PatientModel, audit.patient_id) if audit.patient_id else None
-        medication = (
-            self.db.get(MedicationModel, audit.medication_id) if audit.medication_id else None
-        )
-        source = self._medication_source(medication)
-        alerts = [
-            self._alert_evidence(alert, source.source_id)
-            for alert in list(audit.alerts or [])
-            if isinstance(alert, dict)
-        ]
-        daily_dose = audit.dose_mg * audit.frequency_per_day
-        accumulated = daily_dose * audit.duration_days if audit.duration_days else None
-        counseling = self._latest_counseling(medication)
-        sources = [source]
-        if counseling is not None:
-            sources.append(
-                ReportSource(
-                    source_id=counseling.source_id,
-                    source_name=counseling.source_name,
-                    jurisdiction=counseling.jurisdiction,
-                    validation_status=counseling.validation_status,
-                    evidence_type="medication_counseling_summary",
-                    source_url=counseling.source_url,
-                    confidence=counseling.confidence,
-                )
-            )
-        patient_context = self._patient_context(patient, anonymized=anonymized)
-        missing_data = patient_context.missing_data if patient_context else []
-        metadata: dict[str, Any] = {
-            "audit_id": audit.id,
-            "checked_at": audit.checked_at.isoformat(),
-            "user_id": audit.user_id,
-            "user_name": audit.user_name,
-            "user_email": None if anonymized else audit.user_email,
-            "human_review_required": audit.status != "liberado" or audit.risk_level != "baixo",
-            "missing_data": missing_data,
-            "counseling_summary_available": counseling is not None,
-            "dose_intelligence": dict(getattr(audit, "dose_intelligence", {}) or {}),
-            "psychotropic_safety": list(getattr(audit, "psychotropic_safety", []) or []),
-            "prescribing_policy": dict(getattr(audit, "prescribing_policy", {}) or {}),
-        }
-        if counseling is not None:
-            metadata["patient_counseling"] = {
-                "orientation_points": self._orientation_points(counseling),
-                "red_flags": list(counseling.red_flags or []),
-                "monitoring_required": list(counseling.monitoring_required or []),
-                "generated_by": counseling.generated_by,
-                "requires_review": counseling.requires_review,
-            }
-        if patient is not None:
-            metadata["patient_knowledge_bundle"] = PatientHistoryService(self.db).knowledge_bundle(
-                patient, include_identifiable=False
-            )
-            metadata["patient_knowledge_bundle_used"] = True
-
-        return ReportEvidenceBundle(
-            report_type=report_type,
-            report_mode=report_mode,
-            generated_at=datetime.now(UTC),
-            patient_context=patient_context,
-            prescription_result=ReportPrescriptionResult(
-                risk_level=audit.risk_level,
-                status=audit.status,
-                medication_name=audit.medication_name,
-                active_ingredient=medication.active_ingredient if medication else None,
-                commercial_name=medication.brand_name if medication else audit.medication_name,
-                dose_per_administration=f"{audit.dose_mg:g} mg",
-                frequency=f"{audit.frequency_per_day}x ao dia",
-                route=audit.route,
-                daily_dose=f"{daily_dose:g} mg/dia",
-                accumulated_dose=f"{accumulated:g} mg" if accumulated is not None else None,
-                duration=f"{audit.duration_days} dias" if audit.duration_days else None,
-                continuous_use=bool(getattr(medication, "continuous_use", False)),
-                alerts=alerts,
-            ),
-            rules_fired=[alert.code for alert in alerts],
-            sources=self._unique_sources(sources),
-            ai_context=self._ai_context(),
-            metadata=metadata,
-        )
-
     def reconciliation_bundle(
         self,
         batch: ClinicalImportBatchModel,
@@ -392,8 +300,15 @@ class ReportEvidenceBundleBuilder:
         events: list[AuditEventModel],
         *,
         filters: dict[str, Any],
+        manifest: dict[str, Any] | None = None,
         report_mode: str = "technical_audit",
     ) -> ReportEvidenceBundle:
+        export_manifest = manifest or {
+            "total_available": len(events),
+            "returned": len(events),
+            "truncated": False,
+            "maximum_export_items": len(events),
+        }
         event_payloads = [
             {
                 "id": event.id,
@@ -415,7 +330,10 @@ class ReportEvidenceBundleBuilder:
             report_mode=report_mode,
             audit_result={
                 "filters": filters,
-                "total_events": len(events),
+                "total_events": export_manifest["total_available"],
+                "returned_events": export_manifest["returned"],
+                "truncated": export_manifest["truncated"],
+                "export_manifest": export_manifest,
                 "events": event_payloads,
                 "critical_events": [
                     event for event in event_payloads if event.get("risk_level") == "critico"
@@ -430,7 +348,13 @@ class ReportEvidenceBundleBuilder:
                 ],
             },
             ai_context=self._ai_context(),
-            metadata={"filters": filters, "total_events": len(events)},
+            metadata={
+                "filters": filters,
+                "total_events": export_manifest["total_available"],
+                "returned_events": export_manifest["returned"],
+                "truncated": export_manifest["truncated"],
+                "export_manifest": export_manifest,
+            },
         )
 
     def _patient_context(
@@ -526,52 +450,6 @@ class ReportEvidenceBundleBuilder:
             ),
         }
         return [key for key, value in labels.items() if value is True]
-
-    def _medication_source(self, medication: MedicationModel | None) -> ReportSource:
-        if medication is None:
-            return ReportSource(
-                source_id="prescription_audit_record",
-                source_name="Registro interno da checagem",
-                jurisdiction="BR",
-                validation_status="internal",
-                evidence_type="audit_record",
-            )
-        return ReportSource(
-            source_id=self._source_id(f"medication_{medication.id}_{medication.active_ingredient}"),
-            source_name=medication.knowledge_source
-            or medication.evidence_source_type
-            or "Cadastro interno Prescripta",
-            jurisdiction=medication.source_jurisdiction or "BR",
-            validation_status=medication.validation_status or "demo",
-            evidence_type=medication.evidence_source_type or "medication_catalog",
-            source_url=medication.evidence_source_url,
-        )
-
-    def _latest_counseling(
-        self,
-        medication: MedicationModel | None,
-    ) -> MedicationCounselingSummaryModel | None:
-        if medication is None:
-            return None
-        conditions = [MedicationCounselingSummaryModel.medication_id == medication.id]
-        if medication.active_ingredient_id is not None:
-            conditions.append(
-                MedicationCounselingSummaryModel.active_ingredient_id
-                == medication.active_ingredient_id
-            )
-        return self.db.scalar(
-            select(MedicationCounselingSummaryModel)
-            .where(or_(*conditions))
-            .order_by(MedicationCounselingSummaryModel.updated_at.desc())
-        )
-
-    def _orientation_points(self, counseling: MedicationCounselingSummaryModel) -> list[str]:
-        points = list(counseling.patient_relevant_effects or [])
-        points.extend(counseling.activity_warnings or [])
-        points.extend(counseling.monitoring_required or [])
-        if counseling.patient_friendly_summary:
-            points.insert(0, counseling.patient_friendly_summary)
-        return [point for point in points if point][:8]
 
     def _alert_evidence(self, alert: dict[str, Any], source_id: str) -> ReportAlertEvidence:
         code = str(alert.get("code") or "ALERT")
