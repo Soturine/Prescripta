@@ -4,11 +4,59 @@ updates:
     directory: /backend
     schedule:
       interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    reviewers:
+      - Soturine
+    labels:
+      - dependencies
+      - python
+    groups:
+      backend-compatible:
+        patterns:
+          - "*"
+        update-types:
+          - patch
+          - minor
   - package-ecosystem: npm
     directory: /frontend
     schedule:
       interval: weekly
+      day: monday
+      time: "08:15"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    reviewers:
+      - Soturine
+    labels:
+      - dependencies
+      - javascript
+    groups:
+      frontend-compatible:
+        patterns:
+          - "*"
+        update-types:
+          - patch
+          - minor
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: "08:30"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    reviewers:
+      - Soturine
+    labels:
+      - dependencies
+      - github_actions
+    groups:
+      actions-compatible:
+        patterns:
+          - "*"
+        update-types:
+          - patch
+          - minor
