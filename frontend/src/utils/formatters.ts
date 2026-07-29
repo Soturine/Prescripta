@@ -29,8 +29,10 @@ export function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
-export function formatDose(value: number) {
-  return `${value.toLocaleString("pt-BR")} mg`;
+export function formatDose(value: number | null | undefined) {
+  return value === null || value === undefined
+    ? "Não calculável"
+    : `${value.toLocaleString("pt-BR")} mg`;
 }
 
 export function formatRole(role: UserRole | string | null | undefined) {

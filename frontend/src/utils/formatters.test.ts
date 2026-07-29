@@ -19,5 +19,6 @@ describe("formatadores de domínio", () => {
 
   it("formata dose no locale brasileiro", () => {
     expect(formatDose(1250)).toContain("mg");
+    expect(formatDose(null)).toBe("Não calculável");
   });
 });

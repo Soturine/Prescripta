@@ -108,6 +108,34 @@ def test_volume_dose_requires_concentration_and_compares_derived_mass():
     assert result.inputs_used["prescribed_daily_dose"] == 100
 
 
+def test_volume_amount_is_itself_the_administered_volume():
+    dose = MedicationDoseInput(
+        amount=Decimal("2"),
+        amount_unit="ml",
+        concentration_value=Decimal("25"),
+        concentration_unit="mg/ml",
+        frequency_per_day=2,
+        route="oral",
+    )
+    assert dose.amount_mg == Decimal("50")
+    assert dose.daily_mass_mg == Decimal("100")
+
+
+def test_duplicate_volume_must_match_amount_before_mass_is_proven():
+    dose = MedicationDoseInput(
+        amount=Decimal("2"),
+        amount_unit="ml",
+        concentration_value=Decimal("25"),
+        concentration_unit="mg/ml",
+        volume=Decimal("3"),
+        volume_unit="ml",
+        frequency_per_day=2,
+        route="oral",
+    )
+    assert dose.amount_mg is None
+    assert dose.daily_mass_mg is None
+
+
 def test_conflicting_declared_mass_and_concentration_abstains():
     dose = MedicationDoseInput(
         amount=Decimal("40"),

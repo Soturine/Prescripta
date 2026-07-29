@@ -65,7 +65,7 @@ export type DecisionOverride = {
 };
 
 export type DoseSummary = {
-  daily_total_mg: number;
+  daily_total_mg: number | null;
   duration_days: number | null;
   estimated_cumulative_dose_mg: number | null;
   max_daily_dose_mg: number;
@@ -75,9 +75,9 @@ export type DoseSummary = {
   monitoring_required: boolean;
   monitoring_notes: string | null;
   exposure_plan: {
-    dose_per_administration_mg: number;
+    dose_per_administration_mg: number | null;
     administrations_per_day: number;
-    calculated_daily_dose_mg: number;
+    calculated_daily_dose_mg: number | null;
     calculated_cumulative_dose_mg: number | null;
     has_missing_duration_for_cumulative_dose: boolean;
   };

@@ -215,6 +215,18 @@ class MedicationDoseInput:
             if derived is not None and direct_mg is not None and direct_mg.value != derived.value:
                 return None
             return direct_mg
+        if direct_definition and direct_definition.dimension == UnitDimension.VOLUME:
+            if not self.concentration_value or not self.concentration_unit:
+                return None
+            if self.volume is not None and self.volume_unit is not None:
+                explicit_volume = Quantity(self.volume, self.volume_unit).converted_to(
+                    self.amount_unit
+                )
+                if explicit_volume is None or explicit_volume.value != self.amount:
+                    return None
+            return multiply_concentration_by_volume(
+                Quantity(self.concentration_value, self.concentration_unit), direct
+            )
         return derived
 
     def amount_as(self, unit: str) -> Decimal | None:
