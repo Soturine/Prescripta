@@ -198,7 +198,7 @@ export default function Dashboard() {
         </section>
       ) : null}
 
-      <p className="text-center text-xs leading-5 text-slate-500">
+      <p className="text-center text-xs leading-5 text-slate-600">
         Prescripta {APP_VERSION} · ambiente demonstrativo · decisões críticas permanecem determinísticas e auditáveis.
       </p>
     </div>

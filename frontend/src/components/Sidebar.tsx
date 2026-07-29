@@ -81,7 +81,7 @@ export default function Sidebar({
             if (!links.length) return null;
             return (
               <div className="mb-6" key={section}>
-                <p className={`${collapsed ? "lg:sr-only" : ""} mb-2 px-3 text-[0.625rem] font-extrabold uppercase tracking-[0.16em] text-slate-500`}>
+                <p className={`${collapsed ? "lg:sr-only" : ""} mb-2 px-3 text-[0.625rem] font-extrabold uppercase tracking-[0.16em] text-slate-400`}>
                   {NAV_SECTION_LABELS[section]}
                 </p>
                 <div className="grid gap-1">

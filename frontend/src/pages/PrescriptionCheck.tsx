@@ -122,8 +122,6 @@ export default function PrescriptionCheck() {
   const overrideMutation = useMutation({
     mutationFn: () => requestDecisionOverride(Number(auditId), overrideReason),
     onSuccess: async () => {
-      setOverrideOpen(false);
-      setOverrideReason("");
       await queryClient.invalidateQueries({ queryKey: ["audit"] });
     },
   });
@@ -148,6 +146,8 @@ export default function PrescriptionCheck() {
   async function handleSubmit(payload: PrescriptionCheckPayload) {
     setLastPayload(payload);
     explanationMutation.reset();
+    overrideMutation.reset();
+    setOverrideReason("");
     try {
       await checkMutation.mutateAsync(payload);
     } catch {
@@ -519,7 +519,7 @@ export default function PrescriptionCheck() {
         {overrideMutation.isSuccess ? <p className="mt-3 text-sm font-bold text-emerald-700" role="status">Solicitação registrada para segundo revisor.</p> : null}
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button className="btn-secondary" onClick={() => setOverrideOpen(false)} type="button">Cancelar</button>
-          <button className="btn-primary" disabled={overrideReason.trim().length < 10 || overrideMutation.isPending} onClick={() => overrideMutation.mutate()} type="button">{overrideMutation.isPending ? "Registrando…" : "Registrar solicitação"}</button>
+          <button className="btn-primary" disabled={overrideReason.trim().length < 10 || overrideMutation.isPending || overrideMutation.isSuccess} onClick={() => overrideMutation.mutate()} type="button">{overrideMutation.isPending ? "Registrando…" : overrideMutation.isSuccess ? "Solicitação registrada" : "Registrar solicitação"}</button>
         </div>
       </Modal>
     </div>
