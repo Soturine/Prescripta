@@ -76,8 +76,8 @@ jobs:
         run: npm run lint
       - name: Typecheck
         run: npm run typecheck
-      - name: Component tests
-        run: npm run test -- --run
+      - name: Component tests and coverage gates
+        run: npm run test:coverage
       - name: Build
         run: npm run build
       - name: Install Playwright browser
@@ -86,7 +86,34 @@ jobs:
         working-directory: backend
         run: python -m pip install -r requirements-lock.txt
       - name: Browser E2E
-        run: npm run test:e2e
+        run: npm run test:e2e -- --grep-invert @visual
+
+  frontend-visual:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright browser
+        run: npx playwright install chromium
+      - name: Install E2E backend
+        working-directory: backend
+        run: python -m pip install -r requirements-lock.txt
+      - name: Stable Chromium snapshots
+        run: npm run test:e2e:visual
 
   postgres:
     runs-on: ubuntu-latest
@@ -124,7 +151,7 @@ jobs:
         run: alembic upgrade head && alembic downgrade base && alembic upgrade head && alembic check
 
   smoke:
-    needs: [repository-quality, backend, frontend, postgres]
+    needs: [repository-quality, backend, frontend, frontend-visual, postgres]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -141,7 +168,7 @@ jobs:
         run: python -m pytest tests/test_product_readiness_v081.py tests/test_auth_api.py --maxfail=1
 
   release-readiness:
-    needs: [repository-quality, backend, frontend, smoke]
+    needs: [repository-quality, backend, frontend, frontend-visual, postgres, smoke]
     if: always()
     runs-on: ubuntu-latest
     steps:
