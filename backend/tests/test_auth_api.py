@@ -103,7 +103,9 @@ def test_doctor_can_check_prescription_and_audit_keeps_user(
     auth_headers,
 ) -> None:
     create_test_user(email="admin@test.local", password="Admin@12345", role=UserRole.ADMIN)
-    create_test_user(email="medico@test.local", password="Medico@12345", role=UserRole.MEDICO)
+    doctor = create_test_user(
+        email="medico@test.local", password="Medico@12345", role=UserRole.MEDICO
+    )
     admin_headers = auth_headers("admin@test.local", "Admin@12345")
     doctor_headers = auth_headers("medico@test.local", "Medico@12345")
 
@@ -124,6 +126,17 @@ def test_doctor_can_check_prescription_and_audit_keeps_user(
             "contraindications": [],
         },
     ).json()
+    grant = client.post(
+        f"/api/access/patients/{patient['id']}/grants",
+        headers=admin_headers,
+        json={
+            "user_id": doctor.id,
+            "capability": "prescription.check",
+            "purpose": "treatment",
+            "reason": "Vínculo assistencial explícito para o teste.",
+        },
+    )
+    assert grant.status_code == 201
 
     response = client.post(
         "/api/prescriptions/check",

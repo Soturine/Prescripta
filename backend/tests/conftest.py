@@ -8,8 +8,8 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.security import hash_password
 from app.database.models import UserModel
-from app.database.session import Base, get_db
-from app.domain.user import UserRole
+from app.database.session import Base, finish_denied_request, get_db
+from app.domain.user import ROLE_PROFESSION, Capability, UserRole, capability_values
 from app.main import app
 from app.repositories.user_repository import UserRepository
 
@@ -25,6 +25,10 @@ def override_get_db() -> Generator[Session, None, None]:
     db = TestingSessionLocal()
     try:
         yield db
+        db.commit()
+    except Exception:
+        finish_denied_request(db)
+        raise
     finally:
         db.close()
 
@@ -64,11 +68,30 @@ def create_test_user(db_session: Session) -> Callable[..., UserModel]:
         name: str = "Usuario Teste",
         institution_id: str = "demo",
     ) -> UserModel:
+        capabilities = capability_values(ROLE_PROFESSION[role])
+        if role == UserRole.ADMIN:
+            capabilities = sorted(
+                set(capabilities)
+                | {
+                    Capability.PATIENT_CREATE.value,
+                    Capability.PATIENT_READ.value,
+                    Capability.PATIENT_WRITE.value,
+                    Capability.PRESCRIPTION_CHECK.value,
+                    Capability.PRESCRIPTION_OVERRIDE.value,
+                    Capability.REPORT_READ.value,
+                    Capability.REPORT_CREATE.value,
+                    Capability.PATIENT_GUIDANCE_CREATE.value,
+                    Capability.BREAK_GLASS_INVOKE.value,
+                    Capability.RECONCILIATION_REVIEW.value,
+                }
+            )
         return UserRepository(db_session).create(
             name=name,
             email=email,
             hashed_password=hash_password(password),
             role=role.value,
+            profession=ROLE_PROFESSION[role].value,
+            capabilities=capabilities,
             is_active=is_active,
             institution_id=institution_id,
         )

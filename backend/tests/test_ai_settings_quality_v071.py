@@ -5,9 +5,12 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.database.models import UserModel
 from app.database.seed import seed_demo_data
+from app.domain.user import Capability
 from app.services.ai_settings import _MEMORY_CREDENTIALS
 
 
@@ -27,6 +30,24 @@ class FakeResponse:
 def _headers(client: TestClient, db_session: Session, auth_headers) -> dict[str, str]:
     _MEMORY_CREDENTIALS.clear()
     seed_demo_data(db_session)
+    # Este helper combina administração de IA e fluxo clínico somente no teste.
+    admin = db_session.scalar(
+        select(UserModel).where(UserModel.email == "admin@prescripta.local")
+    )
+    assert admin is not None
+    admin.capabilities = sorted(
+        set(admin.capabilities or [])
+        | {
+            Capability.PATIENT_CREATE.value,
+            Capability.PATIENT_READ.value,
+            Capability.PATIENT_WRITE.value,
+            Capability.PRESCRIPTION_CHECK.value,
+            Capability.REPORT_READ.value,
+            Capability.REPORT_CREATE.value,
+            Capability.RECONCILIATION_REVIEW.value,
+        }
+    )
+    db_session.commit()
     return auth_headers("admin@prescripta.local", "Admin@12345")
 
 

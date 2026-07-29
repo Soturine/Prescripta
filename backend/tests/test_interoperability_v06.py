@@ -63,7 +63,7 @@ def test_fhir_and_csv_imports_create_pending_batches(
     create_test_user,
     auth_headers,
 ) -> None:
-    headers = _headers(client, create_test_user, auth_headers, UserRole.MEDICO)
+    headers = _headers(client, create_test_user, auth_headers, UserRole.FARMACEUTICO)
     fhir = client.post(
         "/api/integrations/fhir/import-bundle",
         headers=headers,

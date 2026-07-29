@@ -6,8 +6,14 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.database.models import MedicationModel, PatientModel
+from app.database.models import (
+    MedicationModel,
+    PatientAccessGrantModel,
+    PatientModel,
+    UserModel,
+)
 from app.database.seed import seed_demo_data
+from app.domain.user import Capability
 from app.schemas.counseling_schema import MedicationCounselingProviderOutput
 from app.services.adverse_effect_taxonomy import category_for_code, taxonomy_snapshot
 from app.services.medication_counseling_extractor import MedicationCounselingExtractor
@@ -15,6 +21,33 @@ from app.services.medication_counseling_extractor import MedicationCounselingExt
 
 def _seeded_headers(client: TestClient, db_session: Session, auth_headers) -> dict[str, str]:
     seed_demo_data(db_session)
+    # Conta composta explicitamente para cenários legados deste módulo de teste.
+    admin = db_session.scalar(
+        select(UserModel).where(UserModel.email == "admin@prescripta.local")
+    )
+    assert admin is not None
+    object_capabilities = {
+        Capability.PATIENT_CREATE.value,
+        Capability.PATIENT_READ.value,
+        Capability.PATIENT_WRITE.value,
+        Capability.PRESCRIPTION_CHECK.value,
+        Capability.RECONCILIATION_REVIEW.value,
+    }
+    admin.capabilities = sorted(set(admin.capabilities or []) | object_capabilities)
+    for patient in db_session.scalars(select(PatientModel)):
+        for capability in object_capabilities:
+            db_session.add(
+                PatientAccessGrantModel(
+                    patient_id=patient.id,
+                    user_id=admin.id,
+                    institution_id=patient.institution_id,
+                    permission=capability,
+                    capability=capability,
+                    purpose="treatment",
+                    reason="explicit_test_fixture",
+                )
+            )
+    db_session.commit()
     return auth_headers("admin@prescripta.local", "Admin@12345")
 
 

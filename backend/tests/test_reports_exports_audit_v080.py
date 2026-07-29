@@ -101,7 +101,7 @@ def test_report_permissions_for_nursing_and_auditor(
 ) -> None:
     admin_headers = _admin_headers(client, create_test_user, auth_headers)
     audit_id = _checked_prescription(client, admin_headers)
-    create_test_user(
+    nurse = create_test_user(
         email="nurse@test.local",
         password="Nurse@12345",
         role=UserRole.ENFERMAGEM,
@@ -115,6 +115,18 @@ def test_report_permissions_for_nursing_and_auditor(
         name="Auditor Teste",
     )
     auditor_headers = auth_headers("auditor@test.local", "Auditor@12345")
+    patient_id = client.get("/api/patients", headers=admin_headers).json()[0]["id"]
+    grant = client.post(
+        f"/api/access/patients/{patient_id}/grants",
+        headers=admin_headers,
+        json={
+            "user_id": nurse.id,
+            "capability": "patient.read",
+            "purpose": "treatment",
+            "reason": "Vinculo assistencial explicito para orientacao ao paciente.",
+        },
+    )
+    assert grant.status_code == 201
 
     patient_pdf = client.get(
         f"/api/reports/prescriptions/{audit_id}/patient-guidance.pdf",
