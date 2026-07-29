@@ -15,6 +15,9 @@
 2. Contenha: desative provider/egress ou credencial afetada, revogue sessões na borda, preserve banco
    e logs; não apague evidência.
 3. Avalie escopo por instituição, objeto, período, ações, snapshots e hashes.
+   Para incidente de autorização, preserve grants, care team/episode, purpose, capability, negações e
+   eventos de break-glass. Para SSRF/provider, desative chamadas externas, preserve hostname/IP
+   validado e não faça novas requisições ao destino suspeito.
 4. Rotacione segredos no secret manager; nunca reutilize valor exposto.
 5. Corrija em ambiente isolado, execute testes clínicos/segurança/migration e revisão independente.
 6. Restaure de backup validado quando integridade não puder ser demonstrada.

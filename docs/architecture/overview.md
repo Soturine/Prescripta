@@ -19,7 +19,7 @@ PostgreSQL é o alvo fora do modo local; SQLite e auto-seed existem apenas para 
 
 ```text
 request tipado
-  → autorização por papel + instituição + paciente
+  → capacidade + instituição + relação/purpose por paciente
   → paciente/medicamento resolvidos no servidor
   → motores determinísticos + dose + psychotropic + policy
   → ClinicalDecisionEnvelope + coverage + abstention
@@ -33,7 +33,8 @@ reescrita da decisão: crítico/hard block é não-overrideable e aprovação ex
 
 ## Segurança e consistência
 
-O backend é a fonte real de autorização. Repositórios aplicam instituição/grants; rotas por ID retornam
+O backend é a fonte real de autorização. Repositórios aplicam instituição, capacidade e relação clínica
+ativa (grant, care team, episode ou break-glass) com finalidade explícita; rotas por ID retornam
 404 quando o objeto não pertence ao escopo. Sessão usa cookie HttpOnly, login tem lockout persistente e
 MFA TOTP opcional. Produção falha no startup com segredo demo, SQLite, auto-seed, CORS local ou
 criptografia ausente para IA externa.

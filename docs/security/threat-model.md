@@ -29,7 +29,7 @@ API ── policy + autorização por objeto ── PostgreSQL
 | --- | --- | --- |
 | roubo ou replay de sessão | cookie HttpOnly, SameSite Lax, expiração JWT, logout | falta revogação central de JWT e CSRF token explícito para topologias cross-site |
 | brute force/credential stuffing | lockout persistente por identificador hasheado, MFA TOTP opcional, auditoria | rate limit distribuído de borda ainda recomendado |
-| BOLA/BFLA e tenant escape | escopo por instituição/grant no repositório, roles no backend, testes negativos | revisão endpoint a endpoint e política ABAC externa continuam necessárias |
+| BOLA/BFLA e tenant escape | capacidade global + instituição + relação/purpose por paciente; lista filtrada; grants/care team/episode/break-glass; testes same-tenant e cross-tenant | revisão endpoint a endpoint e política ABAC institucional continuam necessárias |
 | mass assignment/adulteração de decisão | schemas `extra=forbid`, regras resolvidas no servidor, explicação por `audit_id` | novos endpoints precisam repetir o padrão |
 | alteração histórica | snapshot imutável, JSON canônico, hash versionado, relatórios snapshot-only | assinatura externa/WORM e timestamp confiável não existem |
 | SSRF/DNS rebinding/redirect | endpoints oficiais fixos; allowlist/porta exatas; resolução fixada no IP efetivamente conectado com Host/SNI original; redirects bloqueados; limites de timeout e tamanho | firewall/proxy de egress permanece defesa adicional do deployment |

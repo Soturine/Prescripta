@@ -6,8 +6,8 @@
 - IA: [registro de prompts](ai/prompt-registry.md) e [workflows](product/ai-in-clinical-workflows.md).
 - Relatórios e auditoria: [EvidenceBundle](reports/report-evidence-bundle.md), [operação](auditing/README.md) e [histórico](audits/README.md).
 - Integrações: [onboarding](integration/institutional-onboarding.md), [contratos](integration/adapter-contracts.md) e [LGPD](integration/security-and-lgpd.md).
-- Frontend: [acessibilidade](frontend/accessibility-audit-v0.8.6.md) e [responsividade](frontend/responsive-audit-v0.8.6.md).
+- Frontend: [auditoria UX/acessibilidade v0.8.7](frontend/v0.8.7-ux-accessibility-visual-audit.md) e [regressão visual](frontend/v0.8.7-visual-regression-report.md).
 - Testes: [CI e release](testing/ci-and-release-gates.md) e [checklist](testing/v0.8.5-end-to-end-checklist.md).
-- Segurança e operação: [modelo de ameaça](security/threat-model.md), [hazard log clínico](security/clinical-safety-hazard-log.md) e [runbooks](operations/README.md).
+- Segurança e operação: [autorização](security/authentication-and-roles.md), [saída de rede](security/v0.8.7-outbound-network-security.md), [modelo de ameaça](security/threat-model.md), [hazard log clínico](security/clinical-safety-hazard-log.md) e [runbooks](operations/README.md).
 - Benchmark: [fontes externas primárias](benchmark/external-primary-sources.md), sem claim de conformidade.
-- Releases: notas versionadas em `docs/releases/`.
+- Releases: [índice e notas versionadas](releases/README.md).

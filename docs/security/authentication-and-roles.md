@@ -1,45 +1,56 @@
-# Autenticação e Perfis
+# Autenticação, perfis e autorização
 
-Prescripta usa autenticação JWT e autorização por perfil.
+## Sessão
 
-## Endpoints
+`POST /api/auth/login` valida Argon2, contenção persistente de tentativas e MFA TOTP quando habilitado.
+O browser recebe `prescripta_session` HttpOnly, SameSite Lax e com `Secure` fora do modo local.
+`GET /api/auth/me` restaura a sessão; `POST /api/auth/logout` remove o cookie. Senha, token, segredo MFA
+e API key nunca entram em auditoria ou payload de leitura.
 
-- `POST /api/auth/login`
-- `GET /api/auth/me`
+## Profissão, papel e capacidades
 
-## Perfis
+Papel não é autorização suficiente. Cada usuário possui profissão, especialidades, status de
+credencial demonstrativa e uma lista explícita de capacidades permitidas pelo template profissional.
+O backend rejeita capacidades fora do template.
 
-- `admin`: gerencia pacientes, medicamentos, usuários, checagens, importações, auditoria, dashboard e configuração de IA.
-- `médico`: gerencia pacientes, consulta medicamentos, verifica prescrições, usa IA configurada e revisa resumos/importações permitidos.
-- `enfermagem`: consulta pacientes e medicamentos, verifica prescrições, visualiza orientações e usa IA configurada.
-- `auditor`: visualiza dashboard, auditoria, importações, reconciliação e status da IA, sem alterar dados.
+| Perfil | Escopo demonstrativo principal |
+| --- | --- |
+| `admin` | usuários, catálogo, configuração e governança; sem acesso clínico implícito |
+| `medico` | paciente relacionado, checagem, relatório/orientação e override conforme grants |
+| `enfermagem` | paciente relacionado e ações permitidas por policy; não prescreve genericamente |
+| `farmaceutico` | catálogo e reconciliação/revisão farmacêutica |
+| `psicologo` | paciente relacionado e segmento psicológico separado |
+| `auditor` | auditoria/relatórios autorizados, sem alteração clínica |
+| `clinical_safety_officer` | auditoria e governança de segurança, sem acesso a paciente por papel |
 
-## IA
+O frontend oculta rotas e ações pela mesma lista de capacidades, mas cada rota FastAPI repete a
+checagem e continua sendo a autoridade.
 
-- Somente `admin` salva, apaga, testa e ativa provider/modelo de IA.
-- Médicos, enfermagem e auditores podem ver status de IA habilitada/desabilitada.
-- Nenhum perfil recebe API Key em resposta.
-- Auditoria registra eventos técnicos sem segredo.
+## Autorização por paciente
 
-## Importações
+O acesso exige simultaneamente instituição compatível, capacidade global e uma relação ativa que
+cubra objeto, capability e purpose. Relações possíveis:
 
-- `admin` e `médico`: importar, aceitar/rejeitar lotes e decidir itens de reconciliação.
-- `enfermagem`: visualizar importações conforme regras existentes.
-- `auditor`: visualizar importações, reconciliação e auditoria.
+- grant direto com vigência e revogação;
+- participação ativa em care team;
+- care episode ativo;
+- break-glass temporário e explícito.
 
-## Segurança
+Estar no mesmo tenant não concede lista nem leitura. Listagens são filtradas no banco; tentativa
+direta sem relação retorna negação sem revelar a existência do objeto. A negação e a operação clínica
+compartilham os limites transacionais definidos para evitar auditoria órfã.
 
-Senhas são armazenadas com hash Argon2. A senha original nunca deve ser salva, retornada em API, registrada em log ou enviada para auditoria.
+Break-glass exige capability, purpose, motivo detalhado, duração curta e chave de idempotência. Pode
+ser encerrado, não atravessa tenant e gera eventos de abertura/uso/encerramento. Não remove a
+necessidade de revisão institucional.
 
-O segredo do JWT é configurado por `PRESCRIPTA_SECRET_KEY`.
+## Segmentos sensíveis
 
-O frontend usa `localStorage` para token de sessão no MVP local. API Keys de IA nunca usam `localStorage`.
+Conteúdo psicológico usa `patient.sensitive_psychology.read`/write e não é incluído em grants clínicos
+genéricos. Administrador, auditor ou profissional da mesma instituição não recebe o segmento por
+inferência.
 
-## Credenciais De Exemplo
+## Dados fictícios
 
-- `admin@prescripta.local` / `Admin@12345`
-- `médico@prescripta.local` / `Médico@12345`
-- `enfermagem@prescripta.local` / `Enfermagem@12345`
-- `auditor@prescripta.local` / `Auditor@12345`
-
-Essas contas existem apenas para demonstração local.
+As contas `@prescripta.local` e credenciais exibidas na tela de login existem apenas no seed local.
+Ambiente não local rejeita auto-seed, SQLite, CORS local/wildcard e segredos padrão.

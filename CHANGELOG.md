@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.8.7] - 2026-07-29
+
+### Segurança clínica
+
+- Quantidades dimensionais exatas para massa, volume/concentração, bases corporais, taxa, intervalo,
+  duração, PRN e exposição, com arredondamento rastreado e abstention em ambiguidade.
+- Relações clínicas explícitas, purpose/capability, care team/episode e break-glass governado; mesmo
+  tenant deixa de conceder acesso implícito.
+- Perfis profissionais por capacidades, segmento psicológico separado e override com segundo médico
+  independente.
+
+### Segurança e dependências
+
+- Transporte externo fixado no IP validado, Host/SNI original, policies por provider, redirects/proxy
+  bloqueados e limites de resposta/timeout.
+- Backend, React 19.2.8, React Query, Playwright, Tailwind 4 e Actions por SHA atualizados após revisão
+  individual; `pydantic-core` incompatível foi deferido corretamente.
+- Risco temporário do React Router limitado por gate com expiração em 15/08/2026.
+
+### Frontend, testes e documentação
+
+- Novo design system e shell responsivo por capacidades, dashboards profissionais, workspaces e
+  checagem dimensional com cobertura/abstention/auditoria explícitas.
+- Coverage Vitest, Playwright real para autorização/dose/override, axe, snapshots visuais,
+  mobile/tablet/reduced motion e estados de falha/retry/vazio.
+- Capturador multiplataforma substitui a vitrine por assets fictícios v0.8.7 e manifesto SHA-256;
+  auditorias, runbooks, threat model, hazard log e notas de release atualizados.
+
 ## [0.8.6] - 2026-07-29
 
 ### Segurança clínica e integridade

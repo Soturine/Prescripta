@@ -29,7 +29,9 @@ alembic current
 alembic check
 ```
 
-Execute smoke tests de autenticação, contagens, integridade de snapshot/hash e relatórios. Destrua o
+Execute smoke tests de autenticação, contagens, integridade de snapshot/hash e relatórios. Na v0.8.7,
+valide também o head `b87a224c617e`, grants, care teams, care episodes, break-glass ativos/revogados e
+campos numéricos dimensionais. Usuário do mesmo tenant sem relação deve continuar sem paciente. Destrua o
 ambiente de teste conforme a política de retenção. Um backup só é considerado válido após restauração
 testada; mantenha evidência do exercício e tempo real de recuperação.
 
