@@ -59,6 +59,7 @@ class Medication:
     usual_dose_low: float | None = None
     usual_dose_high: float | None = None
     max_single_dose: float | None = None
+    max_single_dose_unit: str = "mg"
     max_per_procedure: float | None = None
     max_per_procedure_unit: str | None = None
     max_rate: float | None = None
@@ -66,6 +67,9 @@ class Medication:
     dose_calculation_basis: str = "fixed"
     dose_unit: str = "mg"
     dose_rule_validation_status: str = "pending_review"
+    dose_rule_version: str = "demo_dose_2026-07-r1"
+    dose_rounding_policy: str = "prescripta-half-even-v1"
+    dose_calculation_precision: str = "0.0001"
     dose_source_refs: list[str] | None = None
     controlled_substance: bool = False
     controlled_substance_list: str | None = None
@@ -89,6 +93,7 @@ class Medication:
     second_reviewer_role: str | None = None
     psychotropic_class: str | None = None
     psychotropic_profile: dict | None = None
+    max_cumulative_dose_unit: str = "mg"
 
     @classmethod
     def from_record(cls, record: Any) -> "Medication":
@@ -113,6 +118,7 @@ class Medication:
             usual_dose_low=getattr(record, "usual_dose_low", None),
             usual_dose_high=getattr(record, "usual_dose_high", None),
             max_single_dose=getattr(record, "max_single_dose", None),
+            max_single_dose_unit=getattr(record, "max_single_dose_unit", "mg"),
             max_per_procedure=getattr(record, "max_per_procedure", None),
             max_per_procedure_unit=getattr(record, "max_per_procedure_unit", None),
             max_rate=getattr(record, "max_rate", None),
@@ -121,6 +127,13 @@ class Medication:
             dose_unit=getattr(record, "dose_unit", "mg"),
             dose_rule_validation_status=getattr(
                 record, "dose_rule_validation_status", "pending_review"
+            ),
+            dose_rule_version=getattr(record, "dose_rule_version", "demo_dose_2026-07-r1"),
+            dose_rounding_policy=getattr(
+                record, "dose_rounding_policy", "prescripta-half-even-v1"
+            ),
+            dose_calculation_precision=getattr(
+                record, "dose_calculation_precision", "0.0001"
             ),
             dose_source_refs=list(getattr(record, "dose_source_refs", []) or []),
             controlled_substance=bool(getattr(record, "controlled_substance", False)),
@@ -152,6 +165,7 @@ class Medication:
             max_daily_dose_mg=record.max_daily_dose_mg,
             max_duration_days=record.max_duration_days,
             max_cumulative_dose_mg=record.max_cumulative_dose_mg,
+            max_cumulative_dose_unit=getattr(record, "max_cumulative_dose_unit", "mg"),
             continuous_use=getattr(record, "continuous_use", False),
             monitoring_required=getattr(record, "monitoring_required", False),
             monitoring_notes=getattr(record, "monitoring_notes", None),

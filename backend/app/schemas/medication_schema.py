@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -16,21 +17,25 @@ class MedicationBase(BaseModel):
     concentration: str | None = Field(default=None, max_length=120)
     pharmaceutical_form: str | None = Field(default=None, max_length=120)
     evidence_source_url: str | None = Field(default=None, max_length=500)
-    max_daily_dose_mg: float = Field(gt=0)
+    max_daily_dose_mg: Decimal = Field(gt=0)
     dose_dimension: str = "per_administration"
     max_daily_dose_unit: str = "mg"
-    dose_mg_per_kg: float | None = Field(default=None, gt=0)
+    dose_mg_per_kg: Decimal | None = Field(default=None, gt=0)
     dose_by_weight_enabled: bool = False
-    usual_dose_low: float | None = Field(default=None, ge=0)
-    usual_dose_high: float | None = Field(default=None, ge=0)
-    max_single_dose: float | None = Field(default=None, gt=0)
-    max_per_procedure: float | None = Field(default=None, gt=0)
+    usual_dose_low: Decimal | None = Field(default=None, ge=0)
+    usual_dose_high: Decimal | None = Field(default=None, ge=0)
+    max_single_dose: Decimal | None = Field(default=None, gt=0)
+    max_single_dose_unit: str = "mg"
+    max_per_procedure: Decimal | None = Field(default=None, gt=0)
     max_per_procedure_unit: str | None = None
-    max_rate: float | None = Field(default=None, gt=0)
+    max_rate: Decimal | None = Field(default=None, gt=0)
     rate_unit: str | None = None
     dose_calculation_basis: str = "fixed"
     dose_unit: str = "mg"
     dose_rule_validation_status: str = "pending_review"
+    dose_rule_version: str = "demo_dose_2026-07-r1"
+    dose_rounding_policy: str = "prescripta-half-even-v1"
+    dose_calculation_precision: str = "0.0001"
     dose_source_refs: list[str] = Field(default_factory=list)
     controlled_substance: bool = False
     controlled_substance_list: str | None = None
@@ -55,7 +60,8 @@ class MedicationBase(BaseModel):
     psychotropic_class: str | None = None
     psychotropic_profile: dict = Field(default_factory=dict)
     max_duration_days: int | None = Field(default=None, gt=0, le=365)
-    max_cumulative_dose_mg: float | None = Field(default=None, gt=0)
+    max_cumulative_dose_mg: Decimal | None = Field(default=None, gt=0)
+    max_cumulative_dose_unit: str = "mg"
     continuous_use: bool = False
     monitoring_required: bool = False
     monitoring_notes: str | None = None
@@ -107,21 +113,25 @@ class MedicationUpdate(BaseModel):
     concentration: str | None = Field(default=None, max_length=120)
     pharmaceutical_form: str | None = Field(default=None, max_length=120)
     evidence_source_url: str | None = Field(default=None, max_length=500)
-    max_daily_dose_mg: float | None = Field(default=None, gt=0)
+    max_daily_dose_mg: Decimal | None = Field(default=None, gt=0)
     dose_dimension: str | None = None
     max_daily_dose_unit: str | None = None
-    dose_mg_per_kg: float | None = Field(default=None, gt=0)
+    dose_mg_per_kg: Decimal | None = Field(default=None, gt=0)
     dose_by_weight_enabled: bool | None = None
-    usual_dose_low: float | None = Field(default=None, ge=0)
-    usual_dose_high: float | None = Field(default=None, ge=0)
-    max_single_dose: float | None = Field(default=None, gt=0)
-    max_per_procedure: float | None = Field(default=None, gt=0)
+    usual_dose_low: Decimal | None = Field(default=None, ge=0)
+    usual_dose_high: Decimal | None = Field(default=None, ge=0)
+    max_single_dose: Decimal | None = Field(default=None, gt=0)
+    max_single_dose_unit: str | None = None
+    max_per_procedure: Decimal | None = Field(default=None, gt=0)
     max_per_procedure_unit: str | None = None
-    max_rate: float | None = Field(default=None, gt=0)
+    max_rate: Decimal | None = Field(default=None, gt=0)
     rate_unit: str | None = None
     dose_calculation_basis: str | None = None
     dose_unit: str | None = None
     dose_rule_validation_status: str | None = None
+    dose_rule_version: str | None = None
+    dose_rounding_policy: str | None = None
+    dose_calculation_precision: str | None = None
     dose_source_refs: list[str] | None = None
     controlled_substance: bool | None = None
     controlled_substance_list: str | None = None
@@ -146,7 +156,8 @@ class MedicationUpdate(BaseModel):
     psychotropic_class: str | None = None
     psychotropic_profile: dict | None = None
     max_duration_days: int | None = Field(default=None, gt=0, le=365)
-    max_cumulative_dose_mg: float | None = Field(default=None, gt=0)
+    max_cumulative_dose_mg: Decimal | None = Field(default=None, gt=0)
+    max_cumulative_dose_unit: str | None = None
     continuous_use: bool | None = None
     monitoring_required: bool | None = None
     monitoring_notes: str | None = None

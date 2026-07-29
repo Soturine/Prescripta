@@ -28,6 +28,11 @@ class MedicationDoseInputSchema(BaseModel):
     site: str | None = Field(default=None, max_length=120)
     procedure_context: str | None = Field(default=None, max_length=160)
     prn: bool = False
+    max_administrations_per_day: int | None = Field(default=None, gt=0, le=96)
+    source_id: str | None = Field(default=None, max_length=160)
+    source_version: str | None = Field(default=None, max_length=80)
+    precision: str = Field(default="0.0001", max_length=20)
+    rounding_policy: str = Field(default="prescripta-half-even-v1", max_length=80)
 
     @model_validator(mode="after")
     def validate_dimension(self) -> "MedicationDoseInputSchema":
@@ -35,13 +40,19 @@ class MedicationDoseInputSchema(BaseModel):
             (self.concentration_value, self.concentration_unit, "concentração"),
             (self.volume, self.volume_unit, "volume"),
             (self.rate_value, self.rate_unit, "taxa"),
+            (self.interval_value, self.interval_unit, "intervalo"),
+            (self.duration_value, self.duration_unit, "duração"),
         ):
             if (value is None) != (unit is None):
                 raise ValueError(f"{label} exige valor e unidade")
         if self.administration_kind == "continuous" and self.rate_value is None:
             raise ValueError("infusão contínua exige taxa explícita")
+        if self.prn and self.administration_kind != "prn":
+            raise ValueError("marcação PRN exige administration_kind=prn")
+        if self.administration_kind == "prn" and self.frequency_per_day is not None:
+            raise ValueError("PRN não aceita frequência programada")
         if (
-            self.administration_kind in {"intermittent", "prn"}
+            self.administration_kind == "intermittent"
             and self.frequency_per_day is None
             and self.interval_value is None
         ):

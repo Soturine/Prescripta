@@ -1,4 +1,5 @@
 from datetime import UTC, date, datetime
+from decimal import Decimal
 
 from sqlalchemy import (
     Date,
@@ -6,6 +7,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
@@ -241,24 +243,34 @@ class MedicationModel(Base):
     concentration: Mapped[str | None] = mapped_column(String(120), nullable=True)
     pharmaceutical_form: Mapped[str | None] = mapped_column(String(120), nullable=True)
     evidence_source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    max_daily_dose_mg: Mapped[float] = mapped_column(Float, nullable=False)
+    max_daily_dose_mg: Mapped[Decimal] = mapped_column(Numeric(24, 12), nullable=False)
     dose_dimension: Mapped[str] = mapped_column(
         String(40), default="per_administration", nullable=False
     )
     max_daily_dose_unit: Mapped[str] = mapped_column(String(40), default="mg", nullable=False)
-    dose_mg_per_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    dose_mg_per_kg: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
     dose_by_weight_enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
-    usual_dose_low: Mapped[float | None] = mapped_column(Float, nullable=True)
-    usual_dose_high: Mapped[float | None] = mapped_column(Float, nullable=True)
-    max_single_dose: Mapped[float | None] = mapped_column(Float, nullable=True)
-    max_per_procedure: Mapped[float | None] = mapped_column(Float, nullable=True)
+    usual_dose_low: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
+    usual_dose_high: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
+    max_single_dose: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
+    max_single_dose_unit: Mapped[str] = mapped_column(String(40), default="mg", nullable=False)
+    max_per_procedure: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
     max_per_procedure_unit: Mapped[str | None] = mapped_column(String(40), nullable=True)
-    max_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_rate: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
     rate_unit: Mapped[str | None] = mapped_column(String(40), nullable=True)
     dose_calculation_basis: Mapped[str] = mapped_column(String(40), default="fixed", nullable=False)
     dose_unit: Mapped[str] = mapped_column(String(40), default="mg", nullable=False)
     dose_rule_validation_status: Mapped[str] = mapped_column(
         String(40), default="pending_review", nullable=False
+    )
+    dose_rule_version: Mapped[str] = mapped_column(
+        String(80), default="demo_dose_2026-07-r1", nullable=False
+    )
+    dose_rounding_policy: Mapped[str] = mapped_column(
+        String(80), default="prescripta-half-even-v1", nullable=False
+    )
+    dose_calculation_precision: Mapped[str] = mapped_column(
+        String(20), default="0.0001", nullable=False
     )
     dose_source_refs: Mapped[list[str]] = mapped_column(JSON, default=list)
     controlled_substance: Mapped[bool] = mapped_column(default=False, nullable=False)
@@ -292,7 +304,12 @@ class MedicationModel(Base):
     psychotropic_class: Mapped[str | None] = mapped_column(String(100), nullable=True)
     psychotropic_profile: Mapped[dict] = mapped_column(JSON, default=dict)
     max_duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    max_cumulative_dose_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_cumulative_dose_mg: Mapped[Decimal | None] = mapped_column(
+        Numeric(24, 12), nullable=True
+    )
+    max_cumulative_dose_unit: Mapped[str] = mapped_column(
+        String(40), default="mg", nullable=False
+    )
     continuous_use: Mapped[bool] = mapped_column(default=False, nullable=False)
     monitoring_required: Mapped[bool] = mapped_column(default=False, nullable=False)
     monitoring_notes: Mapped[str | None] = mapped_column(Text, nullable=True)

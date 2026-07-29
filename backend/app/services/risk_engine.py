@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 from app.domain.alert import Alert, PrescriptionStatus, RiskLevel
+from app.domain.dose_units import convert_value
 from app.domain.medication import Medication
 from app.domain.patient import Patient
 from app.domain.prescription import PrescriptionInput, PrescriptionResult
@@ -159,7 +162,8 @@ class RiskEngine:
         self, medication: Medication, prescription: PrescriptionInput
     ) -> list[Alert]:
         alerts: list[Alert] = []
-        if medication.max_duration_days and prescription.duration_days is None:
+        duration_days = prescription.duration_total_days
+        if medication.max_duration_days and duration_days is None:
             alerts.append(
                 Alert(
                     code="MISSING_DURATION",
@@ -171,14 +175,14 @@ class RiskEngine:
             )
             return alerts
 
-        if prescription.duration_days and medication.max_duration_days:
-            if prescription.duration_days > medication.max_duration_days:
+        if duration_days and medication.max_duration_days:
+            if Decimal(str(duration_days)) > Decimal(str(medication.max_duration_days)):
                 alerts.append(
                     Alert(
                         code="DURATION_LIMIT_EXCEEDED",
                         title="Duração acima do limite demonstrativo",
                         description=(
-                            f"Duração planejada: {prescription.duration_days} dias. "
+                            f"Duração planejada: {duration_days:g} dias. "
                             f"Limite demonstrativo: {medication.max_duration_days} dias."
                         ),
                         severity=RiskLevel.HIGH,
@@ -187,18 +191,36 @@ class RiskEngine:
                 )
 
         cumulative = self._cumulative_dose(prescription)
-        if (
-            cumulative is not None
-            and medication.max_cumulative_dose_mg
-            and cumulative > medication.max_cumulative_dose_mg
+        cumulative_limit = medication.max_cumulative_dose_mg
+        cumulative_unit = getattr(medication, "max_cumulative_dose_unit", "mg")
+        cumulative_in_limit_unit = (
+            convert_value(Decimal(str(cumulative)), "mg", cumulative_unit)
+            if cumulative is not None and cumulative_limit
+            else None
+        )
+        if cumulative_limit and cumulative is not None and cumulative_in_limit_unit is None:
+            alerts.append(
+                Alert(
+                    code="CUMULATIVE_DOSE_DIMENSION_UNPROVEN",
+                    title="Dimensão do limite cumulativo não comprovada",
+                    description="A exposição cumulativa e o limite possuem unidades incompatíveis.",
+                    severity=RiskLevel.HIGH,
+                    recommendation="Revisar unidade e regra cumulativa antes de prosseguir.",
+                )
+            )
+        elif (
+            cumulative_in_limit_unit is not None
+            and cumulative_limit
+            and cumulative_in_limit_unit > Decimal(str(cumulative_limit))
         ):
             alerts.append(
                 Alert(
                     code="CUMULATIVE_DOSE_EXCEEDED",
                     title="Dose acumulada acima do limite demonstrativo",
                     description=(
-                        f"Dose acumulada estimada: {cumulative:g} mg. "
-                        f"Limite demonstrativo: {medication.max_cumulative_dose_mg:g} mg."
+                        f"Dose acumulada estimada: {cumulative_in_limit_unit.normalize()} "
+                        f"{cumulative_unit}. Limite demonstrativo: "
+                        f"{Decimal(str(cumulative_limit)).normalize()} {cumulative_unit}."
                     ),
                     severity=RiskLevel.HIGH,
                     recommendation="Revisar duração, dose diária e alternativa terapêutica.",
@@ -751,7 +773,7 @@ class RiskEngine:
             "dose_input": prescription.effective_dose.to_dict(),
             "dose_dimension": prescription.effective_dose.dimension.value,
             "daily_total_mg": prescription.daily_total_mg,
-            "duration_days": prescription.duration_days,
+            "duration_days": prescription.duration_total_days,
             "estimated_cumulative_dose_mg": cumulative,
             "max_daily_dose_mg": medication.max_daily_dose_mg,
             "max_duration_days": medication.max_duration_days,
@@ -760,12 +782,24 @@ class RiskEngine:
             "monitoring_required": medication.monitoring_required,
             "monitoring_notes": medication.monitoring_notes,
             "exposure_plan": {
-                "dose_per_administration_mg": prescription.dose_mg,
-                "administrations_per_day": prescription.frequency_per_day,
+                "dose_per_administration_mg": (
+                    float(prescription.effective_dose.amount_mg)
+                    if prescription.effective_dose.amount_mg is not None
+                    else None
+                ),
+                "administrations_per_day": (
+                    float(prescription.effective_dose.inferred_frequency_per_day)
+                    if prescription.effective_dose.inferred_frequency_per_day is not None
+                    else None
+                ),
+                "max_administrations_per_day": (
+                    prescription.effective_dose.max_administrations_per_day
+                ),
                 "calculated_daily_dose_mg": prescription.daily_total_mg,
+                "calculated_daily_upper_bound_mg": prescription.daily_upper_mg,
                 "calculated_cumulative_dose_mg": cumulative,
                 "has_missing_duration_for_cumulative_dose": (
-                    prescription.duration_days is None
+                    prescription.duration_total_days is None
                     and bool(medication.max_cumulative_dose_mg or medication.max_duration_days)
                 ),
             },
@@ -912,9 +946,7 @@ class RiskEngine:
         }
 
     def _cumulative_dose(self, prescription: PrescriptionInput) -> float | None:
-        if prescription.duration_days is None or prescription.daily_total_mg is None:
-            return None
-        return prescription.daily_total_mg * prescription.duration_days
+        return prescription.cumulative_total_mg or prescription.cumulative_upper_mg
 
     def _is_elderly(self, patient: Patient) -> bool:
         age = patient.computed_age

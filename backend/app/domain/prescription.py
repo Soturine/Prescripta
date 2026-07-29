@@ -32,6 +32,26 @@ class PrescriptionInput:
         value = self.effective_dose.daily_mass_mg
         return float(value) if value is not None else None
 
+    @property
+    def daily_upper_mg(self) -> float | None:
+        value = self.effective_dose.daily_mass_upper_mg
+        return float(value) if value is not None else None
+
+    @property
+    def duration_total_days(self) -> float | None:
+        value = self.effective_dose.duration_days
+        return float(value) if value is not None else None
+
+    @property
+    def cumulative_total_mg(self) -> float | None:
+        value = self.effective_dose.cumulative_mass_mg
+        return float(value) if value is not None else None
+
+    @property
+    def cumulative_upper_mg(self) -> float | None:
+        value = self.effective_dose.cumulative_mass_upper_mg
+        return float(value) if value is not None else None
+
 
 @dataclass(frozen=True)
 class PrescriptionResult:

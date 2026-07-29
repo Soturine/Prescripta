@@ -97,10 +97,19 @@ def _ensure_sqlite_v04_columns() -> None:
             "dose_by_weight_enabled": "BOOLEAN NOT NULL DEFAULT 0",
             "dose_dimension": "VARCHAR(40) NOT NULL DEFAULT 'per_administration'",
             "max_daily_dose_unit": "VARCHAR(40) NOT NULL DEFAULT 'mg'",
+            "max_single_dose_unit": "VARCHAR(40) NOT NULL DEFAULT 'mg'",
             "max_per_procedure_unit": "VARCHAR(40)",
             "max_rate": "FLOAT",
             "rate_unit": "VARCHAR(40)",
             "max_cumulative_dose_mg": "FLOAT",
+            "max_cumulative_dose_unit": "VARCHAR(40) NOT NULL DEFAULT 'mg'",
+            "dose_rule_version": (
+                "VARCHAR(80) NOT NULL DEFAULT 'demo_dose_2026-07-r1'"
+            ),
+            "dose_rounding_policy": (
+                "VARCHAR(80) NOT NULL DEFAULT 'prescripta-half-even-v1'"
+            ),
+            "dose_calculation_precision": "VARCHAR(20) NOT NULL DEFAULT '0.0001'",
             "continuous_use": "BOOLEAN NOT NULL DEFAULT 0",
             "monitoring_required": "BOOLEAN NOT NULL DEFAULT 0",
             "monitoring_notes": "TEXT",
