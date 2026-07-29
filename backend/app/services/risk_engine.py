@@ -761,7 +761,9 @@ class RiskEngine:
                 bmi = round(patient.weight_kg / (height_m * height_m), 1)
         weight_limit = None
         if medication.dose_by_weight_enabled and medication.dose_mg_per_kg:
-            weight_limit = round(medication.dose_mg_per_kg * patient.weight_kg, 2)
+            weight_limit = round(
+                medication.dose_mg_per_kg * Decimal(str(patient.weight_kg)), 2
+            )
         weight_based_rule = {
             "enabled": medication.dose_by_weight_enabled,
             "dose_mg_per_kg": medication.dose_mg_per_kg,
