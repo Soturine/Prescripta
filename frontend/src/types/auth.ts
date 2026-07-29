@@ -3,6 +3,7 @@ import type { User } from "./user";
 export type LoginPayload = {
   email: string;
   password: string;
+  mfa_code?: string;
 };
 
 export type LoginResponse = {

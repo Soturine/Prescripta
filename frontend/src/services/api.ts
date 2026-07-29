@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { AuditPage, AuditRecord, DashboardSummary } from "../types/audit";
+import type { AuditPage, DashboardSummary } from "../types/audit";
 import type {
   AICredentialPayload,
   AICredentialStatus,
@@ -81,19 +81,13 @@ import type {
 import type { User, UserCreatePayload, UserRole } from "../types/user";
 
 const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
-export const AUTH_TOKEN_KEY = "prescripta_access_token";
-
 export const api = axios.create({
   baseURL,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
 });
-
-const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
-if (storedToken) {
-  api.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
-}
 
 api.interceptors.response.use(
   (response) => response,
@@ -107,18 +101,20 @@ api.interceptors.response.use(
 );
 
 export function setAuthToken(token: string) {
-  localStorage.setItem(AUTH_TOKEN_KEY, token);
   api.defaults.headers.common.Authorization = `Bearer ${token}`;
 }
 
 export function clearAuthToken() {
-  localStorage.removeItem(AUTH_TOKEN_KEY);
   delete api.defaults.headers.common.Authorization;
 }
 
 export async function login(payload: LoginPayload) {
   const response = await api.post<LoginResponse>("/auth/login", payload);
   return response.data;
+}
+
+export async function logoutSession() {
+  await api.post("/auth/logout");
 }
 
 export async function fetchMe() {

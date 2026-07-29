@@ -8,49 +8,33 @@ import {
 } from "react";
 
 import {
-  AUTH_TOKEN_KEY,
   clearAuthToken,
   fetchMe,
   login as loginRequest,
-  setAuthToken,
+  logoutSession,
 } from "../services/api";
 import type { User, UserRole } from "../types/user";
-
-const AUTH_USER_KEY = "prescripta_user";
 
 type AuthContextValue = {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, mfaCode?: string) => Promise<void>;
   logout: () => void;
   canAccess: (roles: UserRole[]) => boolean;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function readStoredUser() {
-  const rawUser = localStorage.getItem(AUTH_USER_KEY);
-  if (!rawUser) {
-    return null;
-  }
-  try {
-    return JSON.parse(rawUser) as User;
-  } catch {
-    localStorage.removeItem(AUTH_USER_KEY);
-    return null;
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState(() => localStorage.getItem(AUTH_TOKEN_KEY));
-  const [user, setUser] = useState<User | null>(() => readStoredUser());
-  const [isLoading, setIsLoading] = useState(Boolean(token));
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   function logout() {
     clearAuthToken();
-    localStorage.removeItem(AUTH_USER_KEY);
+    void logoutSession();
     setToken(null);
     setUser(null);
   }
@@ -65,11 +49,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
-
     let isMounted = true;
     fetchMe()
       .then((currentUser) => {
@@ -77,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         setUser(currentUser);
-        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(currentUser));
+        setToken("cookie-session");
       })
       .catch(() => {
         if (isMounted) {
@@ -93,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [token]);
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -101,11 +80,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       isAuthenticated: Boolean(token && user),
       isLoading,
-      async login(email: string, password: string) {
-        const response = await loginRequest({ email, password });
-        setAuthToken(response.access_token);
-        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(response.user));
-        setToken(response.access_token);
+      async login(email: string, password: string, mfaCode?: string) {
+        const response = await loginRequest({ email, password, mfa_code: mfaCode || undefined });
+        clearAuthToken();
+        setToken("cookie-session");
         setUser(response.user);
       },
       logout,

@@ -9,6 +9,7 @@ import { useAuth } from "../context/AuthContext";
 const loginSchema = z.object({
   email: z.string().min(5, "Informe o e-mail."),
   password: z.string().min(1, "Informe a senha."),
+  mfa_code: z.string().regex(/^\d{6}$/, "Use seis dígitos.").or(z.literal("")).optional(),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -35,6 +36,7 @@ export default function Login() {
     defaultValues: {
       email: "admin@prescripta.local",
       password: "Admin@12345",
+      mfa_code: "",
     },
   });
 
@@ -44,7 +46,7 @@ export default function Login() {
 
   async function submit(values: LoginFormValues) {
     try {
-      await login(values.email, values.password);
+      await login(values.email, values.password, values.mfa_code);
       const target = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
       navigate(target || "/", { replace: true });
     } catch {
@@ -74,6 +76,19 @@ export default function Login() {
               <input className="field" type="email" {...register("email")} />
               {errors.email ? (
                 <span className="text-xs text-danger">{errors.email.message}</span>
+              ) : null}
+            </label>
+            <label className="grid gap-1.5">
+              <span className="label">Código MFA (quando habilitado)</span>
+              <input
+                autoComplete="one-time-code"
+                className="field"
+                inputMode="numeric"
+                maxLength={6}
+                {...register("mfa_code")}
+              />
+              {errors.mfa_code ? (
+                <span className="text-xs text-danger">{errors.mfa_code.message}</span>
               ) : null}
             </label>
             <label className="grid gap-1.5">

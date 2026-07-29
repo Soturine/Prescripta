@@ -73,6 +73,8 @@ export type CdsCheckPayload = {
 };
 
 export type CdsCheckResult = {
+  decision: Record<string, unknown>;
+  coverage_status: string;
   status: string;
   risk_level: string;
   alerts: Array<{
@@ -89,5 +91,6 @@ export type CdsCheckResult = {
     source: Record<string, unknown>;
   }>;
   audit_id: string;
+  idempotency_key: string;
   educational_notice: string;
 };

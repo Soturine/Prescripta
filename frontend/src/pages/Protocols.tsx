@@ -82,7 +82,7 @@ export default function Protocols() {
       setSelectedSteps([]);
       setNotes("");
     }
-  }, [selectedProtocol?.id]);
+  }, [selectedProtocol]);
 
   const categories = useMemo(
     () => Array.from(new Set(protocols.map((protocol) => protocol.category))).sort(),

@@ -139,28 +139,10 @@ export default function PrescriptionCheck() {
 
   function buildExplanationPayload(): PrescriptionExplanationPayload | null {
     const result = checkMutation.data;
-    if (!result || !lastPayload || !user) {
+    if (!result) {
       return null;
     }
-
-    const patient = patients.find((item) => item.id === lastPayload.patient_id);
-    const medication = medications.find((item) => item.id === lastPayload.medication_id);
-    if (!patient || !medication) {
-      return null;
-    }
-
-    return {
-      ...result,
-      patient,
-      medication,
-      dose_mg: lastPayload.dose_mg,
-      frequency_per_day: lastPayload.frequency_per_day,
-      route: lastPayload.route,
-      duration_days: lastPayload.duration_days,
-      indication: lastPayload.indication,
-      professional_notes: lastPayload.professional_notes,
-      user_profile: user.role,
-    };
+    return { audit_id: result.audit_id };
   }
 
   async function handleExplain() {

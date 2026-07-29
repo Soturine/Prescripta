@@ -227,53 +227,7 @@ export type PrescriptionCheckResult = {
   };
 };
 
-export type PrescriptionExplanationPayload = PrescriptionCheckResult & {
-  patient: {
-    id: number;
-    name: string;
-    birth_date: string | null;
-    age: number | null;
-    weight_kg: number;
-    height_cm: number | null;
-    allergies: string[];
-    comorbidities: string[];
-    current_medications: string[];
-  };
-  medication: {
-    id: number;
-    active_ingredient_id?: number | null;
-    brand_name: string;
-    active_ingredient: string;
-    commercial_aliases?: string[];
-    therapeutic_class: string;
-    therapeutic_classes?: string[];
-    source_jurisdiction?: string;
-    evidence_source_type?: string;
-    validation_status?: string;
-    concentration?: string | null;
-    pharmaceutical_form?: string | null;
-    evidence_source_url?: string | null;
-    max_daily_dose_mg: number;
-    allowed_routes: string[];
-    contraindications: string[];
-    notes: string | null;
-  };
-  dose_mg: number;
-  frequency_per_day: number;
-  route: string;
-  duration_days: number | null;
-  indication: string | null;
-  professional_notes: string | null;
-  user_profile: string;
-  dose_summary: DoseSummary;
-  compatibility: Compatibility;
-  patient_factors_considered: string[];
-  medication_factors_considered: string[];
-  rag_evidence: RagEvidence[];
-  clinical_context_graph: ClinicalContextGraph;
-  alternatives: AlternativeMedication[];
-  patient_knowledge_bundle?: PatientKnowledgeBundle;
-};
+export type PrescriptionExplanationPayload = { audit_id: number };
 
 export type PrescriptionExplanationResult = {
   provider: string;

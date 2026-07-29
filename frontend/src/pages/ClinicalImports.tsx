@@ -231,9 +231,10 @@ export default function ClinicalImports() {
     mutationFn: () =>
       checkCdsPrescription({
         patient: {
-          name: "Paciente CDS Demo",
           age: 30,
           weight_kg: 70,
+          hypertension: false,
+          diabetes: false,
           reproductive_gynecologic_factors: ["uso_anticoncepcional_hormonal"],
         },
         medication_request: {
@@ -242,7 +243,6 @@ export default function ClinicalImports() {
           frequency_per_day: 1,
           route: "oral",
           duration_days: 5,
-          max_daily_dose_mg: 600,
         },
         allergies: [],
         conditions: [],
