@@ -331,75 +331,6 @@ class MedicationModel(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
-class MedicationExposurePlanModel(Base):
-    __tablename__ = "medication_exposure_plans"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    patient_id: Mapped[int | None] = mapped_column(ForeignKey("patients.id"), nullable=True)
-    medication_id: Mapped[int | None] = mapped_column(ForeignKey("medications.id"), nullable=True)
-    active_ingredient_id: Mapped[int | None] = mapped_column(
-        ForeignKey("active_ingredients.id"), nullable=True
-    )
-    dose_per_administration_mg: Mapped[float] = mapped_column(Float, nullable=False)
-    administrations_per_day: Mapped[int] = mapped_column(Integer, nullable=False)
-    duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    calculated_daily_dose_mg: Mapped[float] = mapped_column(Float, nullable=False)
-    calculated_cumulative_dose_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
-    max_daily_dose_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
-    max_cumulative_dose_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
-    max_duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    continuous_use: Mapped[bool] = mapped_column(default=False, nullable=False)
-    monitoring_required: Mapped[bool] = mapped_column(default=False, nullable=False)
-    monitoring_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
-    )
-
-
-class MedicationMechanismProfileModel(Base):
-    __tablename__ = "medication_mechanism_profiles"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    active_ingredient_id: Mapped[int | None] = mapped_column(
-        ForeignKey("active_ingredients.id"), nullable=True, index=True
-    )
-    mechanism_of_action: Mapped[str | None] = mapped_column(Text, nullable=True)
-    absorption_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    distribution_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metabolism_organs: Mapped[list[str]] = mapped_column(JSON, default=list)
-    elimination_organs: Mapped[list[str]] = mapped_column(JSON, default=list)
-    renal_elimination_level: Mapped[str] = mapped_column(
-        String(40), default="nao_informado", nullable=False
-    )
-    hepatic_metabolism_level: Mapped[str] = mapped_column(
-        String(40), default="nao_informado", nullable=False
-    )
-    cyp_interactions: Mapped[list[str]] = mapped_column(JSON, default=list)
-    pharmacodynamic_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    pharmacokinetic_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    monitoring_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    clinical_interpretation: Mapped[str | None] = mapped_column(Text, nullable=True)
-    source_id: Mapped[int | None] = mapped_column(
-        ForeignKey("medication_knowledge_sources.id"), nullable=True
-    )
-    validation_status: Mapped[str] = mapped_column(String(40), default="demo", nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
-    )
-
-
 class PatientIdentifierModel(Base):
     __tablename__ = "patient_identifiers"
 
@@ -446,26 +377,6 @@ class PatientFunctionalProfileModel(Base):
     last_reviewed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
-    )
-
-
-class ExternalPatientIdentityModel(Base):
-    __tablename__ = "external_patient_identities"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    patient_id: Mapped[int | None] = mapped_column(ForeignKey("patients.id"), nullable=True)
-    external_system: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
-    external_patient_id: Mapped[str] = mapped_column(String(180), nullable=False, index=True)
-    hospital_name: Mapped[str | None] = mapped_column(String(180), nullable=True)
-    document_hash: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
@@ -641,6 +552,23 @@ class AIProviderModelCacheModel(Base):
     )
 
 
+class AIProviderRuntimeStateModel(Base):
+    __tablename__ = "ai_provider_runtime_states"
+
+    provider: Mapped[str] = mapped_column(String(40), primary_key=True)
+    failure_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    degraded_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_error_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
 class AIConfigurationAuditLogModel(Base):
     __tablename__ = "ai_configuration_audit_logs"
 
@@ -767,6 +695,34 @@ class CDSIdempotencyModel(Base):
     response_payload: Mapped[dict] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class DecisionOverrideModel(Base):
+    __tablename__ = "decision_overrides"
+    __table_args__ = (UniqueConstraint("prescription_audit_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    prescription_audit_id: Mapped[int] = mapped_column(
+        ForeignKey("prescription_audits.id"), nullable=False, index=True
+    )
+    requested_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"), nullable=False, index=True
+    )
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(40), default="pending_second_review", nullable=False, index=True
+    )
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
+    review_decision: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    review_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    requested_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
 
 

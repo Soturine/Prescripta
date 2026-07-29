@@ -18,6 +18,7 @@ from app.database.models import (
     AIConfigurationAuditLogModel,
     AIProviderCredentialModel,
     AIProviderModelCacheModel,
+    AIProviderRuntimeStateModel,
     AIProviderSettingsModel,
     AuditEventModel,
     UserModel,
@@ -83,7 +84,6 @@ PROVIDER_CATALOG = {
 }
 
 _MEMORY_CREDENTIALS: dict[str, dict[str, str | None]] = {}
-_PROVIDER_FAILURES: dict[str, dict[str, Any]] = {}
 
 
 class AIConfigurationError(ValueError):
@@ -263,7 +263,21 @@ class AISettingsService:
         if provider in {"openai", "gemini", "openai_compatible"} and not api_key:
             raise AIConfigurationError("Informe uma API Key para este provider.")
 
-        if payload.persist and not self.secrets.can_persist:
+        if not payload.persist:
+            if self.secrets.requires_persistence_key:
+                raise AIConfigurationError(
+                    "Credenciais em memória não são permitidas em produção."
+                )
+            _MEMORY_CREDENTIALS[provider] = {
+                "api_key": api_key,
+                "masked_api_key": self.secrets.mask(api_key),
+                "base_url": base_url,
+            }
+            self._audit(user, "credential_saved", provider, None, "not_persistent", None)
+            self.db.commit()
+            return self.credential_status(provider)
+
+        if not self.secrets.can_persist:
             if self.secrets.requires_persistence_key:
                 raise AIConfigurationError(
                     "PRESCRIPTA_CONFIG_ENCRYPTION_KEY é obrigatória em produção."
@@ -679,33 +693,55 @@ class AISettingsService:
         return False
 
     def _circuit_state(self, provider: str) -> dict[str, Any]:
-        state = _PROVIDER_FAILURES.get(provider, {"failure_count": 0, "degraded_until": None})
-        degraded_until = state.get("degraded_until")
-        if isinstance(degraded_until, datetime) and degraded_until <= datetime.now(UTC):
-            _PROVIDER_FAILURES.pop(provider, None)
+        row = self.db.get(AIProviderRuntimeStateModel, provider)
+        if row is None:
             return {"failure_count": 0, "degraded_until": None}
-        return state
+        degraded_until = row.degraded_until
+        if degraded_until is not None and degraded_until.tzinfo is None:
+            degraded_until = degraded_until.replace(tzinfo=UTC)
+        if degraded_until is not None and degraded_until <= datetime.now(UTC):
+            row.failure_count = 0
+            row.degraded_until = None
+            row.last_error_hash = None
+            self.db.commit()
+            return {"failure_count": 0, "degraded_until": None}
+        return {
+            "failure_count": row.failure_count,
+            "degraded_until": degraded_until,
+            "last_error_hash": row.last_error_hash,
+        }
 
     def _provider_degraded(self, provider: str) -> bool:
         degraded_until = self._circuit_state(provider).get("degraded_until")
         return isinstance(degraded_until, datetime) and degraded_until > datetime.now(UTC)
 
     def _record_provider_success(self, provider: str) -> None:
-        _PROVIDER_FAILURES.pop(provider, None)
+        row = self.db.get(AIProviderRuntimeStateModel, provider)
+        if row is not None:
+            row.failure_count = 0
+            row.degraded_until = None
+            row.last_error_hash = None
+            self.db.commit()
 
     def _record_provider_failure(self, provider: str, error: str) -> None:
         if provider == "fallback":
             return
-        state = self._circuit_state(provider)
-        failure_count = int(state.get("failure_count") or 0) + 1
-        degraded_until = state.get("degraded_until")
+        row = self.db.scalar(
+            select(AIProviderRuntimeStateModel)
+            .where(AIProviderRuntimeStateModel.provider == provider)
+            .with_for_update()
+        )
+        if row is None:
+            row = AIProviderRuntimeStateModel(provider=provider)
+            self.db.add(row)
+        failure_count = int(row.failure_count or 0) + 1
+        degraded_until = row.degraded_until
         if failure_count >= AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD:
             degraded_until = datetime.now(UTC) + AI_CIRCUIT_BREAKER_COOLDOWN
-        _PROVIDER_FAILURES[provider] = {
-            "failure_count": failure_count,
-            "degraded_until": degraded_until,
-            "last_error": error,
-        }
+        row.failure_count = failure_count
+        row.degraded_until = degraded_until
+        row.last_error_hash = hashlib.sha256(error.encode("utf-8")).hexdigest()
+        self.db.commit()
 
     def _external_completion(
         self,

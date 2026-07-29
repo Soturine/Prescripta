@@ -10,7 +10,7 @@ from app.domain.user import UserRole
 from app.integrations.services.clinical_deduplication_service import (
     ClinicalDeduplicationService,
 )
-from app.services.ai_settings import _MEMORY_CREDENTIALS, _PROVIDER_FAILURES
+from app.services.ai_settings import _MEMORY_CREDENTIALS
 
 
 class FakeResponse:
@@ -30,7 +30,6 @@ class FakeResponse:
 
 def _headers(client: TestClient, create_test_user, auth_headers) -> dict[str, str]:
     _MEMORY_CREDENTIALS.clear()
-    _PROVIDER_FAILURES.clear()
     create_test_user(email="admin@v081.local", password="Admin@12345", role=UserRole.ADMIN)
     return auth_headers("admin@v081.local", "Admin@12345")
 

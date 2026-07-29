@@ -1,8 +1,8 @@
 """initial v0.8.6 schema
 
-Revision ID: 1662d4c0886d
+Revision ID: 3978b04e2f62
 Revises:
-Create Date: 2026-07-29 01:53:12.275494
+Create Date: 2026-07-29 02:12:33.143639
 """
 
 from collections.abc import Sequence
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import sqlite
 
-revision: str = "1662d4c0886d"
+revision: str = "3978b04e2f62"
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -70,6 +70,15 @@ def upgrade() -> None:
         "ai_provider_model_cache",
         ["provider"],
         unique=False,
+    )
+    op.create_table(
+        "ai_provider_runtime_states",
+        sa.Column("provider", sa.String(length=40), nullable=False),
+        sa.Column("failure_count", sa.Integer(), nullable=False),
+        sa.Column("degraded_until", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("last_error_hash", sa.String(length=64), nullable=True),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.PrimaryKeyConstraint("provider"),
     )
     op.create_table(
         "clinical_vocabulary",
@@ -721,40 +730,6 @@ def upgrade() -> None:
         unique=False,
     )
     op.create_table(
-        "external_patient_identities",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("patient_id", sa.Integer(), nullable=True),
-        sa.Column("external_system", sa.String(length=120), nullable=False),
-        sa.Column("external_patient_id", sa.String(length=180), nullable=False),
-        sa.Column("hospital_name", sa.String(length=180), nullable=True),
-        sa.Column("document_hash", sa.String(length=128), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["patient_id"],
-            ["patients.id"],
-        ),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(
-        op.f("ix_external_patient_identities_external_patient_id"),
-        "external_patient_identities",
-        ["external_patient_id"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_external_patient_identities_external_system"),
-        "external_patient_identities",
-        ["external_system"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_external_patient_identities_id"),
-        "external_patient_identities",
-        ["id"],
-        unique=False,
-    )
-    op.create_table(
         "medication_counseling_summaries",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("active_ingredient_id", sa.Integer(), nullable=True),
@@ -836,42 +811,6 @@ def upgrade() -> None:
         "medication_counseling_summaries",
         ["validation_status"],
         unique=False,
-    )
-    op.create_table(
-        "medication_exposure_plans",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("patient_id", sa.Integer(), nullable=True),
-        sa.Column("medication_id", sa.Integer(), nullable=True),
-        sa.Column("active_ingredient_id", sa.Integer(), nullable=True),
-        sa.Column("dose_per_administration_mg", sa.Float(), nullable=False),
-        sa.Column("administrations_per_day", sa.Integer(), nullable=False),
-        sa.Column("duration_days", sa.Integer(), nullable=True),
-        sa.Column("calculated_daily_dose_mg", sa.Float(), nullable=False),
-        sa.Column("calculated_cumulative_dose_mg", sa.Float(), nullable=True),
-        sa.Column("max_daily_dose_mg", sa.Float(), nullable=True),
-        sa.Column("max_cumulative_dose_mg", sa.Float(), nullable=True),
-        sa.Column("max_duration_days", sa.Integer(), nullable=True),
-        sa.Column("continuous_use", sa.Boolean(), nullable=False),
-        sa.Column("monitoring_required", sa.Boolean(), nullable=False),
-        sa.Column("monitoring_notes", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["active_ingredient_id"],
-            ["active_ingredients.id"],
-        ),
-        sa.ForeignKeyConstraint(
-            ["medication_id"],
-            ["medications.id"],
-        ),
-        sa.ForeignKeyConstraint(
-            ["patient_id"],
-            ["patients.id"],
-        ),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(
-        op.f("ix_medication_exposure_plans_id"), "medication_exposure_plans", ["id"], unique=False
     )
     op.create_table(
         "medication_knowledge_sources",
@@ -1236,6 +1175,55 @@ def upgrade() -> None:
         unique=False,
     )
     op.create_table(
+        "decision_overrides",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("prescription_audit_id", sa.Integer(), nullable=False),
+        sa.Column("requested_by_user_id", sa.Integer(), nullable=False),
+        sa.Column("reason", sa.Text(), nullable=False),
+        sa.Column("status", sa.String(length=40), nullable=False),
+        sa.Column("reviewed_by_user_id", sa.Integer(), nullable=True),
+        sa.Column("review_decision", sa.String(length=40), nullable=True),
+        sa.Column("review_note", sa.Text(), nullable=True),
+        sa.Column("requested_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("reviewed_at", sa.DateTime(timezone=True), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["prescription_audit_id"],
+            ["prescription_audits.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["requested_by_user_id"],
+            ["users.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["reviewed_by_user_id"],
+            ["users.id"],
+        ),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("prescription_audit_id"),
+    )
+    op.create_index(op.f("ix_decision_overrides_id"), "decision_overrides", ["id"], unique=False)
+    op.create_index(
+        op.f("ix_decision_overrides_prescription_audit_id"),
+        "decision_overrides",
+        ["prescription_audit_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_decision_overrides_requested_by_user_id"),
+        "decision_overrides",
+        ["requested_by_user_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_decision_overrides_reviewed_by_user_id"),
+        "decision_overrides",
+        ["reviewed_by_user_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_decision_overrides_status"), "decision_overrides", ["status"], unique=False
+    )
+    op.create_table(
         "emergency_protocol_run_reports",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("run_id", sa.Integer(), nullable=False),
@@ -1295,48 +1283,6 @@ def upgrade() -> None:
         op.f("ix_emergency_protocol_run_steps_run_id"),
         "emergency_protocol_run_steps",
         ["run_id"],
-        unique=False,
-    )
-    op.create_table(
-        "medication_mechanism_profiles",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("active_ingredient_id", sa.Integer(), nullable=True),
-        sa.Column("mechanism_of_action", sa.Text(), nullable=True),
-        sa.Column("absorption_notes", sa.Text(), nullable=True),
-        sa.Column("distribution_notes", sa.Text(), nullable=True),
-        sa.Column("metabolism_organs", sqlite.JSON(), nullable=False),
-        sa.Column("elimination_organs", sqlite.JSON(), nullable=False),
-        sa.Column("renal_elimination_level", sa.String(length=40), nullable=False),
-        sa.Column("hepatic_metabolism_level", sa.String(length=40), nullable=False),
-        sa.Column("cyp_interactions", sqlite.JSON(), nullable=False),
-        sa.Column("pharmacodynamic_notes", sa.Text(), nullable=True),
-        sa.Column("pharmacokinetic_notes", sa.Text(), nullable=True),
-        sa.Column("monitoring_notes", sa.Text(), nullable=True),
-        sa.Column("clinical_interpretation", sa.Text(), nullable=True),
-        sa.Column("source_id", sa.Integer(), nullable=True),
-        sa.Column("validation_status", sa.String(length=40), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["active_ingredient_id"],
-            ["active_ingredients.id"],
-        ),
-        sa.ForeignKeyConstraint(
-            ["source_id"],
-            ["medication_knowledge_sources.id"],
-        ),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(
-        op.f("ix_medication_mechanism_profiles_active_ingredient_id"),
-        "medication_mechanism_profiles",
-        ["active_ingredient_id"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_medication_mechanism_profiles_id"),
-        "medication_mechanism_profiles",
-        ["id"],
         unique=False,
     )
     op.create_table(
@@ -1622,14 +1568,6 @@ def downgrade() -> None:
     )
     op.drop_table("patient_document_extractions")
     op.drop_index(
-        op.f("ix_medication_mechanism_profiles_id"), table_name="medication_mechanism_profiles"
-    )
-    op.drop_index(
-        op.f("ix_medication_mechanism_profiles_active_ingredient_id"),
-        table_name="medication_mechanism_profiles",
-    )
-    op.drop_table("medication_mechanism_profiles")
-    op.drop_index(
         op.f("ix_emergency_protocol_run_steps_run_id"), table_name="emergency_protocol_run_steps"
     )
     op.drop_index(
@@ -1648,6 +1586,18 @@ def downgrade() -> None:
         table_name="emergency_protocol_run_reports",
     )
     op.drop_table("emergency_protocol_run_reports")
+    op.drop_index(op.f("ix_decision_overrides_status"), table_name="decision_overrides")
+    op.drop_index(
+        op.f("ix_decision_overrides_reviewed_by_user_id"), table_name="decision_overrides"
+    )
+    op.drop_index(
+        op.f("ix_decision_overrides_requested_by_user_id"), table_name="decision_overrides"
+    )
+    op.drop_index(
+        op.f("ix_decision_overrides_prescription_audit_id"), table_name="decision_overrides"
+    )
+    op.drop_index(op.f("ix_decision_overrides_id"), table_name="decision_overrides")
+    op.drop_table("decision_overrides")
     op.drop_index(op.f("ix_clinical_import_batches_status"), table_name="clinical_import_batches")
     op.drop_index(
         op.f("ix_clinical_import_batches_source_type"), table_name="clinical_import_batches"
@@ -1722,8 +1672,6 @@ def downgrade() -> None:
         table_name="medication_knowledge_sources",
     )
     op.drop_table("medication_knowledge_sources")
-    op.drop_index(op.f("ix_medication_exposure_plans_id"), table_name="medication_exposure_plans")
-    op.drop_table("medication_exposure_plans")
     op.drop_index(
         op.f("ix_medication_counseling_summaries_validation_status"),
         table_name="medication_counseling_summaries",
@@ -1744,18 +1692,6 @@ def downgrade() -> None:
         table_name="medication_counseling_summaries",
     )
     op.drop_table("medication_counseling_summaries")
-    op.drop_index(
-        op.f("ix_external_patient_identities_id"), table_name="external_patient_identities"
-    )
-    op.drop_index(
-        op.f("ix_external_patient_identities_external_system"),
-        table_name="external_patient_identities",
-    )
-    op.drop_index(
-        op.f("ix_external_patient_identities_external_patient_id"),
-        table_name="external_patient_identities",
-    )
-    op.drop_table("external_patient_identities")
     op.drop_index(op.f("ix_emergency_protocol_runs_status"), table_name="emergency_protocol_runs")
     op.drop_index(
         op.f("ix_emergency_protocol_runs_protocol_version_id"), table_name="emergency_protocol_runs"
@@ -1876,6 +1812,7 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_clinical_vocabulary_code"), table_name="clinical_vocabulary")
     op.drop_index(op.f("ix_clinical_vocabulary_category"), table_name="clinical_vocabulary")
     op.drop_table("clinical_vocabulary")
+    op.drop_table("ai_provider_runtime_states")
     op.drop_index(op.f("ix_ai_provider_model_cache_provider"), table_name="ai_provider_model_cache")
     op.drop_index(op.f("ix_ai_provider_model_cache_model_id"), table_name="ai_provider_model_cache")
     op.drop_index(op.f("ix_ai_provider_model_cache_id"), table_name="ai_provider_model_cache")

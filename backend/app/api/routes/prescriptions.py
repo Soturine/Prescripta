@@ -5,7 +5,12 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import require_roles
 from app.core.config import settings
-from app.database.models import PatientFunctionalProfileModel, PrescriptionAuditModel, UserModel
+from app.database.models import (
+    DecisionOverrideModel,
+    PatientFunctionalProfileModel,
+    PrescriptionAuditModel,
+    UserModel,
+)
 from app.database.session import get_db
 from app.domain.dose import MedicationDoseInput
 from app.domain.medication import Medication
@@ -17,6 +22,9 @@ from app.repositories.medication_repository import MedicationRepository
 from app.repositories.patient_repository import PatientRepository
 from app.schemas.prescription_schema import (
     AlertRead,
+    DecisionOverrideRead,
+    DecisionOverrideRequest,
+    DecisionOverrideReviewRequest,
     PatientCounselingResponse,
     PrescriptionCheckRequest,
     PrescriptionCheckResponse,
@@ -29,6 +37,10 @@ from app.services.audit_service import AuditService
 from app.services.clinical_context_graph import build_clinical_context_graph
 from app.services.clinical_decision_orchestrator import ClinicalDecisionOrchestrator
 from app.services.clinical_snapshot import build_clinical_snapshot
+from app.services.decision_override_service import (
+    DecisionOverrideError,
+    DecisionOverrideService,
+)
 from app.services.object_authorization import ObjectAuthorizationService
 from app.services.patient_counseling_service import PatientCounselingService
 from app.services.patient_history_service import PatientHistoryService
@@ -38,6 +50,9 @@ DbSession = Annotated[Session, Depends(get_db)]
 PrescriptionChecker = Annotated[
     UserModel,
     Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.ENFERMAGEM)),
+]
+SecondReviewer = Annotated[
+    UserModel, Depends(require_roles(UserRole.MEDICO, UserRole.ENFERMAGEM))
 ]
 
 
@@ -230,6 +245,93 @@ def check_prescription(
         psychotropic_safety=psychotropic_safety,
         prescribing_policy=prescribing_policy,
     )
+
+
+@router.post(
+    "/{audit_id}/overrides",
+    response_model=DecisionOverrideRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def request_decision_override(
+    audit_id: int,
+    payload: DecisionOverrideRequest,
+    db: DbSession,
+    current_user: SecondReviewer,
+) -> DecisionOverrideRead:
+    audit = db.get(PrescriptionAuditModel, audit_id)
+    if audit is None or (
+        audit.patient_id
+        and not ObjectAuthorizationService(db).require_patient(current_user, audit.patient_id)
+    ):
+        raise HTTPException(status_code=404, detail="Decisão clínica não encontrada.")
+    try:
+        override = DecisionOverrideService(db).request(
+            audit=audit, requester=current_user, reason=payload.reason
+        )
+        AuditService(db, auto_commit=False).record_action(
+            user=current_user,
+            action="decision_override.requested",
+            resource_type="prescription",
+            resource_id=str(audit.id),
+            status=override.status,
+            risk_level=audit.risk_level,
+            details={"override_id": override.id},
+        )
+        db.commit()
+        db.refresh(override)
+        return override
+    except DecisionOverrideError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.post("/overrides/{override_id}/review", response_model=DecisionOverrideRead)
+def review_decision_override(
+    override_id: int,
+    payload: DecisionOverrideReviewRequest,
+    db: DbSession,
+    current_user: SecondReviewer,
+) -> DecisionOverrideRead:
+    override = db.get(DecisionOverrideModel, override_id)
+    audit = (
+        db.get(PrescriptionAuditModel, override.prescription_audit_id)
+        if override is not None
+        else None
+    )
+    if audit is None or override is None or (
+        audit.patient_id
+        and not ObjectAuthorizationService(db).require_patient(current_user, audit.patient_id)
+    ):
+        raise HTTPException(status_code=404, detail="Solicitação de override não encontrada.")
+    required_role = str(
+        (audit.clinical_decision.get("override_policy") or {}).get(
+            "second_reviewer_role"
+        )
+        or "medico"
+    )
+    try:
+        reviewed = DecisionOverrideService(db).review(
+            override=override,
+            reviewer=current_user,
+            decision=payload.decision,
+            note=payload.note,
+            required_role=required_role,
+        )
+        AuditService(db, auto_commit=False).record_action(
+            user=current_user,
+            action="decision_override.reviewed",
+            resource_type="prescription",
+            resource_id=str(audit.id),
+            status=reviewed.status,
+            risk_level=audit.risk_level,
+            details={"override_id": reviewed.id, "review_decision": reviewed.review_decision},
+        )
+        db.commit()
+        db.refresh(reviewed)
+        return reviewed
+    except DecisionOverrideError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.post("/explain", response_model=PrescriptionExplainResponse)

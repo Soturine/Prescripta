@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
@@ -198,6 +199,30 @@ class PrescriptionCheckResponse(BaseModel):
     dose_intelligence: dict = Field(default_factory=dict)
     psychotropic_safety: list[dict] = Field(default_factory=list)
     prescribing_policy: dict = Field(default_factory=dict)
+
+
+class DecisionOverrideRequest(BaseModel):
+    reason: str = Field(min_length=10, max_length=2000)
+
+
+class DecisionOverrideReviewRequest(BaseModel):
+    decision: Literal["approved", "rejected"]
+    note: str = Field(min_length=10, max_length=2000)
+
+
+class DecisionOverrideRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    prescription_audit_id: int
+    requested_by_user_id: int
+    reason: str
+    status: str
+    reviewed_by_user_id: int | None = None
+    review_decision: str | None = None
+    review_note: str | None = None
+    requested_at: datetime
+    reviewed_at: datetime | None = None
 
 
 class PrescriptionExplainPatient(BaseModel):
