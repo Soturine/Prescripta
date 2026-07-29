@@ -8,4 +8,6 @@
 - Integrações: [onboarding](integration/institutional-onboarding.md), [contratos](integration/adapter-contracts.md) e [LGPD](integration/security-and-lgpd.md).
 - Frontend: [acessibilidade](frontend/accessibility-audit-v0.8.6.md) e [responsividade](frontend/responsive-audit-v0.8.6.md).
 - Testes: [CI e release](testing/ci-and-release-gates.md) e [checklist](testing/v0.8.5-end-to-end-checklist.md).
+- Segurança e operação: [modelo de ameaça](security/threat-model.md), [hazard log clínico](security/clinical-safety-hazard-log.md) e [runbooks](operations/README.md).
+- Benchmark: [fontes externas primárias](benchmark/external-primary-sources.md), sem claim de conformidade.
 - Releases: notas versionadas em `docs/releases/`.
