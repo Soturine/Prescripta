@@ -59,6 +59,39 @@ class PatientModel(Base):
     )
 
 
+class PatientPsychologicalContextModel(Base):
+    """Segmento confidencial; somente fatores minimizados são copiados ao paciente."""
+
+    __tablename__ = "patient_psychological_contexts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    patient_id: Mapped[int] = mapped_column(
+        ForeignKey("patients.id"), nullable=False, unique=True, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    purpose: Mapped[str] = mapped_column(String(40), nullable=False)
+    medication_safety_factors: Mapped[list[str]] = mapped_column(
+        JSON, default=list, nullable=False
+    )
+    confidential_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    consent_status: Mapped[str] = mapped_column(
+        String(40), default="policy_required", nullable=False
+    )
+    policy_reference: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    updated_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
 class ActiveIngredientModel(Base):
     __tablename__ = "active_ingredients"
 
@@ -627,11 +660,27 @@ class UserModel(Base):
     email: Mapped[str] = mapped_column(String(220), nullable=False, unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(512), nullable=False)
     role: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    profession: Mapped[str] = mapped_column(
+        String(40), default="administration", nullable=False, index=True
+    )
+    capabilities: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    capability_policy_version: Mapped[str] = mapped_column(
+        String(40), default="explicit-v1", nullable=False
+    )
     institution_id: Mapped[str] = mapped_column(String(100), default="demo", nullable=False)
     mfa_enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
     mfa_secret_encrypted: Mapped[str | None] = mapped_column(String(512), nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     specialty_code: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    specialty_codes: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    credential_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    credential_code_demo: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    credential_region: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    credential_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    institutional_policy: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    sensitive_data_segments: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     crm_demo: Mapped[str | None] = mapped_column(String(40), nullable=True)
     crm_uf: Mapped[str | None] = mapped_column(String(2), nullable=True)
     rqe_demo: Mapped[str | None] = mapped_column(String(40), nullable=True)
@@ -651,8 +700,107 @@ class PatientAccessGrantModel(Base):
     patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), nullable=False, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     permission: Mapped[str] = mapped_column(String(40), default="clinical", nullable=False)
+    institution_id: Mapped[str] = mapped_column(String(100), default="demo", nullable=False)
+    capability: Mapped[str] = mapped_column(
+        String(80), default="patient.read", nullable=False, index=True
+    )
+    purpose: Mapped[str] = mapped_column(
+        String(40), default="treatment", nullable=False, index=True
+    )
+    granted_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+    starts_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+    revocation_reason: Mapped[str | None] = mapped_column(String(220), nullable=True)
+    care_episode_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(30), default="active", nullable=False, index=True)
     active: Mapped[bool] = mapped_column(default=True, nullable=False)
     reason: Mapped[str | None] = mapped_column(String(220), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
+class CareTeamMembershipModel(Base):
+    __tablename__ = "care_team_memberships"
+    __table_args__ = (UniqueConstraint("patient_id", "user_id", "team_code"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    team_code: Mapped[str] = mapped_column(String(80), nullable=False)
+    care_role: Mapped[str] = mapped_column(String(80), nullable=False)
+    capabilities: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    purpose: Mapped[str] = mapped_column(String(40), default="treatment", nullable=False)
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    granted_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class CareEpisodeAssignmentModel(Base):
+    __tablename__ = "care_episode_assignments"
+    __table_args__ = (UniqueConstraint("episode_id", "user_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    episode_id: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    capabilities: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    purpose: Mapped[str] = mapped_column(String(40), default="treatment", nullable=False)
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    granted_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class BreakGlassAccessModel(Base):
+    __tablename__ = "break_glass_accesses"
+    __table_args__ = (UniqueConstraint("user_id", "idempotency_key"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    capability: Mapped[str] = mapped_column(String(80), nullable=False)
+    purpose: Mapped[str] = mapped_column(String(40), nullable=False)
+    reason: Mapped[str] = mapped_column(String(500), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ended_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    review_status: Mapped[str] = mapped_column(
+        String(30), default="pending_review", nullable=False, index=True
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+    review_notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    objects_accessed: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), default="active", nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )

@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_roles
+from app.core.auth import require_capabilities
 from app.core.config import settings
 from app.database.models import (
     DecisionOverrideModel,
@@ -16,7 +16,7 @@ from app.domain.dose import MedicationDoseInput
 from app.domain.medication import Medication
 from app.domain.patient import Patient
 from app.domain.prescription import PrescriptionInput
-from app.domain.user import UserRole
+from app.domain.user import Capability
 from app.knowledge.rag_service import ClinicalRAGService
 from app.repositories.medication_repository import MedicationRepository
 from app.repositories.patient_repository import PatientRepository
@@ -49,10 +49,10 @@ router = APIRouter(prefix="/prescriptions", tags=["prescriptions"])
 DbSession = Annotated[Session, Depends(get_db)]
 PrescriptionChecker = Annotated[
     UserModel,
-    Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.ENFERMAGEM)),
+    Depends(require_capabilities(Capability.PRESCRIPTION_CHECK)),
 ]
 SecondReviewer = Annotated[
-    UserModel, Depends(require_roles(UserRole.MEDICO, UserRole.ENFERMAGEM))
+    UserModel, Depends(require_capabilities(Capability.PRESCRIPTION_OVERRIDE))
 ]
 
 
@@ -62,7 +62,9 @@ def check_prescription(
     db: DbSession,
     current_user: PrescriptionChecker,
 ) -> PrescriptionCheckResponse:
-    patient_record = PatientRepository(db).get(payload.patient_id)
+    patient_record = PatientRepository(db).get(
+        payload.patient_id, capability="prescription.check"
+    )
     if patient_record is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
@@ -261,7 +263,9 @@ def request_decision_override(
     audit = db.get(PrescriptionAuditModel, audit_id)
     if audit is None or (
         audit.patient_id
-        and not ObjectAuthorizationService(db).require_patient(current_user, audit.patient_id)
+        and not ObjectAuthorizationService(db).require_patient(
+            current_user, audit.patient_id, capability="prescription.override"
+        )
     ):
         raise HTTPException(status_code=404, detail="Decisão clínica não encontrada.")
     try:
@@ -300,7 +304,9 @@ def review_decision_override(
     )
     if audit is None or override is None or (
         audit.patient_id
-        and not ObjectAuthorizationService(db).require_patient(current_user, audit.patient_id)
+        and not ObjectAuthorizationService(db).require_patient(
+            current_user, audit.patient_id, capability="prescription.override"
+        )
     ):
         raise HTTPException(status_code=404, detail="Solicitação de override não encontrada.")
     required_role = str(
@@ -344,7 +350,7 @@ def explain_prescription(
     if audit is None or not audit.clinical_snapshot:
         raise HTTPException(status_code=404, detail="Decisão clínica não encontrada.")
     if audit.patient_id and not ObjectAuthorizationService(db).require_patient(
-        current_user, audit.patient_id
+        current_user, audit.patient_id, capability="prescription.check"
     ):
         raise HTTPException(status_code=404, detail="Decisão clínica não encontrada.")
     explanation = AIExplainer(settings, db).explain_snapshot(

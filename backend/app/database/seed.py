@@ -11,13 +11,15 @@ from app.database.models import (
     MedicationCounselingSummaryModel,
     MedicationKnowledgeSourceModel,
     MedicationModel,
+    PatientAccessGrantModel,
     PatientFunctionalProfileModel,
     PatientIdentifierModel,
     PatientModel,
     SpecialtyModel,
     UserModel,
 )
-from app.domain.user import UserRole
+from app.domain.user import ROLE_PROFESSION, UserRole
+from app.services.capability_policy import allowed_capabilities
 from app.services.clinical_profile import normalize_patient_payload
 from app.services.controlled_vocabulary import VOCABULARY
 from app.services.normalizer import normalize_text
@@ -48,6 +50,8 @@ def seed_demo_data(db: Session) -> None:
     _seed_specialties(db)
     db.flush()
     _seed_users(db)
+    db.flush()
+    _seed_demo_patient_access(db)
     db.commit()
 
 
@@ -1321,8 +1325,36 @@ def _seed_users(db: Session) -> None:
             UserRole.AUDITOR,
             None,
         ),
+        (
+            "Farmácia clínica demonstração",
+            "farmacia@prescripta.local",
+            "Farmacia@12345",
+            UserRole.FARMACEUTICO,
+            None,
+        ),
+        (
+            "Psicologia demonstração",
+            "psicologia@prescripta.local",
+            "Psicologia@12345",
+            UserRole.PSICOLOGO,
+            None,
+        ),
+        (
+            "Segurança clínica demonstração",
+            "safety@prescripta.local",
+            "Safety@12345",
+            UserRole.CLINICAL_SAFETY_OFFICER,
+            None,
+        ),
     ]
     for name, email, password, role, specialty in specs:
+        profession = ROLE_PROFESSION[role]
+        capabilities = sorted(
+            allowed_capabilities(
+                profession,
+                specialty_codes=[specialty] if specialty else [],
+            )
+        )
         user = db.scalar(select(UserModel).where(UserModel.email == email))
         if user is None:
             db.add(
@@ -1331,11 +1363,71 @@ def _seed_users(db: Session) -> None:
                     email=email,
                     hashed_password=hash_password(password),
                     role=role.value,
+                    profession=profession.value,
+                    capabilities=capabilities,
+                    capability_policy_version="explicit-v1",
                     is_active=True,
                     specialty_code=specialty,
+                    specialty_codes=[specialty] if specialty else [],
+                    credential_type=("crm_demo" if role == UserRole.MEDICO else None),
+                    sensitive_data_segments=(
+                        ["psychological"]
+                        if "patient.sensitive_psychology.read" in capabilities
+                        else []
+                    ),
                     credential_verification_status="demo_unverified",
                 )
             )
-        elif role == UserRole.MEDICO and not user.specialty_code:
-            user.specialty_code = specialty
-            user.credential_verification_status = "demo_unverified"
+        else:
+            user.profession = profession.value
+            user.capabilities = capabilities
+            user.capability_policy_version = "explicit-v1"
+            user.specialty_codes = [specialty] if specialty else []
+            user.sensitive_data_segments = (
+                ["psychological"]
+                if "patient.sensitive_psychology.read" in capabilities
+                else []
+            )
+            if role == UserRole.MEDICO and not user.specialty_code:
+                user.specialty_code = specialty
+                user.credential_verification_status = "demo_unverified"
+
+
+def _seed_demo_patient_access(db: Session) -> None:
+    object_capabilities = {
+        "patient.read",
+        "patient.write",
+        "prescription.check",
+        "prescription.override",
+        "report.read",
+        "report.create",
+        "patient_guidance.create",
+        "reconciliation.review",
+        "psychology.context.write",
+    }
+    patients = list(db.scalars(select(PatientModel)))
+    users = list(db.scalars(select(UserModel)))
+    for patient in patients:
+        for user in users:
+            if user.institution_id != patient.institution_id:
+                continue
+            for capability in sorted(set(user.capabilities or []) & object_capabilities):
+                existing = db.scalar(
+                    select(PatientAccessGrantModel).where(
+                        PatientAccessGrantModel.patient_id == patient.id,
+                        PatientAccessGrantModel.user_id == user.id,
+                        PatientAccessGrantModel.permission == capability,
+                    )
+                )
+                if existing is None:
+                    db.add(
+                        PatientAccessGrantModel(
+                            patient_id=patient.id,
+                            user_id=user.id,
+                            institution_id=patient.institution_id,
+                            permission=capability,
+                            capability=capability,
+                            purpose="treatment",
+                            reason="deterministic_demo_seed",
+                        )
+                    )

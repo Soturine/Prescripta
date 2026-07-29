@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.security import decode_access_token
 from app.database.models import UserModel
 from app.database.session import get_db
-from app.domain.user import UserRole
+from app.domain.user import Capability, UserRole
 from app.repositories.user_repository import UserRepository
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -64,6 +64,45 @@ def require_roles(*allowed_roles: UserRole) -> Callable[[CurrentUser], UserModel
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Perfil sem permissao para esta acao.",
+            )
+        return current_user
+
+    return dependency
+
+
+def require_capabilities(
+    *required_capabilities: Capability | str,
+) -> Callable[[CurrentUser], UserModel]:
+    required = {
+        capability.value if isinstance(capability, Capability) else capability
+        for capability in required_capabilities
+    }
+
+    def dependency(current_user: CurrentUser) -> UserModel:
+        available = set(current_user.capabilities or [])
+        if not required.issubset(available):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Capacidade profissional ou institucional ausente.",
+            )
+        return current_user
+
+    return dependency
+
+
+def require_any_capability(
+    *accepted_capabilities: Capability | str,
+) -> Callable[[CurrentUser], UserModel]:
+    accepted = {
+        capability.value if isinstance(capability, Capability) else capability
+        for capability in accepted_capabilities
+    }
+
+    def dependency(current_user: CurrentUser) -> UserModel:
+        if not accepted.intersection(set(current_user.capabilities or [])):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Capacidade profissional ou institucional ausente.",
             )
         return current_user
 

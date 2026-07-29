@@ -4,10 +4,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_roles
+from app.core.auth import require_capabilities
 from app.database.models import UserModel
 from app.database.session import get_db
-from app.domain.user import UserRole
+from app.domain.user import Capability
 from app.reports.audit import decision_timeline, evidence_view
 from app.reports.service import ReportNotFoundError, ReportService
 from app.repositories.audit_repository import AuditRepository
@@ -15,7 +15,9 @@ from app.schemas.audit_schema import AuditPage, AuditRead
 
 router = APIRouter(prefix="/audit", tags=["audit"])
 DbSession = Annotated[Session, Depends(get_db)]
-AuditReader = Annotated[UserModel, Depends(require_roles(UserRole.ADMIN, UserRole.AUDITOR))]
+AuditReader = Annotated[
+    UserModel, Depends(require_capabilities(Capability.AUDIT_READ))
+]
 
 
 @router.get("", response_model=AuditPage)

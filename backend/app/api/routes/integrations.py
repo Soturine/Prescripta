@@ -5,10 +5,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_roles
+from app.core.auth import require_any_capability, require_capabilities
 from app.database.models import ClinicalImportBatchModel, UserModel
 from app.database.session import get_db
-from app.domain.user import UserRole
+from app.domain.user import Capability
 from app.integrations.adapters.csv.csv_importer import CsvImporter
 from app.integrations.adapters.fhir.fhir_bundle_importer import FhirBundleImporter
 from app.integrations.adapters.json.generic_json_importer import GenericJsonImporter
@@ -30,9 +30,16 @@ router = APIRouter(prefix="/integrations", tags=["integrations"])
 DbSession = Annotated[Session, Depends(get_db)]
 ImportReader = Annotated[
     UserModel,
-    Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.ENFERMAGEM, UserRole.AUDITOR)),
+    Depends(
+        require_any_capability(
+            Capability.RECONCILIATION_REVIEW,
+            Capability.AUDIT_READ,
+        )
+    ),
 ]
-ImportManager = Annotated[UserModel, Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO))]
+ImportManager = Annotated[
+    UserModel, Depends(require_capabilities(Capability.RECONCILIATION_REVIEW))
+]
 
 
 @router.post("/fhir/import-bundle", response_model=ClinicalImportBatchRead)

@@ -8,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.routes import (
+    access,
     audit,
     auth,
     cds,
@@ -25,13 +26,13 @@ from app.api.routes import (
 from app.api.routes import (
     settings as settings_routes,
 )
-from app.core.auth import require_roles
+from app.core.auth import require_capabilities
 from app.core.config import settings, validate_runtime_settings
 from app.core.version import APP_VERSION
 from app.database.models import UserModel
 from app.database.seed import seed_demo_data
 from app.database.session import SessionLocal, get_db, init_db
-from app.domain.user import UserRole
+from app.domain.user import Capability
 from app.services.ai_settings import AIConfigurationError, AISettingsService
 
 
@@ -67,6 +68,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix=settings.api_prefix)
+app.include_router(access.router, prefix=settings.api_prefix)
 app.include_router(patients.router, prefix=settings.api_prefix)
 app.include_router(medications.router, prefix=settings.api_prefix)
 app.include_router(medication_catalog.router, prefix=settings.api_prefix)
@@ -92,7 +94,7 @@ def health() -> dict[str, object]:
 def readiness(
     db: Annotated[Session, Depends(get_db)],
     _current_user: Annotated[
-        UserModel, Depends(require_roles(UserRole.ADMIN, UserRole.AUDITOR))
+        UserModel, Depends(require_capabilities(Capability.SYSTEM_HEALTH_VIEW))
     ],
 ) -> dict[str, object]:
     database_status = "ok"

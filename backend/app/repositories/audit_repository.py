@@ -7,6 +7,7 @@ from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.database.models import AuditEventModel, PrescriptionAuditModel
+from app.services.canonical_json import json_compatible
 
 
 class AuditRepository:
@@ -182,6 +183,17 @@ class AuditRepository:
     def create_prescription_check(
         self, *, commit: bool = True, **values: object
     ) -> PrescriptionAuditModel:
+        for field in (
+            "alerts",
+            "dose_intelligence",
+            "psychotropic_safety",
+            "prescribing_policy",
+            "dose_input",
+            "clinical_decision",
+            "clinical_snapshot",
+        ):
+            if field in values:
+                values[field] = json_compatible(values[field])
         audit = PrescriptionAuditModel(**values)
         self.db.add(audit)
         if commit:

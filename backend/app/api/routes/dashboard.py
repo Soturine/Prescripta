@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_roles
+from app.core.auth import require_capabilities
 from app.database.models import (
     ActiveIngredientModel,
     MedicationCounselingSummaryModel,
@@ -12,7 +12,7 @@ from app.database.models import (
     UserModel,
 )
 from app.database.session import get_db
-from app.domain.user import ALL_ROLES
+from app.domain.user import Capability
 from app.repositories.audit_repository import AuditRepository
 from app.repositories.medication_repository import MedicationRepository
 from app.repositories.patient_repository import PatientRepository
@@ -20,7 +20,9 @@ from app.schemas.dashboard_schema import DashboardSummary
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 DbSession = Annotated[Session, Depends(get_db)]
-DashboardReader = Annotated[UserModel, Depends(require_roles(*ALL_ROLES))]
+DashboardReader = Annotated[
+    UserModel, Depends(require_capabilities(Capability.DASHBOARD_VIEW))
+]
 
 
 @router.get("", response_model=DashboardSummary)

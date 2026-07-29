@@ -5,10 +5,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_roles
+from app.core.auth import require_any_capability, require_capabilities
 from app.database.models import UserModel
 from app.database.session import get_db
-from app.domain.user import UserRole
+from app.domain.user import Capability
 from app.reports.pdf_renderer import SimplePDFRenderer
 from app.reports.service import ReportNotFoundError, ReportService
 from app.schemas.protocol_schema import (
@@ -20,6 +20,8 @@ from app.schemas.protocol_schema import (
     ProtocolRunRequest,
     ProtocolRunResponse,
 )
+from app.services.audit_service import AuditService
+from app.services.capability_policy import nursing_protocol_authorized
 from app.services.emergency_protocol_service import (
     EmergencyProtocolService,
     ProtocolNotFoundError,
@@ -30,11 +32,16 @@ router = APIRouter(prefix="/protocols", tags=["protocols"])
 DbSession = Annotated[Session, Depends(get_db)]
 ProtocolReader = Annotated[
     UserModel,
-    Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.ENFERMAGEM, UserRole.AUDITOR)),
+    Depends(require_capabilities(Capability.REPORT_READ)),
 ]
 ProtocolRunner = Annotated[
     UserModel,
-    Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.ENFERMAGEM)),
+    Depends(
+        require_any_capability(
+            Capability.PRESCRIPTION_CHECK,
+            Capability.NURSING_PROTOCOL_PRESCRIBE,
+        )
+    ),
 ]
 
 
@@ -98,8 +105,6 @@ def get_protocol(
 ) -> EmergencyProtocolRead:
     try:
         protocol = EmergencyProtocolService(db).get_protocol(protocol_id)
-        from app.services.audit_service import AuditService
-
         AuditService(db).record_action(
             user=current_user,
             action="protocol.viewed",
@@ -127,6 +132,24 @@ def run_protocol(
     db: DbSession,
     current_user: ProtocolRunner,
 ) -> ProtocolRunResponse:
+    if current_user.profession == "nursing" and not nursing_protocol_authorized(
+        current_user, protocol_id
+    ):
+        AuditService(db).record_action(
+            user=current_user,
+            action="nursing_protocol.denied",
+            resource_type="protocol",
+            resource_id=protocol_id,
+            status="denied",
+            details={"reason": "institutional_policy_or_credential_missing"},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Prescrição por enfermagem requer credencial vigente, política "
+                "institucional versionada, escopo e limites explícitos."
+            ),
+        )
     try:
         return EmergencyProtocolService(db).run(protocol_id, payload, current_user)
     except ProtocolNotFoundError as exc:

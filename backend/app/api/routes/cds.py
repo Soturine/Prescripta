@@ -6,14 +6,14 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_roles
+from app.core.auth import require_capabilities
 from app.database.models import CDSIdempotencyModel, MedicationModel, UserModel
 from app.database.session import get_db
 from app.domain.dose import MedicationDoseInput
 from app.domain.medication import Medication
 from app.domain.patient import Patient
 from app.domain.prescription import PrescriptionInput
-from app.domain.user import UserRole
+from app.domain.user import Capability
 from app.schemas.cds_schema import (
     CDSCard,
     CDSMedicationRequest,
@@ -30,7 +30,7 @@ router = APIRouter(prefix="/cds", tags=["cds"])
 DbSession = Annotated[Session, Depends(get_db)]
 CDSChecker = Annotated[
     UserModel,
-    Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.ENFERMAGEM)),
+    Depends(require_capabilities(Capability.PRESCRIPTION_CHECK)),
 ]
 
 

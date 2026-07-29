@@ -3,15 +3,16 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_roles
+from app.core.auth import require_capabilities
 from app.database.models import (
     PatientClinicalDocumentModel,
     PatientDocumentExtractionModel,
     PatientIdentifierModel,
+    PatientPsychologicalContextModel,
     UserModel,
 )
 from app.database.session import get_db
-from app.domain.user import UserRole
+from app.domain.user import Capability
 from app.repositories.patient_repository import PatientRepository
 from app.schemas.patient_history_schema import (
     PatientClinicalDocumentCreate,
@@ -26,6 +27,8 @@ from app.schemas.patient_schema import (
     PatientFunctionalProfileUpdate,
     PatientIdentifierCreate,
     PatientIdentifierRead,
+    PatientPsychologicalContextRead,
+    PatientPsychologicalContextUpdate,
     PatientRead,
     PatientUpdate,
     QuickTriageRequest,
@@ -48,15 +51,27 @@ from app.services.patient_identifier_service import PatientIdentifierService
 router = APIRouter(prefix="/patients", tags=["patients"])
 DbSession = Annotated[Session, Depends(get_db)]
 PatientReader = Annotated[
-    UserModel, Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.ENFERMAGEM))
+    UserModel, Depends(require_capabilities(Capability.PATIENT_READ))
 ]
-PatientManager = Annotated[UserModel, Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO))]
+PatientManager = Annotated[
+    UserModel, Depends(require_capabilities(Capability.PATIENT_WRITE))
+]
+PatientCreator = Annotated[
+    UserModel, Depends(require_capabilities(Capability.PATIENT_CREATE))
+]
+PsychologyReader = Annotated[
+    UserModel,
+    Depends(require_capabilities(Capability.PATIENT_SENSITIVE_PSYCHOLOGY_READ)),
+]
+PsychologyWriter = Annotated[
+    UserModel, Depends(require_capabilities(Capability.PSYCHOLOGY_CONTEXT_WRITE))
+]
 
 
 @router.get("", response_model=list[PatientRead])
 def list_patients(
     db: DbSession,
-    _current_user: PatientReader,
+    current_user: PatientReader,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=100),
 ) -> list[PatientRead]:
@@ -70,14 +85,14 @@ def list_patients(
             identifiers_by_patient.setdefault(identifier.patient_id, []).append(identifier)
     for patient in patients:
         _attach_patient_metadata(db, patient, identifiers_by_patient.get(patient.id, []))
-    return patients
+    return [_patient_read(patient, current_user) for patient in patients]
 
 
 @router.post("", response_model=PatientRead, status_code=status.HTTP_201_CREATED)
 def create_patient(
     payload: PatientCreate,
     db: DbSession,
-    current_user: PatientManager,
+    current_user: PatientCreator,
 ) -> PatientRead:
     repository = PatientRepository(db)
     duplicate = repository.find_duplicate(payload)
@@ -95,11 +110,11 @@ def create_patient(
         resource_id=str(patient.id),
         details={"name": patient.name},
     )
-    return patient
+    return _patient_read(patient, current_user)
 
 
 @router.get("/{patient_id}", response_model=PatientRead)
-def get_patient(patient_id: int, db: DbSession, _current_user: PatientReader) -> PatientRead:
+def get_patient(patient_id: int, db: DbSession, current_user: PatientReader) -> PatientRead:
     patient = PatientRepository(db).get(patient_id)
     if patient is None:
         raise HTTPException(
@@ -109,7 +124,7 @@ def get_patient(patient_id: int, db: DbSession, _current_user: PatientReader) ->
         patient.clinical_profile_completeness_score or 0
     )
     _attach_patient_metadata(db, patient)
-    return patient
+    return _patient_read(patient, current_user)
 
 
 @router.put("/{patient_id}", response_model=PatientRead)
@@ -120,7 +135,7 @@ def update_patient(
     current_user: PatientManager,
 ) -> PatientRead:
     repository = PatientRepository(db)
-    patient = repository.get(patient_id)
+    patient = repository.get(patient_id, capability="patient.write")
     if patient is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
@@ -139,7 +154,7 @@ def update_patient(
         resource_id=str(updated.id),
         details={"name": updated.name},
     )
-    return updated
+    return _patient_read(updated, current_user)
 
 
 @router.patch("/{patient_id}/quick-triage", response_model=PatientRead)
@@ -150,7 +165,7 @@ def quick_triage_patient(
     current_user: PatientManager,
 ) -> PatientRead:
     repository = PatientRepository(db)
-    patient = repository.get(patient_id)
+    patient = repository.get(patient_id, capability="patient.write")
     if patient is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
@@ -242,7 +257,7 @@ def quick_triage_patient(
             "conflicts": conflicts,
         },
     )
-    return patient
+    return _patient_read(patient, current_user)
 
 
 @router.get("/{patient_id}/identifiers", response_model=list[PatientIdentifierRead])
@@ -280,7 +295,7 @@ def update_functional_profile(
     db: DbSession,
     current_user: PatientManager,
 ) -> PatientFunctionalProfileRead:
-    patient = PatientRepository(db).get(patient_id)
+    patient = PatientRepository(db).get(patient_id, capability="patient.write")
     if patient is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
@@ -330,7 +345,7 @@ def create_patient_document(
     db: DbSession,
     current_user: PatientManager,
 ) -> PatientClinicalDocumentRead:
-    patient = PatientRepository(db).get(patient_id)
+    patient = PatientRepository(db).get(patient_id, capability="patient.write")
     if patient is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
@@ -351,7 +366,7 @@ def extract_patient_document(
     db: DbSession,
     current_user: PatientManager,
 ) -> PatientDocumentExtractionRead:
-    patient = PatientRepository(db).get(patient_id)
+    patient = PatientRepository(db).get(patient_id, capability="patient.write")
     if patient is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
@@ -376,7 +391,7 @@ def review_patient_document_extraction(
     db: DbSession,
     current_user: PatientManager,
 ) -> PatientDocumentExtractionRead:
-    patient = PatientRepository(db).get(patient_id)
+    patient = PatientRepository(db).get(patient_id, capability="patient.write")
     if patient is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
@@ -442,7 +457,7 @@ def create_patient_identifier(
     db: DbSession,
     current_user: PatientManager,
 ) -> PatientIdentifierRead:
-    patient = PatientRepository(db).get(patient_id)
+    patient = PatientRepository(db).get(patient_id, capability="patient.write")
     if patient is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Paciente não encontrado."
@@ -516,6 +531,102 @@ def patient_clinical_context(
     }
 
 
+@router.get(
+    "/{patient_id}/psychological-context",
+    response_model=PatientPsychologicalContextRead,
+)
+def get_patient_psychological_context(
+    patient_id: int,
+    db: DbSession,
+    current_user: PsychologyReader,
+    purpose: str = Query(default="treatment"),
+) -> PatientPsychologicalContextRead:
+    patient = PatientRepository(db).get(
+        patient_id,
+        capability=Capability.PATIENT_SENSITIVE_PSYCHOLOGY_READ.value,
+        purpose=purpose,
+    )
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contexto psicológico não encontrado para a finalidade informada.",
+        )
+    context = db.query(PatientPsychologicalContextModel).filter_by(
+        patient_id=patient_id
+    ).one_or_none()
+    if context is None or context.purpose != purpose:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contexto psicológico não encontrado para a finalidade informada.",
+        )
+    AuditService(db).record_action(
+        user=current_user,
+        action="patient.psychological_context.read",
+        resource_type="patient_psychological_context",
+        resource_id=str(context.id),
+        status="accessed",
+        details={"patient_id": patient.id, "purpose": purpose, "content_logged": False},
+    )
+    return context
+
+
+@router.put(
+    "/{patient_id}/psychological-context",
+    response_model=PatientPsychologicalContextRead,
+)
+def update_patient_psychological_context(
+    patient_id: int,
+    payload: PatientPsychologicalContextUpdate,
+    db: DbSession,
+    current_user: PsychologyWriter,
+) -> PatientPsychologicalContextRead:
+    patient = PatientRepository(db).get(
+        patient_id,
+        capability=Capability.PSYCHOLOGY_CONTEXT_WRITE.value,
+        purpose=payload.purpose,
+    )
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Paciente não encontrado.",
+        )
+    context = db.query(PatientPsychologicalContextModel).filter_by(
+        patient_id=patient_id
+    ).one_or_none()
+    values = payload.model_dump()
+    if context is None:
+        context = PatientPsychologicalContextModel(
+            patient_id=patient.id,
+            institution_id=patient.institution_id,
+            updated_by_user_id=current_user.id,
+            **values,
+        )
+        db.add(context)
+    else:
+        for field, value in values.items():
+            setattr(context, field, value)
+        context.updated_by_user_id = current_user.id
+    # O motor e os relatórios recebem apenas os fatores minimizados, nunca as notas.
+    patient.mental_health_factors = sorted(set(payload.medication_safety_factors))
+    db.flush()
+    AuditService(db, auto_commit=False).record_action(
+        user=current_user,
+        action="patient.psychological_context.update",
+        resource_type="patient_psychological_context",
+        resource_id=str(context.id),
+        status="updated",
+        details={
+            "patient_id": patient.id,
+            "purpose": payload.purpose,
+            "safety_factor_count": len(patient.mental_health_factors),
+            "content_logged": False,
+        },
+    )
+    db.commit()
+    db.refresh(context)
+    return context
+
+
 def _triage_value(
     incoming: bool | str | None,
     existing: str | None,
@@ -538,3 +649,9 @@ def _attach_patient_metadata(db: Session, patient, identifiers=None) -> None:
         else PatientIdentifierService(db).list_for_patient(patient.id)
     )
     patient.possible_duplicate_matches = []
+
+
+def _patient_read(patient, _user: UserModel) -> PatientRead:
+    """Expõe somente fatores minimizados; notas psicológicas vivem em outro segmento."""
+
+    return PatientRead.model_validate(patient)

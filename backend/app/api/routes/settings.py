@@ -5,10 +5,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_roles
+from app.core.auth import require_capabilities
 from app.database.models import UserModel
 from app.database.session import get_db
-from app.domain.user import UserRole
+from app.domain.user import Capability
 from app.schemas.ai_settings_schema import (
     AIConnectionTestRequest,
     AIConnectionTestResponse,
@@ -26,9 +26,11 @@ router = APIRouter(prefix="/settings/ai", tags=["ai-settings"])
 DbSession = Annotated[Session, Depends(get_db)]
 AISettingsReader = Annotated[
     UserModel,
-    Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.ENFERMAGEM, UserRole.AUDITOR)),
+    Depends(require_capabilities(Capability.AI_STATUS_VIEW)),
 ]
-AISettingsManager = Annotated[UserModel, Depends(require_roles(UserRole.ADMIN))]
+AISettingsManager = Annotated[
+    UserModel, Depends(require_capabilities(Capability.AI_SETTINGS_MANAGE))
+]
 
 
 @router.get("/providers", response_model=list[AIProviderInfo])

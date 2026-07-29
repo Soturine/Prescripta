@@ -17,8 +17,35 @@ def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db
+        db.commit()
+    except Exception:
+        finish_denied_request(db)
+        raise
     finally:
         db.close()
+
+
+def finish_denied_request(db: Session) -> bool:
+    """Persiste somente auditorias de negação quando a UoW segue imaculada.
+
+    A função nunca confirma objetos clínicos pendentes. Se qualquer objeto
+    diferente do evento de negação estiver novo, alterado ou removido, toda a
+    unidade de trabalho é revertida.
+    """
+
+    pending = list(db.new)
+    only_denials = bool(pending) and all(
+        getattr(item, "action", None) == "authorization.denied"
+        and getattr(item, "resource_type", None)
+        for item in pending
+    )
+    if only_denials and not db.dirty and not db.deleted:
+        db.commit()
+        db.info.pop("authorization_denials", None)
+        return True
+    db.rollback()
+    db.info.pop("authorization_denials", None)
+    return False
 
 
 def init_db() -> None:
@@ -81,6 +108,30 @@ def _ensure_sqlite_v04_columns() -> None:
             "institution_id": "VARCHAR(100) NOT NULL DEFAULT 'demo'",
             "mfa_enabled": "BOOLEAN NOT NULL DEFAULT 0",
             "mfa_secret_encrypted": "VARCHAR(512)",
+            "profession": "VARCHAR(40) NOT NULL DEFAULT 'administration'",
+            "capabilities": "JSON NOT NULL DEFAULT '[]'",
+            "capability_policy_version": "VARCHAR(40) NOT NULL DEFAULT 'explicit-v1'",
+            "specialty_codes": "JSON NOT NULL DEFAULT '[]'",
+            "credential_type": "VARCHAR(40)",
+            "credential_code_demo": "VARCHAR(80)",
+            "credential_region": "VARCHAR(20)",
+            "credential_expires_at": "DATETIME",
+            "institutional_policy": "JSON NOT NULL DEFAULT '{}'",
+            "sensitive_data_segments": "JSON NOT NULL DEFAULT '[]'",
+        },
+        "patient_access_grants": {
+            "institution_id": "VARCHAR(100) NOT NULL DEFAULT 'demo'",
+            "capability": "VARCHAR(80) NOT NULL DEFAULT 'patient.read'",
+            "purpose": "VARCHAR(40) NOT NULL DEFAULT 'treatment'",
+            "granted_by_user_id": "INTEGER",
+            "starts_at": "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
+            "expires_at": "DATETIME",
+            "revoked_at": "DATETIME",
+            "revoked_by_user_id": "INTEGER",
+            "revocation_reason": "VARCHAR(220)",
+            "care_episode_id": "VARCHAR(80)",
+            "status": "VARCHAR(30) NOT NULL DEFAULT 'active'",
+            "updated_at": "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
         },
         "medications": {
             "active_ingredient_id": "INTEGER",

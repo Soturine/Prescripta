@@ -3,11 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_roles
+from app.core.auth import require_capabilities
 from app.core.security import hash_password
 from app.database.models import UserModel
 from app.database.session import get_db
-from app.domain.user import UserRole
+from app.domain.user import ROLE_PROFESSION, Capability
 from app.repositories.user_repository import UserRepository
 from app.schemas.user_schema import (
     UserClinicalProfileUpdate,
@@ -17,10 +17,16 @@ from app.schemas.user_schema import (
     UserStatusUpdate,
 )
 from app.services.audit_service import AuditService
+from app.services.capability_policy import (
+    InvalidProfessionalProfile,
+    validate_professional_profile,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 DbSession = Annotated[Session, Depends(get_db)]
-AdminUser = Annotated[UserModel, Depends(require_roles(UserRole.ADMIN))]
+AdminUser = Annotated[
+    UserModel, Depends(require_capabilities(Capability.USER_MANAGE))
+]
 
 
 @router.get("", response_model=list[UserRead])
@@ -36,13 +42,34 @@ def create_user(payload: UserCreate, db: DbSession, current_user: AdminUser) -> 
             status_code=status.HTTP_409_CONFLICT,
             detail="E-mail já cadastrado.",
         )
+    profession = payload.profession or ROLE_PROFESSION[payload.role]
+    try:
+        validate_professional_profile(
+            role=payload.role,
+            profession=profession,
+            capabilities=payload.capabilities,
+            specialty_codes=payload.specialty_codes,
+        )
+    except InvalidProfessionalProfile as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
     user = repository.create(
         name=payload.name,
         email=payload.email,
         hashed_password=hash_password(payload.password),
         role=payload.role.value,
+        profession=profession.value,
+        capabilities=payload.capabilities,
         is_active=payload.is_active,
         specialty_code=payload.specialty_code,
+        specialty_codes=payload.specialty_codes,
+        credential_type=payload.credential_type,
+        credential_code_demo=payload.credential_code_demo,
+        credential_region=payload.credential_region,
+        credential_expires_at=payload.credential_expires_at,
+        institutional_policy=payload.institutional_policy,
+        sensitive_data_segments=payload.sensitive_data_segments,
         crm_demo=payload.crm_demo,
         crm_uf=payload.crm_uf.upper() if payload.crm_uf else None,
         rqe_demo=payload.rqe_demo,
@@ -91,8 +118,23 @@ def update_user_clinical_profile(
     user = UserRepository(db).get(user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
-    for field, value in payload.model_dump().items():
-        setattr(user, field, value)
+    values = payload.model_dump(exclude_unset=True)
+    profession = values.get("profession", user.profession)
+    capabilities = values.get("capabilities", list(user.capabilities or []))
+    specialty_codes = values.get("specialty_codes", list(user.specialty_codes or []))
+    try:
+        validate_professional_profile(
+            role=user.role,
+            profession=profession,
+            capabilities=capabilities,
+            specialty_codes=specialty_codes,
+        )
+    except InvalidProfessionalProfile as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
+    for field, value in values.items():
+        setattr(user, field, value.value if hasattr(value, "value") else value)
     user.credential_verification_status = "demo_unverified"
     db.commit()
     db.refresh(user)
@@ -120,7 +162,13 @@ def update_user_role(
     user = repository.get(user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
-    updated = repository.set_role(user, payload.role.value)
+    user.role = payload.role.value
+    user.profession = ROLE_PROFESSION[payload.role].value
+    user.capabilities = []
+    user.capability_policy_version = "explicit-v1"
+    db.commit()
+    db.refresh(user)
+    updated = user
     AuditService(db).record_action(
         user=current_user,
         action="user.role_update",

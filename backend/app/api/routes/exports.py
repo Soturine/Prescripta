@@ -6,10 +6,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_roles
+from app.core.auth import require_capabilities
 from app.database.models import UserModel
 from app.database.session import get_db
-from app.domain.user import UserRole
+from app.domain.user import Capability
 from app.reports.service import ReportNotFoundError, ReportService
 from app.repositories.audit_repository import AuditRepository
 
@@ -17,9 +17,11 @@ router = APIRouter(prefix="/exports", tags=["exports"])
 DbSession = Annotated[Session, Depends(get_db)]
 ClinicalExporter = Annotated[
     UserModel,
-    Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.AUDITOR)),
+    Depends(require_capabilities(Capability.REPORT_READ)),
 ]
-AuditExporter = Annotated[UserModel, Depends(require_roles(UserRole.ADMIN, UserRole.AUDITOR))]
+AuditExporter = Annotated[
+    UserModel, Depends(require_capabilities(Capability.AUDIT_READ))
+]
 
 
 @router.get("/prescriptions/{audit_id}.json")

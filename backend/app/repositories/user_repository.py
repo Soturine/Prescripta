@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -24,8 +26,17 @@ class UserRepository:
         email: str,
         hashed_password: str,
         role: str,
+        profession: str,
+        capabilities: list[str] | None = None,
         is_active: bool = True,
         specialty_code: str | None = None,
+        specialty_codes: list[str] | None = None,
+        credential_type: str | None = None,
+        credential_code_demo: str | None = None,
+        credential_region: str | None = None,
+        credential_expires_at=None,
+        institutional_policy: dict | None = None,
+        sensitive_data_segments: list[str] | None = None,
         crm_demo: str | None = None,
         crm_uf: str | None = None,
         rqe_demo: str | None = None,
@@ -37,8 +48,18 @@ class UserRepository:
             email=email.casefold(),
             hashed_password=hashed_password,
             role=role,
+            profession=profession,
+            capabilities=list(capabilities or []),
+            capability_policy_version="explicit-v1",
             is_active=is_active,
             specialty_code=specialty_code,
+            specialty_codes=list(specialty_codes or ([specialty_code] if specialty_code else [])),
+            credential_type=credential_type,
+            credential_code_demo=credential_code_demo,
+            credential_region=credential_region,
+            credential_expires_at=credential_expires_at,
+            institutional_policy=dict(institutional_policy or {}),
+            sensitive_data_segments=list(sensitive_data_segments or []),
             crm_demo=crm_demo,
             crm_uf=crm_uf,
             rqe_demo=rqe_demo,

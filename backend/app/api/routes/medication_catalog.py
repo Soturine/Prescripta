@@ -3,10 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_roles
+from app.core.auth import require_capabilities
 from app.database.models import UserModel
 from app.database.session import get_db
-from app.domain.user import UserRole
+from app.domain.user import Capability
 from app.repositories.catalog_repository import MedicationCatalogRepository
 from app.schemas.catalog_schema import (
     ActiveIngredientRead,
@@ -21,7 +21,7 @@ router = APIRouter(tags=["medication-catalog"])
 DbSession = Annotated[Session, Depends(get_db)]
 CatalogReader = Annotated[
     UserModel,
-    Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.ENFERMAGEM)),
+    Depends(require_capabilities(Capability.MEDICATION_READ)),
 ]
 
 

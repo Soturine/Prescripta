@@ -6,10 +6,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_roles
+from app.core.auth import require_capabilities
 from app.database.models import UserModel
 from app.database.session import get_db
-from app.domain.user import UserRole
+from app.domain.user import Capability
 from app.reports.audit import decision_timeline, evidence_view
 from app.reports.schemas import GeneratedReportRead, ReportMode, ReportPreview
 from app.reports.service import ReportNotFoundError, ReportService
@@ -19,14 +19,18 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 DbSession = Annotated[Session, Depends(get_db)]
 ReportReader = Annotated[
     UserModel,
-    Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.ENFERMAGEM, UserRole.AUDITOR)),
+    Depends(require_capabilities(Capability.REPORT_READ)),
 ]
-ReportManager = Annotated[UserModel, Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO))]
+ReportManager = Annotated[
+    UserModel, Depends(require_capabilities(Capability.REPORT_CREATE))
+]
 PatientGuidanceManager = Annotated[
     UserModel,
-    Depends(require_roles(UserRole.ADMIN, UserRole.MEDICO, UserRole.ENFERMAGEM)),
+    Depends(require_capabilities(Capability.PATIENT_GUIDANCE_CREATE)),
 ]
-AuditReportManager = Annotated[UserModel, Depends(require_roles(UserRole.ADMIN, UserRole.AUDITOR))]
+AuditReportManager = Annotated[
+    UserModel, Depends(require_capabilities(Capability.AUDIT_READ))
+]
 
 
 @router.get("", response_model=list[GeneratedReportRead])

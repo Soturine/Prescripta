@@ -6,7 +6,11 @@ from app.domain.clinical_decision import ClinicalDecisionEnvelope
 from app.domain.medication import Medication
 from app.domain.patient import Patient
 from app.domain.prescription import PrescriptionInput, PrescriptionResult
-from app.services.canonical_json import CANONICAL_HASH_ALGORITHM, canonical_sha256
+from app.services.canonical_json import (
+    CANONICAL_HASH_ALGORITHM,
+    canonical_sha256,
+    json_compatible,
+)
 
 CLINICAL_SNAPSHOT_SCHEMA = "prescripta-clinical-snapshot-v1"
 
@@ -109,7 +113,7 @@ def build_clinical_snapshot(
             "data_sources": list(patient_knowledge_bundle.get("data_sources") or []),
         },
     }
-    return snapshot
+    return json_compatible(snapshot)
 
 
 def clinical_snapshot_hash(snapshot: dict[str, Any]) -> tuple[str, str]:

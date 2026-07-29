@@ -138,6 +138,24 @@ class QuickTriageRequest(BaseModel):
     condition_to_review: str | None = None
 
 
+class PatientPsychologicalContextUpdate(BaseModel):
+    purpose: Literal["treatment", "care_coordination"]
+    medication_safety_factors: list[str] = Field(default_factory=list, max_length=40)
+    confidential_notes: str | None = Field(default=None, max_length=10_000)
+    consent_status: Literal["recorded", "waived_by_policy", "policy_required"]
+    policy_reference: str | None = Field(default=None, max_length=160)
+
+
+class PatientPsychologicalContextRead(PatientPsychologicalContextUpdate):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    patient_id: int
+    updated_by_user_id: int
+    created_at: datetime
+    updated_at: datetime
+
+
 class PatientFunctionalProfileBase(BaseModel):
     drives_regularly: bool | None = None
     professional_driver: bool | None = None

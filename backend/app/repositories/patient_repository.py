@@ -12,33 +12,60 @@ class PatientRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def list(self, *, offset: int = 0, limit: int = 50) -> list[PatientModel]:
+    def list(
+        self,
+        *,
+        offset: int = 0,
+        limit: int = 50,
+        capability: str = "patient.read",
+        purpose: str = "treatment",
+    ) -> list[PatientModel]:
         statement = select(PatientModel)
         current_user = self.db.info.get("current_user")
         if current_user is not None:
             statement = statement.where(
-                ObjectAuthorizationService(self.db).patient_scope(current_user)
+                ObjectAuthorizationService(self.db).patient_scope(
+                    current_user, capability=capability, purpose=purpose
+                )
             )
         statement = statement.order_by(PatientModel.name).offset(offset).limit(limit)
         return list(self.db.scalars(statement))
 
-    def get(self, patient_id: int) -> PatientModel | None:
+    def get(
+        self,
+        patient_id: int,
+        *,
+        capability: str = "patient.read",
+        purpose: str = "treatment",
+    ) -> PatientModel | None:
         patient = self.db.get(PatientModel, patient_id)
         current_user = self.db.info.get("current_user")
         if (
             patient is not None
             and current_user is not None
-            and not ObjectAuthorizationService(self.db).require_patient(current_user, patient_id)
+            and not ObjectAuthorizationService(self.db).require_patient(
+                current_user,
+                patient_id,
+                capability=capability,
+                purpose=purpose,
+            )
         ):
             return None
         return patient
 
-    def count(self) -> int:
+    def count(
+        self,
+        *,
+        capability: str = "patient.read",
+        purpose: str = "treatment",
+    ) -> int:
         statement = select(func.count(PatientModel.id))
         current_user = self.db.info.get("current_user")
         if current_user is not None:
             statement = statement.where(
-                ObjectAuthorizationService(self.db).patient_scope(current_user)
+                ObjectAuthorizationService(self.db).patient_scope(
+                    current_user, capability=capability, purpose=purpose
+                )
             )
         return self.db.scalar(statement) or 0
 
@@ -70,14 +97,33 @@ class PatientRepository:
         self.db.add(patient)
         self.db.flush()
         if current_user is not None:
-            self.db.add(
-                PatientAccessGrantModel(
-                    patient_id=patient.id,
-                    user_id=current_user.id,
-                    permission="owner",
-                    reason="patient_creator",
+            object_capabilities = {
+                "patient.read",
+                "patient.write",
+                "prescription.check",
+                "prescription.override",
+                "report.read",
+                "report.create",
+                "patient_guidance.create",
+                "reconciliation.review",
+                "psychology.context.write",
+                "patient.sensitive_psychology.read",
+            }
+            for capability in sorted(
+                set(current_user.capabilities or []) & object_capabilities
+            ):
+                self.db.add(
+                    PatientAccessGrantModel(
+                        patient_id=patient.id,
+                        user_id=current_user.id,
+                        institution_id=current_user.institution_id,
+                        permission=capability,
+                        capability=capability,
+                        purpose="treatment",
+                        granted_by_user_id=current_user.id,
+                        reason="patient_creator",
+                    )
                 )
-            )
         self.db.commit()
         self.db.refresh(patient)
         self._attach_badge(patient)
