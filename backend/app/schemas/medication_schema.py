@@ -17,12 +17,17 @@ class MedicationBase(BaseModel):
     pharmaceutical_form: str | None = Field(default=None, max_length=120)
     evidence_source_url: str | None = Field(default=None, max_length=500)
     max_daily_dose_mg: float = Field(gt=0)
+    dose_dimension: str = "per_administration"
+    max_daily_dose_unit: str = "mg"
     dose_mg_per_kg: float | None = Field(default=None, gt=0)
     dose_by_weight_enabled: bool = False
     usual_dose_low: float | None = Field(default=None, ge=0)
     usual_dose_high: float | None = Field(default=None, ge=0)
     max_single_dose: float | None = Field(default=None, gt=0)
     max_per_procedure: float | None = Field(default=None, gt=0)
+    max_per_procedure_unit: str | None = None
+    max_rate: float | None = Field(default=None, gt=0)
+    rate_unit: str | None = None
     dose_calculation_basis: str = "fixed"
     dose_unit: str = "mg"
     dose_rule_validation_status: str = "pending_review"
@@ -103,12 +108,17 @@ class MedicationUpdate(BaseModel):
     pharmaceutical_form: str | None = Field(default=None, max_length=120)
     evidence_source_url: str | None = Field(default=None, max_length=500)
     max_daily_dose_mg: float | None = Field(default=None, gt=0)
+    dose_dimension: str | None = None
+    max_daily_dose_unit: str | None = None
     dose_mg_per_kg: float | None = Field(default=None, gt=0)
     dose_by_weight_enabled: bool | None = None
     usual_dose_low: float | None = Field(default=None, ge=0)
     usual_dose_high: float | None = Field(default=None, ge=0)
     max_single_dose: float | None = Field(default=None, gt=0)
     max_per_procedure: float | None = Field(default=None, gt=0)
+    max_per_procedure_unit: str | None = None
+    max_rate: float | None = Field(default=None, gt=0)
+    rate_unit: str | None = None
     dose_calculation_basis: str | None = None
     dose_unit: str | None = None
     dose_rule_validation_status: str | None = None

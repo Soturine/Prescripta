@@ -262,6 +262,8 @@ class RiskEngine:
     ) -> list[Alert]:
         alerts: list[Alert] = []
         daily_total = prescription.daily_total_mg
+        if daily_total is None:
+            return alerts
         limits = medication.condition_specific_limits or {}
         patient_conditions = normalize_terms(
             [
@@ -746,6 +748,8 @@ class RiskEngine:
             "was_considered": bool(medication.dose_by_weight_enabled and medication.dose_mg_per_kg),
         }
         return {
+            "dose_input": prescription.effective_dose.to_dict(),
+            "dose_dimension": prescription.effective_dose.dimension.value,
             "daily_total_mg": prescription.daily_total_mg,
             "duration_days": prescription.duration_days,
             "estimated_cumulative_dose_mg": cumulative,
@@ -908,7 +912,7 @@ class RiskEngine:
         }
 
     def _cumulative_dose(self, prescription: PrescriptionInput) -> float | None:
-        if prescription.duration_days is None:
+        if prescription.duration_days is None or prescription.daily_total_mg is None:
             return None
         return prescription.daily_total_mg * prescription.duration_days
 

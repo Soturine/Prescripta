@@ -5,6 +5,7 @@ export type Patient = {
   age: number | null;
   weight_kg: number;
   height_cm: number | null;
+  sex_for_dosing_calculation: "male" | "female" | null;
   phone: string | null;
   email: string | null;
   mother_name: string | null;

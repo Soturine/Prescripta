@@ -4,12 +4,14 @@ from app.domain.patient import Patient
 from app.domain.prescription import PrescriptionInput
 
 
-def calculate_daily_dose(prescription: PrescriptionInput) -> float:
-    return prescription.dose_mg * prescription.frequency_per_day
+def calculate_daily_dose(prescription: PrescriptionInput) -> float | None:
+    return prescription.daily_total_mg
 
 
 def check_max_daily_dose(medication: Medication, prescription: PrescriptionInput) -> list[Alert]:
     daily_total = calculate_daily_dose(prescription)
+    if daily_total is None:
+        return []
     if daily_total <= medication.max_daily_dose_mg:
         return []
 
@@ -36,6 +38,8 @@ def check_weight_based_dose(
         return []
 
     daily_total = calculate_daily_dose(prescription)
+    if daily_total is None:
+        return []
     weight_limit = float(medication.dose_mg_per_kg) * float(patient.weight_kg)
     if daily_total <= weight_limit:
         return []

@@ -14,11 +14,20 @@ def build_clinical_context_graph(
     rag_evidence: list[dict] | None = None,
 ) -> dict:
     daily_total = prescription.daily_total_mg
-    cumulative = daily_total * prescription.duration_days if prescription.duration_days else None
+    cumulative = (
+        daily_total * prescription.duration_days
+        if daily_total is not None and prescription.duration_days
+        else None
+    )
+    dose_label = (
+        f"{daily_total:g} mg/dia"
+        if daily_total is not None
+        else f"{prescription.effective_dose.dimension.value}: não comparável em mg/dia"
+    )
     nodes = [
         {"id": "patient", "label": patient.name, "type": "Paciente"},
         {"id": "medication", "label": medication.brand_name, "type": "Medicamento"},
-        {"id": "dose", "label": f"{daily_total:g} mg/dia", "type": "Dose diária"},
+        {"id": "dose", "label": dose_label, "type": "Dimensão de dose"},
         {
             "id": "duration",
             "label": str(prescription.duration_days or "não informada"),
@@ -26,7 +35,7 @@ def build_clinical_context_graph(
         },
         {
             "id": "cumulative",
-            "label": f"{cumulative:g} mg" if cumulative else "-",
+            "label": f"{cumulative:g} mg" if cumulative is not None else "-",
             "type": "Dose acumulada",
         },
         {"id": "alerts", "label": f"{len(alerts)} alertas", "type": "Regras"},
@@ -39,7 +48,7 @@ def build_clinical_context_graph(
             label_for_code(patient.hepatic_condition),
             label_for_code(patient.cardiac_condition),
             label_for_code(patient.gastrointestinal_history),
-            "hipertensao" if patient.hypertension else None,
+            "hipertensão" if patient.hypertension else None,
             "diabetes" if patient.diabetes else None,
         ]
         if factor
@@ -48,12 +57,12 @@ def build_clinical_context_graph(
         factor
         for factor in [
             "cautela renal" if medication.renal_caution else None,
-            "cautela hepatica" if medication.hepatic_caution else None,
-            "cautela cardiaca" if medication.cardiac_caution else None,
+            "cautela hepática" if medication.hepatic_caution else None,
+            "cautela cardíaca" if medication.cardiac_caution else None,
             "cautela gastrointestinal" if medication.gastrointestinal_caution else None,
             "cautela em idosos" if medication.elderly_caution else None,
-            f"principio ativo: {medication.active_ingredient}",
-            f"jurisdicao: {medication.source_jurisdiction}",
+            f"princípio ativo: {medication.active_ingredient}",
+            f"jurisdição: {medication.source_jurisdiction}",
             *(medication.organs_involved or []),
         ]
         if factor
@@ -61,7 +70,7 @@ def build_clinical_context_graph(
     edges = [
         {"from": "patient", "to": "medication", "label": "prescrição pretendida"},
         {"from": "medication", "to": "dose", "label": "dose informada"},
-        {"from": "dose", "to": "cumulative", "label": "dose x frequência x duração"},
+        {"from": "dose", "to": "cumulative", "label": "dose × frequência × duração"},
         {"from": "patient", "to": "alerts", "label": "perfil clínico avaliado"},
         {"from": "medication", "to": "alerts", "label": "metadados do medicamento"},
         {"from": "rag", "to": "alerts", "label": "contexto explicativo"},

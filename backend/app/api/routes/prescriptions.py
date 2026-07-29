@@ -7,6 +7,7 @@ from app.core.auth import require_roles
 from app.core.config import settings
 from app.database.models import PatientFunctionalProfileModel, PrescriptionAuditModel, UserModel
 from app.database.session import get_db
+from app.domain.dose import MedicationDoseInput
 from app.domain.medication import Medication
 from app.domain.patient import Patient
 from app.domain.prescription import PrescriptionInput
@@ -26,12 +27,9 @@ from app.services.ai_explainer import AIExplainer
 from app.services.alternative_service import AlternativeService
 from app.services.audit_service import AuditService
 from app.services.clinical_context_graph import build_clinical_context_graph
-from app.services.dose_intelligence import DoseIntelligenceService
+from app.services.clinical_decision_orchestrator import ClinicalDecisionOrchestrator
 from app.services.patient_counseling_service import PatientCounselingService
 from app.services.patient_history_service import PatientHistoryService
-from app.services.prescribing_policy import PrescribingPolicyService
-from app.services.psychotropic_safety import PsychotropicSafetyService
-from app.services.risk_engine import RiskEngine
 
 router = APIRouter(prefix="/prescriptions", tags=["prescriptions"])
 DbSession = Annotated[Session, Depends(get_db)]
@@ -61,16 +59,37 @@ def check_prescription(
 
     patient = Patient.from_record(patient_record)
     medication = Medication.from_record(medication_record)
+    structured_dose = MedicationDoseInput(**payload.dose.model_dump()) if payload.dose else None
     prescription = PrescriptionInput(
         dose_mg=payload.dose_mg,
         frequency_per_day=payload.frequency_per_day,
-        route=payload.route,
+        route=(
+            payload.route
+            or (structured_dose.route if structured_dose else None)
+            or "não informada"
+        ),
         duration_days=payload.duration_days,
         indication=payload.indication,
         professional_notes=payload.professional_notes,
+        dose=structured_dose,
     )
-    result = RiskEngine().evaluate(patient, medication, prescription)
     rag_evidence = ClinicalRAGService().retrieve_for_prescription(patient, medication, prescription)
+    patient_knowledge_bundle = PatientHistoryService(db).knowledge_bundle(patient_record)
+    functional_profile = (
+        db.query(PatientFunctionalProfileModel)
+        .filter(PatientFunctionalProfileModel.patient_id == patient_record.id)
+        .first()
+    )
+    evaluation = ClinicalDecisionOrchestrator().evaluate(
+        patient=patient,
+        medication=medication,
+        prescription=prescription,
+        user=current_user,
+        functional_profile=functional_profile,
+        rag_evidence=rag_evidence,
+        missing_context=list(patient_knowledge_bundle.get("missing_data") or []),
+    )
+    result = evaluation.legacy_result
     result.clinical_context_graph.update(
         build_clinical_context_graph(
             patient,
@@ -95,37 +114,9 @@ def check_prescription(
         medication_record,
         contextual_activity_answer=payload.contextual_activity_answer,
     )
-    patient_knowledge_bundle = PatientHistoryService(db).knowledge_bundle(patient_record)
-    functional_profile = (
-        db.query(PatientFunctionalProfileModel)
-        .filter(PatientFunctionalProfileModel.patient_id == patient_record.id)
-        .first()
-    )
-    dose_rule = {
-        "calculation_basis": medication.dose_calculation_basis,
-        "dose_unit": medication.dose_unit,
-        "dose_per_basis": medication.dose_mg_per_kg,
-        "usual_low": medication.usual_dose_low,
-        "usual_high": medication.usual_dose_high,
-        "max_daily": medication.max_daily_dose_mg,
-        "max_per_procedure": medication.max_per_procedure,
-        "validation_status": medication.dose_rule_validation_status,
-        "source_refs": medication.dose_source_refs or [],
-    }
-    dose_intelligence = (
-        DoseIntelligenceService().evaluate(dose_rule, patient, prescription).to_dict()
-    )
-    psychotropic_safety = [
-        signal.to_dict()
-        for signal in PsychotropicSafetyService().evaluate(
-            medication, patient, functional_profile=functional_profile
-        )
-    ]
-    prescribing_policy = (
-        PrescribingPolicyService()
-        .evaluate(current_user, medication, prescription, patient)
-        .to_dict()
-    )
+    dose_intelligence = evaluation.dose_intelligence
+    psychotropic_safety = evaluation.psychotropic_safety
+    prescribing_policy = evaluation.prescribing_policy
     AuditService(db).record_action(
         user=current_user,
         action="prescription.clinical_intelligence_evaluated",
@@ -134,6 +125,9 @@ def check_prescription(
         status=prescribing_policy["status"],
         risk_level=result.risk_level.value,
         details={
+            "decision_status": evaluation.envelope.decision_status.value,
+            "coverage_status": evaluation.envelope.coverage.status.value,
+            "correlation_id": evaluation.envelope.correlation_id,
             "specialty": current_user.specialty_code,
             "policy_type": medication.policy_type,
             "policy_strength": medication.policy_strength,
@@ -161,9 +155,11 @@ def check_prescription(
         "prescribing_policy": prescribing_policy,
     }
     clinical_view = {
-        "status": result.status.value,
-        "risk_level": result.risk_level.value,
-        "primary_recommendation": result.recommendation,
+        "decision_status": evaluation.envelope.decision_status.value,
+        "coverage_status": evaluation.envelope.coverage.status.value,
+        "status": evaluation.envelope.legacy_status.value,
+        "risk_level": evaluation.envelope.highest_severity.value,
+        "primary_recommendation": evaluation.envelope.recommendation,
         "patient_data_considered": patient_data_considered,
         "missing_data": patient_knowledge_bundle.get("missing_data", []),
         "relevant_alerts": [
@@ -182,6 +178,8 @@ def check_prescription(
     }
 
     return PrescriptionCheckResponse(
+        decision=evaluation.envelope.to_dict(),
+        coverage_status=evaluation.envelope.coverage.status.value,
         status=result.status.value,
         risk_level=result.risk_level.value,
         alerts=[AlertRead(**alert.to_dict()) for alert in result.alerts],

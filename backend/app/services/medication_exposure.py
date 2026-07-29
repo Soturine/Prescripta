@@ -11,10 +11,10 @@ class MedicationExposurePlan:
     patient_id: int | None
     medication_id: int | None
     active_ingredient_id: int | None
-    dose_per_administration_mg: float
-    administrations_per_day: int
+    dose_per_administration_mg: float | None
+    administrations_per_day: int | None
     duration_days: int | None
-    calculated_daily_dose_mg: float
+    calculated_daily_dose_mg: float | None
     calculated_cumulative_dose_mg: float | None
     max_daily_dose_mg: float | None
     max_cumulative_dose_mg: float | None
@@ -41,14 +41,16 @@ class MedicationExposureService:
         cumulative = (
             prescription.daily_total_mg * prescription.duration_days
             if prescription.duration_days is not None
+            and prescription.daily_total_mg is not None
             else None
         )
+        amount_mg = prescription.effective_dose.amount_mg
         return MedicationExposurePlan(
             patient_id=patient_id,
             medication_id=medication.id,
             active_ingredient_id=medication.active_ingredient_id,
-            dose_per_administration_mg=prescription.dose_mg,
-            administrations_per_day=prescription.frequency_per_day,
+            dose_per_administration_mg=float(amount_mg) if amount_mg is not None else None,
+            administrations_per_day=prescription.effective_dose.frequency_per_day,
             duration_days=prescription.duration_days,
             calculated_daily_dose_mg=prescription.daily_total_mg,
             calculated_cumulative_dose_mg=cumulative,

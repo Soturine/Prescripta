@@ -1,18 +1,88 @@
-from pydantic import BaseModel, ConfigDict, Field
+from decimal import Decimal
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.counseling_schema import MedicationCounselingSummaryRead
+
+
+class MedicationDoseInputSchema(BaseModel):
+    amount: Decimal = Field(gt=0)
+    amount_unit: str = Field(min_length=1, max_length=40)
+    administration_kind: Literal["bolus", "intermittent", "continuous", "prn"] = (
+        "intermittent"
+    )
+    concentration_value: Decimal | None = Field(default=None, gt=0)
+    concentration_unit: str | None = Field(default=None, max_length=40)
+    volume: Decimal | None = Field(default=None, gt=0)
+    volume_unit: str | None = Field(default=None, max_length=40)
+    rate_value: Decimal | None = Field(default=None, gt=0)
+    rate_unit: str | None = Field(default=None, max_length=40)
+    frequency_per_day: int | None = Field(default=None, gt=0, le=96)
+    interval_value: Decimal | None = Field(default=None, gt=0)
+    interval_unit: str | None = Field(default=None, max_length=20)
+    duration_value: Decimal | None = Field(default=None, gt=0)
+    duration_unit: str | None = Field(default=None, max_length=20)
+    route: str | None = Field(default=None, max_length=80)
+    site: str | None = Field(default=None, max_length=120)
+    procedure_context: str | None = Field(default=None, max_length=160)
+    prn: bool = False
+
+    @model_validator(mode="after")
+    def validate_dimension(self) -> "MedicationDoseInputSchema":
+        for value, unit, label in (
+            (self.concentration_value, self.concentration_unit, "concentração"),
+            (self.volume, self.volume_unit, "volume"),
+            (self.rate_value, self.rate_unit, "taxa"),
+        ):
+            if (value is None) != (unit is None):
+                raise ValueError(f"{label} exige valor e unidade")
+        if self.administration_kind == "continuous" and self.rate_value is None:
+            raise ValueError("infusão contínua exige taxa explícita")
+        if (
+            self.administration_kind in {"intermittent", "prn"}
+            and self.frequency_per_day is None
+            and self.interval_value is None
+        ):
+            raise ValueError("administração intermitente exige frequência ou intervalo")
+        return self
 
 
 class PrescriptionCheckRequest(BaseModel):
     patient_id: int = Field(gt=0)
     medication_id: int = Field(gt=0)
-    dose_mg: float = Field(gt=0)
-    frequency_per_day: int = Field(gt=0, le=24)
-    route: str = Field(min_length=2, max_length=80)
+    dose_mg: float | None = Field(default=None, gt=0, description="Campo legado em mg")
+    frequency_per_day: int | None = Field(
+        default=None, gt=0, le=24, description="Campo legado"
+    )
+    route: str | None = Field(default=None, min_length=2, max_length=80)
+    dose: MedicationDoseInputSchema | None = None
     duration_days: int | None = Field(default=None, gt=0, le=365)
     indication: str | None = Field(default=None, max_length=180)
     professional_notes: str | None = None
     contextual_activity_answer: str | None = Field(default=None, max_length=40)
+
+    @model_validator(mode="after")
+    def ensure_dose_contract(self) -> "PrescriptionCheckRequest":
+        legacy_complete = (
+            self.dose_mg is not None
+            and self.frequency_per_day is not None
+            and self.route is not None
+        )
+        if self.dose is None and not legacy_complete:
+            raise ValueError("informe dose estruturada ou todos os campos legados")
+        if self.dose is not None and any(
+            value is not None for value in (self.dose_mg, self.frequency_per_day)
+        ):
+            raise ValueError("não misture dose estruturada com campos legados")
+        if (
+            self.dose is not None
+            and self.route
+            and self.dose.route
+            and self.route != self.dose.route
+        ):
+            raise ValueError("a via da dose diverge da via da prescrição")
+        return self
 
 
 class AlertRead(BaseModel):
@@ -61,14 +131,56 @@ class PatientCounselingResponse(BaseModel):
     )
 
 
+class ClinicalCoverageRead(BaseModel):
+    status: str
+    sufficient: bool
+    evaluated: list[str] = Field(default_factory=list)
+    not_evaluated: list[dict[str, str]] = Field(default_factory=list)
+    reasons: list[str] = Field(default_factory=list)
+    source_ids: list[str] = Field(default_factory=list)
+
+
+class ClinicalFindingRead(BaseModel):
+    code: str
+    title: str
+    description: str
+    severity: str
+    module: str
+    recommendation: str
+    source_ids: list[str] = Field(default_factory=list)
+    rule_version: str | None = None
+    validation_status: str
+    hard_block: bool = False
+
+
+class ClinicalDecisionEnvelopeRead(BaseModel):
+    schema_version: str
+    decision_status: str
+    legacy_status: str
+    highest_severity: str
+    coverage: ClinicalCoverageRead
+    findings: list[ClinicalFindingRead] = Field(default_factory=list)
+    required_actions: list[str] = Field(default_factory=list)
+    missing_data: list[str] = Field(default_factory=list)
+    rule_versions: list[str] = Field(default_factory=list)
+    source_snapshot: list[dict] = Field(default_factory=list)
+    override_policy: dict = Field(default_factory=dict)
+    human_review_required: bool
+    evaluated_at: str
+    correlation_id: str
+    recommendation: str
+
+
 class PrescriptionCheckResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    status: str
-    risk_level: str
+    decision: ClinicalDecisionEnvelopeRead
+    coverage_status: str
+    status: str = Field(deprecated=True)
+    risk_level: str = Field(deprecated=True)
     alerts: list[AlertRead]
-    recommendation: str
-    human_review_required: bool
+    recommendation: str = Field(deprecated=True)
+    human_review_required: bool = Field(deprecated=True)
     audit_id: int
     dose_summary: dict
     compatibility: dict

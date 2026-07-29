@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -9,6 +10,7 @@ class PatientBase(BaseModel):
     age: int | None = Field(default=None, ge=0, le=130)
     weight_kg: float = Field(gt=0, le=400)
     height_cm: float | None = Field(default=None, gt=0, le=260)
+    sex_for_dosing_calculation: Literal["male", "female"] | None = None
     phone: str | None = Field(default=None, max_length=80)
     email: str | None = Field(default=None, max_length=220)
     mother_name: str | None = Field(default=None, max_length=160)
@@ -44,6 +46,7 @@ class PatientUpdate(BaseModel):
     age: int | None = Field(default=None, ge=0, le=130)
     weight_kg: float | None = Field(default=None, gt=0, le=400)
     height_cm: float | None = Field(default=None, gt=0, le=260)
+    sex_for_dosing_calculation: Literal["male", "female"] | None = None
     phone: str | None = Field(default=None, max_length=80)
     email: str | None = Field(default=None, max_length=220)
     mother_name: str | None = Field(default=None, max_length=160)

@@ -16,6 +16,7 @@ class PatientModel(Base):
     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
     weight_kg: Mapped[float] = mapped_column(Float, nullable=False)
     height_cm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sex_for_dosing_calculation: Mapped[str | None] = mapped_column(String(20), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(80), nullable=True)
     email: Mapped[str | None] = mapped_column(String(220), nullable=True)
     mother_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
@@ -226,12 +227,19 @@ class MedicationModel(Base):
     pharmaceutical_form: Mapped[str | None] = mapped_column(String(120), nullable=True)
     evidence_source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     max_daily_dose_mg: Mapped[float] = mapped_column(Float, nullable=False)
+    dose_dimension: Mapped[str] = mapped_column(
+        String(40), default="per_administration", nullable=False
+    )
+    max_daily_dose_unit: Mapped[str] = mapped_column(String(40), default="mg", nullable=False)
     dose_mg_per_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
     dose_by_weight_enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
     usual_dose_low: Mapped[float | None] = mapped_column(Float, nullable=True)
     usual_dose_high: Mapped[float | None] = mapped_column(Float, nullable=True)
     max_single_dose: Mapped[float | None] = mapped_column(Float, nullable=True)
     max_per_procedure: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_per_procedure_unit: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    max_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    rate_unit: Mapped[str | None] = mapped_column(String(40), nullable=True)
     dose_calculation_basis: Mapped[str] = mapped_column(String(40), default="fixed", nullable=False)
     dose_unit: Mapped[str] = mapped_column(String(40), default="mg", nullable=False)
     dose_rule_validation_status: Mapped[str] = mapped_column(

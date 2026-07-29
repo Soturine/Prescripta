@@ -55,6 +55,11 @@ def test_prescription_check_endpoint_blocks_allergy_and_writes_audit(
     assert payload["risk_level"] == "critico"
     assert payload["human_review_required"] is True
     assert payload["audit_id"] > 0
+    assert payload["decision"]["decision_status"] == "blocked"
+    assert payload["decision"]["legacy_status"] == payload["status"]
+    assert payload["decision"]["highest_severity"] == payload["risk_level"]
+    assert payload["decision"]["coverage"]["sufficient"] is False
+    assert payload["coverage_status"] == payload["decision"]["coverage"]["status"]
 
     audit_response = client.get("/api/audit", headers=headers)
     assert audit_response.status_code == 200

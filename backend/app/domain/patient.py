@@ -11,6 +11,7 @@ class Patient:
     age: int | None
     weight_kg: float
     height_cm: float | None
+    sex_for_dosing_calculation: str | None = None
     phone: str | None = None
     email: str | None = None
     mother_name: str | None = None
@@ -53,6 +54,7 @@ class Patient:
             age=record.age,
             weight_kg=record.weight_kg,
             height_cm=record.height_cm,
+            sex_for_dosing_calculation=getattr(record, "sex_for_dosing_calculation", None),
             phone=getattr(record, "phone", None),
             email=getattr(record, "email", None),
             mother_name=getattr(record, "mother_name", None),

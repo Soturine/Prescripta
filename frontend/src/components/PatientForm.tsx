@@ -20,6 +20,7 @@ const patientSchema = z
     age: z.number().min(0).max(130).optional(),
     weight_kg: z.number().positive("Informe o peso."),
     height_cm: z.number().min(1).max(260).optional(),
+    sex_for_dosing_calculation: z.enum(["male", "female"]).or(z.literal("")).optional(),
     phone: z.string().optional(),
     email: z.string().optional(),
     mother_name: z.string().optional(),
@@ -65,6 +66,7 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       age: initialPatient?.age ?? undefined,
       weight_kg: initialPatient?.weight_kg ?? 70,
       height_cm: initialPatient?.height_cm ?? undefined,
+      sex_for_dosing_calculation: initialPatient?.sex_for_dosing_calculation ?? "",
       phone: initialPatient?.phone ?? "",
       email: initialPatient?.email ?? "",
       mother_name: initialPatient?.mother_name ?? "",
@@ -96,6 +98,7 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       age: values.age ?? null,
       weight_kg: values.weight_kg,
       height_cm: values.height_cm ?? null,
+      sex_for_dosing_calculation: values.sex_for_dosing_calculation || null,
       phone: values.phone || null,
       email: values.email || null,
       mother_name: values.mother_name || null,
@@ -124,6 +127,7 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
         age: undefined,
         weight_kg: 70,
         height_cm: undefined,
+        sex_for_dosing_calculation: "",
         phone: "",
         email: "",
         mother_name: "",
@@ -197,6 +201,18 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
               setValueAs: (value) => (value === "" ? undefined : Number(value)),
             })}
           />
+        </label>
+
+        <label className="grid gap-1.5">
+          <span className="label">Sexo para fórmulas de dose</span>
+          <select className="field" {...register("sex_for_dosing_calculation")}>
+            <option value="">Não informado</option>
+            <option value="female">Feminino (parâmetro fisiológico)</option>
+            <option value="male">Masculino (parâmetro fisiológico)</option>
+          </select>
+          <span className="text-xs text-muted">
+            Usado somente quando uma fórmula farmacológica exigir; não representa identidade de gênero.
+          </span>
         </label>
 
         <label className="grid gap-1.5">
