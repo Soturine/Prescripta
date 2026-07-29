@@ -15,13 +15,53 @@ export type Alert = {
 export type PrescriptionCheckPayload = {
   patient_id: number;
   medication_id: number;
-  dose_mg: number;
-  frequency_per_day: number;
-  route: string;
+  dose_mg?: number | null;
+  frequency_per_day?: number | null;
+  route?: string | null;
+  dose?: StructuredDoseInput | null;
   duration_days: number | null;
   indication: string | null;
   professional_notes: string | null;
   contextual_activity_answer?: string | null;
+};
+
+export type StructuredDoseInput = {
+  amount: number;
+  amount_unit: string;
+  administration_kind: "bolus" | "intermittent" | "continuous" | "prn";
+  concentration_value?: number | null;
+  concentration_unit?: string | null;
+  volume?: number | null;
+  volume_unit?: string | null;
+  rate_value?: number | null;
+  rate_unit?: string | null;
+  frequency_per_day?: number | null;
+  interval_value?: number | null;
+  interval_unit?: string | null;
+  duration_value?: number | null;
+  duration_unit?: string | null;
+  route?: string | null;
+  site?: string | null;
+  procedure_context?: string | null;
+  prn: boolean;
+  max_administrations_per_day?: number | null;
+  source_id?: string | null;
+  source_version?: string | null;
+  precision: string;
+  rounding_policy: string;
+};
+
+export type DecisionOverride = {
+  id: number;
+  prescription_audit_id: number;
+  requested_by_user_id: number;
+  reason: string;
+  status: string;
+  reviewed_by_user_id: number | null;
+  review_decision: string | null;
+  review_note: string | null;
+  requested_at: string;
+  reviewed_at: string | null;
 };
 
 export type DoseSummary = {
@@ -158,6 +198,43 @@ export type PatientCounselingResponse = {
 };
 
 export type PrescriptionCheckResult = {
+  decision: {
+    schema_version: string;
+    decision_status:
+      | "not_evaluated"
+      | "insufficient_data"
+      | "insufficient_coverage"
+      | "review_required"
+      | "blocked"
+      | "evaluated_no_issue";
+    legacy_status: PrescriptionStatus;
+    highest_severity: RiskLevel;
+    coverage: {
+      status: string;
+      sufficient: boolean;
+      evaluated: string[];
+      not_evaluated: Array<Record<string, string>>;
+      reasons: string[];
+      source_ids: string[];
+    };
+    findings: Array<Alert & { module: string; source_ids: string[]; hard_block: boolean }>;
+    required_actions: string[];
+    missing_data: string[];
+    rule_versions: string[];
+    source_snapshot: Array<Record<string, unknown>>;
+    override_policy: {
+      allowed: boolean;
+      reason_required: boolean;
+      second_reviewer_role: string | null;
+      policy_status: string | null;
+      note: string;
+    };
+    human_review_required: boolean;
+    evaluated_at: string;
+    correlation_id: string;
+    recommendation: string;
+  };
+  coverage_status: string;
   status: PrescriptionStatus;
   risk_level: RiskLevel;
   alerts: Alert[];

@@ -1,6 +1,7 @@
 import axios from "axios";
 
 import type { AuditPage, DashboardSummary } from "../types/audit";
+import type { CareTeamMembership, PatientAccessGrant } from "../types/access";
 import type {
   AICredentialPayload,
   AICredentialStatus,
@@ -46,6 +47,8 @@ import type {
   PatientIdentifierPayload,
   PatientKnowledgeBundle,
   PatientPayload,
+  PatientPsychologicalContext,
+  PatientPsychologicalContextPayload,
   QuickTriagePayload,
 } from "../types/patient";
 import type {
@@ -57,6 +60,7 @@ import type {
   ImportConsentPayload,
 } from "../types/integration";
 import type {
+  DecisionOverride,
   PrescriptionCheckPayload,
   PrescriptionCheckResult,
   PrescriptionExplanationPayload,
@@ -78,7 +82,7 @@ import type {
   GeneratedReport,
   ReportPreview,
 } from "../types/report";
-import type { User, UserCreatePayload, UserRole } from "../types/user";
+import type { User, UserClinicalProfilePayload, UserCreatePayload, UserRole } from "../types/user";
 
 const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 export const api = axios.create({
@@ -139,6 +143,55 @@ export async function fetchPatients() {
 
 export async function fetchPatient(id: number) {
   const response = await api.get<Patient>(`/patients/${id}`);
+  return response.data;
+}
+
+export async function fetchPatientPsychologicalContext(id: number) {
+  const response = await api.get<PatientPsychologicalContext>(
+    `/patients/${id}/psychological-context`,
+    { params: { purpose: "treatment" } },
+  );
+  return response.data;
+}
+
+export async function updatePatientPsychologicalContext(
+  id: number,
+  payload: PatientPsychologicalContextPayload,
+) {
+  const response = await api.put<PatientPsychologicalContext>(
+    `/patients/${id}/psychological-context`,
+    payload,
+  );
+  return response.data;
+}
+
+export async function fetchPatientAccessGrants(patientId: number) {
+  const response = await api.get<PatientAccessGrant[]>(`/access/patients/${patientId}/grants`);
+  return response.data;
+}
+
+export async function createPatientAccessGrant(
+  patientId: number,
+  payload: { user_id: number; capability: string; purpose: string; reason: string },
+) {
+  const response = await api.post<PatientAccessGrant>(
+    `/access/patients/${patientId}/grants`,
+    payload,
+  );
+  return response.data;
+}
+
+export async function revokePatientAccessGrant(grantId: number, reason: string) {
+  const response = await api.post<PatientAccessGrant>(`/access/grants/${grantId}/revoke`, {
+    reason,
+  });
+  return response.data;
+}
+
+export async function fetchPatientCareTeam(patientId: number) {
+  const response = await api.get<CareTeamMembership[]>(
+    `/access/patients/${patientId}/care-team`,
+  );
   return response.data;
 }
 
@@ -350,6 +403,24 @@ export async function checkPrescription(payload: PrescriptionCheckPayload) {
 export async function explainPrescription(payload: PrescriptionExplanationPayload) {
   const response = await api.post<PrescriptionExplanationResult>(
     "/prescriptions/explain",
+    payload,
+  );
+  return response.data;
+}
+
+export async function requestDecisionOverride(auditId: number, reason: string) {
+  const response = await api.post<DecisionOverride>(`/prescriptions/${auditId}/overrides`, {
+    reason,
+  });
+  return response.data;
+}
+
+export async function reviewDecisionOverride(
+  overrideId: number,
+  payload: { decision: "approved" | "rejected"; note: string },
+) {
+  const response = await api.post<DecisionOverride>(
+    `/prescriptions/overrides/${overrideId}/review`,
     payload,
   );
   return response.data;
@@ -685,6 +756,14 @@ export async function updateUserStatus(id: number, is_active: boolean) {
 
 export async function updateUserRole(id: number, role: UserRole) {
   const response = await api.patch<User>(`/users/${id}/role`, { role });
+  return response.data;
+}
+
+export async function updateUserClinicalProfile(
+  id: number,
+  payload: UserClinicalProfilePayload,
+) {
+  const response = await api.patch<User>(`/users/${id}/clinical-profile`, payload);
   return response.data;
 }
 

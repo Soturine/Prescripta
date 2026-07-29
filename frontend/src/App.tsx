@@ -26,35 +26,39 @@ export default function App() {
         <Route path="login" element={<Login />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
-            <Route index element={<Dashboard />} />
+            <Route element={<ProtectedRoute capabilities={["dashboard.view"]} />}>
+              <Route index element={<Dashboard />} />
+            </Route>
             <Route path="access-denied" element={<AccessDenied />} />
 
-            <Route element={<ProtectedRoute roles={["admin", "medico", "enfermagem"]} />}>
+            <Route element={<ProtectedRoute capabilities={["patient.read"]} />}>
               <Route path="patients" element={<Patients />} />
               <Route path="patients/:patientId" element={<PatientDetails />} />
+            </Route>
+            <Route element={<ProtectedRoute capabilities={["medication.read"]} />}>
               <Route path="medications" element={<Medications />} />
+            </Route>
+            <Route element={<ProtectedRoute capabilities={["prescription.check"]} />}>
               <Route path="prescription-check" element={<PrescriptionCheck />} />
             </Route>
 
-            <Route
-              element={<ProtectedRoute roles={["admin", "medico", "enfermagem", "auditor"]} />}
-            >
+            <Route element={<ProtectedRoute capabilities={["reconciliation.review"]} />}>
               <Route path="clinical-imports" element={<ClinicalImports />} />
+            </Route>
+            <Route element={<ProtectedRoute capabilities={["report.read"]} />}>
               <Route path="protocols" element={<Protocols />} />
               <Route path="reports" element={<Reports />} />
             </Route>
 
-            <Route element={<ProtectedRoute roles={["admin", "auditor"]} />}>
+            <Route element={<ProtectedRoute capabilities={["audit.read"]} />}>
               <Route path="audit" element={<Audit />} />
             </Route>
 
-            <Route
-              element={<ProtectedRoute roles={["admin", "medico", "enfermagem", "auditor"]} />}
-            >
+            <Route element={<ProtectedRoute capabilities={["ai.status.view"]} />}>
               <Route path="settings/ai" element={<AISettings />} />
             </Route>
 
-            <Route element={<ProtectedRoute roles={["admin"]} />}>
+            <Route element={<ProtectedRoute capabilities={["user.manage"]} />}>
               <Route path="users" element={<Users />} />
             </Route>
 

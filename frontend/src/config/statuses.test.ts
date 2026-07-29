@@ -9,8 +9,8 @@ describe("metadados centrais da interface", () => {
     expect(STATUS_LABELS.pending_review).toContain("revisão");
   });
 
-  it("não oferece administração de usuários ao perfil clínico", () => {
+  it("protege administração de usuários pela capacidade explícita", () => {
     const users = APP_ROUTES.find((route) => route.to === "/users");
-    expect(users?.roles).toEqual(["admin"]);
+    expect(users?.capability).toBe("user.manage");
   });
 });

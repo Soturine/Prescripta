@@ -40,6 +40,24 @@ export type PatientPayload = Omit<
   | "possible_duplicate_matches"
 >;
 
+export type PatientPsychologicalContext = {
+  id: number;
+  patient_id: number;
+  purpose: "treatment" | "care_coordination";
+  medication_safety_factors: string[];
+  confidential_notes: string | null;
+  consent_status: "recorded" | "waived_by_policy" | "policy_required";
+  policy_reference: string | null;
+  updated_by_user_id: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PatientPsychologicalContextPayload = Pick<
+  PatientPsychologicalContext,
+  "purpose" | "medication_safety_factors" | "confidential_notes" | "consent_status" | "policy_reference"
+>;
+
 export type PatientIdentifier = {
   id: number;
   patient_id: number;

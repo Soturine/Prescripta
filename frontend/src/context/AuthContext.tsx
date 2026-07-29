@@ -13,7 +13,7 @@ import {
   login as loginRequest,
   logoutSession,
 } from "../services/api";
-import type { User, UserRole } from "../types/user";
+import type { Capability, User, UserRole } from "../types/user";
 
 type AuthContextValue = {
   user: User | null;
@@ -23,6 +23,8 @@ type AuthContextValue = {
   login: (email: string, password: string, mfaCode?: string) => Promise<void>;
   logout: () => void;
   canAccess: (roles: UserRole[]) => boolean;
+  can: (...capabilities: Capability[]) => boolean;
+  canAny: (...capabilities: Capability[]) => boolean;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -89,6 +91,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       canAccess(roles: UserRole[]) {
         return Boolean(user && roles.includes(user.role));
+      },
+      can(...capabilities: Capability[]) {
+        const available = new Set(user?.capabilities ?? []);
+        return Boolean(user && capabilities.every((capability) => available.has(capability)));
+      },
+      canAny(...capabilities: Capability[]) {
+        const available = new Set(user?.capabilities ?? []);
+        return Boolean(user && capabilities.some((capability) => available.has(capability)));
       },
     }),
     [isLoading, token, user],
