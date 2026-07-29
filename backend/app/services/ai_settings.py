@@ -7,6 +7,7 @@ import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 from cryptography.fernet import Fernet, InvalidToken
@@ -36,12 +37,17 @@ from app.schemas.ai_settings_schema import (
     AIProviderModelRead,
     AISettingsRead,
 )
+from app.services.outbound_http import SafeOutboundHTTPClient
 from app.services.safe_url import UnsafeOutboundURLError, validate_outbound_base_url
 
 MODEL_CACHE_TTL = timedelta(hours=24)
 AI_RETRY_ATTEMPTS = 3
 AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD = 3
 AI_CIRCUIT_BREAKER_COOLDOWN = timedelta(minutes=5)
+OPENAI_API_BASE = "https://api.openai.com/v1"
+OPENAI_API_HOST = "api.openai.com"
+GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
+GEMINI_API_HOST = "generativelanguage.googleapis.com"
 
 PROVIDER_CATALOG = {
     "fallback": AIProviderInfo(
@@ -258,6 +264,10 @@ class AISettingsService:
         provider = self._normalize_provider(payload.provider)
         api_key = (payload.api_key or "").strip() or None
         base_url = (payload.base_url or "").strip() or None
+        if provider in {"openai", "gemini"} and base_url:
+            raise AIConfigurationError(
+                "Providers oficiais usam endpoint fixo e não aceitam Base URL customizada."
+            )
         if base_url:
             base_url = self._validated_base_url(provider, base_url)
         if provider in {"openai", "gemini", "openai_compatible"} and not api_key:
@@ -348,6 +358,10 @@ class AISettingsService:
         row.use_json_mode = payload.use_json_mode
         row.updated_by = user.id
         if payload.base_url:
+            if provider in {"openai", "gemini"}:
+                raise AIConfigurationError(
+                    "Providers oficiais usam endpoint fixo e não aceitam Base URL customizada."
+                )
             self._upsert_base_url(
                 provider,
                 self._validated_base_url(provider, payload.base_url),
@@ -499,10 +513,16 @@ class AISettingsService:
         provider = self._normalize_provider(
             provider_override or (row.provider if row else self.settings.ai_provider)
         )
+        if provider in {"openai", "gemini"} and base_url_override:
+            raise AIConfigurationError(
+                "Providers oficiais usam endpoint fixo e não aceitam Base URL customizada."
+            )
         model = model_override or (row.selected_model if row else self.settings.ai_model) or None
         credential = self._credential(provider)
-        base_url = base_url_override or (credential.base_url if credential else None)
-        base_url = base_url or self._env_base_url(provider)
+        base_url = None
+        if provider not in {"openai", "gemini"}:
+            base_url = base_url_override or (credential.base_url if credential else None)
+            base_url = base_url or self._env_base_url(provider)
         if base_url:
             base_url = self._validated_base_url(provider, base_url)
         if enable_external_calls is not None:
@@ -552,10 +572,13 @@ class AISettingsService:
                 purpose,
             )
             parsed = self._parse_json(content)
+            self._record_outbound_call(config, purpose, "success", None)
             self._record_provider_success(config.provider)
             return parsed
         except Exception as exc:
-            self._record_provider_failure(config.provider, self._safe_error(exc))
+            safe_error = self._safe_error(exc)
+            self._record_outbound_call(config, purpose, "error", safe_error)
+            self._record_provider_failure(config.provider, safe_error)
             raise
 
     def _provider_ready(self, config: ActiveAIConfig) -> bool:
@@ -584,10 +607,12 @@ class AISettingsService:
         if not config.api_key:
             raise AIConfigurationError("API Key ausente para listar modelos.")
         base = self._openai_base_url(config)
-        response = httpx.get(
+        response = self._request_outbound(
+            config,
+            "GET",
             f"{base}/models",
             headers={"Authorization": f"Bearer {config.api_key}"},
-            timeout=config.timeout_seconds,
+            timeout_seconds=config.timeout_seconds,
         )
         response.raise_for_status()
         models = []
@@ -611,10 +636,12 @@ class AISettingsService:
     def _refresh_gemini_models(self, config: ActiveAIConfig) -> list[AIProviderModelCacheModel]:
         if not config.api_key:
             raise AIConfigurationError("API Key ausente para listar modelos.")
-        response = httpx.get(
-            "https://generativelanguage.googleapis.com/v1beta/models",
-            params={"key": config.api_key},
-            timeout=config.timeout_seconds,
+        response = self._request_outbound(
+            config,
+            "GET",
+            f"{GEMINI_API_BASE}/models",
+            headers={"x-goog-api-key": config.api_key},
+            timeout_seconds=config.timeout_seconds,
         )
         response.raise_for_status()
         models = []
@@ -638,7 +665,12 @@ class AISettingsService:
 
     def _refresh_ollama_models(self, config: ActiveAIConfig) -> list[AIProviderModelCacheModel]:
         base_url = (config.base_url or self.settings.ollama_base_url).rstrip("/")
-        response = httpx.get(f"{base_url}/api/tags", timeout=config.timeout_seconds)
+        response = self._request_outbound(
+            config,
+            "GET",
+            f"{base_url}/api/tags",
+            timeout_seconds=config.timeout_seconds,
+        )
         response.raise_for_status()
         models = []
         for item in response.json().get("models", []):
@@ -776,11 +808,13 @@ class AISettingsService:
         }
         if config.use_json_mode:
             body["response_format"] = {"type": "json_object"}
-        response = httpx.post(
+        response = self._request_outbound(
+            config,
+            "POST",
             f"{base}/chat/completions",
             headers={"Authorization": f"Bearer {config.api_key}"},
-            json=body,
-            timeout=config.timeout_seconds,
+            json_body=body,
+            timeout_seconds=config.timeout_seconds,
         )
         response.raise_for_status()
         return str(response.json()["choices"][0]["message"]["content"])
@@ -807,11 +841,13 @@ class AISettingsService:
         }
         if config.use_json_mode:
             body["generationConfig"]["responseMimeType"] = "application/json"
-        response = httpx.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-            params={"key": config.api_key},
-            json=body,
-            timeout=config.timeout_seconds,
+        response = self._request_outbound(
+            config,
+            "POST",
+            f"{GEMINI_API_BASE}/models/{model}:generateContent",
+            headers={"x-goog-api-key": config.api_key},
+            json_body=body,
+            timeout_seconds=config.timeout_seconds,
         )
         response.raise_for_status()
         parts = response.json()["candidates"][0]["content"]["parts"]
@@ -839,11 +875,13 @@ class AISettingsService:
         }
         if config.use_json_mode:
             body["format"] = "json"
-        response = httpx.post(
+        response = self._request_outbound(
+            config,
+            "POST",
             f"{base_url}/api/chat",
             headers=headers,
-            json=body,
-            timeout=config.timeout_seconds,
+            json_body=body,
+            timeout_seconds=config.timeout_seconds,
         )
         response.raise_for_status()
         return str(response.json()["message"]["content"])
@@ -864,19 +902,24 @@ class AISettingsService:
 
     def _openai_base_url(self, config: ActiveAIConfig) -> str:
         if config.provider == "openai":
-            return (config.base_url or "https://api.openai.com/v1").rstrip("/")
+            return OPENAI_API_BASE
         if not config.base_url:
             raise AIConfigurationError("Base URL é obrigatória para provider OpenAI-compatible.")
         base = config.base_url.rstrip("/")
         return base if base.endswith("/v1") else f"{base}/v1"
 
     def _validated_base_url(self, provider: str, base_url: str) -> str:
+        if provider in {"openai", "gemini"}:
+            raise AIConfigurationError(
+                "Providers oficiais usam endpoint fixo e não aceitam Base URL customizada."
+            )
         try:
             return validate_outbound_base_url(
                 base_url,
                 environment=self.settings.environment,
                 allowed_hosts=self.settings.ai_allowed_hosts,
                 allow_local_development=provider == "ollama",
+                allowed_ports={11434} if provider == "ollama" else {443},
             )
         except UnsafeOutboundURLError as exc:
             raise AIConfigurationError(str(exc)) from exc
@@ -930,9 +973,89 @@ class AISettingsService:
             return self.settings.ai_base_url or self.settings.ollama_base_url
         if provider == "openai_compatible":
             return self.settings.ai_base_url or None
-        if provider == "openai":
-            return self.settings.ai_base_url or None
         return None
+
+    def _request_outbound(
+        self,
+        config: ActiveAIConfig,
+        method: str,
+        url: str,
+        *,
+        headers: dict[str, str] | None = None,
+        json_body: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+        timeout_seconds: int | float,
+    ) -> httpx.Response:
+        if config.provider == "openai":
+            allowed_hosts = [OPENAI_API_HOST]
+            credential_hosts = {OPENAI_API_HOST}
+            allow_local = False
+            allowed_ports = {443}
+        elif config.provider == "gemini":
+            allowed_hosts = [GEMINI_API_HOST]
+            credential_hosts = {GEMINI_API_HOST}
+            allow_local = False
+            allowed_ports = {443}
+        elif config.provider == "openai_compatible":
+            allowed_hosts = self.settings.ai_allowed_hosts
+            credential_hosts = set(allowed_hosts)
+            allow_local = False
+            allowed_ports = {443}
+        elif config.provider == "ollama":
+            allowed_hosts = []
+            credential_hosts = {"localhost", "127.0.0.1", "::1"}
+            allow_local = True
+            allowed_ports = {11434}
+        else:
+            raise AIConfigurationError("Provider externo não possui política de saída.")
+        return SafeOutboundHTTPClient(
+            environment=self.settings.environment,
+            allowed_hosts=allowed_hosts,
+            allow_local_development=allow_local,
+            allowed_ports=allowed_ports,
+        ).request(
+            method,
+            url,
+            headers=headers,
+            json_body=json_body,
+            params=params,
+            timeout_seconds=timeout_seconds,
+            credential_hosts=credential_hosts,
+        )
+
+    def _record_outbound_call(
+        self,
+        config: ActiveAIConfig,
+        purpose: str,
+        result: str,
+        error_summary: str | None,
+    ) -> None:
+        destination = {
+            "openai": OPENAI_API_HOST,
+            "gemini": GEMINI_API_HOST,
+        }.get(config.provider)
+        if destination is None and config.base_url:
+            destination = urlsplit(config.base_url).hostname
+        self.db.add(
+            AuditEventModel(
+                user_id=None,
+                user_name=None,
+                user_email=None,
+                user_role=None,
+                action="ai_provider.outbound_call",
+                resource_type="ai_provider",
+                resource_id=config.provider,
+                status=result,
+                details={
+                    "provider": config.provider,
+                    "destination_host": destination,
+                    "purpose": purpose,
+                    "error_summary": error_summary,
+                    "redirects_followed": False,
+                    "credential_logged": False,
+                },
+            )
+        )
 
     def _upsert_base_url(self, provider: str, base_url: str, user: UserModel) -> None:
         row = self._credential(provider)

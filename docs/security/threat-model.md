@@ -32,7 +32,7 @@ API ── policy + autorização por objeto ── PostgreSQL
 | BOLA/BFLA e tenant escape | escopo por instituição/grant no repositório, roles no backend, testes negativos | revisão endpoint a endpoint e política ABAC externa continuam necessárias |
 | mass assignment/adulteração de decisão | schemas `extra=forbid`, regras resolvidas no servidor, explicação por `audit_id` | novos endpoints precisam repetir o padrão |
 | alteração histórica | snapshot imutável, JSON canônico, hash versionado, relatórios snapshot-only | assinatura externa/WORM e timestamp confiável não existem |
-| SSRF/DNS rebinding/redirect | HTTPS fora de local, allowlist, resolução de IP público, redirects não seguidos | egress firewall e validação em cada hop pertencem à infraestrutura |
+| SSRF/DNS rebinding/redirect | endpoints oficiais fixos; allowlist/porta exatas; resolução fixada no IP efetivamente conectado com Host/SNI original; redirects bloqueados; limites de timeout e tamanho | firewall/proxy de egress permanece defesa adicional do deployment |
 | vazamento a IA | allowlist de campos, snapshot minimizado, credencial criptografada, sem chave no frontend | DLP independente e contrato com provider não foram validados |
 | prompt injection/source poisoning | índice bloqueado por hash, chunks, marcadores rejeitados, IA não decide risco | detecção é heurística; curadoria e avaliação formal de groundedness pendem |
 | log/CSV/XSS injection | redaction de eventos, JSON tipado, React escaping, export controlado | testes DAST e fórmula CSV em todos os campos devem continuar no roadmap |
