@@ -9,7 +9,8 @@ inclusive visual e PostgreSQL, passam.
 Vitest mede o frontend com gates de 75% para statements/lines, 70% functions e 65% branches. As únicas
 exclusões são tipos, bootstrap trivial, testes, configuração e tokens puramente declarativos.
 Playwright recria banco/seed por execução e cobre perfis, BOLA, dose, override, axe, falha/retry/vazio,
-desktop/mobile/tablet e reduced motion. Snapshots Windows não são comparados a rasterização Linux.
+Research/RWE aggregate-first, attrition, pharmacy, desktop/mobile/tablet e reduced motion. Snapshots
+Windows não são comparados a rasterização Linux.
 
 O checker textual é Python puro. Links e assets possuem verificadores separados, e whitespace é
 validado no commit com `git show --check`, adequado a um checkout limpo.
@@ -20,6 +21,6 @@ Falha ou timeout não autoriza tag. Smoke não é denominado E2E; cenários Play
 login/logout/sessão expirada, navegação por capacidade, paciente/grants, checagem, protocolos,
 override/revisão, auditoria, falhas e responsividade.
 
-O workflow `security.yml` adiciona CodeQL, `pip-audit`, audit npm com risco aceito e prazo explícito,
+O workflow `security.yml` adiciona CodeQL, `pip-audit`, audit npm sem exceção high/critical ativa,
 gitleaks e SBOM CycloneDX. Actions são fixadas por SHA. Esses gates não substituem pentest, análise de
-licenças por advogado, validação clínica ou revisão independente de uma implantação.
+licenças por advogado, validação clínica/epidemiológica ou revisão independente de uma implantação.

@@ -4,6 +4,9 @@ Prescripta é um motor de apoio à prescrição segura com regras determinístic
 evidências rastreáveis, revisão humana, IA explicativa e arquitetura preparada
 para integração clínica.
 
+O roadmap canônico da v0.8.8 à v1.0.0 está em [docs/ROADMAP](../ROADMAP.md). Esta página preserva
+somente o resumo histórico de produto.
+
 ## Entregue
 
 - `v0.5.0`: catálogo Brasil/Anvisa, princípio ativo, aliases e vocabulário controlado.
@@ -17,11 +20,14 @@ para integração clínica.
 - `v0.8.3`: inteligencia clínica assistida, histórico longitudinal do paciente,
   protocolos integrados a `GeneratedReport`, catálogo farmacológico ampliável,
   prompts por módulo e frontend com visão clínica/tecnica.
+- `v0.8.7`: dose dimensional, autorização por relação clínica, hardening de saída e frontend por
+  capacidades.
+- `v0.8.8`: workflows profissionais, fundações Research/Evidence/AI, coorte determinística e
+  hardening de dependências.
 
-## Próximas Versões
+## Próximas versões
 
-- `v0.9.0`: Docker/PostgreSQL/migrações/deploy.
-- `v1.0.0`: versão final de portfólio.
+Consulte o [roadmap canônico](../ROADMAP.md); o próximo marco é o Research & RWE MVP v0.9.0.
 
 ## Limites
 

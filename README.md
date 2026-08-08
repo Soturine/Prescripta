@@ -4,15 +4,15 @@
 [![Security](https://github.com/Soturine/Prescripta/actions/workflows/security.yml/badge.svg)](https://github.com/Soturine/Prescripta/actions/workflows/security.yml)
 [![Licença](https://img.shields.io/badge/licença-Apache--2.0-f59e0b)](LICENSE)
 
-O Prescripta é uma aplicação demonstrativa e educacional de segurança de medicamentos. Ela reúne
-contexto fictício de paciente, conhecimento medicamentoso curado, regras determinísticas, cobertura,
-revisão humana, relatórios e auditoria em uma interface FastAPI + React.
+O Prescripta é uma plataforma demonstrativa e educacional organizada em três pilares: Medication
+Safety, Research & RWE e Evidence Intelligence. Ela reúne contexto fictício, regras determinísticas,
+coortes agregadas, fontes rastreáveis, revisão humana, relatórios e auditoria em FastAPI + React.
 
 > Não é dispositivo médico, não possui validação clínica, regulatória ou institucional e não deve ser
 > usado em atendimento real. Não substitui avaliação profissional, bula, protocolo, autoridade
 > sanitária ou decisão institucional. Use somente dados fictícios.
 
-![Fluxo demonstrativo atual do Prescripta, com dashboard, paciente, decisão clínica e revisão farmacêutica](docs/assets/current/prescripta-overview-v0.8.7.gif)
+![Fluxo demonstrativo atual do Prescripta, com dashboard, paciente, decisão clínica e Research](docs/assets/current/prescripta-overview-v0.8.8.gif)
 
 ## O que é — e o que não é
 
@@ -39,14 +39,22 @@ interna usa busca lexical indexada, não um RAG clinicamente validado.
   e fallback local;
 - PDF/JSON/CSV, paginação, manifesto de truncamento e auditoria pseudonimizada;
 - Alembic, PostgreSQL em CI, testes automatizados, SAST/SCA, secret scan e SBOM.
+- workflows institucionais de enfermagem e farmácia, com protocolo/versionamento e transações únicas;
+- estudos e protocolos versionados, concept sets revisados, cohort DSL sem SQL livre e attrition;
+- runs determinísticos aggregate-first, snapshots, hashes, provenance e Data Quality;
+- EvidenceSource/EvidenceLink e AI Task Router proposal-only com revisão humana obrigatória.
 
 ## Galeria
 
 | Workspace profissional | Paciente autorizado |
 | --- | --- |
-| ![Dashboard profissional organizado pelas capacidades concedidas](docs/assets/current/dashboard-v0.8.7.png) | ![Workspace longitudinal de paciente fictício autorizado](docs/assets/current/patient-workspace-v0.8.7.png) |
+| ![Dashboard profissional organizado pelas capacidades concedidas](docs/assets/current/dashboard-v0.8.8.png) | ![Workspace longitudinal de paciente fictício autorizado](docs/assets/current/patient-workspace-v0.8.8.png) |
 | Decisão clínica | Revisão farmacêutica |
-| ![Resultado determinístico com cobertura, abstention e auditoria](docs/assets/current/clinical-decision-v0.8.7.png) | ![Workspace demonstrativo de reconciliação farmacêutica](docs/assets/current/pharmacy-review-v0.8.7.png) |
+| ![Resultado determinístico com cobertura, abstention e auditoria](docs/assets/current/clinical-decision-v0.8.8.png) | ![Workflow farmacêutico demonstrativo](docs/assets/current/pharmacy-review-v0.8.8.png) |
+
+| Research Workspace | Attrition reproduzível |
+| --- | --- |
+| ![Workspace Research e RWE sobre dados sintéticos](docs/assets/current/research-workspace-v0.8.8.png) | ![Execução de coorte demonstrativa com attrition por critério](docs/assets/current/cohort-attrition-v0.8.8.png) |
 
 A [galeria corrente e seu manifesto SHA-256](docs/assets/current/manifest.json) também incluem checagem estruturada, auditoria e mobile.
 
@@ -78,11 +86,12 @@ React/TypeScript
       │ cookie HttpOnly + contratos tipados
 FastAPI routes ── autorização por papel, instituição e objeto
       │
-serviços de aplicação ── ClinicalDecisionOrchestrator ── regras determinísticas
-      │                                      │
-SQLAlchemy/Alembic                   busca lexical/IA explicativa
-      │                                      │
-PostgreSQL (produção alvo)            snapshots e fontes bloqueadas
+serviços de aplicação ─┬─ Medication Safety determinística
+      │                ├─ Research/RWE aggregate-first
+      │                └─ Evidence + AI Task Router controlado
+SQLAlchemy/Alembic ── JSON canônico, snapshots, provenance e auditoria
+      │
+PostgreSQL (produção alvo) / SQLite somente local-demo
 ```
 
 Regras clínicas não ficam nas rotas nem no frontend. Uma checagem persiste decisão, eventos e snapshot
@@ -112,7 +121,9 @@ O [modelo de ameaça](docs/security/threat-model.md), o
 
 - [índice da documentação](docs/README.md)
 - [arquitetura](docs/architecture/overview.md)
+- [roadmap v0.8.8–v1.0](docs/ROADMAP.md)
 - [regras clínicas](docs/clinical-rules/risk-engine.md)
+- [Research & RWE](docs/research/README.md) e [Evidence Intelligence](docs/evidence/README.md)
 - [interoperabilidade](docs/interoperability/architecture.md)
 - [IA](docs/ai/multi-provider-ai.md) e [busca lexical](docs/rag/clinical-rag.md)
 - [testes](docs/testing/ci-and-release-gates.md) e [operações](docs/operations/README.md)

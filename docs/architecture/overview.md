@@ -11,6 +11,9 @@ PostgreSQL é o alvo fora do modo local; SQLite e auto-seed existem apenas para 
 - `backend/app/reports`: EvidenceBundle, snapshot, PDF/JSON/CSV e narrativa controlada;
 - `backend/app/integrations`: adapters demonstrativos, consentimento e reconciliação;
 - `backend/app/knowledge`: índice lexical versionado e citações por chunk;
+- `backend/app/services/research_service.py`: estudos, versões revisadas, coortes e runs agregados;
+- `backend/app/services/evidence_service.py`: fontes e vínculos de evidência institucionais;
+- `backend/app/services/ai_task_router.py`: policy por tarefa/provider e provenance de IA;
 - `backend/app/api/routes`: transporte HTTP e dependências de autenticação;
 - `backend/migrations`: schema versionado por Alembic;
 - `frontend/src`: interface, contratos, estado de sessão e cliente HTTP.
@@ -43,8 +46,23 @@ Checagem, audit e snapshot usam uma unidade de trabalho. Relatórios de prescri�
 cadastro vivo: verificam `sha256-canonical-json-v1` e leem apenas o snapshot imutável. Estado do circuit
 breaker de IA fica no banco para ser compartilhado por workers.
 
+## Três pilares
+
+```text
+Medication Safety       Research & RWE              Evidence Intelligence
+regras determinísticas  protocolo/versionamento     fontes e vínculos
+dose/workflows           cohort DSL + attrition      concept sets/provenance
+decisão + snapshot       aggregates + snapshot       AI Task Router controlado
+             └──────── JSON canônico, auditoria e autorização ────────┘
+```
+
+O Research vertical slice usa apenas dados sintéticos. Definições revisadas são imutáveis, runs
+registram marcador do dataset e versões, e a saída padrão é aggregate-first. A IA propõe estruturas
+e explicações; nunca executa consulta, conta pacientes, modifica um objeto ou decide validade.
+
 ## Limites
 
 O projeto é educacional, sem validação clínica/regulatória. Não é FHIR, SMART ou CDS Hooks conforme;
 os adapters são compatibilidade parcial. A busca lexical não é RAG validado. Infraestrutura produtiva,
-OIDC/BFF, WORM, DLP, pentest, validação de rulesets e operação institucional continuam externas.
+OIDC/BFF, WORM, DLP, pentest, validação de rulesets, validade epidemiológica e operação institucional
+continuam externas.

@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.8.8] - 2026-08-08
+
+### Workflows e segurança clínica
+
+- faixa usual de dose passa a usar contrato dimensional explícito, limites inclusivos, escopo,
+  normalização corporal e precisão `Decimal`;
+- transações de aplicação são centralizadas no request unit of work; serviços executam `flush()` e
+  rollback inclui domínio e auditoria;
+- enfermagem recebe prescrição estritamente vinculada a versão de protocolo institucional aplicável,
+  credencial, vigência, vínculo e coassinatura;
+- intervenções farmacêuticas ganham lifecycle, optimistic locking, idempotência, eventos,
+  reconciliação por item e revisão de formulação sem alteração automática da prescrição.
+
+### Research, RWE e evidências
+
+- estudos, protocolos, concept sets, coortes e outcomes institucionais/versionados com revisão humana
+  independente e imutabilidade após revisão;
+- cohort DSL declarativa sem SQL livre, com allowlist, budget, execução determinística aggregate-first,
+  attrition, snapshots e hashes canônicos;
+- timeline sintética, regras iniciais de Data Quality e workspace Research com estados de permissão,
+  cohort builder, runs, provenance e Copilot proposal-only;
+- `EvidenceSource` e `EvidenceLink` registram fontes e relações rastreáveis sem atribuir validade
+  científica automática.
+
+### IA, segurança e dependências
+
+- AI Task Router aplica task/template/schema, classificação, policy de provider, minimização, source
+  grounding, fallback e revisão de `AIInteraction`, sem escrita do LLM no domínio;
+- React Router 7.18.2 está fora da faixa afetada atualizada de `GHSA-qwww-vcr4-c8h2`; a exceção
+  temporária foi encerrada e high/critical volta a falhar sem allowlist;
+- backend, frontend e CodeQL receberam updates compatíveis reproduzidos em commits próprios; majors
+  Node/Vite/jsdom/Lucide e o `pydantic-core` isolado foram deferidos com blockers documentados;
+- migrations reversíveis, seeds idempotentes, testes backend/frontend/E2E, SBOMs, threat model,
+  hazard log, roadmap e documentação da release foram ampliados.
+
 ## [0.8.7] - 2026-07-29
 
 ### Segurança clínica
