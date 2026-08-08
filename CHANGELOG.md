@@ -32,6 +32,8 @@
   temporária foi encerrada e high/critical volta a falhar sem allowlist;
 - backend, frontend e CodeQL receberam updates compatíveis reproduzidos em commits próprios; majors
   Node/Vite/jsdom/Lucide e o `pydantic-core` isolado foram deferidos com blockers documentados;
+- `cryptography` 50.0.0 corrige `PYSEC-2026-3552`/`CVE-2026-69247`, detectado pelo `pip-audit` no
+  gate final, com Fernet, credenciais e startup revalidados;
 - migrations reversíveis, seeds idempotentes, testes backend/frontend/E2E, SBOMs, threat model,
   hazard log, roadmap e documentação da release foram ampliados.
 
