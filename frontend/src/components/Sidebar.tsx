@@ -14,7 +14,7 @@ type SidebarProps = {
   onMobileOpenChange: (value: boolean) => void;
 };
 
-const sections = ["workspace", "clinical", "evidence", "governance"] as const;
+const sections = ["workspace", "clinical", "evidence", "research", "governance"] as const;
 
 export default function Sidebar({
   collapsed,

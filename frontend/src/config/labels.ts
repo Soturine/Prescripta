@@ -7,6 +7,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   farmaceutico: "Farmacêutico",
   psicologo: "Psicólogo",
   auditor: "Auditoria",
+  pesquisador: "Pesquisa",
   clinical_safety_officer: "Clinical safety officer",
 };
 
@@ -17,6 +18,7 @@ export const PROFESSION_LABELS = {
   pharmacy: "Farmácia",
   psychology: "Psicologia",
   audit: "Auditoria",
+  research: "Pesquisa e RWE",
   clinical_safety: "Segurança clínica",
 } as const;
 

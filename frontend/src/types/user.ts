@@ -5,6 +5,7 @@ export type UserRole =
   | "farmaceutico"
   | "psicologo"
   | "auditor"
+  | "pesquisador"
   | "clinical_safety_officer";
 
 export type Profession =
@@ -14,6 +15,7 @@ export type Profession =
   | "pharmacy"
   | "psychology"
   | "audit"
+  | "research"
   | "clinical_safety";
 
 export type Capability =
@@ -29,6 +31,31 @@ export type Capability =
   | "reconciliation.review"
   | "administration.review"
   | "nursing.protocol_prescribe"
+  | "clinical_protocol.read"
+  | "clinical_protocol.manage"
+  | "clinical_protocol.review"
+  | "pharmacy.intervention.read"
+  | "pharmacy.intervention.write"
+  | "pharmacy.intervention.decide"
+  | "pharmacy.reconciliation.write"
+  | "pharmacy.formulation.review"
+  | "research.study.read"
+  | "research.study.create"
+  | "research.study.write"
+  | "research.study.review"
+  | "research.cohort.read"
+  | "research.cohort.write"
+  | "research.cohort.execute"
+  | "research.concept_set.read"
+  | "research.concept_set.write"
+  | "research.analysis.read"
+  | "research.analysis.write"
+  | "research.ai.use"
+  | "evidence.read"
+  | "evidence.write"
+  | "data_quality.read"
+  | "data_quality.run"
+  | "patient.timeline.read"
   | "psychology.context.write"
   | "report.read"
   | "report.create"

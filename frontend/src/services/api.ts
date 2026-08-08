@@ -82,6 +82,27 @@ import type {
   GeneratedReport,
   ReportPreview,
 } from "../types/report";
+import type {
+  AIInteraction,
+  CohortDefinition,
+  CohortRun,
+  CohortVersion,
+  ConceptSet,
+  ConceptSetVersion,
+  DataQualityFinding,
+  EvidenceLink,
+  EvidenceSource,
+  OutcomeDefinition,
+  ResearchStudy,
+  ResearchStudyPayload,
+  ResearchWorkspace,
+  StudyProtocolVersion,
+  StudyWorkspace,
+} from "../types/research";
+import type {
+  PharmacyIntervention,
+  PharmacyInterventionPayload,
+} from "../types/pharmacy";
 import type { User, UserClinicalProfilePayload, UserCreatePayload, UserRole } from "../types/user";
 
 const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
@@ -764,6 +785,188 @@ export async function updateUserClinicalProfile(
   payload: UserClinicalProfilePayload,
 ) {
   const response = await api.patch<User>(`/users/${id}/clinical-profile`, payload);
+  return response.data;
+}
+
+export async function fetchResearchWorkspace() {
+  const response = await api.get<ResearchWorkspace>("/research/workspace");
+  return response.data;
+}
+
+export async function fetchResearchStudies() {
+  const response = await api.get<ResearchStudy[]>("/research/studies");
+  return response.data;
+}
+
+export async function createResearchStudy(payload: ResearchStudyPayload) {
+  const response = await api.post<ResearchStudy>("/research/studies", payload);
+  return response.data;
+}
+
+export async function fetchStudyWorkspace(studyId: string) {
+  const response = await api.get<StudyWorkspace>(`/research/studies/${studyId}/workspace`);
+  return response.data;
+}
+
+export async function createStudyProtocolVersion(
+  studyId: string,
+  payload: Record<string, unknown>,
+) {
+  const response = await api.post<StudyProtocolVersion>(
+    `/research/studies/${studyId}/protocol-versions`,
+    payload,
+  );
+  return response.data;
+}
+
+export async function reviewStudyProtocolVersion(
+  versionId: string,
+  decision: "in_review" | "reviewed_demo" | "superseded" | "archived",
+  note: string,
+) {
+  const response = await api.post<StudyProtocolVersion>(
+    `/research/protocol-versions/${versionId}/review`,
+    { decision, note },
+  );
+  return response.data;
+}
+
+export async function fetchConceptSets() {
+  const response = await api.get<ConceptSet[]>("/research/concept-sets");
+  return response.data;
+}
+
+export async function createConceptSet(payload: Record<string, unknown>) {
+  const response = await api.post<ConceptSet>("/research/concept-sets", payload);
+  return response.data;
+}
+
+export async function reviewConceptSetVersion(
+  versionId: string,
+  decision: "terminology_matched" | "human_reviewed" | "approved_for_demo_study" | "rejected",
+  note: string,
+) {
+  const response = await api.post<ConceptSetVersion>(
+    `/research/concept-set-versions/${versionId}/review`,
+    { decision, note },
+  );
+  return response.data;
+}
+
+export async function createCohortVersion(
+  studyId: string,
+  name: string,
+  definition: CohortDefinition,
+) {
+  const response = await api.post<CohortVersion>(`/research/studies/${studyId}/cohorts`, {
+    name,
+    definition,
+  });
+  return response.data;
+}
+
+export async function reviewCohortVersion(
+  versionId: string,
+  decision: "reviewed_demo" | "rejected" | "superseded",
+  note: string,
+) {
+  const response = await api.post<CohortVersion>(
+    `/research/cohort-versions/${versionId}/review`,
+    { decision, note },
+  );
+  return response.data;
+}
+
+export async function createOutcomeDefinition(
+  studyId: string,
+  payload: Record<string, unknown>,
+) {
+  const response = await api.post<OutcomeDefinition>(
+    `/research/studies/${studyId}/outcomes`,
+    payload,
+  );
+  return response.data;
+}
+
+export async function executeCohortVersion(versionId: string, dataSnapshotMarker: string) {
+  const response = await api.post<CohortRun>(
+    `/research/cohort-versions/${versionId}/runs`,
+    { data_snapshot_marker: dataSnapshotMarker },
+  );
+  return response.data;
+}
+
+export async function runDataQuality() {
+  const response = await api.post<{
+    findings_created: number;
+    findings_open: number;
+    by_rule: Record<string, number>;
+  }>("/data-quality/runs");
+  return response.data;
+}
+
+export async function fetchDataQualityFindings() {
+  const response = await api.get<DataQualityFinding[]>("/data-quality/findings");
+  return response.data;
+}
+
+export async function executeAITask(payload: Record<string, unknown>) {
+  const response = await api.post<AIInteraction>("/ai/tasks", payload);
+  return response.data;
+}
+
+export async function fetchEvidenceSources() {
+  const response = await api.get<EvidenceSource[]>("/evidence/sources");
+  return response.data;
+}
+
+export async function createEvidenceSource(payload: Record<string, unknown>) {
+  const response = await api.post<EvidenceSource>("/evidence/sources", payload);
+  return response.data;
+}
+
+export async function fetchEvidenceLinks() {
+  const response = await api.get<EvidenceLink[]>("/evidence/links");
+  return response.data;
+}
+
+export async function createEvidenceLink(payload: Record<string, unknown>) {
+  const response = await api.post<EvidenceLink>("/evidence/links", payload);
+  return response.data;
+}
+
+export async function fetchPharmacyInterventions() {
+  const response = await api.get<PharmacyIntervention[]>("/pharmacy/interventions");
+  return response.data;
+}
+
+export async function createPharmacyIntervention(payload: PharmacyInterventionPayload) {
+  const response = await api.post<PharmacyIntervention>("/pharmacy/interventions", payload);
+  return response.data;
+}
+
+export async function decidePharmacyIntervention(
+  interventionId: number,
+  decision: "accepted" | "rejected",
+  reason: string,
+  expectedVersion: number,
+) {
+  const response = await api.post<PharmacyIntervention>(
+    `/pharmacy/interventions/${interventionId}/decision`,
+    { decision, reason, expected_version: expectedVersion },
+  );
+  return response.data;
+}
+
+export async function resolvePharmacyIntervention(
+  interventionId: number,
+  resolution: string,
+  expectedVersion: number,
+) {
+  const response = await api.post<PharmacyIntervention>(
+    `/pharmacy/interventions/${interventionId}/resolve`,
+    { resolution, expected_version: expectedVersion },
+  );
   return response.data;
 }
 

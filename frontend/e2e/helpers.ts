@@ -8,6 +8,7 @@ export const credentials = {
   farmaceutico: ["farmacia@prescripta.local", "Farmacia@12345"],
   psicologo: ["psicologia@prescripta.local", "Psicologia@12345"],
   safety: ["safety@prescripta.local", "Safety@12345"],
+  pesquisador: ["pesquisa@prescripta.local", "Pesquisa@12345"],
 } as const;
 
 export type DemoRole = keyof typeof credentials;

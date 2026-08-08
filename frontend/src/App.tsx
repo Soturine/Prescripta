@@ -10,13 +10,16 @@ const AISettings = lazy(() => import("./pages/AISettings"));
 const Audit = lazy(() => import("./pages/Audit"));
 const ClinicalImports = lazy(() => import("./pages/ClinicalImports"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Evidence = lazy(() => import("./pages/Evidence"));
 const Login = lazy(() => import("./pages/Login"));
 const Medications = lazy(() => import("./pages/Medications"));
 const PatientDetails = lazy(() => import("./pages/PatientDetails"));
 const Patients = lazy(() => import("./pages/Patients"));
+const Pharmacy = lazy(() => import("./pages/Pharmacy"));
 const PrescriptionCheck = lazy(() => import("./pages/PrescriptionCheck"));
 const Protocols = lazy(() => import("./pages/Protocols"));
 const Reports = lazy(() => import("./pages/Reports"));
+const Research = lazy(() => import("./pages/Research"));
 const Users = lazy(() => import("./pages/Users"));
 
 export default function App() {
@@ -38,6 +41,9 @@ export default function App() {
             <Route element={<ProtectedRoute capabilities={["medication.read"]} />}>
               <Route path="medications" element={<Medications />} />
             </Route>
+            <Route element={<ProtectedRoute capabilities={["pharmacy.intervention.read", "pharmacy.intervention.write", "pharmacy.intervention.decide"]} requireAnyCapability />}>
+              <Route path="pharmacy" element={<Pharmacy />} />
+            </Route>
             <Route element={<ProtectedRoute capabilities={["prescription.check"]} />}>
               <Route path="prescription-check" element={<PrescriptionCheck />} />
             </Route>
@@ -48,6 +54,12 @@ export default function App() {
             <Route element={<ProtectedRoute capabilities={["report.read"]} />}>
               <Route path="protocols" element={<Protocols />} />
               <Route path="reports" element={<Reports />} />
+            </Route>
+            <Route element={<ProtectedRoute capabilities={["evidence.read"]} />}>
+              <Route path="evidence" element={<Evidence />} />
+            </Route>
+            <Route element={<ProtectedRoute capabilities={["research.study.read"]} />}>
+              <Route path="research" element={<Research />} />
             </Route>
 
             <Route element={<ProtectedRoute capabilities={["audit.read"]} />}>

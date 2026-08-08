@@ -27,11 +27,11 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: "python -c \"from pathlib import Path; Path('playwright-v087.db').unlink(missing_ok=True)\" && python -m uvicorn app.main:app --host 127.0.0.1 --port 8013",
+      command: "python -c \"from pathlib import Path; Path('playwright-v088.db').unlink(missing_ok=True)\" && python -m uvicorn app.main:app --host 127.0.0.1 --port 8013",
       cwd: "../backend",
       url: "http://127.0.0.1:8013/api/health",
       env: {
-        PRESCRIPTA_DATABASE_URL: "sqlite:///./playwright-v087.db",
+        PRESCRIPTA_DATABASE_URL: "sqlite:///./playwright-v088.db",
         PRESCRIPTA_CORS_ORIGINS: "http://127.0.0.1:5177",
         PRESCRIPTA_AI_ENABLE_EXTERNAL_CALLS: "false",
       },
