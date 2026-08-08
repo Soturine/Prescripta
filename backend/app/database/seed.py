@@ -1,4 +1,5 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -8,22 +9,49 @@ from app.database.models import (
     ActiveIngredientModel,
     ClinicalVocabularyModel,
     DrugProductModel,
+    InstitutionalClinicalProtocolModel,
+    InstitutionalClinicalProtocolVersionModel,
     MedicationCounselingSummaryModel,
     MedicationKnowledgeSourceModel,
     MedicationModel,
     PatientAccessGrantModel,
+    PatientClinicalTimelineEventModel,
     PatientFunctionalProfileModel,
     PatientIdentifierModel,
     PatientModel,
+    ResearchStudyModel,
     SpecialtyModel,
     UserModel,
 )
 from app.domain.user import ROLE_PROFESSION, UserRole
+from app.schemas.clinical_protocol_schema import (
+    InstitutionalClinicalProtocolCreate,
+    InstitutionalClinicalProtocolVersionCreate,
+    ProtocolVersionReviewRequest,
+)
+from app.schemas.pharmacy_schema import PharmacyInterventionCreate
+from app.schemas.research_schema import (
+    CohortDefinitionCreate,
+    CohortReviewRequest,
+    CohortRunRequest,
+    ConceptSetCreate,
+    ConceptSetReviewRequest,
+    OutcomeDefinitionCreate,
+    ResearchReviewRequest,
+    ResearchStudyCreate,
+    StudyProtocolVersionCreate,
+)
 from app.services.capability_policy import allowed_capabilities
 from app.services.clinical_profile import normalize_patient_payload
 from app.services.controlled_vocabulary import VOCABULARY
+from app.services.data_quality_service import DataQualityService
+from app.services.institutional_protocol_service import (
+    InstitutionalClinicalProtocolService,
+)
 from app.services.normalizer import normalize_text
 from app.services.patient_identifier_service import hash_identifier, mask_identifier
+from app.services.pharmacy_workflow_service import PharmacyWorkflowService
+from app.services.research_service import ResearchService
 
 BULARIO_URL = "https://consultas.anvisa.gov.br/#/bulario/"
 DCB_URL = "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/dcb"
@@ -52,6 +80,8 @@ def seed_demo_data(db: Session) -> None:
     _seed_users(db)
     db.flush()
     _seed_demo_patient_access(db)
+    db.flush()
+    _seed_v088_workflows(db)
     db.commit()
 
 
@@ -851,18 +881,24 @@ def _seed_v084_medications(db: Session, ingredients: dict[str, ActiveIngredientM
         normalized = normalize_text(name)
         ingredient = ingredients.get(normalized)
         if ingredient is None:
-            ingredient = ActiveIngredientModel(
-                dcb_name=name,
-                normalized_name=normalized,
-                synonyms=[],
-                therapeutic_classes=["demo_pending_review"],
-                common_brands=[],
-                jurisdiction="BR",
-                source="demo_seed",
-                validation_status="pending_review",
+            ingredient = db.scalar(
+                select(ActiveIngredientModel).where(
+                    ActiveIngredientModel.normalized_name == normalized
+                )
             )
-            db.add(ingredient)
-            db.flush()
+            if ingredient is None:
+                ingredient = ActiveIngredientModel(
+                    dcb_name=name,
+                    normalized_name=normalized,
+                    synonyms=[],
+                    therapeutic_classes=["demo_pending_review"],
+                    common_brands=[],
+                    jurisdiction="BR",
+                    source="demo_seed",
+                    validation_status="pending_review",
+                )
+                db.add(ingredient)
+                db.flush()
             ingredients[normalized] = ingredient
         existing = db.scalar(
             select(MedicationModel).where(MedicationModel.active_ingredient == normalized)
@@ -1346,6 +1382,20 @@ def _seed_users(db: Session) -> None:
             UserRole.CLINICAL_SAFETY_OFFICER,
             None,
         ),
+        (
+            "Pesquisa RWE demonstração",
+            "pesquisa@prescripta.local",
+            "Pesquisa@12345",
+            UserRole.PESQUISADOR,
+            None,
+        ),
+        (
+            "Revisão RWE demonstração",
+            "revisao.pesquisa@prescripta.local",
+            "RevisaoPesquisa@12345",
+            UserRole.PESQUISADOR,
+            None,
+        ),
     ]
     for name, email, password, role, specialty in specs:
         profession = ROLE_PROFESSION[role]
@@ -1431,3 +1481,344 @@ def _seed_demo_patient_access(db: Session) -> None:
                             reason="deterministic_demo_seed",
                         )
                     )
+
+
+def _seed_v088_workflows(db: Session) -> None:
+    """Cria o vertical slice v0.8.8 somente com fixtures sintéticas e idempotentes."""
+
+    admin = db.scalar(select(UserModel).where(UserModel.email == "admin@prescripta.local"))
+    reviewer = db.scalar(select(UserModel).where(UserModel.email == "safety@prescripta.local"))
+    researcher = db.scalar(
+        select(UserModel).where(UserModel.email == "pesquisa@prescripta.local")
+    )
+    research_reviewer = db.scalar(
+        select(UserModel).where(UserModel.email == "revisao.pesquisa@prescripta.local")
+    )
+    nurse = db.scalar(
+        select(UserModel).where(UserModel.email == "enfermagem@prescripta.local")
+    )
+    pharmacist = db.scalar(
+        select(UserModel).where(UserModel.email == "farmacia@prescripta.local")
+    )
+    patient = db.scalar(select(PatientModel).order_by(PatientModel.id))
+    medication = db.scalar(select(MedicationModel).order_by(MedicationModel.id))
+    if any(
+        item is None
+        for item in (
+            admin,
+            reviewer,
+            researcher,
+            research_reviewer,
+            nurse,
+            pharmacist,
+            patient,
+            medication,
+        )
+    ):
+        return
+
+    protocol_service = InstitutionalClinicalProtocolService(db)
+    protocol = db.scalar(
+        select(InstitutionalClinicalProtocolModel).where(
+            InstitutionalClinicalProtocolModel.institution_id == admin.institution_id,
+            InstitutionalClinicalProtocolModel.code == "nursing-primary-care-v088",
+        )
+    )
+    if protocol is None:
+        protocol = protocol_service.create_protocol(
+            InstitutionalClinicalProtocolCreate(
+                code="nursing-primary-care-v088",
+                name="Protocolo demonstrativo de enfermagem v0.8.8",
+                program="segurança medicamentosa sintética",
+            ),
+            admin,
+        )
+        protocol_version = protocol_service.create_version(
+            protocol.id,
+            InstitutionalClinicalProtocolVersionCreate(
+                version="2026.08-demo",
+                effective_from=datetime(2026, 8, 1, tzinfo=UTC),
+                effective_until=datetime(2030, 1, 1, tzinfo=UTC),
+                source_refs=["fixture:institutional-protocol:v088"],
+                clinical_context={
+                    "demo_only": True,
+                    "condition": "E11-DEMO",
+                    "notice": "Não representa protocolo assistencial real.",
+                },
+                eligible_professions=["nursing"],
+                required_capability="nursing.protocol_prescribe",
+                required_parameters=["patient_id", "protocol_version_id"],
+                contraindications=["outside_demo_scope"],
+                requires_second_review=False,
+                override_policy={"allowed": False},
+                prescribing_scope={
+                    "allowed_routes": ["oral"],
+                    "dose_min": Decimal("1"),
+                    "dose_max": Decimal("1000"),
+                    "dose_unit": "mg",
+                    "frequency_min_per_day": 1,
+                    "frequency_max_per_day": 4,
+                    "max_duration_days": 30,
+                    "min_age_years": 18,
+                    "max_age_years": 120,
+                    "constraints": {"demo_only": True},
+                },
+                medications=[
+                    {
+                        "medication_id": medication.id,
+                        "concept_set_ref": "fixture:medication:v088",
+                    }
+                ],
+                conditions=[
+                    {
+                        "terminology_system": "CID-10",
+                        "terminology_version": "2026-demo",
+                        "condition_code": "E11-DEMO",
+                        "label": "Condição metabólica sintética",
+                    }
+                ],
+                credentials=[
+                    {
+                        "credential_type": "coren_demo",
+                        "credential_region": "SP",
+                        "verification_required": True,
+                        "unexpired_required": True,
+                    }
+                ],
+            ),
+            admin,
+        )
+        protocol_service.review_version(
+            protocol_version.id,
+            ProtocolVersionReviewRequest(
+                decision="reviewed_demo",
+                note="Revisão humana independente de uma fixture sem uso assistencial.",
+            ),
+            reviewer,
+        )
+    else:
+        protocol_version = db.scalar(
+            select(InstitutionalClinicalProtocolVersionModel)
+            .where(InstitutionalClinicalProtocolVersionModel.protocol_id == protocol.id)
+            .order_by(InstitutionalClinicalProtocolVersionModel.created_at.desc())
+        )
+
+    nurse.credential_type = "coren_demo"
+    nurse.credential_code_demo = "COREN-SP-DEMO-088"
+    nurse.credential_region = "SP"
+    nurse.credential_expires_at = datetime(2030, 1, 1, tzinfo=UTC)
+    nurse.credential_verification_status = "verified"
+    nurse.institutional_policy = {
+        "nursing_prescribing_enabled": True,
+        "nursing_protocols": {
+            str(protocol.id): {
+                "source": "fixture:institutional-protocol:v088",
+                "version": getattr(protocol_version, "version", "2026.08-demo"),
+                "allowed_medications": [medication.id],
+                "allowed_conditions": ["E11-DEMO"],
+                "limits": {"demo_only": True, "override_allowed": False},
+            }
+        },
+    }
+    db.flush()
+
+    PharmacyWorkflowService(db).create_intervention(
+        PharmacyInterventionCreate(
+            patient_id=patient.id,
+            medication_id=medication.id,
+            intervention_type="dose",
+            severity="moderate",
+            priority="priority",
+            problem="Dose sintética requer conferência humana independente.",
+            recommendation="Revisar a dimensão e a unidade com o prescritor demonstrativo.",
+            source_refs=["fixture:pharmacy-intervention:v088"],
+            dose_snapshot={"value": "100", "unit": "mg", "demo_only": True},
+            idempotency_key="seed-v088-pharmacy-dose-001",
+            cosignature_required=False,
+        ),
+        pharmacist,
+    )
+
+    timeline_specs = (
+        {
+            "event_type": "diagnosis",
+            "title": "Condição metabólica sintética",
+            "summary": "Diagnóstico fictício para validar o motor agregado de coortes.",
+            "source_ref": "seed-v088:timeline:diagnosis:001",
+            "concept_system": "CID-10",
+            "concept_code": "E11-DEMO",
+            "concept_label": "Condição metabólica sintética",
+            "event_date": datetime.now(UTC) - timedelta(days=45),
+            "payload": {"demo_only": True},
+        },
+        {
+            "event_type": "measurement",
+            "title": "Medição sintética para Data Quality",
+            "summary": "Fixture intencional com unidade desconhecida; não é dado clínico real.",
+            "source_ref": "seed-v088:timeline:measurement:001",
+            "concept_system": "LOINC",
+            "concept_code": "LOINC-DEMO-088",
+            "concept_label": "Medição sintética",
+            "event_date": datetime.now(UTC) - timedelta(days=10),
+            "payload": {"amount": 42, "unit": "demo-unknown-unit", "demo_only": True},
+        },
+    )
+    for spec in timeline_specs:
+        exists = db.scalar(
+            select(PatientClinicalTimelineEventModel.id).where(
+                PatientClinicalTimelineEventModel.institution_id == patient.institution_id,
+                PatientClinicalTimelineEventModel.source_ref == spec["source_ref"],
+            )
+        )
+        if exists is None:
+            db.add(
+                PatientClinicalTimelineEventModel(
+                    patient_id=patient.id,
+                    institution_id=patient.institution_id,
+                    source_type="synthetic_fixture",
+                    source_system="Prescripta demo v0.8.8",
+                    provenance={"demo_only": True, "fixture_version": "v088"},
+                    visibility_classification="clinical",
+                    validation_status="pending_review",
+                    created_by=admin.id,
+                    **spec,
+                )
+            )
+    db.flush()
+
+    existing_study = db.scalar(
+        select(ResearchStudyModel).where(
+            ResearchStudyModel.institution_id == researcher.institution_id,
+            ResearchStudyModel.slug == "seguranca-medicamentosa-sintetica-v088",
+        )
+    )
+    if existing_study is not None:
+        return
+
+    research_service = ResearchService(db)
+    study = research_service.create_study(
+        ResearchStudyCreate(
+            title="Estudo sintético de segurança medicamentosa v0.8.8",
+            slug="seguranca-medicamentosa-sintetica-v088",
+            description="Vertical slice demonstrativo e reprodutível, sem dados reais.",
+            research_question=(
+                "Qual é o perfil agregado da condição sintética entre pacientes adultos demo?"
+            ),
+            objective="Demonstrar coorte, attrition, provenance e Data Quality determinísticos.",
+            design="retrospective_cohort",
+            data_source_classification="synthetic",
+        ),
+        researcher,
+    )
+    study_protocol = research_service.create_protocol_version(
+        study.id,
+        StudyProtocolVersionCreate(
+            population={"description": "Pacientes adultos exclusivamente sintéticos"},
+            exposure={"description": "Condição codificada na timeline demo"},
+            comparator={"description": "Sem comparação causal"},
+            outcome={"description": "Presença agregada do evento sintético"},
+            index_date={"event": "data_snapshot_marker"},
+            washout={"days": 0},
+            follow_up={"days": 90},
+            censoring={"strategy": "none_demo"},
+            inclusion=[{"criterion": "age_gte_18"}],
+            exclusion=[],
+            covariates=[],
+            missing_data_strategy={"strategy": "report_missingness"},
+            statistical_plan={"methods": ["descriptive_only"]},
+            limitations=["Fixture sem validade clínica ou externa."],
+            source_refs=["synthetic-dataset:prescripta:v088"],
+        ),
+        researcher,
+    )
+    research_service.review_protocol(
+        study_protocol.id,
+        ResearchReviewRequest(
+            decision="reviewed_demo",
+            note="Revisão metodológica humana independente para demonstração sintética.",
+        ),
+        research_reviewer,
+    )
+    concept = research_service.create_concept_set(
+        ConceptSetCreate(
+            name="Condição metabólica sintética v0.8.8",
+            domain="condition",
+            terminology_versions={"CID-10": "2026-demo"},
+            include_descendants=False,
+            source_refs=["terminology-fixture:cid10:v088"],
+            license_metadata={"fixture": True, "redistribution": "synthetic-only"},
+            provenance={"origin": "prescripta-demo-seed", "demo_only": True},
+            members=[
+                {
+                    "terminology_system": "CID-10",
+                    "terminology_version": "2026-demo",
+                    "concept_code": "E11-DEMO",
+                    "label": "Condição metabólica sintética",
+                    "excluded": False,
+                }
+            ],
+        ),
+        researcher,
+    )
+    concept_version_id = concept["version"]["id"]
+    for decision in ("human_reviewed", "approved_for_demo_study"):
+        research_service.review_concept_set(
+            concept_version_id,
+            ConceptSetReviewRequest(
+                decision=decision,
+                note="Revisão humana independente da terminologia sintética demonstrativa.",
+            ),
+            research_reviewer,
+        )
+    cohort = research_service.create_cohort_version(
+        study.id,
+        CohortDefinitionCreate(
+            name="Adultos com condição sintética",
+            definition={
+                "all": [
+                    {
+                        "criterion": "age",
+                        "operator": "gte",
+                        "value": 18,
+                        "label": "Adultos",
+                    },
+                    {
+                        "criterion": "condition",
+                        "operator": "exists",
+                        "concept_set_version_id": concept_version_id,
+                        "label": "Condição metabólica sintética",
+                    },
+                ],
+                "exclude": [],
+            },
+        ),
+        researcher,
+    )
+    research_service.review_cohort(
+        cohort.id,
+        CohortReviewRequest(
+            decision="reviewed_demo",
+            note="DSL e concept set revisados por pessoa independente do autor.",
+        ),
+        research_reviewer,
+    )
+    research_service.create_outcome(
+        study.id,
+        OutcomeDefinitionCreate(
+            name="Condição sintética em até 90 dias",
+            domain="condition",
+            concept_set_version_ids=[concept_version_id],
+            event_qualification={"minimum_events": 1},
+            observation_window={"after_index_days": 90},
+            temporal_relationship="after_index",
+            source_refs=["synthetic-dataset:prescripta:v088"],
+            limitations=["Outcome demonstrativo sem validação clínica."],
+        ),
+        researcher,
+    )
+    research_service.execute_cohort(
+        cohort.id,
+        CohortRunRequest(data_snapshot_marker="synthetic-seed-v088-001"),
+        researcher,
+    )
+    DataQualityService(db).run(researcher)

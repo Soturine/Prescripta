@@ -619,6 +619,53 @@ class ResearchService:
         )
         return counts
 
+    def study_workspace(self, study_id: str, actor: UserModel) -> dict:
+        study = self.study(study_id, actor)
+        protocols = list(
+            self.db.scalars(
+                select(StudyProtocolVersionModel)
+                .where(StudyProtocolVersionModel.study_id == study.id)
+                .order_by(StudyProtocolVersionModel.version.desc())
+            )
+        )
+        cohorts = list(
+            self.db.scalars(
+                select(CohortDefinitionVersionModel)
+                .where(CohortDefinitionVersionModel.study_id == study.id)
+                .order_by(CohortDefinitionVersionModel.created_at.desc())
+            )
+        )
+        outcomes = list(
+            self.db.scalars(
+                select(OutcomeDefinitionModel)
+                .where(OutcomeDefinitionModel.study_id == study.id)
+                .order_by(OutcomeDefinitionModel.version.desc())
+            )
+        )
+        runs = self.list_runs(actor, study.id, limit=100)
+        concept_versions = sorted(
+            {
+                str(item.get("concept_set_version_id"))
+                for cohort in cohorts
+                for group in ("all", "exclude")
+                for item in (cohort.definition or {}).get(group, [])
+                if item.get("concept_set_version_id")
+            }
+            | {
+                version_id
+                for outcome in outcomes
+                for version_id in outcome.concept_set_version_ids or []
+            }
+        )
+        return {
+            "study": study,
+            "protocol_versions": protocols,
+            "cohort_versions": cohorts,
+            "outcomes": outcomes,
+            "runs": runs,
+            "concept_set_version_ids": concept_versions,
+        }
+
     def _cohort_concept_source_refs(self, definition: dict, actor: UserModel) -> list[str]:
         sources: list[str] = []
         for group in ("all", "exclude"):

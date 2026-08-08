@@ -271,6 +271,17 @@ def test_research_vertical_slice_is_aggregate_reproducible_and_tenant_scoped(
     assert workspace.status_code == 200
     assert workspace.json()["studies"] == 1
     assert workspace.json()["cohort_runs"] == 2
+    study_workspace = client.get(
+        f"/api/research/studies/{study_id}/workspace",
+        headers=author_headers,
+    )
+    assert study_workspace.status_code == 200, study_workspace.text
+    assert study_workspace.json()["study"]["id"] == study_id
+    assert len(study_workspace.json()["protocol_versions"]) == 1
+    assert len(study_workspace.json()["cohort_versions"]) == 1
+    assert len(study_workspace.json()["outcomes"]) == 1
+    assert len(study_workspace.json()["runs"]) == 2
+    assert study_workspace.json()["concept_set_version_ids"] == [concept_version_id]
     assert researcher.institution_id == "demo"
 
 

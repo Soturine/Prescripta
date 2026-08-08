@@ -26,6 +26,7 @@ from app.schemas.research_schema import (
     ResearchWorkspaceRead,
     StudyProtocolVersionCreate,
     StudyProtocolVersionRead,
+    StudyWorkspaceRead,
 )
 from app.services.research_service import (
     ResearchConflict,
@@ -133,6 +134,20 @@ def study_detail(
 ) -> ResearchStudyRead:
     try:
         return ResearchService(db).study(study_id, current_user)
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.get("/studies/{study_id}/workspace", response_model=StudyWorkspaceRead)
+def study_workspace(
+    study_id: str,
+    db: DbSession,
+    current_user: StudyReader,
+) -> StudyWorkspaceRead:
+    try:
+        return StudyWorkspaceRead.model_validate(
+            ResearchService(db).study_workspace(study_id, current_user)
+        )
     except ResearchError as exc:
         raise _research_http_error(exc) from exc
 

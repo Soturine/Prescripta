@@ -347,6 +347,15 @@ class ResearchWorkspaceRead(BaseModel):
     synthetic_demo_notice: str
 
 
+class StudyWorkspaceRead(BaseModel):
+    study: ResearchStudyRead
+    protocol_versions: list[StudyProtocolVersionRead]
+    cohort_versions: list[CohortVersionRead]
+    outcomes: list[OutcomeDefinitionRead]
+    runs: list[CohortRunRead]
+    concept_set_version_ids: list[str]
+
+
 class StudyProtocolReviewEnvelope(BaseModel):
     protocol: StudyProtocolVersionRead
     study: ResearchStudyRead
