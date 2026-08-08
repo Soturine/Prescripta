@@ -18,7 +18,7 @@ test.describe("sessão, perfis e autorização", () => {
     const cases = [
       ["admin", "Acessos e perfis", "Pacientes"],
       ["medico", "Checagem", "Acessos e perfis"],
-      ["enfermagem", "Pacientes", "Checagem"],
+      ["enfermagem", "Checagem", "Acessos e perfis"],
       ["auditor", "Auditoria", "Pacientes"],
       ["farmaceutico", "Reconciliação", "Acessos e perfis"],
       ["psicologo", "Pacientes", "Medicamentos"],
