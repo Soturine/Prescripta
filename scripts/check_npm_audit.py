@@ -4,19 +4,10 @@ import json
 import shutil
 import subprocess
 import sys
-from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "frontend"
-ALLOWED_ADVISORIES = {
-    "GHSA-qwww-vcr4-c8h2": {
-        "expires": date(2026, 8, 15),
-        "packages": {"react-router", "react-router-dom"},
-    }
-}
-
-
 def main() -> int:
     npm = shutil.which("npm")
     if not npm:
@@ -31,7 +22,6 @@ def main() -> int:
     )
     report = json.loads(completed.stdout)
     unexpected: list[str] = []
-    today = date.today()
     for package, item in report.get("vulnerabilities", {}).items():
         if item.get("severity") not in {"high", "critical"}:
             continue
@@ -40,21 +30,13 @@ def main() -> int:
             for via in item.get("via", [])
             if isinstance(via, dict) and via.get("url")
         }
-        if not advisory_ids:
-            continue
-        for advisory_id in advisory_ids:
-            allowed = ALLOWED_ADVISORIES.get(advisory_id)
-            if (
-                not allowed
-                or package not in allowed["packages"]
-                or today > allowed["expires"]
-            ):
-                unexpected.append(f"{package}: {advisory_id}")
+        advisory_label = ", ".join(sorted(advisory_ids)) or "advisory não identificado"
+        unexpected.append(f"{package}: {advisory_label}")
     if unexpected:
         print("Vulnerabilidades npm não aceitas:")
         print("\n".join(f"- {item}" for item in unexpected))
         return 1
-    print("npm audit: sem risco high/critical inesperado; exceção temporária validada.")
+    print("npm audit: sem vulnerabilidades high/critical e sem exceções ativas.")
     return 0
 
 

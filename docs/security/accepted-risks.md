@@ -1,13 +1,15 @@
 # Riscos temporariamente aceitos
 
-## React Router RSC CSRF — expira em 2026-08-15
+Não há exceção high/critical ativa para dependências na v0.8.8. O gate
+`scripts/check_npm_audit.py` falha diante de qualquer vulnerabilidade high/critical.
+
+## Risco encerrado: React Router RSC CSRF
 
 - Advisory: `GHSA-qwww-vcr4-c8h2`.
-- Dependências afetadas: `react-router` e `react-router-dom` 7.18.2.
-- Justificativa limitada: o Prescripta é compilado como SPA Vite e não habilita RSC Mode,
-  Server Actions nem action endpoints do React Router.
-- Mitigação: autenticação por cookie `SameSite=Lax`, APIs mutáveis autenticadas e ausência de
-  handlers RSC. Isso não declara a biblioteca genericamente segura.
-- Gate: `scripts/check_npm_audit.py` aceita somente esse advisory, somente nesses pacotes e
-  falha automaticamente após a data de expiração ou diante de qualquer novo high/critical.
-- Ação: atualizar imediatamente para a primeira versão estável corrigida e remover a exceção.
+- Encerramento: 8 de agosto de 2026.
+- Versão instalada: `react-router` e `react-router-dom` 7.18.2.
+- Evidência oficial: o GitHub Advisory Database passou a listar 7.18.2 como versão corrigida e
+  restringe o impacto às APIs RSC instáveis, que o Prescripta não utiliza.
+- Resultado: exceção e expiração de 15 de agosto de 2026 removidas; autenticação, navegação,
+  redirects, access denied, Vitest e E2E permanecem gates obrigatórios.
+- Condição de reabertura: novo advisory que inclua 7.18.2 ou regressão na linha instalada.
