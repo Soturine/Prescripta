@@ -75,7 +75,7 @@ def cds_prescription_check(
     patient, missing_context = _patient_from_payload(payload)
     medication = Medication.from_record(medication_record)
     prescription = _prescription_from_payload(payload.medication_request)
-    evaluation = ClinicalDecisionOrchestrator().evaluate(
+    evaluation = ClinicalDecisionOrchestrator(db).evaluate(
         patient=patient,
         medication=medication,
         prescription=prescription,

@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_capabilities
+from app.core.auth import require_any_capability, require_capabilities
 from app.core.config import settings
 from app.database.models import (
     DecisionOverrideModel,
@@ -49,7 +49,12 @@ router = APIRouter(prefix="/prescriptions", tags=["prescriptions"])
 DbSession = Annotated[Session, Depends(get_db)]
 PrescriptionChecker = Annotated[
     UserModel,
-    Depends(require_capabilities(Capability.PRESCRIPTION_CHECK)),
+    Depends(
+        require_any_capability(
+            Capability.PRESCRIPTION_CHECK,
+            Capability.NURSING_PROTOCOL_PRESCRIBE,
+        )
+    ),
 ]
 SecondReviewer = Annotated[
     UserModel, Depends(require_capabilities(Capability.PRESCRIPTION_OVERRIDE))
@@ -91,6 +96,9 @@ def check_prescription(
         indication=payload.indication,
         professional_notes=payload.professional_notes,
         dose=structured_dose,
+        protocol_version_id=payload.protocol_version_id,
+        condition_codes=tuple(code.casefold() for code in payload.condition_codes),
+        second_review_id=payload.second_review_id,
     )
     rag_evidence = ClinicalRAGService().retrieve_for_prescription(patient, medication, prescription)
     patient_knowledge_bundle = PatientHistoryService(db).knowledge_bundle(patient_record)
@@ -99,7 +107,7 @@ def check_prescription(
         .filter(PatientFunctionalProfileModel.patient_id == patient_record.id)
         .first()
     )
-    evaluation = ClinicalDecisionOrchestrator().evaluate(
+    evaluation = ClinicalDecisionOrchestrator(db).evaluate(
         patient=patient,
         medication=medication,
         prescription=prescription,

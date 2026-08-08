@@ -12,12 +12,14 @@ from app.api.routes import (
     audit,
     auth,
     cds,
+    clinical_protocols,
     dashboard,
     exports,
     integrations,
     medication_catalog,
     medications,
     patients,
+    pharmacy,
     prescriptions,
     protocols,
     reports,
@@ -74,6 +76,8 @@ app.include_router(medications.router, prefix=settings.api_prefix)
 app.include_router(medication_catalog.router, prefix=settings.api_prefix)
 app.include_router(prescriptions.router, prefix=settings.api_prefix)
 app.include_router(protocols.router, prefix=settings.api_prefix)
+app.include_router(clinical_protocols.router, prefix=settings.api_prefix)
+app.include_router(pharmacy.router, prefix=settings.api_prefix)
 app.include_router(cds.router, prefix=settings.api_prefix)
 app.include_router(dashboard.router, prefix=settings.api_prefix)
 app.include_router(audit.router, prefix=settings.api_prefix)

@@ -58,6 +58,8 @@ class Medication:
     dose_by_weight_enabled: bool = False
     usual_dose_low: float | None = None
     usual_dose_high: float | None = None
+    usual_dose_unit: str = "mg"
+    usual_range_scope: str = "daily"
     max_single_dose: float | None = None
     max_single_dose_unit: str = "mg"
     max_per_procedure: float | None = None
@@ -117,6 +119,8 @@ class Medication:
             dose_by_weight_enabled=bool(getattr(record, "dose_by_weight_enabled", False)),
             usual_dose_low=getattr(record, "usual_dose_low", None),
             usual_dose_high=getattr(record, "usual_dose_high", None),
+            usual_dose_unit=getattr(record, "usual_dose_unit", "mg"),
+            usual_range_scope=getattr(record, "usual_range_scope", "daily"),
             max_single_dose=getattr(record, "max_single_dose", None),
             max_single_dose_unit=getattr(record, "max_single_dose_unit", "mg"),
             max_per_procedure=getattr(record, "max_per_procedure", None),

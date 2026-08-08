@@ -24,6 +24,8 @@ class MedicationBase(BaseModel):
     dose_by_weight_enabled: bool = False
     usual_dose_low: Decimal | None = Field(default=None, ge=0)
     usual_dose_high: Decimal | None = Field(default=None, ge=0)
+    usual_dose_unit: str = "mg"
+    usual_range_scope: str = "daily"
     max_single_dose: Decimal | None = Field(default=None, gt=0)
     max_single_dose_unit: str = "mg"
     max_per_procedure: Decimal | None = Field(default=None, gt=0)
@@ -120,6 +122,8 @@ class MedicationUpdate(BaseModel):
     dose_by_weight_enabled: bool | None = None
     usual_dose_low: Decimal | None = Field(default=None, ge=0)
     usual_dose_high: Decimal | None = Field(default=None, ge=0)
+    usual_dose_unit: str | None = None
+    usual_range_scope: str | None = None
     max_single_dose: Decimal | None = Field(default=None, gt=0)
     max_single_dose_unit: str | None = None
     max_per_procedure: Decimal | None = Field(default=None, gt=0)

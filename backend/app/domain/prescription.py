@@ -13,6 +13,9 @@ class PrescriptionInput:
     indication: str | None = None
     professional_notes: str | None = None
     dose: MedicationDoseInput | None = None
+    protocol_version_id: int | None = None
+    condition_codes: tuple[str, ...] = ()
+    second_review_id: int | None = None
 
     @property
     def effective_dose(self) -> MedicationDoseInput:

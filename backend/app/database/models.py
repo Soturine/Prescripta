@@ -285,6 +285,10 @@ class MedicationModel(Base):
     dose_by_weight_enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
     usual_dose_low: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
     usual_dose_high: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
+    usual_dose_unit: Mapped[str] = mapped_column(String(40), default="mg", nullable=False)
+    usual_range_scope: Mapped[str] = mapped_column(
+        String(40), default="daily", nullable=False
+    )
     max_single_dose: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
     max_single_dose_unit: Mapped[str] = mapped_column(String(40), default="mg", nullable=False)
     max_per_procedure: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
@@ -1159,6 +1163,275 @@ class MedicationKnowledgeCurationModel(Base):
     reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class InstitutionalClinicalProtocolModel(Base):
+    __tablename__ = "institutional_clinical_protocols"
+    __table_args__ = (UniqueConstraint("institution_id", "code"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    code: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(220), nullable=False)
+    program: Mapped[str | None] = mapped_column(String(160), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(40), default="active", nullable=False, index=True)
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
+class InstitutionalClinicalProtocolVersionModel(Base):
+    __tablename__ = "institutional_clinical_protocol_versions"
+    __table_args__ = (UniqueConstraint("protocol_id", "version"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    protocol_id: Mapped[int] = mapped_column(
+        ForeignKey("institutional_clinical_protocols.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    version: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(40), default="draft", nullable=False, index=True)
+    review_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False, index=True
+    )
+    effective_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    effective_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    source_refs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    clinical_context: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    eligible_professions: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    required_capability: Mapped[str] = mapped_column(String(100), nullable=False)
+    required_parameters: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    contraindications: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    requires_second_review: Mapped[bool] = mapped_column(default=False, nullable=False)
+    second_reviewer_role: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    override_policy: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    definition_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class ProtocolPrescribingScopeModel(Base):
+    __tablename__ = "protocol_prescribing_scopes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    protocol_version_id: Mapped[int] = mapped_column(
+        ForeignKey("institutional_clinical_protocol_versions.id"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    allowed_routes: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    dose_min: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
+    dose_max: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
+    dose_unit: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    frequency_min_per_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    frequency_max_per_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    min_age_years: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_age_years: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    min_weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(10, 3), nullable=True)
+    max_weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(10, 3), nullable=True)
+    constraints: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+
+
+class ProtocolMedicationScopeModel(Base):
+    __tablename__ = "protocol_medication_scopes"
+    __table_args__ = (UniqueConstraint("protocol_version_id", "medication_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    protocol_version_id: Mapped[int] = mapped_column(
+        ForeignKey("institutional_clinical_protocol_versions.id"), nullable=False, index=True
+    )
+    medication_id: Mapped[int] = mapped_column(
+        ForeignKey("medications.id"), nullable=False, index=True
+    )
+    concept_set_ref: Mapped[str | None] = mapped_column(String(160), nullable=True)
+
+
+class ProtocolConditionScopeModel(Base):
+    __tablename__ = "protocol_condition_scopes"
+    __table_args__ = (
+        UniqueConstraint("protocol_version_id", "terminology_system", "condition_code"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    protocol_version_id: Mapped[int] = mapped_column(
+        ForeignKey("institutional_clinical_protocol_versions.id"), nullable=False, index=True
+    )
+    terminology_system: Mapped[str] = mapped_column(String(80), nullable=False)
+    terminology_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    condition_code: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    label: Mapped[str] = mapped_column(String(220), nullable=False)
+
+
+class ProtocolCredentialRequirementModel(Base):
+    __tablename__ = "protocol_credential_requirements"
+    __table_args__ = (UniqueConstraint("protocol_version_id", "credential_type"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    protocol_version_id: Mapped[int] = mapped_column(
+        ForeignKey("institutional_clinical_protocol_versions.id"), nullable=False, index=True
+    )
+    credential_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    credential_region: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    verification_required: Mapped[bool] = mapped_column(default=True, nullable=False)
+    unexpired_required: Mapped[bool] = mapped_column(default=True, nullable=False)
+
+
+class PharmacyInterventionModel(Base):
+    __tablename__ = "pharmacy_interventions"
+    __table_args__ = (UniqueConstraint("institution_id", "idempotency_key"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), nullable=False, index=True)
+    prescription_audit_id: Mapped[int | None] = mapped_column(
+        ForeignKey("prescription_audits.id"), nullable=True, index=True
+    )
+    medication_id: Mapped[int | None] = mapped_column(
+        ForeignKey("medications.id"), nullable=True, index=True
+    )
+    pharmacist_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"), nullable=False, index=True
+    )
+    intervention_type: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
+    severity: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    priority: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    problem: Mapped[str] = mapped_column(Text, nullable=False)
+    recommendation: Mapped[str] = mapped_column(Text, nullable=False)
+    source_refs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    dose_snapshot: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="open", nullable=False, index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    cosignature_required: Mapped[bool] = mapped_column(default=False, nullable=False)
+    cosigned_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+    cosigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    decision_actor_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+    accepted: Mapped[bool | None] = mapped_column(nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    resolution: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
+class PharmacyInterventionEventModel(Base):
+    __tablename__ = "pharmacy_intervention_events"
+    __table_args__ = (UniqueConstraint("intervention_id", "version"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    intervention_id: Mapped[int] = mapped_column(
+        ForeignKey("pharmacy_interventions.id"), nullable=False, index=True
+    )
+    actor_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
+    from_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    to_status: Mapped[str] = mapped_column(String(40), nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    details: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class MedicationReconciliationModel(Base):
+    __tablename__ = "medication_reconciliations"
+    __table_args__ = (UniqueConstraint("institution_id", "idempotency_key"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), nullable=False, index=True)
+    pharmacist_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="in_review", nullable=False, index=True)
+    source_refs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class MedicationReconciliationItemModel(Base):
+    __tablename__ = "medication_reconciliation_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    reconciliation_id: Mapped[int] = mapped_column(
+        ForeignKey("medication_reconciliations.id"), nullable=False, index=True
+    )
+    medication_id: Mapped[int | None] = mapped_column(
+        ForeignKey("medications.id"), nullable=True, index=True
+    )
+    medication_name: Mapped[str] = mapped_column(String(180), nullable=False)
+    source_ref: Mapped[str] = mapped_column(String(220), nullable=False)
+    discrepancy: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(40), default="needs_review", nullable=False, index=True
+    )
+    action: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    justification: Mapped[str | None] = mapped_column(Text, nullable=True)
+    author_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    formulation: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    concentration: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    history: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class MedicationFormulationReviewModel(Base):
+    __tablename__ = "medication_formulation_reviews"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    intervention_id: Mapped[int | None] = mapped_column(
+        ForeignKey("pharmacy_interventions.id"), nullable=True, index=True
+    )
+    reconciliation_item_id: Mapped[int | None] = mapped_column(
+        ForeignKey("medication_reconciliation_items.id"), nullable=True, index=True
+    )
+    reviewer_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    dose_input: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    formulation: Mapped[str] = mapped_column(String(160), nullable=False)
+    concentration: Mapped[str] = mapped_column(String(120), nullable=False)
+    rounding_policy: Mapped[str] = mapped_column(String(80), nullable=False)
+    result: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )

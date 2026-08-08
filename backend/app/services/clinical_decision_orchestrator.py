@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
+from sqlalchemy.orm import Session
+
 from app.domain.alert import PrescriptionStatus, RiskLevel
 from app.domain.clinical_decision import (
     ClinicalCoverage,
@@ -48,11 +50,11 @@ class ClinicalDecisionEvaluation:
 class ClinicalDecisionOrchestrator:
     """Executa os módulos determinísticos e produz uma única decisão segura."""
 
-    def __init__(self) -> None:
+    def __init__(self, db: Session | None = None) -> None:
         self.risk_engine = RiskEngine()
         self.dose_service = DoseIntelligenceService()
         self.psychotropic_service = PsychotropicSafetyService()
-        self.policy_service = PrescribingPolicyService()
+        self.policy_service = PrescribingPolicyService(db)
 
     def evaluate(
         self,
@@ -138,6 +140,8 @@ class ClinicalDecisionOrchestrator:
             "dose_per_basis": medication.dose_mg_per_kg,
             "usual_low": medication.usual_dose_low,
             "usual_high": medication.usual_dose_high,
+            "usual_dose_unit": medication.usual_dose_unit,
+            "usual_range_scope": medication.usual_range_scope,
             "max_daily": medication.max_daily_dose_mg,
             "dose_dimension": medication.dose_dimension,
             "max_daily_unit": medication.max_daily_dose_unit,

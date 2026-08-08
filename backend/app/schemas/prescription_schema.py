@@ -73,6 +73,9 @@ class PrescriptionCheckRequest(BaseModel):
     indication: str | None = Field(default=None, max_length=180)
     professional_notes: str | None = None
     contextual_activity_answer: str | None = Field(default=None, max_length=40)
+    protocol_version_id: int | None = Field(default=None, gt=0)
+    condition_codes: list[str] = Field(default_factory=list, max_length=20)
+    second_review_id: int | None = Field(default=None, gt=0)
 
     @model_validator(mode="after")
     def ensure_dose_contract(self) -> "PrescriptionCheckRequest":

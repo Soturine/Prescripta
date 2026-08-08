@@ -69,6 +69,11 @@ class PrescribingPolicyResult:
     institutional_notes: list[str]
     source_refs: list[str]
     requires_human_review: bool
+    capability_status: str = "not_evaluated"
+    relationship_status: str = "not_evaluated"
+    protocol_context: dict[str, Any] = field(default_factory=dict)
+    missing_context: list[str] = field(default_factory=list)
+    second_review: dict[str, Any] = field(default_factory=dict)
     educational_notice: str = (
         "Política demonstrativa; não substitui norma vigente nem decisão profissional."
     )

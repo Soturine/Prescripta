@@ -34,6 +34,14 @@ class Capability(StrEnum):
     RECONCILIATION_REVIEW = "reconciliation.review"
     ADMINISTRATION_REVIEW = "administration.review"
     NURSING_PROTOCOL_PRESCRIBE = "nursing.protocol_prescribe"
+    CLINICAL_PROTOCOL_READ = "clinical_protocol.read"
+    CLINICAL_PROTOCOL_MANAGE = "clinical_protocol.manage"
+    CLINICAL_PROTOCOL_REVIEW = "clinical_protocol.review"
+    PHARMACY_INTERVENTION_READ = "pharmacy.intervention.read"
+    PHARMACY_INTERVENTION_WRITE = "pharmacy.intervention.write"
+    PHARMACY_INTERVENTION_DECIDE = "pharmacy.intervention.decide"
+    PHARMACY_RECONCILIATION_WRITE = "pharmacy.reconciliation.write"
+    PHARMACY_FORMULATION_REVIEW = "pharmacy.formulation.review"
     PSYCHOLOGY_CONTEXT_WRITE = "psychology.context.write"
     REPORT_READ = "report.read"
     REPORT_CREATE = "report.create"
@@ -68,6 +76,9 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.DASHBOARD_VIEW,
         Capability.USER_MANAGE,
         Capability.ACCESS_MANAGE,
+        Capability.CLINICAL_PROTOCOL_READ,
+        Capability.CLINICAL_PROTOCOL_MANAGE,
+        Capability.CLINICAL_PROTOCOL_REVIEW,
         Capability.MEDICATION_READ,
         Capability.MEDICATION_MANAGE,
         Capability.AUDIT_READ,
@@ -87,6 +98,8 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.REPORT_CREATE,
         Capability.PATIENT_GUIDANCE_CREATE,
         Capability.BREAK_GLASS_INVOKE,
+        Capability.CLINICAL_PROTOCOL_READ,
+        Capability.PHARMACY_INTERVENTION_DECIDE,
         Capability.AI_STATUS_VIEW,
     ),
     Profession.NURSING: (
@@ -95,6 +108,8 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.PATIENT_WRITE,
         Capability.ADMINISTRATION_REVIEW,
         Capability.NURSING_PROTOCOL_PRESCRIBE,
+        Capability.PRESCRIPTION_CHECK,
+        Capability.CLINICAL_PROTOCOL_READ,
         Capability.MEDICATION_READ,
         Capability.REPORT_READ,
         Capability.PATIENT_GUIDANCE_CREATE,
@@ -106,6 +121,10 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.PATIENT_READ,
         Capability.MEDICATION_READ,
         Capability.RECONCILIATION_REVIEW,
+        Capability.PHARMACY_INTERVENTION_READ,
+        Capability.PHARMACY_INTERVENTION_WRITE,
+        Capability.PHARMACY_RECONCILIATION_WRITE,
+        Capability.PHARMACY_FORMULATION_REVIEW,
         Capability.PRESCRIPTION_CHECK,
         Capability.REPORT_READ,
         Capability.REPORT_CREATE,
@@ -131,6 +150,9 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.AUDIT_READ,
         Capability.SAFETY_REVIEW,
         Capability.RULESET_REVIEW,
+        Capability.CLINICAL_PROTOCOL_READ,
+        Capability.CLINICAL_PROTOCOL_MANAGE,
+        Capability.CLINICAL_PROTOCOL_REVIEW,
         Capability.MEDICATION_READ,
         Capability.REPORT_READ,
         Capability.ACCESS_MANAGE,
