@@ -25,6 +25,34 @@ prescrição à regra. Regras `demo_seed` ou `pending_review` sempre exigem revi
 quando o cálculo cai na faixa. Para anestésicos locais, o teto por procedimento é avaliado
 separadamente do teto diário.
 
+### Matemática da faixa usual
+
+A faixa possui agora contrato explícito: `usual_low`, `usual_high`, `usual_dose_unit` e
+`usual_range_scope`. O escopo aceito é `per_administration`, `daily` ou `rate`. Compatibilidade com
+regras antigas usa `dose_unit` como unidade declarada e `daily` como escopo; cadastro novo não deve
+depender desse fallback.
+
+Antes de classificar, o motor:
+
+1. interpreta os dois limites como quantidades dimensionais independentes;
+2. aplica a mesma base corporal provada aos limites por kg ou m²;
+3. normaliza ambos para uma unidade absoluta comum (`mg`, `mg/day` ou `mg/h`, por exemplo);
+4. normaliza a quantidade prescrita para essa mesma dimensão;
+5. verifica `low <= high` sem arredondamento de apresentação;
+6. classifica com limites inclusivos:
+
+```text
+prescribed < low   -> below_usual_range
+low <= prescribed <= high -> within_usual_range
+prescribed > high  -> above_usual_range
+```
+
+Teto absoluto, diário, de procedimento, cumulativo ou de taxa mantém precedência sobre a faixa
+usual. Em PRN, compara-se o teto diário declarado, nunca uma exposição exata presumida. Unidade
+ausente/incompatível, limites invertidos ou base corporal ausente produzem abstention, não resultado
+favorável. `Decimal` não arredondado é a autoridade da comparação; `prescripta-half-even-v1` afeta
+somente a apresentação.
+
 ## Limites
 
 Fórmulas demonstrativas não substituem bula, ajuste renal/hepático, diluição, velocidade de

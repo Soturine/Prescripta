@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -14,6 +15,15 @@ from app.domain.dose_units import (
     parse_unit,
     remove_body_basis,
 )
+
+
+@dataclass(frozen=True)
+class NormalizedUsualDoseRange:
+    low: Quantity | None
+    high: Quantity | None
+    source_unit: str
+    normalized_unit: str | None
+    scope: str
 
 
 class DoseIntelligenceService:
@@ -195,8 +205,13 @@ class DoseIntelligenceService:
             calculated = None
 
         alerts = self._alerts(status)
-        usual_low = self._decimal(self._get(rule, "usual_low"))
-        usual_high = self._decimal(self._get(rule, "usual_high"))
+        usual_range, _ = self._normalized_usual_range(
+            rule,
+            weight=basis_weight,
+            body_surface=body_surface,
+        )
+        usual_low = usual_range.low.value if usual_range.low else None
+        usual_high = usual_range.high.value if usual_range.high else None
         return DoseIntelligenceResult(
             status=status,
             calculated_dose=present_decimal(calculated),
@@ -213,6 +228,9 @@ class DoseIntelligenceService:
             usual_range={
                 "low": present_decimal(usual_low),
                 "high": present_decimal(usual_high),
+                "unit": usual_range.normalized_unit,
+                "source_unit": usual_range.source_unit,
+                "scope": usual_range.scope,
             },
             max_limits=self._limit_manifest(rule),
             alerts=alerts,
@@ -251,11 +269,24 @@ class DoseIntelligenceService:
         )
         if prescribed is None:
             return "unsupported_dimension", None, ["taxa prescrita dimensionalmente compatível"]
-        return (
-            "above_maximum" if prescribed > limit.value else "within_usual_range",
-            prescribed,
-            [],
+        if prescribed > limit.value:
+            return "above_maximum", prescribed, []
+        usual_range, range_missing = self._normalized_usual_range(
+            rule,
+            weight=weight,
+            body_surface=body_surface,
+            expected_scope="rate",
         )
+        if range_missing:
+            return "unsupported_dimension", prescribed, range_missing
+        if usual_range.low is None and usual_range.high is None:
+            return "within_usual_range", prescribed, []
+        status = self._classify_usual_range(
+            Quantity(prescribed, limit.unit),
+            usual_range,
+            within_status="within_usual_range",
+        )
+        return status, prescribed, []
 
     def _evaluate_procedure(
         self,
@@ -372,17 +403,122 @@ class DoseIntelligenceService:
             if prescribed.value > limit.value:
                 return "above_cumulative_maximum", []
 
-        low = self._decimal(self._get(rule, "usual_low"))
-        high = self._decimal(self._get(rule, "usual_high"))
-        if calculated is not None:
-            comparable = self._daily_quantity(prescribed_mg, calculated.unit)
-            if comparable is not None:
-                scalar = calculated.value / (low or high or calculated.value)
-                if low is not None and comparable.value < low * scalar:
-                    return "below_usual_range", []
-                if high is not None and comparable.value > high * scalar:
-                    return "above_usual_range", []
-        return ("within_prn_ceiling" if is_prn else "within_usual_range"), []
+        usual_range, range_missing = self._normalized_usual_range(
+            rule,
+            weight=weight,
+            body_surface=body_surface,
+            expected_scope="daily",
+        )
+        if range_missing:
+            return "unsupported_dimension", range_missing
+        if usual_range.low is None and usual_range.high is None:
+            return ("within_prn_ceiling" if is_prn else "within_usual_range"), []
+        target_unit = usual_range.normalized_unit
+        comparable = self._daily_quantity(prescribed_mg, target_unit or "")
+        if comparable is None:
+            return "unsupported_dimension", ["unidade da faixa usual diária"]
+        status = self._classify_usual_range(
+            comparable,
+            usual_range,
+            within_status="within_prn_ceiling" if is_prn else "within_usual_range",
+        )
+        return status, []
+
+    def _normalized_usual_range(
+        self,
+        rule: Any,
+        *,
+        weight: Decimal | None,
+        body_surface: Decimal | None,
+        expected_scope: str | None = None,
+    ) -> tuple[NormalizedUsualDoseRange, list[str]]:
+        low_value = self._decimal(self._get(rule, "usual_low"))
+        high_value = self._decimal(self._get(rule, "usual_high"))
+        source_unit = normalize_unit(
+            self._get(
+                rule,
+                "usual_dose_unit",
+                self._get(rule, "usual_unit", self._get(rule, "dose_unit")),
+            )
+        )
+        configured_scope = str(
+            self._get(rule, "usual_range_scope", self._get(rule, "usual_scope", ""))
+            or ""
+        )
+        definition = parse_unit(source_unit)
+        inferred_scope = (
+            "rate"
+            if definition and definition.dimension == UnitDimension.MASS_RATE
+            else "daily"
+        )
+        scope = configured_scope or inferred_scope
+        empty = NormalizedUsualDoseRange(
+            low=None,
+            high=None,
+            source_unit=source_unit,
+            normalized_unit=None,
+            scope=scope,
+        )
+        if low_value is None and high_value is None:
+            return empty, []
+        if definition is None:
+            return empty, ["unidade da faixa usual"]
+        if scope not in {"daily", "per_administration", "rate"}:
+            return empty, ["escopo da faixa usual"]
+        if expected_scope and scope != expected_scope:
+            return empty, [f"faixa usual com escopo {expected_scope}"]
+        low = (
+            self._absolute_quantity(
+                Quantity(low_value, source_unit),
+                weight=weight,
+                body_surface=body_surface,
+            )
+            if low_value is not None
+            else None
+        )
+        high = (
+            self._absolute_quantity(
+                Quantity(high_value, source_unit),
+                weight=weight,
+                body_surface=body_surface,
+            )
+            if high_value is not None
+            else None
+        )
+        if (low_value is not None and low is None) or (high_value is not None and high is None):
+            return empty, ["contexto corporal ou unidade da faixa usual"]
+        normalized_unit = low.unit if low else high.unit if high else None
+        if low and high:
+            high = high.converted_to(low.unit)
+            if high is None:
+                return empty, ["limites dimensionalmente compatíveis da faixa usual"]
+            if low.value > high.value:
+                return empty, ["limites ordenados da faixa usual"]
+        normalized = NormalizedUsualDoseRange(
+            low=low,
+            high=high,
+            source_unit=source_unit,
+            normalized_unit=normalized_unit,
+            scope=scope,
+        )
+        return normalized, []
+
+    @staticmethod
+    def _classify_usual_range(
+        prescribed: Quantity,
+        usual_range: NormalizedUsualDoseRange,
+        *,
+        within_status: str,
+    ) -> str:
+        target_unit = usual_range.normalized_unit
+        comparable = prescribed.converted_to(target_unit) if target_unit else None
+        if comparable is None:
+            return "unsupported_dimension"
+        if usual_range.low is not None and comparable.value < usual_range.low.value:
+            return "below_usual_range"
+        if usual_range.high is not None and comparable.value > usual_range.high.value:
+            return "above_usual_range"
+        return within_status
 
     def _body_scalar(
         self,

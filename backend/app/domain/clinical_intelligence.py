@@ -42,7 +42,7 @@ class DoseIntelligenceResult:
     calculation_formula: str
     calculation_basis: str
     inputs_used: dict[str, Any]
-    usual_range: dict[str, float | None]
+    usual_range: dict[str, Any]
     max_limits: dict[str, Any]
     alerts: list[dict[str, Any]]
     missing_data: list[str]
