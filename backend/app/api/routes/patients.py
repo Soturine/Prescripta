@@ -239,7 +239,7 @@ def quick_triage_patient(
     normalized = normalize_patient_payload(values)
     for field, value in normalized.items():
         setattr(patient, field, value)
-    db.commit()
+    db.flush()
     db.refresh(patient)
     patient.clinical_profile_badge = clinical_profile_badge(
         patient.clinical_profile_completeness_score or 0
@@ -622,7 +622,7 @@ def update_patient_psychological_context(
             "content_logged": False,
         },
     )
-    db.commit()
+    db.flush()
     db.refresh(context)
     return context
 

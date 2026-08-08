@@ -28,6 +28,9 @@ def login(payload: LoginRequest, db: DbSession, response: Response) -> TokenResp
     user = UserRepository(db).get_by_email(payload.email)
     if user is None or not verify_password(payload.password, user.hashed_password):
         throttle.failure(payload.email, reason="invalid_credentials")
+        # A tentativa negada é a operação inteira deste command e precisa ser
+        # durável antes que o HTTPException encerre a dependency generator.
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="E-mail ou senha invalidos.",
@@ -40,6 +43,7 @@ def login(payload: LoginRequest, db: DbSession, response: Response) -> TokenResp
         )
     if user.mfa_enabled and not verify_totp(payload.mfa_code, user.mfa_secret_encrypted):
         throttle.failure(payload.email, reason="invalid_mfa")
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Código MFA inválido.",

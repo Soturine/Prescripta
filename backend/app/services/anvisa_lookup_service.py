@@ -78,7 +78,7 @@ class AnvisaMedicationLookupService:
             validation_status="pending_review",
         )
         self.db.add(ingredient)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(ingredient)
         return ingredient
 
@@ -95,6 +95,6 @@ class AnvisaMedicationLookupService:
             validation_status=result.get("validation_status", "pending_review"),
         )
         self.db.add(source)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(source)
         return source

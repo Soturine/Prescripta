@@ -183,6 +183,11 @@ class AuditRepository:
     def create_prescription_check(
         self, *, commit: bool = True, **values: object
     ) -> PrescriptionAuditModel:
+        """Stage a prescription audit in the caller-owned transaction.
+
+        ``commit`` is retained for source compatibility through v0.8.x but no
+        longer commits. The request/application unit of work owns durability.
+        """
         for field in (
             "alerts",
             "dose_intelligence",
@@ -196,21 +201,18 @@ class AuditRepository:
                 values[field] = json_compatible(values[field])
         audit = PrescriptionAuditModel(**values)
         self.db.add(audit)
+        self.db.flush()
         if commit:
-            self.db.commit()
             self.db.refresh(audit)
-        else:
-            self.db.flush()
         return audit
 
     def create_event(self, *, commit: bool = True, **values: object) -> AuditEventModel:
+        """Stage an event without crossing the caller's transaction boundary."""
         event = AuditEventModel(**values)
         self.db.add(event)
+        self.db.flush()
         if commit:
-            self.db.commit()
             self.db.refresh(event)
-        else:
-            self.db.flush()
         return event
 
     def alerts_by_severity(self) -> dict[str, int]:

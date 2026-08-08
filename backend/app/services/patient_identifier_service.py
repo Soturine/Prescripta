@@ -80,7 +80,7 @@ class PatientIdentifierService:
             is_primary=is_primary,
         )
         self.db.add(record)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(record)
         return record
 

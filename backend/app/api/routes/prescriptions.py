@@ -182,7 +182,7 @@ def check_prescription(
                 "high_alert_category": medication.high_alert_category,
             },
         )
-        db.commit()
+        db.flush()
     except Exception:
         db.rollback()
         raise
@@ -281,7 +281,7 @@ def request_decision_override(
             risk_level=audit.risk_level,
             details={"override_id": override.id},
         )
-        db.commit()
+        db.flush()
         db.refresh(override)
         return override
     except DecisionOverrideError as exc:
@@ -332,7 +332,7 @@ def review_decision_override(
             risk_level=audit.risk_level,
             details={"override_id": reviewed.id, "review_decision": reviewed.review_decision},
         )
-        db.commit()
+        db.flush()
         db.refresh(reviewed)
         return reviewed
     except DecisionOverrideError as exc:

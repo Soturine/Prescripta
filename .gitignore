@@ -16,6 +16,7 @@ coverage.xml
 node_modules/
 dist/
 .tmp/
+tmp/
 coverage/
 .vite/
 test-results/

@@ -128,7 +128,7 @@ class ClinicalReconciliationService:
                 "justification": justification,
             },
         )
-        self.db.commit()
+        self.db.flush()
         return self._with_decision(item, decision)
 
     def reject_item(
@@ -172,7 +172,7 @@ class ClinicalReconciliationService:
                 "justification": justification,
             },
         )
-        self.db.commit()
+        self.db.flush()
         return self._with_decision(item, decision)
 
     def accept_all_without_conflict(
@@ -205,7 +205,7 @@ class ClinicalReconciliationService:
             resource_id=str(batch.id),
             details={"accepted_items": accepted, "conflicts_blocked": True},
         )
-        self.db.commit()
+        self.db.flush()
         return self.build(batch)
 
     def _draft_items(self, batch: ClinicalImportBatchModel) -> list[ReconciliationDraftItem]:

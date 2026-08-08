@@ -48,7 +48,7 @@ class LoginThrottle:
                 details={"identifier_hash": identifier, "reason": reason},
             )
         )
-        self.db.commit()
+        self.db.flush()
 
     def success(self, email: str, *, user_id: int, user_role: str) -> None:
         identifier = self.identifier(email)
@@ -65,7 +65,7 @@ class LoginThrottle:
                 details={"identifier_hash": identifier},
             )
         )
-        self.db.commit()
+        self.db.flush()
 
     @staticmethod
     def _aware(value: datetime) -> datetime:

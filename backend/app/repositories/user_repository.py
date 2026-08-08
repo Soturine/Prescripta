@@ -67,18 +67,18 @@ class UserRepository:
             institution_id=institution_id,
         )
         self.db.add(user)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(user)
         return user
 
     def set_status(self, user: UserModel, is_active: bool) -> UserModel:
         user.is_active = is_active
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(user)
         return user
 
     def set_role(self, user: UserModel, role: str) -> UserModel:
         user.role = role
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(user)
         return user

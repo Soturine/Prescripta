@@ -107,7 +107,7 @@ class PatientHistoryService:
             storage_path=payload.storage_path,
         )
         self.db.add(document)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(document)
         self._timeline(
             patient_id=patient.id,
@@ -191,7 +191,7 @@ class PatientHistoryService:
         document.validation_status = "pending_review"
         document.review_status = "pending_review"
         self.db.add(extraction)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(extraction)
         AuditService(self.db).record_action(
             user=user,
@@ -254,7 +254,7 @@ class PatientHistoryService:
             )
         extraction.reviewed_by = user.id
         extraction.reviewed_at = now
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(extraction)
         AuditService(self.db).record_action(
             user=user,

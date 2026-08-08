@@ -136,7 +136,7 @@ def update_user_clinical_profile(
     for field, value in values.items():
         setattr(user, field, value.value if hasattr(value, "value") else value)
     user.credential_verification_status = "demo_unverified"
-    db.commit()
+    db.flush()
     db.refresh(user)
     AuditService(db).record_action(
         user=current_user,
@@ -166,7 +166,7 @@ def update_user_role(
     user.profession = ROLE_PROFESSION[payload.role].value
     user.capabilities = []
     user.capability_policy_version = "explicit-v1"
-    db.commit()
+    db.flush()
     db.refresh(user)
     updated = user
     AuditService(db).record_action(

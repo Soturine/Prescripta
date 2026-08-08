@@ -267,7 +267,7 @@ class ReportService:
                 report_type="protocol_run_report",
             )
         )
-        self.db.commit()
+        self.db.flush()
         self._record_action(
             user=user,
             action="protocol.report_generated",
@@ -568,7 +568,7 @@ class ReportService:
             },
         )
         self.db.add(report)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(report)
         self._record_action(
             user=user,

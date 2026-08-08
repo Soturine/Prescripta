@@ -28,7 +28,7 @@ class MedicationRepository:
     def create(self, data: MedicationCreate) -> MedicationModel:
         medication = MedicationModel(**normalize_medication_payload(data.model_dump()))
         self.db.add(medication)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(medication)
         return medication
 
@@ -36,6 +36,6 @@ class MedicationRepository:
         values = normalize_medication_payload(data.model_dump(exclude_unset=True))
         for field, value in values.items():
             setattr(medication, field, value)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(medication)
         return medication

@@ -284,7 +284,7 @@ class AISettingsService:
                 "base_url": base_url,
             }
             self._audit(user, "credential_saved", provider, None, "not_persistent", None)
-            self.db.commit()
+            self.db.flush()
             return self.credential_status(provider)
 
         if not self.secrets.can_persist:
@@ -298,7 +298,7 @@ class AISettingsService:
                 "base_url": base_url,
             }
             self._audit(user, "credential_saved", provider, None, "not_persistent", None)
-            self.db.commit()
+            self.db.flush()
             return self.credential_status(provider)
 
         row = self._credential(provider)
@@ -319,7 +319,7 @@ class AISettingsService:
         row.last_error = None
         _MEMORY_CREDENTIALS.pop(provider, None)
         self._audit(user, "credential_saved", provider, None, "success", None)
-        self.db.commit()
+        self.db.flush()
         return self.credential_status(provider)
 
     def delete_credential(self, provider: str, user: UserModel) -> AICredentialStatus:
@@ -332,7 +332,7 @@ class AISettingsService:
             row.updated_by = user.id
         _MEMORY_CREDENTIALS.pop(provider, None)
         self._audit(user, "credential_deleted", provider, None, "success", None)
-        self.db.commit()
+        self.db.flush()
         return self.credential_status(provider)
 
     def select_model(
@@ -376,7 +376,7 @@ class AISettingsService:
             None,
             external_calls_enabled=row.enable_external_calls,
         )
-        self.db.commit()
+        self.db.flush()
         return self.current()
 
     def list_models(
@@ -400,7 +400,7 @@ class AISettingsService:
                     source="manual",
                 )
             ]
-            self.db.commit()
+            self.db.flush()
             return self._model_response(provider, "manual", models)
         if cached and not refresh and self._cache_is_fresh(cached):
             return self._model_response(provider, "cache", cached)
@@ -409,13 +409,13 @@ class AISettingsService:
             models = self._refresh_provider_models(config)
             if user:
                 self._audit(user, "model_list_refreshed", provider, None, "success", None)
-            self.db.commit()
+            self.db.flush()
             return self._model_response(provider, "updated", models)
         except Exception as exc:  # pragma: no cover - provider/network defensive path
             error = self._safe_error(exc)
             if user:
                 self._audit(user, "model_list_refreshed", provider, None, "error", error)
-            self.db.commit()
+            self.db.flush()
             if cached:
                 return self._model_response(provider, "error_cache", cached, error=error)
             return AIModelListResponse(provider=provider, status="manual", models=[], error=error)
@@ -431,7 +431,7 @@ class AISettingsService:
             checked_at = datetime.now(UTC)
             self._mark_verified(provider, model or "fallback_deterministic", checked_at)
             self._audit(user, "connection_tested", provider, model, "success", None)
-            self.db.commit()
+            self.db.flush()
             return AIConnectionTestResponse(
                 provider=provider,
                 model=model,
@@ -451,7 +451,7 @@ class AISettingsService:
         if not config.enable_external_calls:
             message = "Chamadas externas de IA estão desabilitadas."
             self._audit(user, "connection_tested", provider, model, "blocked", message)
-            self.db.commit()
+            self.db.flush()
             return AIConnectionTestResponse(
                 provider=provider,
                 model=model,
@@ -476,7 +476,7 @@ class AISettingsService:
             self._mark_verified(provider, config.model or model or "custom", checked_at)
             self._mark_credential_verified(provider, checked_at, None)
             self._audit(user, "connection_tested", provider, config.model, "success", None)
-            self.db.commit()
+            self.db.flush()
             return AIConnectionTestResponse(
                 provider=provider,
                 model=config.model,
@@ -489,7 +489,7 @@ class AISettingsService:
             error = self._safe_error(exc)
             self._mark_credential_verified(provider, None, error)
             self._audit(user, "connection_tested", provider, config.model, "error", error)
-            self.db.commit()
+            self.db.flush()
             return AIConnectionTestResponse(
                 provider=provider,
                 model=config.model,
@@ -735,7 +735,7 @@ class AISettingsService:
             row.failure_count = 0
             row.degraded_until = None
             row.last_error_hash = None
-            self.db.commit()
+            self.db.flush()
             return {"failure_count": 0, "degraded_until": None}
         return {
             "failure_count": row.failure_count,
@@ -753,7 +753,7 @@ class AISettingsService:
             row.failure_count = 0
             row.degraded_until = None
             row.last_error_hash = None
-            self.db.commit()
+            self.db.flush()
 
     def _record_provider_failure(self, provider: str, error: str) -> None:
         if provider == "fallback":
@@ -773,7 +773,7 @@ class AISettingsService:
         row.failure_count = failure_count
         row.degraded_until = degraded_until
         row.last_error_hash = hashlib.sha256(error.encode("utf-8")).hexdigest()
-        self.db.commit()
+        self.db.flush()
 
     def _external_completion(
         self,

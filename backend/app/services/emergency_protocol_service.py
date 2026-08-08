@@ -180,7 +180,7 @@ class EmergencyProtocolService:
                     created_by=user.id,
                 )
             )
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(run)
         event = AuditService(self.db).record_action(
             user=user,
@@ -212,7 +212,7 @@ class EmergencyProtocolService:
             },
         )
         run.audit_event_id = event.id
-        self.db.commit()
+        self.db.flush()
         for step in protocol.steps:
             if step.order in selected_steps:
                 AuditService(self.db).record_action(

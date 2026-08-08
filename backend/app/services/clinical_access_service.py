@@ -76,7 +76,7 @@ class ClinicalAccessService:
             grant.revoked_at = None
             grant.revoked_by_user_id = None
             grant.revocation_reason = None
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(grant)
         return grant
 
@@ -96,7 +96,7 @@ class ClinicalAccessService:
             grant.revocation_reason = reason
             grant.active = False
             grant.status = "revoked"
-            self.db.commit()
+            self.db.flush()
             self.db.refresh(grant)
         return grant
 
@@ -126,7 +126,7 @@ class ClinicalAccessService:
             granted_by_user_id=grantor.id,
         )
         self.db.add(membership)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(membership)
         return membership
 
@@ -169,7 +169,7 @@ class ClinicalAccessService:
         else:
             for field, value in values.items():
                 setattr(assignment, field, value)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(assignment)
         return assignment
 
@@ -185,7 +185,7 @@ class ClinicalAccessService:
             raise ClinicalAccessError("Vínculo assistencial não encontrado.")
         if relationship.revoked_at is None:
             relationship.revoked_at = datetime.now(UTC)
-            self.db.commit()
+            self.db.flush()
             self.db.refresh(relationship)
         return relationship
 
@@ -260,7 +260,7 @@ class ClinicalAccessService:
             status="active",
         )
         self.db.add(access)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(access)
         return access
 
@@ -281,7 +281,7 @@ class ClinicalAccessService:
             access.ended_at = datetime.now(UTC)
             access.ended_by_user_id = actor.id
             access.status = "ended"
-            self.db.commit()
+            self.db.flush()
             self.db.refresh(access)
         return access
 
@@ -300,7 +300,7 @@ class ClinicalAccessService:
         access.review_notes = payload.notes
         access.reviewed_at = datetime.now(UTC)
         access.reviewed_by_user_id = reviewer.id
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(access)
         return access
 

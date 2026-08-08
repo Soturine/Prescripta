@@ -97,7 +97,7 @@ class MedicationCounselingService:
             **self._summary_fields(output.model_dump()),
         )
         self.db.add(summary)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(summary)
         return summary
 
@@ -132,7 +132,7 @@ class MedicationCounselingService:
             else summary.generated_by
         )
         summary.updated_at = datetime.now(UTC)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(summary)
         return summary
 

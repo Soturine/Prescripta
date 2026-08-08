@@ -57,7 +57,7 @@ class PatientFunctionalProfileService:
         else:
             for field, value in values.items():
                 setattr(profile, field, value)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(profile)
         return profile
 

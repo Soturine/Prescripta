@@ -124,7 +124,7 @@ class PatientRepository:
                         reason="patient_creator",
                     )
                 )
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(patient)
         self._attach_badge(patient)
         return patient
@@ -141,7 +141,7 @@ class PatientRepository:
             values["age"] = None
         for field, value in values.items():
             setattr(patient, field, value)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(patient)
         self._attach_badge(patient)
         return patient

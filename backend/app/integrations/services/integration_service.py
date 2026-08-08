@@ -73,7 +73,7 @@ class IntegrationService:
                 "purpose": purpose,
             },
         )
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(batch)
         return batch
 
@@ -114,7 +114,7 @@ class IntegrationService:
             source_system=batch.source_system,
             details={"status": batch.status, "human_review_required": True},
         )
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(batch)
         return batch
 
@@ -138,6 +138,6 @@ class IntegrationService:
             source_system=batch.source_system,
             details={"status": batch.status, "reason": reason},
         )
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(batch)
         return batch

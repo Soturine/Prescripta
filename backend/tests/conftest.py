@@ -85,7 +85,7 @@ def create_test_user(db_session: Session) -> Callable[..., UserModel]:
                     Capability.RECONCILIATION_REVIEW.value,
                 }
             )
-        return UserRepository(db_session).create(
+        user = UserRepository(db_session).create(
             name=name,
             email=email,
             hashed_password=hash_password(password),
@@ -95,6 +95,8 @@ def create_test_user(db_session: Session) -> Callable[..., UserModel]:
             is_active=is_active,
             institution_id=institution_id,
         )
+        db_session.commit()
+        return user
 
     return factory
 

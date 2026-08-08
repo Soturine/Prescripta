@@ -69,7 +69,7 @@ class MedicationKnowledgeService:
             created_by=user.id,
         )
         self.db.add(item)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(item)
         AuditService(self.db).record_action(
             user=user,
@@ -114,7 +114,7 @@ class MedicationKnowledgeService:
             )
             self.db.add(item)
             created.append(item)
-        self.db.commit()
+        self.db.flush()
         for item in created:
             self.db.refresh(item)
         AuditService(self.db).record_action(
@@ -164,7 +164,7 @@ class MedicationKnowledgeService:
             item.validation_status = "rejected"
         item.reviewed_by = user.id
         item.reviewed_at = datetime.now(UTC)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(item)
         AuditService(self.db).record_action(
             user=user,

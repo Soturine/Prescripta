@@ -150,7 +150,7 @@ def cds_prescription_check(
             response_payload=response.model_dump(mode="json"),
         )
     )
-    db.commit()
+    db.flush()
     return response
 
 
