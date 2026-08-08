@@ -1,62 +1,76 @@
 {
-  "version": "0.8.7",
+  "version": "0.8.8",
   "generator": "scripts/capture-current-assets.mjs",
   "assets": [
     {
-      "file": "audit-v0.8.7.png",
-      "bytes": 99677,
+      "file": "audit-v0.8.8.png",
+      "bytes": 93374,
       "width": 1440,
       "height": 1000,
-      "sha256": "5821a9d2fe6b73845e07294af6fb7296dafff661dc6fd48db28a2074a75c9af5"
+      "sha256": "ea80f6ee1e9cea6c81ea5ec0aa4b2890c50d64d33f219c462e65fb73343478a3"
     },
     {
-      "file": "clinical-decision-v0.8.7.png",
-      "bytes": 101607,
+      "file": "clinical-decision-v0.8.8.png",
+      "bytes": 100692,
       "width": 1440,
       "height": 1000,
-      "sha256": "b29c40e5f7e72d95039bf0f3db6203ca80feee1f750c0e8acfa95a62b89165c4"
+      "sha256": "fd846f06429250f7245e311f00dcd20c1d5d79272ac4f525b411ceb46f84543d"
     },
     {
-      "file": "dashboard-v0.8.7.png",
-      "bytes": 101478,
+      "file": "cohort-attrition-v0.8.8.png",
+      "bytes": 108187,
       "width": 1440,
       "height": 1000,
-      "sha256": "b40f078787ff346526c55010a577e15a5a6ba561a32f14ae2b88cdc3695d351c"
+      "sha256": "34224ca8caae3712f57b47f065e4d2e4c84193771f1e9d4d744aa26ac88e4852"
     },
     {
-      "file": "mobile-v0.8.7.png",
-      "bytes": 35507,
+      "file": "dashboard-v0.8.8.png",
+      "bytes": 100678,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "2c4b1d9663ba192869e6e600830ae141ca1256145a30414b1e3f6580d8569eb5"
+    },
+    {
+      "file": "mobile-v0.8.8.png",
+      "bytes": 34749,
       "width": 390,
       "height": 844,
-      "sha256": "33da35d3d05762f63ba7fb5931e01f750aeea910c4cc428deab7169e663f9790"
+      "sha256": "591ee07d796960f4da8a2e4eb673bbadc569100ae662377dfc544b7cc145de62"
     },
     {
-      "file": "patient-workspace-v0.8.7.png",
-      "bytes": 87944,
+      "file": "patient-workspace-v0.8.8.png",
+      "bytes": 87110,
       "width": 1440,
       "height": 1000,
-      "sha256": "d1654334a73b68a35dacfe73685f6cd397342ca571b2cced1e19c7889fe2f29a"
+      "sha256": "750f6e9cdc3ee56c33a9106efd4d320e5ed9c27dab103de31c437e9fd09ed6b0"
     },
     {
-      "file": "pharmacy-review-v0.8.7.png",
-      "bytes": 97641,
+      "file": "pharmacy-review-v0.8.8.png",
+      "bytes": 80407,
       "width": 1440,
       "height": 1000,
-      "sha256": "a50716b6c3e3905959b2f723f204b40cdb8ed3ef9572b878982328c8ff4ababd"
+      "sha256": "3074b0c29852b9a85a0a7299b7beaa4b70b712682f96e846cd15d57d8b7b2348"
     },
     {
-      "file": "prescripta-overview-v0.8.7.gif",
-      "bytes": 267754,
+      "file": "prescripta-overview-v0.8.8.gif",
+      "bytes": 273829,
       "width": 960,
       "height": 667,
-      "sha256": "9fb5540dbd29fe0d6cc36ac7cd34a3cee1dfb5c00a64faa60395c91dd28a32a0"
+      "sha256": "e44d227048977cde9b98c5e7e6b7ea8108044547596fc6465e81f84c02e0c909"
     },
     {
-      "file": "prescription-check-v0.8.7.png",
-      "bytes": 101393,
+      "file": "prescription-check-v0.8.8.png",
+      "bytes": 58216,
       "width": 1440,
       "height": 1000,
-      "sha256": "30c40be7c68a96ade278a4ec311f36c6e015b5dcbdd861f36afdfb34bd816176"
+      "sha256": "5067af75e2349e7c056f8e8c5cb2e452071581b27394d1ce0b57f0cbdc890f4d"
+    },
+    {
+      "file": "research-workspace-v0.8.8.png",
+      "bytes": 107199,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "05589afb2148f4a4ab01df56fd5d73d474c225a806b14a5aa3d098b1632cc6bd"
     }
   ]
 }

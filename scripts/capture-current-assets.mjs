@@ -29,6 +29,8 @@ const names = {
   check: `prescription-check-v${version}.png`,
   decision: `clinical-decision-v${version}.png`,
   pharmacy: `pharmacy-review-v${version}.png`,
+  research: `research-workspace-v${version}.png`,
+  attrition: `cohort-attrition-v${version}.png`,
   audit: `audit-v${version}.png`,
   mobile: `mobile-v${version}.png`,
 };
@@ -209,9 +211,19 @@ try {
   await screenshot(page, names.decision);
 
   await login(page, "farmacia@prescripta.local", "Farmacia@12345");
-  await navigate(page, "/clinical-imports");
-  await page.getByRole("heading", { name: "Importações Clínicas" }).waitFor();
+  await navigate(page, "/pharmacy");
+  await page.getByRole("heading", { name: "Pharmacy workflow" }).waitFor();
   await screenshot(page, names.pharmacy);
+
+  await login(page, "pesquisa@prescripta.local", "Pesquisa@12345");
+  await navigate(page, "/research");
+  await page.getByRole("heading", { name: "Research & RWE" }).waitFor();
+  await page.getByRole("heading", { name: /Estudo sintético de segurança medicamentosa/ }).waitFor();
+  await screenshot(page, names.research);
+  await page.getByRole("tab", { name: "Runs" }).click();
+  await page.getByText(/^N = \d+$/).waitFor();
+  await page.getByText(/Removidos:/).last().scrollIntoViewIfNeeded();
+  await screenshot(page, names.attrition);
 
   await login(page, "auditor@prescripta.local", "Auditor@12345");
   await navigate(page, "/audit");
@@ -230,7 +242,7 @@ try {
     throw new Error(`Captura recusada por erros no navegador:\n${browserErrors.join("\n")}`);
   }
   await context.close();
-  await makeGif(names.overview, [names.dashboard, names.patient, names.decision, names.pharmacy]);
+  await makeGif(names.overview, [names.dashboard, names.patient, names.decision, names.research]);
   await writeManifest();
   await replaceCurrentAtomically();
   console.log(`Assets v${version} capturados em docs/assets/current/.`);

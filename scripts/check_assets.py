@@ -20,6 +20,8 @@ REQUIRED = {
     f"prescription-check-v{VERSION}.png",
     f"clinical-decision-v{VERSION}.png",
     f"pharmacy-review-v{VERSION}.png",
+    f"research-workspace-v{VERSION}.png",
+    f"cohort-attrition-v{VERSION}.png",
     f"audit-v{VERSION}.png",
     f"mobile-v{VERSION}.png",
 }
