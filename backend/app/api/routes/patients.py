@@ -53,6 +53,15 @@ DbSession = Annotated[Session, Depends(get_db)]
 PatientReader = Annotated[
     UserModel, Depends(require_capabilities(Capability.PATIENT_READ))
 ]
+TimelineReader = Annotated[
+    UserModel,
+    Depends(
+        require_capabilities(
+            Capability.PATIENT_READ,
+            Capability.PATIENT_TIMELINE_READ,
+        )
+    ),
+]
 PatientManager = Annotated[
     UserModel, Depends(require_capabilities(Capability.PATIENT_WRITE))
 ]
@@ -419,7 +428,7 @@ def review_patient_document_extraction(
 def patient_timeline(
     patient_id: int,
     db: DbSession,
-    _current_user: PatientReader,
+    _current_user: TimelineReader,
 ) -> list[dict]:
     patient = PatientRepository(db).get(patient_id)
     if patient is None:

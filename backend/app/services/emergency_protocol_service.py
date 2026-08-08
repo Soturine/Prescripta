@@ -165,6 +165,7 @@ class EmergencyProtocolService:
             self.db.add(
                 PatientClinicalTimelineEventModel(
                     patient_id=patient.id,
+                    institution_id=patient.institution_id,
                     event_type="protocol_run",
                     title=f"Protocolo executado: {protocol.title}",
                     summary="Execucao auditavel de protocolo rapido com contexto do paciente.",

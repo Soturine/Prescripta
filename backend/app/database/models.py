@@ -1,5 +1,6 @@
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from uuid import uuid4
 
 from sqlalchemy import (
     Date,
@@ -1049,16 +1050,28 @@ class EmergencyProtocolRunReportModel(Base):
 
 class PatientClinicalTimelineEventModel(Base):
     __tablename__ = "patient_clinical_timeline_events"
+    __table_args__ = (UniqueConstraint("institution_id", "source_ref"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), nullable=False, index=True)
+    institution_id: Mapped[str] = mapped_column(
+        String(100), default="demo", nullable=False, index=True
+    )
     event_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(180), nullable=False)
     summary: Mapped[str] = mapped_column(Text, default="", nullable=False)
     source_type: Mapped[str] = mapped_column(String(80), default="manual", nullable=False)
     source_system: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    source_ref: Mapped[str | None] = mapped_column(String(220), nullable=True)
+    concept_system: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    concept_code: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    concept_label: Mapped[str | None] = mapped_column(String(240), nullable=True)
     event_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    provenance: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    visibility_classification: Mapped[str] = mapped_column(
+        String(40), default="clinical", nullable=False
+    )
     validation_status: Mapped[str] = mapped_column(
         String(40), default="pending_review", nullable=False, index=True
     )
@@ -1435,3 +1448,504 @@ class MedicationFormulationReviewModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
+
+
+def _uuid() -> str:
+    return str(uuid4())
+
+
+class ResearchStudyModel(Base):
+    __tablename__ = "research_studies"
+    __table_args__ = (UniqueConstraint("institution_id", "slug"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(240), nullable=False)
+    slug: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
+    description: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    research_question: Mapped[str] = mapped_column(Text, nullable=False)
+    objective: Mapped[str] = mapped_column(Text, nullable=False)
+    design: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(40), default="draft", nullable=False, index=True)
+    owner_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    current_protocol_version_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    demo_only: Mapped[bool] = mapped_column(default=True, nullable=False)
+    data_source_classification: Mapped[str] = mapped_column(
+        String(40), default="synthetic", nullable=False
+    )
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
+class StudyProtocolVersionModel(Base):
+    __tablename__ = "study_protocol_versions"
+    __table_args__ = (UniqueConstraint("study_id", "version"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    study_id: Mapped[str] = mapped_column(
+        ForeignKey("research_studies.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    population: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    exposure: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    comparator: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    outcome: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    index_date: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    washout: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    follow_up: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    censoring: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    inclusion: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    exclusion: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    covariates: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    missing_data_strategy: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    statistical_plan: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    limitations: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    source_refs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="draft", nullable=False, index=True)
+    definition_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    authored_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class ConceptSetModel(Base):
+    __tablename__ = "concept_sets"
+    __table_args__ = (UniqueConstraint("institution_id", "name", "domain"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(220), nullable=False, index=True)
+    domain: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(40), default="draft", nullable=False, index=True)
+    owner_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    reviewer_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    current_version_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class ConceptSetVersionModel(Base):
+    __tablename__ = "concept_set_versions"
+    __table_args__ = (UniqueConstraint("concept_set_id", "version"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    concept_set_id: Mapped[str] = mapped_column(
+        ForeignKey("concept_sets.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(40), default="ai_suggested", nullable=False, index=True
+    )
+    terminology_versions: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    include_descendants: Mapped[bool] = mapped_column(default=False, nullable=False)
+    source_refs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    license_metadata: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    provenance: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    definition_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    authored_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class ConceptSetMemberModel(Base):
+    __tablename__ = "concept_set_members"
+    __table_args__ = (
+        UniqueConstraint("concept_set_version_id", "terminology_system", "concept_code"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    concept_set_version_id: Mapped[str] = mapped_column(
+        ForeignKey("concept_set_versions.id"), nullable=False, index=True
+    )
+    terminology_system: Mapped[str] = mapped_column(String(40), nullable=False)
+    terminology_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    concept_id: Mapped[str | None] = mapped_column(String(80))
+    concept_code: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    label: Mapped[str] = mapped_column(String(240), nullable=False)
+    excluded: Mapped[bool] = mapped_column(default=False, nullable=False)
+
+
+class CohortDefinitionModel(Base):
+    __tablename__ = "cohort_definitions"
+    __table_args__ = (UniqueConstraint("study_id", "name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    study_id: Mapped[str] = mapped_column(
+        ForeignKey("research_studies.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(220), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="draft", nullable=False, index=True)
+    current_version_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class CohortDefinitionVersionModel(Base):
+    __tablename__ = "cohort_definition_versions"
+    __table_args__ = (UniqueConstraint("cohort_definition_id", "version"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    cohort_definition_id: Mapped[str] = mapped_column(
+        ForeignKey("cohort_definitions.id"), nullable=False, index=True
+    )
+    study_id: Mapped[str] = mapped_column(
+        ForeignKey("research_studies.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    definition: Mapped[dict] = mapped_column(JSON, nullable=False)
+    definition_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(40), default="draft", nullable=False, index=True)
+    query_cost: Mapped[int] = mapped_column(Integer, nullable=False)
+    authored_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class CohortCriterionModel(Base):
+    __tablename__ = "cohort_criteria"
+    __table_args__ = (UniqueConstraint("cohort_version_id", "sequence"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    cohort_version_id: Mapped[str] = mapped_column(
+        ForeignKey("cohort_definition_versions.id"), nullable=False, index=True
+    )
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    group_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    criterion: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
+    operator: Mapped[str | None] = mapped_column(String(20))
+    field: Mapped[str | None] = mapped_column(String(80))
+    value: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    concept_set_version_id: Mapped[str | None] = mapped_column(
+        ForeignKey("concept_set_versions.id"), index=True
+    )
+    window: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    criterion_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class OutcomeDefinitionModel(Base):
+    __tablename__ = "outcome_definitions"
+    __table_args__ = (UniqueConstraint("study_id", "name", "version"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    study_id: Mapped[str] = mapped_column(
+        ForeignKey("research_studies.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(220), nullable=False)
+    domain: Mapped[str] = mapped_column(String(60), nullable=False)
+    concept_set_version_ids: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    event_qualification: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    observation_window: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    temporal_relationship: Mapped[str] = mapped_column(String(80), nullable=False)
+    source_refs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    limitations: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    review_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False, index=True
+    )
+    definition_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    authored_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class CovariateDefinitionModel(Base):
+    __tablename__ = "covariate_definitions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    study_id: Mapped[str] = mapped_column(
+        ForeignKey("research_studies.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(220), nullable=False)
+    definition: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    definition_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="draft", nullable=False)
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+
+
+class AnalysisPlanModel(Base):
+    __tablename__ = "analysis_plans"
+    __table_args__ = (UniqueConstraint("study_id", "version"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    study_id: Mapped[str] = mapped_column(
+        ForeignKey("research_studies.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    objectives: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    descriptive_metrics: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    subgroup_definitions: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    missing_data_approach: Mapped[str] = mapped_column(Text, nullable=False)
+    methods: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    planned_outputs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    limitations: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    definition_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="draft", nullable=False)
+    authored_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+
+
+class CohortRunModel(Base):
+    __tablename__ = "cohort_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    study_id: Mapped[str] = mapped_column(
+        ForeignKey("research_studies.id"), nullable=False, index=True
+    )
+    cohort_version_id: Mapped[str] = mapped_column(
+        ForeignKey("cohort_definition_versions.id"), nullable=False, index=True
+    )
+    protocol_version_id: Mapped[str | None] = mapped_column(
+        ForeignKey("study_protocol_versions.id"), index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    data_snapshot_marker: Mapped[str] = mapped_column(String(160), nullable=False)
+    executed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    executed_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    definition_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    source_version_refs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    result_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    attrition: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    analytics: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    engine_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    prescripta_version: Mapped[str] = mapped_column(String(40), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    warnings: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    run_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+
+
+class CohortRunStepModel(Base):
+    __tablename__ = "cohort_run_steps"
+    __table_args__ = (UniqueConstraint("cohort_run_id", "sequence"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    cohort_run_id: Mapped[str] = mapped_column(
+        ForeignKey("cohort_runs.id"), nullable=False, index=True
+    )
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    criterion: Mapped[dict] = mapped_column(JSON, nullable=False)
+    label: Mapped[str] = mapped_column(String(240), nullable=False)
+    before_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    excluded_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    after_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    criterion_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class ResearchSnapshotModel(Base):
+    __tablename__ = "research_snapshots"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    cohort_run_id: Mapped[str] = mapped_column(
+        ForeignKey("cohort_runs.id"), nullable=False, index=True
+    )
+    snapshot_type: Mapped[str] = mapped_column(String(60), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    snapshot_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class EvidenceSourceModel(Base):
+    __tablename__ = "evidence_sources"
+    __table_args__ = (UniqueConstraint("institution_id", "identifier"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    source_type: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    identifier: Mapped[str] = mapped_column(String(180), nullable=False, index=True)
+    url: Mapped[str | None] = mapped_column(String(500))
+    publisher: Mapped[str | None] = mapped_column(String(220))
+    jurisdiction: Mapped[str | None] = mapped_column(String(40))
+    publication_date: Mapped[date | None] = mapped_column(Date)
+    access_date: Mapped[date | None] = mapped_column(Date)
+    source_version: Mapped[str | None] = mapped_column(String(120))
+    review_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False, index=True
+    )
+    reviewer_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    license_metadata: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    content_hash: Mapped[str | None] = mapped_column(String(64))
+    provenance: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class EvidenceLinkModel(Base):
+    __tablename__ = "evidence_links"
+    __table_args__ = (
+        UniqueConstraint("source_id", "target_type", "target_id", "relationship", "locator"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_sources.id"), nullable=False, index=True
+    )
+    target_type: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
+    target_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    relationship: Mapped[str] = mapped_column(String(80), nullable=False)
+    locator: Mapped[str] = mapped_column(String(220), default="", nullable=False)
+    review_status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False
+    )
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class DataQualityFindingModel(Base):
+    __tablename__ = "data_quality_findings"
+    __table_args__ = (
+        UniqueConstraint("institution_id", "rule", "resource_type", "resource_id", "field"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    rule: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    severity: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
+    resource_type: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
+    resource_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    field: Mapped[str] = mapped_column(String(100), nullable=False)
+    message: Mapped[str] = mapped_column(String(500), nullable=False)
+    source: Mapped[str] = mapped_column(String(160), nullable=False)
+    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="open", nullable=False, index=True)
+    resolution: Mapped[str | None] = mapped_column(String(500))
+    resolved_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AIInteractionModel(Base):
+    __tablename__ = "ai_interactions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    provider: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
+    model: Mapped[str | None] = mapped_column(String(160))
+    provider_model_identifier: Mapped[str | None] = mapped_column(String(220))
+    task_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    prompt_template_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    structured_schema_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    source_ids: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    study_id: Mapped[str | None] = mapped_column(ForeignKey("research_studies.id"), index=True)
+    patient_id: Mapped[int | None] = mapped_column(ForeignKey("patients.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    output_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    latency_ms: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    fallback_used: Mapped[bool] = mapped_column(default=False, nullable=False)
+    data_classification: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    human_review_status: Mapped[str] = mapped_column(
+        String(40), default="needs_review", nullable=False, index=True
+    )
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    sanitized_error_class: Mapped[str | None] = mapped_column(String(120))
+    usage_metadata: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    output_payload: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+
+
+def _block_changes_after_review(target, reviewed_states: set[str], fields: set[str]) -> None:
+    state = inspect(target)
+    history = state.attrs.status.history
+    previous_status = history.deleted[0] if history.deleted else target.status
+    if previous_status in reviewed_states and any(
+        state.attrs[field].history.has_changes() for field in fields
+    ):
+        raise ValueError("Conteúdo de versão revisada é imutável; crie uma nova versão.")
+
+
+@event.listens_for(StudyProtocolVersionModel, "before_update")
+def _immutable_reviewed_study_protocol(_mapper, _connection, target) -> None:
+    _block_changes_after_review(
+        target,
+        {"reviewed_demo", "superseded", "archived"},
+        {
+            "population",
+            "exposure",
+            "comparator",
+            "outcome",
+            "index_date",
+            "washout",
+            "follow_up",
+            "censoring",
+            "inclusion",
+            "exclusion",
+            "covariates",
+            "missing_data_strategy",
+            "statistical_plan",
+            "limitations",
+            "source_refs",
+            "definition_hash",
+        },
+    )
+
+
+@event.listens_for(ConceptSetVersionModel, "before_update")
+def _immutable_reviewed_concept_version(_mapper, _connection, target) -> None:
+    _block_changes_after_review(
+        target,
+        {"human_reviewed", "approved_for_demo_study"},
+        {
+            "terminology_versions",
+            "include_descendants",
+            "source_refs",
+            "license_metadata",
+            "provenance",
+            "definition_hash",
+        },
+    )
+
+
+@event.listens_for(CohortDefinitionVersionModel, "before_update")
+def _immutable_reviewed_cohort_version(_mapper, _connection, target) -> None:
+    _block_changes_after_review(
+        target,
+        {"reviewed_demo", "superseded"},
+        {"definition", "definition_hash", "query_cost"},
+    )
+
+
+@event.listens_for(CohortRunModel, "before_update")
+def _immutable_cohort_run(_mapper, _connection, _target) -> None:
+    raise ValueError("CohortRun é um snapshot imutável.")
+
+
+@event.listens_for(ResearchSnapshotModel, "before_update")
+def _immutable_research_snapshot(_mapper, _connection, _target) -> None:
+    raise ValueError("ResearchSnapshot é imutável.")

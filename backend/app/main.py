@@ -9,11 +9,14 @@ from sqlalchemy.orm import Session
 
 from app.api.routes import (
     access,
+    ai_tasks,
     audit,
     auth,
     cds,
     clinical_protocols,
     dashboard,
+    data_quality,
+    evidence,
     exports,
     integrations,
     medication_catalog,
@@ -23,6 +26,7 @@ from app.api.routes import (
     prescriptions,
     protocols,
     reports,
+    research,
     users,
 )
 from app.api.routes import (
@@ -78,6 +82,10 @@ app.include_router(prescriptions.router, prefix=settings.api_prefix)
 app.include_router(protocols.router, prefix=settings.api_prefix)
 app.include_router(clinical_protocols.router, prefix=settings.api_prefix)
 app.include_router(pharmacy.router, prefix=settings.api_prefix)
+app.include_router(evidence.router, prefix=settings.api_prefix)
+app.include_router(research.router, prefix=settings.api_prefix)
+app.include_router(data_quality.router, prefix=settings.api_prefix)
+app.include_router(ai_tasks.router, prefix=settings.api_prefix)
 app.include_router(cds.router, prefix=settings.api_prefix)
 app.include_router(dashboard.router, prefix=settings.api_prefix)
 app.include_router(audit.router, prefix=settings.api_prefix)

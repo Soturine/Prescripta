@@ -281,10 +281,23 @@ class PatientHistoryService:
                 "summary": event.summary,
                 "source_type": event.source_type,
                 "source_system": event.source_system,
+                "source": event.source_type,
+                "source_ref": event.source_ref,
+                "concept_system": event.concept_system,
+                "concept_code": event.concept_code,
+                "concept_label": event.concept_label,
                 "event_date": event.event_date.isoformat() if event.event_date else None,
+                "occurred_at": (
+                    event.event_date.isoformat()
+                    if event.event_date
+                    else event.created_at.isoformat()
+                ),
                 "created_at": event.created_at.isoformat(),
                 "validation_status": event.validation_status,
                 "payload": event.payload,
+                "structured_payload": event.payload,
+                "provenance": event.provenance,
+                "visibility_classification": event.visibility_classification,
             }
             for event in self.db.scalars(
                 select(PatientClinicalTimelineEventModel)
@@ -601,6 +614,7 @@ class PatientHistoryService:
         self.db.add(
             PatientClinicalTimelineEventModel(
                 patient_id=patient_id,
+                institution_id=user.institution_id,
                 event_type=event_type,
                 title=title,
                 summary=summary,

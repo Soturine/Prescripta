@@ -8,6 +8,7 @@ class UserRole(StrEnum):
     FARMACEUTICO = "farmaceutico"
     PSICOLOGO = "psicologo"
     AUDITOR = "auditor"
+    PESQUISADOR = "pesquisador"
     CLINICAL_SAFETY_OFFICER = "clinical_safety_officer"
 
 
@@ -18,6 +19,7 @@ class Profession(StrEnum):
     PHARMACY = "pharmacy"
     PSYCHOLOGY = "psychology"
     AUDIT = "audit"
+    RESEARCH = "research"
     CLINICAL_SAFETY = "clinical_safety"
 
 
@@ -42,6 +44,23 @@ class Capability(StrEnum):
     PHARMACY_INTERVENTION_DECIDE = "pharmacy.intervention.decide"
     PHARMACY_RECONCILIATION_WRITE = "pharmacy.reconciliation.write"
     PHARMACY_FORMULATION_REVIEW = "pharmacy.formulation.review"
+    RESEARCH_STUDY_READ = "research.study.read"
+    RESEARCH_STUDY_CREATE = "research.study.create"
+    RESEARCH_STUDY_WRITE = "research.study.write"
+    RESEARCH_STUDY_REVIEW = "research.study.review"
+    RESEARCH_COHORT_READ = "research.cohort.read"
+    RESEARCH_COHORT_WRITE = "research.cohort.write"
+    RESEARCH_COHORT_EXECUTE = "research.cohort.execute"
+    RESEARCH_CONCEPT_SET_READ = "research.concept_set.read"
+    RESEARCH_CONCEPT_SET_WRITE = "research.concept_set.write"
+    RESEARCH_ANALYSIS_READ = "research.analysis.read"
+    RESEARCH_ANALYSIS_WRITE = "research.analysis.write"
+    RESEARCH_AI_USE = "research.ai.use"
+    EVIDENCE_READ = "evidence.read"
+    EVIDENCE_WRITE = "evidence.write"
+    DATA_QUALITY_READ = "data_quality.read"
+    DATA_QUALITY_RUN = "data_quality.run"
+    PATIENT_TIMELINE_READ = "patient.timeline.read"
     PSYCHOLOGY_CONTEXT_WRITE = "psychology.context.write"
     REPORT_READ = "report.read"
     REPORT_CREATE = "report.create"
@@ -67,6 +86,7 @@ ROLE_PROFESSION: dict[UserRole, Profession] = {
     UserRole.FARMACEUTICO: Profession.PHARMACY,
     UserRole.PSICOLOGO: Profession.PSYCHOLOGY,
     UserRole.AUDITOR: Profession.AUDIT,
+    UserRole.PESQUISADOR: Profession.RESEARCH,
     UserRole.CLINICAL_SAFETY_OFFICER: Profession.CLINICAL_SAFETY,
 }
 
@@ -81,6 +101,23 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.CLINICAL_PROTOCOL_REVIEW,
         Capability.MEDICATION_READ,
         Capability.MEDICATION_MANAGE,
+        Capability.PATIENT_TIMELINE_READ,
+        Capability.RESEARCH_STUDY_READ,
+        Capability.RESEARCH_STUDY_CREATE,
+        Capability.RESEARCH_STUDY_WRITE,
+        Capability.RESEARCH_STUDY_REVIEW,
+        Capability.RESEARCH_COHORT_READ,
+        Capability.RESEARCH_COHORT_WRITE,
+        Capability.RESEARCH_COHORT_EXECUTE,
+        Capability.RESEARCH_CONCEPT_SET_READ,
+        Capability.RESEARCH_CONCEPT_SET_WRITE,
+        Capability.RESEARCH_ANALYSIS_READ,
+        Capability.RESEARCH_ANALYSIS_WRITE,
+        Capability.RESEARCH_AI_USE,
+        Capability.EVIDENCE_READ,
+        Capability.EVIDENCE_WRITE,
+        Capability.DATA_QUALITY_READ,
+        Capability.DATA_QUALITY_RUN,
         Capability.AUDIT_READ,
         Capability.AI_STATUS_VIEW,
         Capability.AI_SETTINGS_MANAGE,
@@ -98,6 +135,7 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.REPORT_CREATE,
         Capability.PATIENT_GUIDANCE_CREATE,
         Capability.BREAK_GLASS_INVOKE,
+        Capability.PATIENT_TIMELINE_READ,
         Capability.CLINICAL_PROTOCOL_READ,
         Capability.PHARMACY_INTERVENTION_DECIDE,
         Capability.AI_STATUS_VIEW,
@@ -114,6 +152,7 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.REPORT_READ,
         Capability.PATIENT_GUIDANCE_CREATE,
         Capability.BREAK_GLASS_INVOKE,
+        Capability.PATIENT_TIMELINE_READ,
         Capability.AI_STATUS_VIEW,
     ),
     Profession.PHARMACY: (
@@ -130,6 +169,7 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.REPORT_CREATE,
         Capability.PATIENT_GUIDANCE_CREATE,
         Capability.BREAK_GLASS_INVOKE,
+        Capability.PATIENT_TIMELINE_READ,
         Capability.AI_STATUS_VIEW,
     ),
     Profession.PSYCHOLOGY: (
@@ -144,6 +184,32 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.AUDIT_READ,
         Capability.REPORT_READ,
         Capability.AI_STATUS_VIEW,
+        Capability.RESEARCH_STUDY_READ,
+        Capability.RESEARCH_COHORT_READ,
+        Capability.RESEARCH_CONCEPT_SET_READ,
+        Capability.RESEARCH_ANALYSIS_READ,
+        Capability.EVIDENCE_READ,
+        Capability.DATA_QUALITY_READ,
+    ),
+    Profession.RESEARCH: (
+        Capability.DASHBOARD_VIEW,
+        Capability.RESEARCH_STUDY_READ,
+        Capability.RESEARCH_STUDY_CREATE,
+        Capability.RESEARCH_STUDY_WRITE,
+        Capability.RESEARCH_STUDY_REVIEW,
+        Capability.RESEARCH_COHORT_READ,
+        Capability.RESEARCH_COHORT_WRITE,
+        Capability.RESEARCH_COHORT_EXECUTE,
+        Capability.RESEARCH_CONCEPT_SET_READ,
+        Capability.RESEARCH_CONCEPT_SET_WRITE,
+        Capability.RESEARCH_ANALYSIS_READ,
+        Capability.RESEARCH_ANALYSIS_WRITE,
+        Capability.RESEARCH_AI_USE,
+        Capability.EVIDENCE_READ,
+        Capability.EVIDENCE_WRITE,
+        Capability.DATA_QUALITY_READ,
+        Capability.DATA_QUALITY_RUN,
+        Capability.AI_STATUS_VIEW,
     ),
     Profession.CLINICAL_SAFETY: (
         Capability.DASHBOARD_VIEW,
@@ -156,6 +222,14 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.MEDICATION_READ,
         Capability.REPORT_READ,
         Capability.ACCESS_MANAGE,
+        Capability.RESEARCH_STUDY_READ,
+        Capability.RESEARCH_STUDY_REVIEW,
+        Capability.RESEARCH_COHORT_READ,
+        Capability.RESEARCH_CONCEPT_SET_READ,
+        Capability.EVIDENCE_READ,
+        Capability.EVIDENCE_WRITE,
+        Capability.DATA_QUALITY_READ,
+        Capability.DATA_QUALITY_RUN,
         Capability.AI_STATUS_VIEW,
         Capability.SYSTEM_HEALTH_VIEW,
     ),
