@@ -1,37 +1,37 @@
-# Decisões de Arquitetura
+# Decisões de arquitetura
 
-## ADR 001 — Regras Determinísticas Primeiro
+## ADR 001 — Regras determinísticas primeiro
 
-Decisão: o motor de risco é implementado com regras determinísticas em `backend/app/services`.
+Decisão: risco, bloqueio, dose crítica e recomendação final são calculados em `backend/app/services`. IA só explica, extrai ou propõe dentro de contratos tipados e fontes permitidas.
 
-Motivo: regras críticas precisam ser testáveis, auditáveis e previsíveis. Qualquer IA futura deve explicar alertas já gerados, não decidir bloqueios.
+## ADR 002 — PostgreSQL operacional, SQLite local
 
-## ADR 002 — SQLite no MVP
+Decisão: PostgreSQL é o alvo da stack reprodutível e de ambientes não locais. SQLite reduz dependências no desenvolvimento demonstrativo, mas é rejeitado em produção.
 
-Decisão: usar SQLite na versão inicial.
+## ADR 003 — Frontend sem regra clínica
 
-Motivo: reduz dependências operacionais e facilita demonstração local. PostgreSQL fica no roadmap.
+Decisão: React coleta entradas e apresenta valores canônicos do backend. Locale, badge, filtro ou estado visual não podem reinterpretar risco.
 
-## ADR 003 — Frontend Sem Regra Clínica
+## ADR 004 — Autorização e sessão no backend
 
-Decisão: React não calcula risco.
+Decisão: o backend combina capacidades, instituição, relação/purpose e escopo por objeto. Sessão usa cookie HttpOnly; as decisões históricas de “sem autenticação” e token em `localStorage` foram superadas.
 
-Motivo: evita divergência entre interface e backend. A UI coleta entradas, chama API e apresenta resultados.
+## ADR 005 — Snapshots e unidade de trabalho
 
-## ADR 004 — Sem Autenticação em v0.1.0
+Decisão: decisão, auditoria e snapshot são persistidos na mesma transação. Relatórios históricos leem o snapshot, verificam JSON canônico e não consultam o cadastro vivo.
 
-Decisão: autenticação fica fora do MVP.
+## ADR 006 — Research aggregate-first
 
-Motivo: o foco inicial é motor de risco, auditoria, documentação e experiência demonstrável.
+Decisão: Research aceita apenas DSL e operadores permitidos, registra attrition e proveniência e retorna agregados. Definições revisadas ganham nova versão, e IA não executa consulta.
 
-## ADR 005 — Autorização Centralizada no Backend
+## ADR 007 — i18n de apresentação
 
-Decisão: a partir da `v0.2.0`, rotas sensíveis são protegidas por dependências FastAPI baseadas em JWT e perfil.
+Decisão: PT-BR e EN-US usam catálogos estáticos e verificados. A escolha manual prevalece sobre preferências do navegador, com fallback PT-BR. Códigos, unidades, valores persistidos e dados de fonte não são traduzidos.
 
-Motivo: o frontend pode esconder menus por ergonomia, mas a proteção real precisa estar no backend.
+## ADR 008 — Containers reprodutíveis e mínimos
 
-## ADR 006 — Token em LocalStorage no MVP
+Decisão: bases são fixadas por digest, builds são multi-stage e processos rodam sem root. Migração é um serviço one-shot idempotente antes da API; PostgreSQL permanece na rede interna. O smoke de container valida integração e não duplica a suíte completa.
 
-Decisão: o frontend usa `localStorage` para manter o token JWT na `v0.2.0`.
+## ADR 009 — Supply chain bloqueante
 
-Motivo: simplifica a demonstração local. Essa escolha é documentada como limitação e deve ser revista antes de produção.
+Decisão: lockfiles, installs exatos, Actions por SHA, inspeção de install scripts, secret scan, SCA, CodeQL, SBOM, scan de imagem e attestations compõem a evidência. Exceções precisam ser estreitas, justificadas e versionadas.

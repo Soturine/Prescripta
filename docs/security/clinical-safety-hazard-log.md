@@ -22,6 +22,7 @@ Nenhum item foi avaliado por comitê clínico externo.
 | H-15 | IA executa ou publica coorte/protocolo inventado | maior | Task Router proposal-only, schema/DSL/source IDs validados, `needs_review` e ausência de escrita no domínio | avaliação formal de groundedness e prompt injection permanece externa |
 | H-16 | resultado de RWE sintético é tratado como evidência clínica | maior | avisos persistentes, `demo_only`, aggregate-first, sem inferência causal e provenance completo | governança humana e barreiras organizacionais não podem ser garantidas pelo código |
 | H-17 | erro de coorte fica oculto pela contagem final | maior | attrition por critério, definition/run hashes, marcador do dataset e Data Quality determinística | validação epidemiológica de fenótipos e fontes reais pendente |
+| H-18 | tradução altera a interpretação de risco, status, unidade ou código clínico | catastrófica | catálogos estáticos revisáveis, valores canônicos preservados, units/codes não traduzidos, testes de equivalência PT-BR/EN-US e fallback PT-BR | revisão linguística clínica formal e validação com usuários bilíngues pendem |
 
 ## Critério de liberação
 

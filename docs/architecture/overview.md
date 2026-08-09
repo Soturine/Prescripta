@@ -1,22 +1,18 @@
 # Visão geral da arquitetura
 
-O Prescripta é um monorepo com API FastAPI, aplicação React/TypeScript e persistência SQLAlchemy.
-PostgreSQL é o alvo fora do modo local; SQLite e auto-seed existem apenas para desenvolvimento/demo.
+O Prescripta é um monorepo com API FastAPI, aplicação React/TypeScript e persistência SQLAlchemy. PostgreSQL é o alvo operacional da stack Compose; SQLite e auto-seed existem apenas para desenvolvimento local e demonstração.
 
 ## Camadas
 
-- `backend/app/domain`: contratos de domínio imutáveis, decisão, dose, paciente e medicamento;
-- `backend/app/services`: regras determinísticas, orquestração, autorização e casos de uso;
-- `backend/app/repositories`: queries, paginação e escopo de objetos;
+- `backend/app/domain`: contratos de domínio, decisões, dose, paciente e medicamento;
+- `backend/app/services`: regras determinísticas, autorização, Research, Evidence e AI Task Router;
+- `backend/app/repositories`: queries, paginação, instituição e escopo por objeto;
 - `backend/app/reports`: EvidenceBundle, snapshot, PDF/JSON/CSV e narrativa controlada;
 - `backend/app/integrations`: adapters demonstrativos, consentimento e reconciliação;
-- `backend/app/knowledge`: índice lexical versionado e citações por chunk;
-- `backend/app/services/research_service.py`: estudos, versões revisadas, coortes e runs agregados;
-- `backend/app/services/evidence_service.py`: fontes e vínculos de evidência institucionais;
-- `backend/app/services/ai_task_router.py`: policy por tarefa/provider e provenance de IA;
-- `backend/app/api/routes`: transporte HTTP e dependências de autenticação;
 - `backend/migrations`: schema versionado por Alembic;
-- `frontend/src`: interface, contratos, estado de sessão e cliente HTTP.
+- `frontend/src`: shell responsivo, páginas, contratos, sessão e cliente HTTP;
+- `frontend/src/i18n`: resolução de locale e catálogos PT-BR/EN-US;
+- `docker-compose.yml`: PostgreSQL, migração one-shot, backend e frontend sem root.
 
 ## Fluxo de decisão
 
@@ -26,25 +22,25 @@ request tipado
   → paciente/medicamento resolvidos no servidor
   → motores determinísticos + dose + psychotropic + policy
   → ClinicalDecisionEnvelope + coverage + abstention
-  → snapshot canônico + hash + eventos (uma transação)
-  → relatório ou explicação por audit_id
+  → snapshot canônico + hash + eventos na mesma transação
+  → apresentação localizada, relatório ou explicação por audit_id
 ```
 
-`ClinicalDecisionOrchestrator` é a única agregação autorizada de status. CRITICAL ou hard block vence
-qualquer indicação favorável; cobertura insuficiente nunca vira verde. Override é outro evento, não
-reescrita da decisão: crítico/hard block é não-overrideable e aprovação exige segundo usuário.
+`ClinicalDecisionOrchestrator` é a agregação autorizada de status. CRITICAL ou hard block vence indicação favorável; cobertura insuficiente nunca vira verde. Override cria outro evento e não reescreve a decisão. Locale traduz apresentação, nunca valor canônico, unidade, código ou autorização.
+
+## Runtime em containers
+
+```text
+navegador → nginx sem root :8080 → FastAPI sem root :8000 → PostgreSQL interno
+                                      ↑
+                                migrate one-shot
+```
+
+As imagens têm bases fixadas por digest e builds multi-stage. O runtime usa filesystem somente leitura, `tmpfs`, `cap_drop: ALL`, `no-new-privileges`, healthchecks e limites. A readiness não depende de provider de IA. O socket Docker não é montado nos serviços.
 
 ## Segurança e consistência
 
-O backend é a fonte real de autorização. Repositórios aplicam instituição, capacidade e relação clínica
-ativa (grant, care team, episode ou break-glass) com finalidade explícita; rotas por ID retornam
-404 quando o objeto não pertence ao escopo. Sessão usa cookie HttpOnly, login tem lockout persistente e
-MFA TOTP opcional. Produção falha no startup com segredo demo, SQLite, auto-seed, CORS local ou
-criptografia ausente para IA externa.
-
-Checagem, audit e snapshot usam uma unidade de trabalho. Relatórios de prescrição não consultam o
-cadastro vivo: verificam `sha256-canonical-json-v1` e leem apenas o snapshot imutável. Estado do circuit
-breaker de IA fica no banco para ser compartilhado por workers.
+O backend é a fonte real de autorização. Sessão usa cookie HttpOnly; login tem lockout persistente e MFA TOTP opcional. Produção falha no startup com segredo demo, SQLite, auto-seed, CORS local ou criptografia ausente para IA externa. Relatórios verificam o hash do snapshot imutável. Estado do circuit breaker de IA fica no banco para compartilhamento entre workers.
 
 ## Três pilares
 
@@ -56,13 +52,8 @@ decisão + snapshot       aggregates + snapshot       AI Task Router controlado
              └──────── JSON canônico, auditoria e autorização ────────┘
 ```
 
-O Research vertical slice usa apenas dados sintéticos. Definições revisadas são imutáveis, runs
-registram marcador do dataset e versões, e a saída padrão é aggregate-first. A IA propõe estruturas
-e explicações; nunca executa consulta, conta pacientes, modifica um objeto ou decide validade.
+Research usa somente dados sintéticos, saída aggregate-first e definições revisadas imutáveis. IA propõe estruturas e explicações; nunca executa consulta, conta pacientes, modifica objeto ou decide validade.
 
 ## Limites
 
-O projeto é educacional, sem validação clínica/regulatória. Não é FHIR, SMART ou CDS Hooks conforme;
-os adapters são compatibilidade parcial. A busca lexical não é RAG validado. Infraestrutura produtiva,
-OIDC/BFF, WORM, DLP, pentest, validação de rulesets, validade epidemiológica e operação institucional
-continuam externas.
+O projeto é educacional, sem validação clínica ou regulatória. Adapters têm compatibilidade parcial. Busca lexical não é RAG validado. OIDC/BFF, WORM, DLP, pentest, validação de rulesets, validade epidemiológica e operação institucional continuam externos.

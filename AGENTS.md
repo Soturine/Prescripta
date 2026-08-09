@@ -25,7 +25,9 @@ Guia para agentes e colaboradores que forem evoluir o Prescripta.
 - `frontend/src/pages/AISettings.tsx`: tela de configuração de IA.
 - `frontend/src/pages/Protocols.tsx`: central de protocolos rápidos/emergência.
 - `frontend/src/components`: componentes reutilizáveis.
+- `frontend/src/i18n`: resolução de locale e catálogos estáticos PT-BR/EN-US.
 - `frontend/src/services`: cliente HTTP e integração com API.
+- `docker-compose.yml`: stack reprodutível com PostgreSQL, migration, backend e frontend.
 - `scripts`: utilitários locais.
 - `docs`: documentação de arquitetura, produto, regras clínicas, segurança e releases.
 
@@ -69,6 +71,14 @@ powershell -ExecutionPolicy Bypass -File scripts/check-text-quality.ps1
 ## Convenções
 
 - Use TypeScript estrito no frontend.
+- Use os níveis de validação de `docs/testing/validation-levels.md`; reserve suítes completas para o release candidate.
+- O smoke de containers valida build, migração, health e hardening; não deve duplicar toda a suíte da aplicação.
+- Mantenha PT-BR e EN-US equivalentes nas superfícies migradas e preserve o fallback PT-BR.
+- Não traduza códigos, unidades, enum canônico, identificadores de fonte ou valores persistidos.
+- Não exiba raw enum ao usuário; mapeie-o para rótulo localizado sem mudar a semântica.
+- Use terminologia clínica revisada e mantenha glossário para termos ambíguos.
+- Preserve a identidade healthtech light-first e os componentes de domínio; evite template administrativo genérico.
+- Não crie ilustrações SVG geométricas customizadas. Assets devem ser locais, licenciados, atribuídos e registrados no manifesto.
 - Use Pydantic para contratos de API e SQLAlchemy para persistência.
 - Não misture regra de negócio com componentes React.
 - Não implemente regra de risco diretamente em rota FastAPI; use `backend/app/services`.
@@ -100,6 +110,8 @@ powershell -ExecutionPolicy Bypass -File scripts/check-text-quality.ps1
 - Atualize `CHANGELOG.md` em mudanças relevantes.
 - Não versionar `.env`, bancos locais, caches, `node_modules` ou `dist`.
 - Não usar dados sensíveis reais em seeds, testes ou exemplos.
+- Imagens de aplicação devem rodar sem root, sem socket Docker, com bases por digest e mínimo privilégio.
+- Antes de release, faça uma validação completa no RC, verifique CI/Security/containers, reconsulte dependências e publique tag/release a partir do SHA validado.
 
 ## Commits
 

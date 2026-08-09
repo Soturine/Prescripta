@@ -22,7 +22,8 @@ API ── policy + autorização por objeto ── PostgreSQL
   │                                      │
   ├── documentos/importações não confiáveis
   ├── cohort DSL allowlisted ── execução determinística aggregate-first
-  └── AI Task Router ── egress HTTPS allowlisted ── provider externo não confiável
+  ├── AI Task Router ── egress HTTPS allowlisted ── provider externo não confiável
+  └── imagens OCI fixadas ── runtime sem root ── rede Compose segmentada
 ```
 
 ## Ameaças, controles e risco residual
@@ -43,6 +44,12 @@ API ── policy + autorização por objeto ── PostgreSQL
 | adulteração de estudo revisado | versões revisadas e runs imutáveis, JSON canônico, hashes e nova versão para correção | falta assinatura externa, WORM e preservação do dataset original |
 | log/CSV/XSS injection | redaction de eventos, JSON tipado, React escaping, export controlado | testes DAST e fórmula CSV em todos os campos devem continuar no roadmap |
 | dependência/Action comprometida | lockfiles, Actions por SHA, Dependabot, CodeQL, SCA, gitleaks e SBOM | majors deferidos exigem nova revisão; não há exceção high/critical ativa |
+| imagem base maliciosa ou mutable tag | bases oficiais por versão e digest, multi-stage, Trivy, SBOM de imagem | digest protege imutabilidade, não prova origem benigna; monitorar advisory e reconstruir |
+| install script npm malicioso | lock com integrity e verificador fail-closed de path/versão exatos antes do `npm ci` | scripts permitidos ainda executam código de pacote; mudança exige revisão manual |
+| controle do host pelo socket Docker | nenhum serviço monta o socket; processos sem root e capabilities removidas | quem controla o daemon/host permanece fora da fronteira da aplicação |
+| porta ou banco exposto indevidamente | PostgreSQL somente em rede interna; portas da API/UI configuráveis; CORS e startup seguro | Compose local publica API/UI no host; deployment real precisa TLS, firewall e proxy |
+| confusão por localização clínica | catálogos curados, equivalência testada, códigos/unidades/enum canônico não traduzidos | revisão linguística por profissionais e locales adicionais ainda pendem |
+| rastreamento por imagem externa/XSS visual | assets locais, sem hotlink e CSP restrita sem `img-src *` | novos assets exigem licença, manifesto, compressão e revisão da CSP |
 | indisponibilidade/DoS | paginação, limites de payload, timeout/retry/circuit breaker compartilhado | quotas por tenant, fila e testes de carga distribuída pendem |
 | segredo/default em produção | startup falha com segredo demo, SQLite, auto-seed, CORS local ou criptografia ausente | deployment precisa fornecer secret manager, TLS e observabilidade |
 
@@ -56,5 +63,6 @@ fora da validação deste repositório.
 ## Verificação
 
 Testes cobrem escopo entre instituições, acesso negativo a relatório/export/counseling, lockout,
-cookie/logout, SSRF, startup inseguro, segredo em auditoria, snapshot e rollback. CI executa CodeQL,
-SCA Python/npm, secret scan e CycloneDX. Isso é evidência técnica, não pentest independente.
+cookie/logout, SSRF, startup inseguro, segredo em auditoria, snapshot, rollback e equivalência de
+status nos dois locales. CI executa CodeQL, SCA Python/npm, secret scan, inspeção de install scripts,
+smoke/scan de imagens e CycloneDX. Isso é evidência técnica, não pentest independente.

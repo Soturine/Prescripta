@@ -11,6 +11,15 @@ demonstrativa enquanto não existir validação independente.
 - vertical slice de coorte determinística com attrition, snapshot e provenance;
 - hardening de dependências, advisories e supply chain.
 
+## v0.8.9 — Quality Ratchet, Containers, Healthtech UX, i18n e User Guidance
+
+- cobertura independente mais alta e testes adversariais para IA, Research, Farmácia e escopo clínico;
+- imagens reprodutíveis, Compose com PostgreSQL/migração e hardening sem root;
+- scan e SBOM de imagens, política de install scripts e provenance de release;
+- shell healthtech e workspaces de decisão, farmácia, evidência, pesquisa, paciente e auditoria;
+- PT-BR/EN-US com equivalência de status e valores canônicos preservados;
+- guia do usuário por rota, ajuda contextual e screenshots atuais.
+
 ## v0.9.0 — Research & RWE MVP
 
 - Study Workspace completo e Cohort Builder visual;

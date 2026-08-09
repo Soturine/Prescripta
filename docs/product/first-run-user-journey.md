@@ -1,33 +1,34 @@
-# Jornada Inicial de Uso
+# Jornada inicial de uso
 
 ## Objetivo
 
-Este roteiro ajuda uma pessoa que acabou de clonar o projeto a validar o produto
-em poucos minutos, sem depender de dados reais nem de provider externo de IA.
+Validar a demonstração com dados sintéticos e reconhecer a separação entre regras determinísticas, revisão humana e IA opcional.
 
-## Roteiro
+## Opção A — Docker
 
-1. Rode `scripts/setup-dev.ps1`.
-2. Rode `scripts/check-install.ps1`.
-3. Rode `scripts/dev.ps1`.
-4. Abra `http://127.0.0.1:5173`.
-5. Entre como `admin@prescripta.local` com senha `Admin@12345`.
-6. Confira o Dashboard e a versão `v0.8.2`.
-7. Em Medicamentos, busque `Novalgina` e veja resolução para dipirona.
-8. Em Checagem, simule uma prescrição com paciente e medicamento demo.
-9. Gere explicação e orientação ao paciente.
-10. Em Importações, use o exemplo JSON/FHIR e revise itens.
-11. Em Relatórios, abra preview, PDF, JSON e timeline.
-12. Em Protocolos, execute Hipoglicemia ou Anafilaxia com contexto artificial.
-13. Em Auditoria, filtre por `protocol.run` ou por prescrição.
-14. Em IA, veja provider, fallback, cache e circuit breaker.
+1. Copie `.env.example` para `.env` e mantenha os valores de demonstração somente em ambiente local.
+2. Execute `docker compose up --build`.
+3. Aguarde PostgreSQL, migração, backend e frontend ficarem saudáveis.
+4. Abra `http://127.0.0.1:8080`.
 
-## Resultado Esperado
+## Opção B — desenvolvimento nativo
 
-Ao final, o usuário entende que o Prescripta é um sistema integrado: regras
-determinísticas, IA limitada, reconciliação, relatórios, protocolos e auditoria
-conversam entre si.
+1. Execute `scripts/setup-dev.ps1` e `scripts/check-install.ps1`.
+2. Execute `scripts/dev.ps1`.
+3. Abra `http://127.0.0.1:5173`.
 
-## Limites
+## Percurso de produto
 
-Não usar dados sensíveis reais. O fluxo é demonstrativo e educacional.
+1. Entre com uma conta demonstrativa fornecida pelo seed local.
+2. Escolha PT-BR ou EN-US e confirme os destinos permitidos no dashboard.
+3. Abra um paciente sintético e revise alergias, medicamentos e contexto funcional.
+4. Execute uma checagem e diferencie risco, cobertura, dados ausentes, fontes e explicação opcional.
+5. Revise uma intervenção farmacêutica e uma importação item a item.
+6. Explore evidências, um estudo sintético, attrition e proveniência.
+7. Consulte o evento correspondente em Auditoria.
+
+O [guia do usuário](../user-guide/README.md) detalha cada rota, permissão, dado persistido e limitação.
+
+## Resultado esperado e limites
+
+Ao final, deve estar claro que IA não decide risco, que uma proposta não é uma decisão e que um resultado RWE demonstrativo não constitui evidência clínica. Não use dados sensíveis reais nem credenciais de produção.
