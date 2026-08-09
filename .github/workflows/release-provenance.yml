@@ -35,6 +35,8 @@ jobs:
           npm ci --prefix frontend
           cd frontend
           npm exec --yes --package=@cyclonedx/cyclonedx-npm@6.0.0 -- cyclonedx-npm --omit optional --output-reproducible --validate --output-file ../sbom-frontend.json package.json
+          cd ..
+          python scripts/stamp_cyclonedx_serial.py frontend/package-lock.json sbom-frontend.json
       - name: Attest backend dependency manifest with its SBOM
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.0.0
         with:
