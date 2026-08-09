@@ -65,7 +65,8 @@ describe("Research & RWE", () => {
     expect(screen.getByText(/3 → 2/)).toBeVisible();
     fireEvent.click(screen.getByRole("tab", { name: "Provenance" }));
     expect(await screen.findByRole("heading", { name: "Provenance" })).toBeVisible();
-    expect(screen.getByText("unknown_unit")).toBeVisible();
+    expect(screen.getByText("Unidade não reconhecida")).toBeVisible();
+    expect(screen.getByText("unknown_unit")).not.toBeVisible();
     fireEvent.click(screen.getByRole("tab", { name: "Overview" }));
     fireEvent.click(screen.getByRole("button", { name: "Estruturar pergunta" }));
     expect(await screen.findByText(/proposal_only_not_executed/)).toBeVisible();

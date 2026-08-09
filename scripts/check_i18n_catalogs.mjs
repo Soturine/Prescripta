@@ -46,6 +46,9 @@ const migratedFiles = [
   "frontend/src/pages/Dashboard.tsx",
   "frontend/src/pages/Login.tsx",
   "frontend/src/pages/Help.tsx",
+  "frontend/src/pages/Pharmacy.tsx",
+  "frontend/src/pages/Evidence.tsx",
+  "frontend/src/pages/Research.tsx",
 ];
 const forbiddenResiduals = ["Medication Safety", "Pharmacy workflow", ">Sources<", ">Workspace<"];
 for (const file of migratedFiles) {

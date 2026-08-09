@@ -1,7 +1,6 @@
 import { CircleHelp } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 
 export default function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
   const { t } = useTranslation();
@@ -14,7 +13,7 @@ export default function PageHeader({ title, description, actions }: { title: str
       </div>
       <div className="flex flex-wrap gap-2">
         {actions}
-        <Link className="btn-secondary" to="/help"><CircleHelp aria-hidden="true" className="h-4 w-4" />{t("common.aboutPage")}</Link>
+        <a className="btn-secondary" href="/help"><CircleHelp aria-hidden="true" className="h-4 w-4" />{t("common.aboutPage")}</a>
       </div>
     </header>
   );
