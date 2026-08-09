@@ -16,6 +16,7 @@ ASSET_DIR = ROOT / "docs" / "assets" / "current"
 REQUIRED = {
     f"prescripta-overview-v{VERSION}.gif",
     f"dashboard-v{VERSION}.png",
+    f"dashboard-en-US-v{VERSION}.png",
     f"patient-workspace-v{VERSION}.png",
     f"prescription-check-v{VERSION}.png",
     f"clinical-decision-v{VERSION}.png",

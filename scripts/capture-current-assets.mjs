@@ -25,6 +25,7 @@ const children = [];
 const names = {
   overview: `prescripta-overview-v${version}.gif`,
   dashboard: `dashboard-v${version}.png`,
+  dashboardEnglish: `dashboard-en-US-v${version}.png`,
   patient: `patient-workspace-v${version}.png`,
   check: `prescription-check-v${version}.png`,
   decision: `clinical-decision-v${version}.png`,
@@ -193,6 +194,11 @@ try {
 
   await login(page, "medico@prescripta.local", "Medico@12345");
   await screenshot(page, names.dashboard);
+  await page.getByLabel("Selecionar idioma").selectOption("en-US");
+  await page.getByRole("heading", { name: /^Hello,/ }).waitFor();
+  await screenshot(page, names.dashboardEnglish);
+  await page.getByLabel("Select language").selectOption("pt-BR");
+  await page.getByRole("heading", { name: /^Olá,/ }).waitFor();
 
   await navigate(page, "/patients/1");
   await page.getByRole("navigation", { name: "Seções do paciente" }).waitFor();
@@ -212,12 +218,12 @@ try {
 
   await login(page, "farmacia@prescripta.local", "Farmacia@12345");
   await navigate(page, "/pharmacy");
-  await page.getByRole("heading", { name: "Pharmacy workflow" }).waitFor();
+  await page.getByRole("heading", { name: "Farmácia clínica" }).waitFor();
   await screenshot(page, names.pharmacy);
 
   await login(page, "pesquisa@prescripta.local", "Pesquisa@12345");
   await navigate(page, "/research");
-  await page.getByRole("heading", { name: "Research & RWE" }).waitFor();
+  await page.getByRole("heading", { name: "Pesquisa e RWE" }).waitFor();
   await page.getByRole("heading", { name: /Estudo sintético de segurança medicamentosa/ }).waitFor();
   await screenshot(page, names.research);
   await page.getByRole("tab", { name: "Runs" }).click();

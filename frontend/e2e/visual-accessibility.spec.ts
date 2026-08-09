@@ -13,7 +13,7 @@ async function expectNoSeriousAxeViolations(page: Page) {
 test("axe bloqueia violações sérias no dashboard e fluxo clínico", async ({ page }) => {
   await login(page, "medico");
   await expectNoSeriousAxeViolations(page);
-  await page.getByRole("link", { name: "Checagem", exact: true }).click();
+  await page.getByRole("link", { name: "Checagem clínica", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Checagem de prescrição" })).toBeVisible();
   await expectNoSeriousAxeViolations(page);
 });
@@ -27,10 +27,25 @@ test("páginas principais têm snapshots visuais estáveis @visual", async ({ pa
   await expect(page.getByRole("heading", { name: "Pacientes", exact: true })).toBeVisible();
   await expect(page.locator(".page-enter")).toHaveCSS("opacity", "1");
   await expect(page).toHaveScreenshot("pacientes-autorizados.png", { fullPage: true });
-  await page.getByRole("link", { name: "Checagem", exact: true }).click();
+  await page.getByRole("link", { name: "Checagem clínica", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Checagem de prescrição" })).toBeVisible();
   await expect(page.locator(".page-enter")).toHaveCSS("opacity", "1");
   await expect(page).toHaveScreenshot("checagem-dimensional.png", { fullPage: true });
+});
+
+test("locale EN-US preserva acesso e passa axe no dashboard", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop-chromium");
+  await login(page, "medico");
+  await page.getByLabel("Selecionar idioma").selectOption("en-US");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en-US");
+  await expect(page.getByRole("heading", { name: /^Hello,/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Clinical check", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Access and profiles", exact: true })).toHaveCount(0);
+  await expectNoSeriousAxeViolations(page);
+
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en-US");
+  await expect(page.getByRole("heading", { name: /^Hello,/ })).toBeVisible();
 });
 
 test("drawer e reflow funcionam em mobile e tablet @responsive", async ({ page }, testInfo) => {
