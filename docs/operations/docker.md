@@ -41,6 +41,11 @@ banco entre reinícios, use apenas `docker compose down`.
 - secrets não entram na imagem; `.env` é ignorado e deve conter apenas valores locais nesta demo;
 - readiness do backend depende do banco, nunca de OpenAI/Gemini/Ollama.
 
+O estágio Node usa cache BuildKit em `/root/.npm`, `--prefer-offline` e retries limitados para não
+baixar novamente a mesma árvore em builds subsequentes. A instalação continua sendo `npm ci` sobre o
+lockfile, com integrity e inventário de install scripts validados antes da execução; cache não muda a
+versão resolvida nem autoriza fallback para pacote diferente.
+
 O perfil padrão não baixa modelo local. Ollama continua uma integração opcional externa ao Compose;
 nenhum modelo é incorporado à imagem ou baixado no CI.
 

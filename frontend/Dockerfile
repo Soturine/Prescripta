@@ -1,11 +1,16 @@
 # syntax=docker/dockerfile:1.11
 FROM node:24.17.0-trixie-slim@sha256:9022946fb57e6fb6a2503931470deba4b49db02bfc8f587f93007fd33ef54415 AS build
 
+ENV NPM_CONFIG_FETCH_RETRIES=4 \
+    NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=10000 \
+    NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=60000
+
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 COPY scripts/check_install_scripts.mjs scripts/install-script-policy.json /tmp/prescripta-scripts/
-RUN node /tmp/prescripta-scripts/check_install_scripts.mjs /app/package-lock.json \
-    && npm ci
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    node /tmp/prescripta-scripts/check_install_scripts.mjs /app/package-lock.json \
+    && npm ci --prefer-offline --no-audit --no-fund
 
 COPY frontend/index.html frontend/tsconfig.json frontend/tsconfig.node.json frontend/vite.config.ts ./
 COPY frontend/src ./src
