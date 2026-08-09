@@ -80,6 +80,8 @@ jobs:
         run: npm run lint
       - name: Typecheck
         run: npm run typecheck
+      - name: i18n catalog gates
+        run: node ../scripts/check_i18n_catalogs.mjs
       - name: Component tests and coverage gates
         run: npm run test:coverage
       - name: Build

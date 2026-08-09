@@ -1,7 +1,15 @@
 import "@testing-library/jest-dom/vitest";
 
 import { cleanup } from "@testing-library/react";
-import { afterEach, vi } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
+
+import i18n from "../i18n";
+
+beforeEach(async () => {
+  window.localStorage.removeItem("prescripta:locale");
+  await i18n.changeLanguage("pt-BR");
+  document.documentElement.lang = "pt-BR";
+});
 
 afterEach(() => cleanup());
 

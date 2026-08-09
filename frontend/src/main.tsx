@@ -5,7 +5,10 @@ import { BrowserRouter } from "react-router-dom";
 
 import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
+import i18n from "./i18n";
 import "./index.css";
+
+document.documentElement.lang = i18n.resolvedLanguage ?? "pt-BR";
 
 const queryClient = new QueryClient({
   defaultOptions: {

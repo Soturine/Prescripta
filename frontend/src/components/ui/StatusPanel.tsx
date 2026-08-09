@@ -17,12 +17,14 @@ export default function StatusPanel({
   tone = "info",
   actions,
   live = false,
+  icon,
 }: {
   title: string;
   children?: ReactNode;
   tone?: StatusTone;
   actions?: ReactNode;
   live?: boolean;
+  icon?: ReactNode;
 }) {
   const Icon = styles[tone].icon;
   return (
@@ -32,7 +34,7 @@ export default function StatusPanel({
       role={tone === "critical" || tone === "danger" ? "alert" : "status"}
     >
       <div className="flex items-start gap-3">
-        <Icon aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+        {icon ?? <Icon aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />}
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-extrabold">{title}</h2>
           {children ? <div className="mt-1 text-sm leading-6 opacity-90">{children}</div> : null}

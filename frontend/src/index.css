@@ -9,6 +9,9 @@
   --color-warning: #9a5d06;
   --color-danger: #b42318;
   --color-ai: #6d4aff;
+  --color-clinical-blue: #176b87;
+  --color-clinical-teal: #13766f;
+  --color-clinical-mist: #eaf5f3;
   --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
   --shadow-soft: 0 12px 32px -22px rgba(15, 23, 42, 0.42);
   --shadow-float: 0 22px 60px -28px rgba(15, 23, 42, 0.45);
@@ -36,9 +39,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
-  background:
-    radial-gradient(circle at 85% -15%, rgba(8, 145, 178, 0.08), transparent 28rem),
-    var(--color-canvas);
+  background: linear-gradient(180deg, #f7fafb 0%, var(--color-canvas) 45%, #f2f7f6 100%);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
@@ -133,7 +134,7 @@ dialog::backdrop {
   }
 
   .surface-card {
-    @apply rounded-2xl border border-slate-200/90 bg-white shadow-soft;
+    @apply rounded-2xl border border-cyan-950/10 bg-white shadow-soft;
   }
 
   .subtle-panel {
@@ -168,6 +169,33 @@ dialog::backdrop {
   .skeleton-line {
     @apply h-3 animate-pulse rounded-full bg-slate-200;
   }
+
+  .clinical-hero {
+    @apply overflow-hidden rounded-[1.75rem] border border-cyan-900/10 shadow-soft;
+    background:
+      linear-gradient(125deg, rgba(255, 255, 255, 0.96), rgba(231, 246, 243, 0.92)),
+      repeating-linear-gradient(90deg, transparent 0 39px, rgba(15, 101, 119, 0.04) 40px);
+  }
+
+  .clinical-metric {
+    @apply relative flex min-h-40 flex-col overflow-hidden rounded-2xl border border-cyan-950/10 bg-white p-5 shadow-soft outline-hidden transition hover:-translate-y-0.5 hover:border-cyan-500/50 hover:shadow-float focus-visible:ring-3 focus-visible:ring-cyan-600/25;
+  }
+
+  .clinical-metric::after {
+    content: "";
+    @apply absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-ocean via-emerald-500 to-transparent opacity-65;
+  }
+
+  .clinical-metric__icon {
+    @apply flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-900/10 bg-cyan-50 text-ocean;
+  }
+}
+
+.login-canvas {
+  background:
+    radial-gradient(circle at 12% 12%, rgba(19, 118, 111, 0.15), transparent 28rem),
+    radial-gradient(circle at 88% 88%, rgba(23, 107, 135, 0.13), transparent 25rem),
+    linear-gradient(145deg, #f4faf8, #eef4f8 55%, #f9fbfb);
 }
 
 .page-enter {

@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:i18n": "node ../scripts/check_i18n_catalogs.mjs && vitest run src/i18n/i18n.test.tsx",
     "test:e2e": "playwright test",
     "test:e2e:visual": "playwright test --grep @visual",
     "preview": "vite preview --host 0.0.0.0"
@@ -22,10 +23,12 @@
     "@hookform/resolvers": "^5.7.1",
     "@tanstack/react-query": "^5.101.4",
     "axios": "^1.19.0",
+    "i18next": "26.3.6",
     "lucide-react": "^0.562.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.85.0",
+    "react-i18next": "17.0.11",
     "react-router-dom": "7.18.2",
     "zod": "^4.2.1"
   },

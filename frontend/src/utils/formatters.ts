@@ -1,7 +1,6 @@
 import type { PrescriptionStatus, RiskLevel } from "../types/prescription";
 import type { UserRole } from "../types/user";
-import { ROLE_LABELS } from "../config/labels";
-import { RISK_LABELS, STATUS_LABELS } from "../config/statuses";
+import i18n, { currentLocale } from "../i18n";
 
 export function splitList(value: string) {
   return value
@@ -15,15 +14,17 @@ export function joinList(value: string[] | null | undefined) {
 }
 
 export function formatRisk(level: RiskLevel | string) {
-  return RISK_LABELS[level] ?? level;
+  const key = `risk.${level}`;
+  return i18n.exists(key) ? i18n.t(key) : humanizeTechnicalValue(level);
 }
 
 export function formatStatus(status: PrescriptionStatus | string) {
-  return STATUS_LABELS[status] ?? status;
+  const key = `status.${status}`;
+  return i18n.exists(key) ? i18n.t(key) : humanizeTechnicalValue(status);
 }
 
 export function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
+  return new Intl.DateTimeFormat(currentLocale(), {
     dateStyle: "short",
     timeStyle: "short",
   }).format(new Date(value));
@@ -31,12 +32,19 @@ export function formatDateTime(value: string) {
 
 export function formatDose(value: number | null | undefined) {
   return value === null || value === undefined
-    ? "Não calculável"
-    : `${value.toLocaleString("pt-BR")} mg`;
+    ? (currentLocale() === "en-US" ? "Not calculable" : "Não calculável")
+    : `${value.toLocaleString(currentLocale())} mg`;
 }
 
 export function formatRole(role: UserRole | string | null | undefined) {
-  return role ? (ROLE_LABELS[role as UserRole] ?? role) : "-";
+  if (!role) return "-";
+  const key = `roles.${role as UserRole}`;
+  return i18n.exists(key) ? i18n.t(key) : humanizeTechnicalValue(role);
+}
+
+export function humanizeTechnicalValue(value: string) {
+  const spaced = value.replace(/[._-]+/g, " ").trim();
+  return spaced ? spaced.charAt(0).toLocaleUpperCase(currentLocale()) + spaced.slice(1) : "-";
 }
 
 export function formatAuditAction(action: string) {

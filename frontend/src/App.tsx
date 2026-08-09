@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import Layout from "./components/Layout";
@@ -11,6 +12,7 @@ const Audit = lazy(() => import("./pages/Audit"));
 const ClinicalImports = lazy(() => import("./pages/ClinicalImports"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Evidence = lazy(() => import("./pages/Evidence"));
+const Help = lazy(() => import("./pages/Help"));
 const Login = lazy(() => import("./pages/Login"));
 const Medications = lazy(() => import("./pages/Medications"));
 const PatientDetails = lazy(() => import("./pages/PatientDetails"));
@@ -23,8 +25,9 @@ const Research = lazy(() => import("./pages/Research"));
 const Users = lazy(() => import("./pages/Users"));
 
 export default function App() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<LoadingState label="Carregando tela" />}>
+    <Suspense fallback={<LoadingState label={t("common.loadingScreen")} />}>
       <Routes>
         <Route path="login" element={<Login />} />
         <Route element={<ProtectedRoute />}>
@@ -33,6 +36,7 @@ export default function App() {
               <Route index element={<Dashboard />} />
             </Route>
             <Route path="access-denied" element={<AccessDenied />} />
+            <Route path="help" element={<Help />} />
 
             <Route element={<ProtectedRoute capabilities={["patient.read"]} />}>
               <Route path="patients" element={<Patients />} />
