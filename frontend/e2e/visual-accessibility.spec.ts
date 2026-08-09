@@ -14,7 +14,7 @@ test("axe bloqueia violações sérias no dashboard e fluxo clínico", async ({ 
   await login(page, "medico");
   await expectNoSeriousAxeViolations(page);
   await page.getByRole("link", { name: "Checagem clínica", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Checagem de prescrição" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Checagem clínica da prescrição" })).toBeVisible();
   await expectNoSeriousAxeViolations(page);
 });
 
@@ -28,7 +28,7 @@ test("páginas principais têm snapshots visuais estáveis @visual", async ({ pa
   await expect(page.locator(".page-enter")).toHaveCSS("opacity", "1");
   await expect(page).toHaveScreenshot("pacientes-autorizados.png", { fullPage: true });
   await page.getByRole("link", { name: "Checagem clínica", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Checagem de prescrição" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Checagem clínica da prescrição" })).toBeVisible();
   await expect(page.locator(".page-enter")).toHaveCSS("opacity", "1");
   await expect(page).toHaveScreenshot("checagem-dimensional.png", { fullPage: true });
 });
@@ -52,12 +52,17 @@ test("drawer e reflow funcionam em mobile e tablet @responsive", async ({ page }
   test.skip(!["mobile-chromium", "tablet-chromium"].includes(testInfo.project.name));
   await login(page, "medico");
   await page.getByRole("button", { name: "Abrir navegação" }).click();
-  await expect(page.getByRole("link", { name: "Pacientes", exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Navegação principal" }).getByRole("link", { name: "Pacientes", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.locator("body")).toHaveCSS("overflow-y", "auto");
   expect(await page.locator("body").evaluate((element) => element.style.overflow)).toBe("");
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(1);
+  if (testInfo.project.name === "mobile-chromium") {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await expect(page.getByRole("button", { name: "Abrir navegação" })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
+  }
 });
 
 test("reduced motion remove animações não essenciais @reduced", async ({ page }, testInfo) => {

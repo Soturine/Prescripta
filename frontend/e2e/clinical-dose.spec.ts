@@ -16,8 +16,8 @@ type OverrideMedication = {
 
 async function openCheck(page: Page) {
   await login(page, "medico");
-  await page.getByRole("link", { name: "Checagem", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Checagem de prescrição" })).toBeVisible();
+  await page.getByRole("link", { name: "Checagem clínica", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Checagem clínica da prescrição" })).toBeVisible();
 }
 
 test.describe("dose dimensional e decisão clínica", () => {
@@ -112,7 +112,7 @@ test.describe("dose dimensional e decisão clínica", () => {
 
       await loginWith(page, credentials.auditor[0], credentials.auditor[1]);
       await page.getByRole("link", { name: "Auditoria", exact: true }).click();
-      await expect(page.getByRole("table")).toContainText("decision_override.reviewed");
+      await expect(page.getByRole("table")).toContainText("Revisou override clínico");
     } finally {
       const restore = await request.put(`${apiBaseUrl}/medications/${medication.id}`, {
         data: {

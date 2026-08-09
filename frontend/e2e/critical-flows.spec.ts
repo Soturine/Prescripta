@@ -17,8 +17,8 @@ test.describe("sessão, perfis e autorização", () => {
   test("cada perfil recebe somente a navegação de suas capacidades", async ({ page }) => {
     const cases = [
       ["admin", "Acessos e perfis", "Pacientes"],
-      ["medico", "Checagem", "Acessos e perfis"],
-      ["enfermagem", "Checagem", "Acessos e perfis"],
+      ["medico", "Checagem clínica", "Acessos e perfis"],
+      ["enfermagem", "Checagem clínica", "Acessos e perfis"],
       ["auditor", "Auditoria", "Pacientes"],
       ["farmaceutico", "Reconciliação", "Acessos e perfis"],
       ["psicologo", "Pacientes", "Medicamentos"],

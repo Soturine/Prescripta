@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import LanguageSelector from "../components/LanguageSelector";
 import i18n, {
@@ -10,6 +10,11 @@ import i18n, {
 import { formatDateTime, formatDose, formatStatus } from "../utils/formatters";
 
 describe("locale resolution and presentation", () => {
+  beforeEach(async () => {
+    window.localStorage.clear();
+    await selectLocale("pt-BR");
+  });
+
   it("honors manual, persisted, navigator language order and fallback", () => {
     expect(resolveLocale({ manual: "en-US", persisted: "pt-BR", languages: ["pt-BR"] })).toBe("en-US");
     expect(resolveLocale({ persisted: "pt_BR", languages: ["en-US"] })).toBe("pt-BR");
