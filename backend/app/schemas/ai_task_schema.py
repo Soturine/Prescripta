@@ -8,6 +8,10 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 AITaskType = Literal[
     "clinical_decision_explanation",
     "research_question_structuring",
+    "protocol_completeness_review",
+    "cohort_drafting",
+    "analysis_plan_draft",
+    "results_explanation",
     "cohort_draft",
     "study_protocol_draft",
     "evidence_summary",
@@ -42,14 +46,25 @@ class AIRequestSchema(BaseModel):
 
     @model_validator(mode="after")
     def validate_task_context(self) -> AIRequestSchema:
-        if self.task_type in {
-            "research_question_structuring",
-            "cohort_draft",
-            "study_protocol_draft",
-        } and not self.study_id:
+        if (
+            self.task_type
+            in {
+                "research_question_structuring",
+                "protocol_completeness_review",
+                "cohort_drafting",
+                "analysis_plan_draft",
+                "results_explanation",
+                "data_quality_explanation",
+                "cohort_draft",
+                "study_protocol_draft",
+            }
+            and not self.study_id
+        ):
             raise ValueError("task de pesquisa exige study_id")
-        if self.task_type == "patient_journey_summary" and not self.patient_id:
-            raise ValueError("resumo de jornada exige patient_id")
+        if self.task_type == "patient_journey_summary" and (
+            not self.patient_id or not self.study_id
+        ):
+            raise ValueError("resumo de jornada exige study_id e patient_id")
         if not self.requires_structured_output:
             raise ValueError("o Prescripta aceita somente saída estruturada")
         return self

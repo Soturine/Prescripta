@@ -1,21 +1,14 @@
-# Data Quality para Research/RWE
+# Qualidade dos dados
 
-`DataQualityService` executa checks determinísticos por instituição e persiste metadados de achados,
-sem copiar PII para a descrição. A execução e sua contagem são auditadas.
+`DataQualityRun` persiste horário, executor, escopo opcional do estudo, resumo por regra/severidade,
+dimensões e hash de conteúdo. Findings não contêm PII e são deduplicados pelo fingerprint lógico de
+instituição, regra, recurso, identificador e campo.
 
-## Regras iniciais
+As dimensões demonstrativas são completude, validade, consistência e conformidade. Checks cobrem
+datas impossíveis, fim antes do início, quantidade não positiva, unidade desconhecida, conceito órfão,
+exposição medicamentosa inconsistente e critério sem concept set válido.
 
-- data futura impossível;
-- fim anterior ao início;
-- dose ou quantidade não positiva;
-- unidade desconhecida pelo contrato dimensional;
-- código clínico sem sistema terminológico;
-- término de medicamento anterior ou sem início rastreável;
-- critério de coorte clínico sem versão institucional válida de concept set.
-
-Cada achado informa regra, severidade, recurso, campo, mensagem, fonte, estado e horário. A chave
-lógica impede duplicar o mesmo achado aberto em execuções repetidas.
-
-Data Quality não corrige o dado, não aprova estudo e não transforma resultado em evidência válida.
-IA pode explicar um conjunto já calculado, mas não altera severidade, estado ou contagem. Regras de
-completude, plausibilidade e consistência adicionais fazem parte do roadmap do MVP v0.9.0.
+Finding crítico aberto bloqueia execução da análise; severidades menores permanecem visíveis e não
+são silenciosamente reduzidas. Acknowledgement exige capacidade própria, justificativa humana,
+ator/horário e auditoria. A IA pode explicar o finding, mas não reconhecer, resolver nem alterar
+severidade.

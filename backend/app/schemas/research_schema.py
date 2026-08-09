@@ -232,7 +232,15 @@ class OutcomeDefinitionRead(BaseModel):
     definition_hash: str
     authored_by_user_id: int
     reviewed_by_user_id: int | None
+    reviewed_at: datetime | None
     created_at: datetime
+
+
+class OutcomeReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    decision: Literal["reviewed_demo", "rejected", "superseded"]
+    note: str = Field(min_length=8, max_length=1000)
 
 
 class CohortRunRequest(BaseModel):
@@ -319,6 +327,7 @@ class DataQualityFindingRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
+    run_id: str | None
     institution_id: str
     rule: str
     severity: str
@@ -333,9 +342,130 @@ class DataQualityFindingRead(BaseModel):
 
 
 class DataQualityRunRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    institution_id: str
+    study_id: str | None
+    status: str
+    summary: dict
+    content_hash: str
+    executed_by_user_id: int
+    executed_at: datetime
     findings_created: int
     findings_open: int
     by_rule: dict[str, int]
+
+
+class DataQualityRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    study_id: str | None = None
+
+
+class DataQualityAcknowledgeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    resolution: str = Field(min_length=8, max_length=500)
+
+
+class AnalysisPlanCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    cohort_run_id: str
+    objectives: list[str] = Field(min_length=1, max_length=20)
+    variables: list[dict] = Field(default_factory=list, max_length=30)
+    steps: list[dict] = Field(min_length=1, max_length=20)
+    descriptive_metrics: list[str] = Field(min_length=1, max_length=20)
+    subgroup_definitions: list[dict] = Field(default_factory=list, max_length=10)
+    missing_data_approach: Literal["report_only", "complete_case_descriptive"]
+    methods: list[
+        Literal[
+            "population_count",
+            "numeric_summary",
+            "categorical_distribution",
+            "prevalence",
+            "baseline_table_1",
+            "resource_utilization",
+        ]
+    ] = Field(min_length=1, max_length=10)
+    planned_outputs: list[
+        Literal[
+            "summary_cards", "table_1", "distribution_chart", "attrition_table", "research_package"
+        ]
+    ] = Field(min_length=1, max_length=10)
+    output_specification: dict = Field(default_factory=dict)
+    source_refs: list[str] = Field(min_length=1, max_length=30)
+    limitations: list[str] = Field(min_length=1, max_length=30)
+
+
+class AnalysisPlanRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    study_id: str
+    institution_id: str
+    version: int
+    cohort_run_id: str | None
+    objectives: list[str]
+    variables: list[dict]
+    steps: list[dict]
+    descriptive_metrics: list[str]
+    subgroup_definitions: list[dict]
+    missing_data_approach: str
+    methods: list[str]
+    planned_outputs: list[str]
+    output_specification: dict
+    source_refs: list[str]
+    limitations: list[str]
+    definition_hash: str
+    status: str
+    authored_by_user_id: int
+    reviewed_by_user_id: int | None
+    reviewed_at: datetime | None
+    created_at: datetime
+
+
+class AnalysisRunRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    study_id: str
+    analysis_plan_id: str
+    cohort_run_id: str
+    institution_id: str
+    data_snapshot_marker: str
+    status: str
+    results: dict
+    provenance: dict
+    content_hash: str
+    executed_by_user_id: int
+    executed_at: datetime
+
+
+class ResearchPackageRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    study_id: str
+    analysis_run_id: str
+    institution_id: str
+    manifest: dict
+    files: dict
+    content_hash: str
+    aggregate_only: bool
+    exported_by_user_id: int
+    created_at: datetime
+
+
+class PatientJourneyRead(BaseModel):
+    study_id: str
+    patient_ref: str
+    events: list[dict]
+    event_count: int
+    aggregate_only: bool = False
+    synthetic_only: bool = True
+    warning: str = "Jornada sintética demonstrativa; sem uso clínico."
 
 
 class ResearchWorkspaceRead(BaseModel):
@@ -354,6 +484,11 @@ class StudyWorkspaceRead(BaseModel):
     outcomes: list[OutcomeDefinitionRead]
     runs: list[CohortRunRead]
     concept_set_version_ids: list[str]
+    analysis_plans: list[AnalysisPlanRead] = Field(default_factory=list)
+    analysis_runs: list[AnalysisRunRead] = Field(default_factory=list)
+    data_quality: dict = Field(default_factory=dict)
+    readiness: list[dict] = Field(default_factory=list)
+    research_packages: list[ResearchPackageRead] = Field(default_factory=list)
 
 
 class StudyProtocolReviewEnvelope(BaseModel):

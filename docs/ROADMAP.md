@@ -22,10 +22,10 @@ demonstrativa enquanto não existir validação independente.
 
 ## v0.9.0 — Research & RWE MVP
 
-- Study Workspace completo e Cohort Builder visual;
-- attrition, Patient Journey e Population Analytics;
-- epidemiologia descritiva e Data Quality dashboard;
-- Analysis Plan, pacote de relatórios de pesquisa e Research Copilot v1.
+- entregue: Study Workspace completo e Cohort Builder visual sobre DSL v2;
+- entregue: attrition, Patient Journey sintética fail-closed e Population Analytics;
+- entregue: epidemiologia descritiva, small-cell suppression e Data Quality dashboard;
+- entregue: Analysis Plan, Research Package aggregate-only e Research Copilot v1 proposal-only.
 
 ## v0.9.1 — Terminology & OMOP
 
@@ -48,6 +48,9 @@ demonstrativa enquanto não existir validação independente.
 - prevalência, incidência, utilização, baseline tables, SMD, RR/OR e intervalos;
 - análise comparativa descritiva;
 - propensity/matching apenas após validação robusta como ferramenta de pesquisa.
+
+Incidência e pessoa-tempo permanecem nesta fase posterior: a v0.9.0 não os estima sem denominadores
+e validação metodológica adequados.
 
 ## v0.9.4 — Interoperability & Operational Hardening
 

@@ -1,0 +1,62 @@
+{
+  "version": "0.9.0",
+  "generator": "scripts/capture-v090-research-assets.mjs",
+  "assets": [
+    {
+      "file": "research-study-workspace-v0.9.0.png",
+      "bytes": 128108,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "7247ed15086e532f8605e31c05e92ab6fc57878deea589b45431f70538bc9236"
+    },
+    {
+      "file": "research-cohort-builder-v0.9.0.png",
+      "bytes": 120594,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "604c954e01e5ebb19cf2001e6e29a64de38aaa0d669e1839ba6e5ea7e0e68b2f"
+    },
+    {
+      "file": "research-data-quality-analysis-plan-v0.9.0.png",
+      "bytes": 128433,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "63480f47d64f7bb16300918828b1cfda5af197897a023bb5ade4daddec170bbd"
+    },
+    {
+      "file": "research-results-v0.9.0.png",
+      "bytes": 89840,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "c50668fd11b852566b43f7226b7085b1a1d837a2c36384698fd3a5d486dfd29d"
+    },
+    {
+      "file": "research-patient-journey-v0.9.0.png",
+      "bytes": 90841,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "0af55dd993627731e717f0a5cd81711b2f8a27261e9bee48aeb5b9790b599b9e"
+    },
+    {
+      "file": "research-evidence-package-v0.9.0.png",
+      "bytes": 120285,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "fb51db8bf4ae33b421de0ac257b8c99ad6ea496de53ffe145b3335f3008fb380"
+    },
+    {
+      "file": "research-en-US-v0.9.0.png",
+      "bytes": 119380,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "d6a1028ca5d1e7bedbc89f016073d31aaf4637d6879ed1d563353e525ac73cc5"
+    },
+    {
+      "file": "research-mobile-v0.9.0.png",
+      "bytes": 50475,
+      "width": 390,
+      "height": 844,
+      "sha256": "a66398a154d88c5fd771f8e82c7517a64cb27e7249b43ba5385cfb90e4b73691"
+    }
+  ]
+}

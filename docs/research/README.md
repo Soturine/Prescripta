@@ -1,30 +1,31 @@
-# Research & RWE no Prescripta
+# Research & RWE MVP
 
-A v0.8.8 introduz um vertical slice demonstrativo e aggregate-first para estudos sobre dados
-sintéticos. O fluxo liga pergunta de pesquisa, protocolo versionado, concept sets revisados, coorte
-declarativa, outcome, execução determinística, attrition, snapshot e Data Quality.
+A v0.9.0 fecha o fluxo demonstrativo e sintético:
 
-## Fluxo suportado
+`Pergunta → Estudo → Protocolo → Coorte → Qualidade dos dados → Plano de análise → Análise determinística → Resultados → Evidência/Proveniência → Pacote de pesquisa`.
 
-1. o pesquisador cria um `ResearchStudy` institucional;
-2. uma versão de protocolo explicita população, exposição, outcome, janelas, limitações e fontes;
-3. uma pessoa diferente do autor revisa o protocolo para uso demonstrativo;
-4. concept sets versionados passam por revisão terminológica humana;
-5. a coorte é descrita pela DSL permitida, revisada e então executada;
-6. o run persiste contagens agregadas, attrition, versões, marcador do dataset e hashes;
-7. o snapshot preserva definição e resultado para reprodução técnica.
+O Study Workspace apresenta cinco áreas profissionais: Desenho, Coorte, Plano de análise,
+Resultados e Evidências. Concept sets, outcomes, runs, hashes e JSON permanecem disponíveis em
+detalhes técnicos, sem dominar o fluxo principal.
 
-As rotas e a interface aplicam capacidades de leitura, escrita, revisão, execução, IA e Data Quality
-separadamente. Todos os objetos são restritos à instituição; recursos de outra instituição aparecem
-como inexistentes.
+## Contratos autoritativos
 
-## Limites desta fundação
+- protocolo, coorte, outcome e plano são versionados; revisão humana é independente do autor;
+- a DSL de coorte aceita apenas critérios, operadores e temporalidade allowlisted, sem SQL livre;
+- análises são determinísticas e descritivas: contagem, resumos numéricos/categóricos, prevalência,
+  Table 1 e utilização de recursos;
+- incidência está explicitamente adiada até existir denominador de pessoa-tempo validado;
+- resultados e pacotes são aggregate-only e aplicam supressão de células com `N < 5`;
+- hashes de conteúdo excluem timestamps e outros campos voláteis;
+- Patient Journey exige estudo e eventos comprovadamente sintéticos e falha fechado nos demais casos;
+- o Copilot propõe estruturas e explicações; nunca calcula, executa, revisa, publica ou gera SQL.
 
-- somente dados sintéticos/demonstrativos;
-- análises descritivas, sem inferência causal, matching ou propensity score;
-- sem SQL livre e sem acesso do LLM ao banco;
-- sem redistribuição de vocabulários licenciados;
-- nenhum resultado constitui evidência clínica, regulatória ou epidemiológica validada.
+## Segurança e validade
 
-Detalhes: [modelo de estudo](study-model.md), [cohort DSL](cohort-definition.md),
-[reprodutibilidade](reproducibility.md) e [Data Quality](data-quality.md).
+Objetos são isolados por instituição e por capacidade. Nenhum endpoint de pesquisa entrega nomes,
+identificadores ou linhas de pacientes no resultado agregado. O módulo não oferece inferência causal,
+propensity score, matching, recomendação clínica ou validade epidemiológica automática.
+
+Detalhes: [modelo de estudo](study-model.md), [DSL de coorte](cohort-definition.md),
+[análises e pacote](analysis-and-package.md), [reprodutibilidade](reproducibility.md),
+[qualidade dos dados](data-quality.md) e [Copilot](research-copilot.md).

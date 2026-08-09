@@ -55,11 +55,15 @@ class Capability(StrEnum):
     RESEARCH_CONCEPT_SET_WRITE = "research.concept_set.write"
     RESEARCH_ANALYSIS_READ = "research.analysis.read"
     RESEARCH_ANALYSIS_WRITE = "research.analysis.write"
+    RESEARCH_ANALYSIS_EXECUTE = "research.analysis.execute"
+    RESEARCH_PATIENT_JOURNEY_READ = "research.patient_journey.read"
+    RESEARCH_PACKAGE_EXPORT = "research.package.export"
     RESEARCH_AI_USE = "research.ai.use"
     EVIDENCE_READ = "evidence.read"
     EVIDENCE_WRITE = "evidence.write"
     DATA_QUALITY_READ = "data_quality.read"
     DATA_QUALITY_RUN = "data_quality.run"
+    DATA_QUALITY_ACKNOWLEDGE = "data_quality.acknowledge"
     PATIENT_TIMELINE_READ = "patient.timeline.read"
     PSYCHOLOGY_CONTEXT_WRITE = "psychology.context.write"
     REPORT_READ = "report.read"
@@ -113,11 +117,15 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.RESEARCH_CONCEPT_SET_WRITE,
         Capability.RESEARCH_ANALYSIS_READ,
         Capability.RESEARCH_ANALYSIS_WRITE,
+        Capability.RESEARCH_ANALYSIS_EXECUTE,
+        Capability.RESEARCH_PATIENT_JOURNEY_READ,
+        Capability.RESEARCH_PACKAGE_EXPORT,
         Capability.RESEARCH_AI_USE,
         Capability.EVIDENCE_READ,
         Capability.EVIDENCE_WRITE,
         Capability.DATA_QUALITY_READ,
         Capability.DATA_QUALITY_RUN,
+        Capability.DATA_QUALITY_ACKNOWLEDGE,
         Capability.AUDIT_READ,
         Capability.AI_STATUS_VIEW,
         Capability.AI_SETTINGS_MANAGE,
@@ -204,11 +212,15 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.RESEARCH_CONCEPT_SET_WRITE,
         Capability.RESEARCH_ANALYSIS_READ,
         Capability.RESEARCH_ANALYSIS_WRITE,
+        Capability.RESEARCH_ANALYSIS_EXECUTE,
+        Capability.RESEARCH_PATIENT_JOURNEY_READ,
+        Capability.RESEARCH_PACKAGE_EXPORT,
         Capability.RESEARCH_AI_USE,
         Capability.EVIDENCE_READ,
         Capability.EVIDENCE_WRITE,
         Capability.DATA_QUALITY_READ,
         Capability.DATA_QUALITY_RUN,
+        Capability.DATA_QUALITY_ACKNOWLEDGE,
         Capability.AI_STATUS_VIEW,
     ),
     Profession.CLINICAL_SAFETY: (
@@ -230,6 +242,7 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.EVIDENCE_WRITE,
         Capability.DATA_QUALITY_READ,
         Capability.DATA_QUALITY_RUN,
+        Capability.DATA_QUALITY_ACKNOWLEDGE,
         Capability.AI_STATUS_VIEW,
         Capability.SYSTEM_HEALTH_VIEW,
     ),

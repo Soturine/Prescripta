@@ -1,6 +1,7 @@
 # Assets
 
 - `docs/assets/current/`: screenshots/GIF gerados deterministicamente para a vitrine atual, acompanhados de `manifest.json` com SHA-256, dimensões e peso.
+- `docs/assets/v0.9.0/`: duas capturas reais e sintéticas exclusivas do Research & RWE MVP, com manifesto e hashes.
 - `docs/assets/v0.8.2/`: captura da release v0.8.2, incluindo protocolos.
 - `docs/assets/v0.8.1/`: captura da release v0.8.1.
 - Pastas antigas permanecem como histórico visual.

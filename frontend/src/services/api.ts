@@ -84,18 +84,24 @@ import type {
 } from "../types/report";
 import type {
   AIInteraction,
+  AnalysisPlan,
+  AnalysisPlanPayload,
+  AnalysisRun,
   CohortDefinition,
   CohortRun,
   CohortVersion,
   ConceptSet,
   ConceptSetVersion,
   DataQualityFinding,
+  DataQualityRun,
   EvidenceLink,
   EvidenceSource,
   OutcomeDefinition,
+  PatientJourney,
   ResearchStudy,
   ResearchStudyPayload,
   ResearchWorkspace,
+  ResearchPackage,
   StudyProtocolVersion,
   StudyWorkspace,
 } from "../types/research";
@@ -103,7 +109,12 @@ import type {
   PharmacyIntervention,
   PharmacyInterventionPayload,
 } from "../types/pharmacy";
-import type { User, UserClinicalProfilePayload, UserCreatePayload, UserRole } from "../types/user";
+import type {
+  User,
+  UserClinicalProfilePayload,
+  UserCreatePayload,
+  UserRole,
+} from "../types/user";
 
 const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 export const api = axios.create({
@@ -187,13 +198,20 @@ export async function updatePatientPsychologicalContext(
 }
 
 export async function fetchPatientAccessGrants(patientId: number) {
-  const response = await api.get<PatientAccessGrant[]>(`/access/patients/${patientId}/grants`);
+  const response = await api.get<PatientAccessGrant[]>(
+    `/access/patients/${patientId}/grants`,
+  );
   return response.data;
 }
 
 export async function createPatientAccessGrant(
   patientId: number,
-  payload: { user_id: number; capability: string; purpose: string; reason: string },
+  payload: {
+    user_id: number;
+    capability: string;
+    purpose: string;
+    reason: string;
+  },
 ) {
   const response = await api.post<PatientAccessGrant>(
     `/access/patients/${patientId}/grants`,
@@ -202,10 +220,16 @@ export async function createPatientAccessGrant(
   return response.data;
 }
 
-export async function revokePatientAccessGrant(grantId: number, reason: string) {
-  const response = await api.post<PatientAccessGrant>(`/access/grants/${grantId}/revoke`, {
-    reason,
-  });
+export async function revokePatientAccessGrant(
+  grantId: number,
+  reason: string,
+) {
+  const response = await api.post<PatientAccessGrant>(
+    `/access/grants/${grantId}/revoke`,
+    {
+      reason,
+    },
+  );
   return response.data;
 }
 
@@ -217,7 +241,9 @@ export async function fetchPatientCareTeam(patientId: number) {
 }
 
 export async function fetchPatientClinicalContext(id: number) {
-  const response = await api.get<ClinicalContextGraph>(`/patients/${id}/clinical-context`);
+  const response = await api.get<ClinicalContextGraph>(
+    `/patients/${id}/clinical-context`,
+  );
   return response.data;
 }
 
@@ -232,22 +258,38 @@ export async function updatePatient(id: number, payload: PatientPayload) {
 }
 
 export async function fetchPatientIdentifiers(id: number) {
-  const response = await api.get<PatientIdentifier[]>(`/patients/${id}/identifiers`);
+  const response = await api.get<PatientIdentifier[]>(
+    `/patients/${id}/identifiers`,
+  );
   return response.data;
 }
 
-export async function createPatientIdentifier(id: number, payload: PatientIdentifierPayload) {
-  const response = await api.post<PatientIdentifier>(`/patients/${id}/identifiers`, payload);
+export async function createPatientIdentifier(
+  id: number,
+  payload: PatientIdentifierPayload,
+) {
+  const response = await api.post<PatientIdentifier>(
+    `/patients/${id}/identifiers`,
+    payload,
+  );
   return response.data;
 }
 
-export async function quickTriagePatient(id: number, payload: QuickTriagePayload) {
-  const response = await api.patch<Patient>(`/patients/${id}/quick-triage`, payload);
+export async function quickTriagePatient(
+  id: number,
+  payload: QuickTriagePayload,
+) {
+  const response = await api.patch<Patient>(
+    `/patients/${id}/quick-triage`,
+    payload,
+  );
   return response.data;
 }
 
 export async function fetchPatientFunctionalProfile(id: number) {
-  const response = await api.get<PatientFunctionalProfile>(`/patients/${id}/functional-profile`);
+  const response = await api.get<PatientFunctionalProfile>(
+    `/patients/${id}/functional-profile`,
+  );
   return response.data;
 }
 
@@ -263,7 +305,9 @@ export async function updatePatientFunctionalProfile(
 }
 
 export async function fetchPatientDocuments(id: number) {
-  const response = await api.get<PatientClinicalDocument[]>(`/patients/${id}/documents`);
+  const response = await api.get<PatientClinicalDocument[]>(
+    `/patients/${id}/documents`,
+  );
   return response.data;
 }
 
@@ -271,7 +315,10 @@ export async function createPatientDocument(
   id: number,
   payload: PatientClinicalDocumentPayload,
 ) {
-  const response = await api.post<PatientClinicalDocument>(`/patients/${id}/documents`, payload);
+  const response = await api.post<PatientClinicalDocument>(
+    `/patients/${id}/documents`,
+    payload,
+  );
   return response.data;
 }
 
@@ -295,12 +342,16 @@ export async function reviewPatientDocumentExtraction(
 }
 
 export async function fetchPatientTimeline(id: number) {
-  const response = await api.get<Array<Record<string, unknown>>>(`/patients/${id}/timeline`);
+  const response = await api.get<Array<Record<string, unknown>>>(
+    `/patients/${id}/timeline`,
+  );
   return response.data;
 }
 
 export async function fetchPatientKnowledgeBundle(id: number) {
-  const response = await api.get<PatientKnowledgeBundle>(`/patients/${id}/knowledge-bundle`);
+  const response = await api.get<PatientKnowledgeBundle>(
+    `/patients/${id}/knowledge-bundle`,
+  );
   return response.data;
 }
 
@@ -310,28 +361,39 @@ export async function fetchMedications() {
 }
 
 export async function fetchActiveIngredients() {
-  const response = await api.get<ActiveIngredient[]>("/medication-catalog/active-ingredients");
+  const response = await api.get<ActiveIngredient[]>(
+    "/medication-catalog/active-ingredients",
+  );
   return response.data;
 }
 
 export async function searchMedicationCatalog(query: string) {
-  const response = await api.get<MedicationCatalogSearchResult[]>("/medication-catalog/search", {
-    params: { q: query },
-  });
+  const response = await api.get<MedicationCatalogSearchResult[]>(
+    "/medication-catalog/search",
+    {
+      params: { q: query },
+    },
+  );
   return response.data;
 }
 
 export async function fetchClinicalVocabulary(category?: string) {
-  const response = await api.get<ClinicalVocabularyEntry[]>("/clinical-vocabulary", {
-    params: category ? { category } : undefined,
-  });
+  const response = await api.get<ClinicalVocabularyEntry[]>(
+    "/clinical-vocabulary",
+    {
+      params: category ? { category } : undefined,
+    },
+  );
   return response.data;
 }
 
 export async function lookupAnvisaSource(query: string) {
-  const response = await api.get<AnvisaLookupResponse>("/medication-sources/anvisa/search", {
-    params: { q: query },
-  });
+  const response = await api.get<AnvisaLookupResponse>(
+    "/medication-sources/anvisa/search",
+    {
+      params: { q: query },
+    },
+  );
   return response.data;
 }
 
@@ -352,7 +414,9 @@ export async function fetchAdverseEffectTaxonomy() {
   return response.data;
 }
 
-export async function lookupMedicationKnowledge(payload: MedicationKnowledgeLookupPayload) {
+export async function lookupMedicationKnowledge(
+  payload: MedicationKnowledgeLookupPayload,
+) {
   const response = await api.post<MedicationKnowledgeCurationItem>(
     "/medications/knowledge/lookup",
     payload,
@@ -360,7 +424,9 @@ export async function lookupMedicationKnowledge(payload: MedicationKnowledgeLook
   return response.data;
 }
 
-export async function bulkImportMedicationKnowledge(payload: MedicationBulkImportPayload) {
+export async function bulkImportMedicationKnowledge(
+  payload: MedicationBulkImportPayload,
+) {
   const response = await api.post<MedicationKnowledgeCurationItem[]>(
     "/medications/knowledge/bulk-import",
     payload,
@@ -417,11 +483,16 @@ export async function reviewMedicationCounselingSummary(
 }
 
 export async function checkPrescription(payload: PrescriptionCheckPayload) {
-  const response = await api.post<PrescriptionCheckResult>("/prescriptions/check", payload);
+  const response = await api.post<PrescriptionCheckResult>(
+    "/prescriptions/check",
+    payload,
+  );
   return response.data;
 }
 
-export async function explainPrescription(payload: PrescriptionExplanationPayload) {
+export async function explainPrescription(
+  payload: PrescriptionExplanationPayload,
+) {
   const response = await api.post<PrescriptionExplanationResult>(
     "/prescriptions/explain",
     payload,
@@ -430,9 +501,12 @@ export async function explainPrescription(payload: PrescriptionExplanationPayloa
 }
 
 export async function requestDecisionOverride(auditId: number, reason: string) {
-  const response = await api.post<DecisionOverride>(`/prescriptions/${auditId}/overrides`, {
-    reason,
-  });
+  const response = await api.post<DecisionOverride>(
+    `/prescriptions/${auditId}/overrides`,
+    {
+      reason,
+    },
+  );
   return response.data;
 }
 
@@ -453,16 +527,23 @@ export async function fetchAudit(filters: AuditFilters = {}) {
 }
 
 export async function fetchAuditTimeline(eventId: number) {
-  const response = await api.get<DecisionTimelineItem[]>(`/audit/${eventId}/timeline`);
+  const response = await api.get<DecisionTimelineItem[]>(
+    `/audit/${eventId}/timeline`,
+  );
   return response.data;
 }
 
 export async function fetchAuditEvidence(eventId: number) {
-  const response = await api.get<DecisionEvidenceItem[]>(`/audit/${eventId}/evidence`);
+  const response = await api.get<DecisionEvidenceItem[]>(
+    `/audit/${eventId}/evidence`,
+  );
   return response.data;
 }
 
-export async function fetchReports(params?: { report_type?: string; target_type?: string }) {
+export async function fetchReports(params?: {
+  report_type?: string;
+  target_type?: string;
+}) {
   const response = await api.get<GeneratedReport[]>("/reports", { params });
   return response.data;
 }
@@ -472,10 +553,16 @@ export async function fetchReport(id: number) {
   return response.data;
 }
 
-export async function fetchPrescriptionReportPreview(auditId: number, anonymized = false) {
-  const response = await api.get<ReportPreview>(`/reports/prescriptions/${auditId}/preview`, {
-    params: { mode: anonymized ? "anonymized" : "complete_internal" },
-  });
+export async function fetchPrescriptionReportPreview(
+  auditId: number,
+  anonymized = false,
+) {
+  const response = await api.get<ReportPreview>(
+    `/reports/prescriptions/${auditId}/preview`,
+    {
+      params: { mode: anonymized ? "anonymized" : "complete_internal" },
+    },
+  );
   return response.data;
 }
 
@@ -506,28 +593,45 @@ export async function fetchProtocol(id: string) {
 }
 
 export async function runProtocol(id: string, payload: ProtocolRunPayload) {
-  const response = await api.post<ProtocolRunResult>(`/protocols/${id}/run`, payload);
+  const response = await api.post<ProtocolRunResult>(
+    `/protocols/${id}/run`,
+    payload,
+  );
   return response.data;
 }
 
-export async function explainProtocol(id: string, payload: ProtocolExplainPayload) {
-  const response = await api.post<ProtocolExplainResult>(`/protocols/${id}/explain`, payload);
+export async function explainProtocol(
+  id: string,
+  payload: ProtocolExplainPayload,
+) {
+  const response = await api.post<ProtocolExplainResult>(
+    `/protocols/${id}/explain`,
+    payload,
+  );
   return response.data;
 }
 
 export async function fetchProtocolEvidence(id: string) {
-  const response = await api.get<ProtocolEvidence[]>(`/protocols/${id}/evidence`);
+  const response = await api.get<ProtocolEvidence[]>(
+    `/protocols/${id}/evidence`,
+  );
   return response.data;
 }
 
 export async function fetchProtocolReport(id: string, runId?: number | null) {
-  const response = await api.get<ProtocolReportPreview>(`/protocols/${id}/report`, {
-    params: runId ? { run_id: runId } : undefined,
-  });
+  const response = await api.get<ProtocolReportPreview>(
+    `/protocols/${id}/report`,
+    {
+      params: runId ? { run_id: runId } : undefined,
+    },
+  );
   return response.data;
 }
 
-export async function downloadPrescriptionTechnicalReport(auditId: number, anonymized = false) {
+export async function downloadPrescriptionTechnicalReport(
+  auditId: number,
+  anonymized = false,
+) {
   return downloadFromApi(
     `/reports/prescriptions/${auditId}/pdf`,
     `prescripta-relatorio-tecnico-${auditId}.pdf`,
@@ -542,7 +646,10 @@ export async function downloadPatientGuidanceReport(auditId: number) {
   );
 }
 
-export async function downloadReconciliationReport(importId: number, anonymized = false) {
+export async function downloadReconciliationReport(
+  importId: number,
+  anonymized = false,
+) {
   return downloadFromApi(
     `/reports/imports/${importId}/reconciliation.pdf`,
     `prescripta-reconciliacao-${importId}.pdf`,
@@ -551,10 +658,17 @@ export async function downloadReconciliationReport(importId: number, anonymized 
 }
 
 export async function downloadAuditReport(filters: AuditFilters = {}) {
-  return downloadFromApi("/reports/audit-events/pdf", "prescripta-auditoria.pdf", filters);
+  return downloadFromApi(
+    "/reports/audit-events/pdf",
+    "prescripta-auditoria.pdf",
+    filters,
+  );
 }
 
-export async function downloadProtocolReportPdf(id: string, runId?: number | null) {
+export async function downloadProtocolReportPdf(
+  id: string,
+  runId?: number | null,
+) {
   return downloadFromApi(
     `/protocols/${id}/report.pdf`,
     `prescripta-protocolo-${id}.pdf`,
@@ -569,7 +683,10 @@ export async function downloadProtocolRunReportPdf(runId: number) {
   );
 }
 
-export async function exportPrescriptionJson(auditId: number, anonymized = false) {
+export async function exportPrescriptionJson(
+  auditId: number,
+  anonymized = false,
+) {
   return downloadFromApi(
     `/exports/prescriptions/${auditId}.json`,
     `prescricao-${auditId}.json`,
@@ -577,7 +694,10 @@ export async function exportPrescriptionJson(auditId: number, anonymized = false
   );
 }
 
-export async function exportPrescriptionCsv(auditId: number, anonymized = false) {
+export async function exportPrescriptionCsv(
+  auditId: number,
+  anonymized = false,
+) {
   return downloadFromApi(
     `/exports/prescriptions/${auditId}.csv`,
     `prescricao-${auditId}.csv`,
@@ -586,27 +706,46 @@ export async function exportPrescriptionCsv(auditId: number, anonymized = false)
 }
 
 export async function exportImportJson(importId: number, anonymized = false) {
-  return downloadFromApi(`/exports/imports/${importId}.json`, `importacao-${importId}.json`, {
-    anonymized,
-  });
+  return downloadFromApi(
+    `/exports/imports/${importId}.json`,
+    `importacao-${importId}.json`,
+    {
+      anonymized,
+    },
+  );
 }
 
 export async function exportImportCsv(importId: number, anonymized = false) {
-  return downloadFromApi(`/exports/imports/${importId}.csv`, `importacao-${importId}.csv`, {
-    anonymized,
-  });
+  return downloadFromApi(
+    `/exports/imports/${importId}.csv`,
+    `importacao-${importId}.csv`,
+    {
+      anonymized,
+    },
+  );
 }
 
 export async function exportAuditJson(filters: AuditFilters = {}) {
-  return downloadFromApi("/exports/audit-events.json", "audit-events.json", filters);
+  return downloadFromApi(
+    "/exports/audit-events.json",
+    "audit-events.json",
+    filters,
+  );
 }
 
 export async function exportAuditCsv(filters: AuditFilters = {}) {
-  return downloadFromApi("/exports/audit-events.csv", "audit-events.csv", filters);
+  return downloadFromApi(
+    "/exports/audit-events.csv",
+    "audit-events.csv",
+    filters,
+  );
 }
 
 export async function exportReportJson(reportId: number) {
-  return downloadFromApi(`/exports/reports/${reportId}.json`, `relatorio-${reportId}.json`);
+  return downloadFromApi(
+    `/exports/reports/${reportId}.json`,
+    `relatorio-${reportId}.json`,
+  );
 }
 
 export async function exportProtocolRunJson(id: string, runId: number) {
@@ -646,32 +785,47 @@ export async function fetchAIModels(provider: AIProviderId, refresh = false) {
 }
 
 export async function saveAICredential(payload: AICredentialPayload) {
-  const response = await api.post<AICredentialStatus>("/settings/ai/credentials", payload);
+  const response = await api.post<AICredentialStatus>(
+    "/settings/ai/credentials",
+    payload,
+  );
   return response.data;
 }
 
 export async function deleteAICredential(provider: AIProviderId) {
-  const response = await api.delete<AICredentialStatus>(`/settings/ai/credentials/${provider}`);
+  const response = await api.delete<AICredentialStatus>(
+    `/settings/ai/credentials/${provider}`,
+  );
   return response.data;
 }
 
 export async function testAIConnection(payload: AIConnectionTestPayload) {
-  const response = await api.post<AIConnectionTestResult>("/settings/ai/test", payload);
+  const response = await api.post<AIConnectionTestResult>(
+    "/settings/ai/test",
+    payload,
+  );
   return response.data;
 }
 
 export async function selectAIModel(payload: AIModelSelectPayload) {
-  const response = await api.post<AISettings>("/settings/ai/select-model", payload);
+  const response = await api.post<AISettings>(
+    "/settings/ai/select-model",
+    payload,
+  );
   return response.data;
 }
 
 export async function fetchClinicalImports() {
-  const response = await api.get<ClinicalImportBatch[]>("/integrations/imports");
+  const response = await api.get<ClinicalImportBatch[]>(
+    "/integrations/imports",
+  );
   return response.data;
 }
 
 export async function fetchClinicalImport(id: number) {
-  const response = await api.get<ClinicalImportBatch>(`/integrations/imports/${id}`);
+  const response = await api.get<ClinicalImportBatch>(
+    `/integrations/imports/${id}`,
+  );
   return response.data;
 }
 
@@ -679,10 +833,13 @@ export async function importClinicalJson(
   consent: ImportConsentPayload,
   payload: Record<string, unknown>,
 ) {
-  const response = await api.post<ClinicalImportBatch>("/integrations/json/import", {
-    ...consent,
-    payload,
-  });
+  const response = await api.post<ClinicalImportBatch>(
+    "/integrations/json/import",
+    {
+      ...consent,
+      payload,
+    },
+  );
   return response.data;
 }
 
@@ -690,30 +847,44 @@ export async function importClinicalFhir(
   consent: ImportConsentPayload,
   bundle: Record<string, unknown>,
 ) {
-  const response = await api.post<ClinicalImportBatch>("/integrations/fhir/import-bundle", {
-    ...consent,
-    bundle,
-  });
+  const response = await api.post<ClinicalImportBatch>(
+    "/integrations/fhir/import-bundle",
+    {
+      ...consent,
+      bundle,
+    },
+  );
   return response.data;
 }
 
-export async function importClinicalCsv(consent: ImportConsentPayload, csv_text: string) {
-  const response = await api.post<ClinicalImportBatch>("/integrations/csv/import", {
-    ...consent,
-    csv_text,
-  });
+export async function importClinicalCsv(
+  consent: ImportConsentPayload,
+  csv_text: string,
+) {
+  const response = await api.post<ClinicalImportBatch>(
+    "/integrations/csv/import",
+    {
+      ...consent,
+      csv_text,
+    },
+  );
   return response.data;
 }
 
 export async function acceptClinicalImport(id: number) {
-  const response = await api.post<ClinicalImportBatch>(`/integrations/imports/${id}/accept`);
+  const response = await api.post<ClinicalImportBatch>(
+    `/integrations/imports/${id}/accept`,
+  );
   return response.data;
 }
 
 export async function rejectClinicalImport(id: number, reason: string | null) {
-  const response = await api.post<ClinicalImportBatch>(`/integrations/imports/${id}/reject`, {
-    reason,
-  });
+  const response = await api.post<ClinicalImportBatch>(
+    `/integrations/imports/${id}/reject`,
+    {
+      reason,
+    },
+  );
   return response.data;
 }
 
@@ -756,7 +927,10 @@ export async function acceptClinicalReconciliationSafeItems(id: number) {
 }
 
 export async function checkCdsPrescription(payload: CdsCheckPayload) {
-  const response = await api.post<CdsCheckResult>("/cds/prescription-check", payload);
+  const response = await api.post<CdsCheckResult>(
+    "/cds/prescription-check",
+    payload,
+  );
   return response.data;
 }
 
@@ -784,7 +958,10 @@ export async function updateUserClinicalProfile(
   id: number,
   payload: UserClinicalProfilePayload,
 ) {
-  const response = await api.patch<User>(`/users/${id}/clinical-profile`, payload);
+  const response = await api.patch<User>(
+    `/users/${id}/clinical-profile`,
+    payload,
+  );
   return response.data;
 }
 
@@ -804,7 +981,9 @@ export async function createResearchStudy(payload: ResearchStudyPayload) {
 }
 
 export async function fetchStudyWorkspace(studyId: string) {
-  const response = await api.get<StudyWorkspace>(`/research/studies/${studyId}/workspace`);
+  const response = await api.get<StudyWorkspace>(
+    `/research/studies/${studyId}/workspace`,
+  );
   return response.data;
 }
 
@@ -837,13 +1016,20 @@ export async function fetchConceptSets() {
 }
 
 export async function createConceptSet(payload: Record<string, unknown>) {
-  const response = await api.post<ConceptSet>("/research/concept-sets", payload);
+  const response = await api.post<ConceptSet>(
+    "/research/concept-sets",
+    payload,
+  );
   return response.data;
 }
 
 export async function reviewConceptSetVersion(
   versionId: string,
-  decision: "terminology_matched" | "human_reviewed" | "approved_for_demo_study" | "rejected",
+  decision:
+    | "terminology_matched"
+    | "human_reviewed"
+    | "approved_for_demo_study"
+    | "rejected",
   note: string,
 ) {
   const response = await api.post<ConceptSetVersion>(
@@ -858,10 +1044,13 @@ export async function createCohortVersion(
   name: string,
   definition: CohortDefinition,
 ) {
-  const response = await api.post<CohortVersion>(`/research/studies/${studyId}/cohorts`, {
-    name,
-    definition,
-  });
+  const response = await api.post<CohortVersion>(
+    `/research/studies/${studyId}/cohorts`,
+    {
+      name,
+      definition,
+    },
+  );
   return response.data;
 }
 
@@ -888,7 +1077,22 @@ export async function createOutcomeDefinition(
   return response.data;
 }
 
-export async function executeCohortVersion(versionId: string, dataSnapshotMarker: string) {
+export async function reviewOutcomeDefinition(
+  outcomeId: string,
+  decision: "reviewed_demo" | "rejected" | "superseded",
+  note: string,
+) {
+  const response = await api.post<OutcomeDefinition>(
+    `/research/outcomes/${outcomeId}/review`,
+    { decision, note },
+  );
+  return response.data;
+}
+
+export async function executeCohortVersion(
+  versionId: string,
+  dataSnapshotMarker: string,
+) {
   const response = await api.post<CohortRun>(
     `/research/cohort-versions/${versionId}/runs`,
     { data_snapshot_marker: dataSnapshotMarker },
@@ -896,17 +1100,68 @@ export async function executeCohortVersion(versionId: string, dataSnapshotMarker
   return response.data;
 }
 
-export async function runDataQuality() {
-  const response = await api.post<{
-    findings_created: number;
-    findings_open: number;
-    by_rule: Record<string, number>;
-  }>("/data-quality/runs");
+export async function runDataQuality(studyId?: string) {
+  const response = await api.post<DataQualityRun>("/data-quality/runs", {
+    study_id: studyId ?? null,
+  });
   return response.data;
 }
 
 export async function fetchDataQualityFindings() {
-  const response = await api.get<DataQualityFinding[]>("/data-quality/findings");
+  const response = await api.get<DataQualityFinding[]>(
+    "/data-quality/findings",
+  );
+  return response.data;
+}
+
+export async function acknowledgeDataQualityFinding(
+  findingId: string,
+  resolution: string,
+) {
+  const response = await api.post<DataQualityFinding>(
+    `/data-quality/findings/${findingId}/acknowledge`,
+    { resolution },
+  );
+  return response.data;
+}
+
+export async function createAnalysisPlan(
+  studyId: string,
+  payload: AnalysisPlanPayload,
+) {
+  const response = await api.post<AnalysisPlan>(
+    `/research/studies/${studyId}/analysis-plans`,
+    payload,
+  );
+  return response.data;
+}
+
+export async function reviewAnalysisPlan(planId: string, note: string) {
+  const response = await api.post<AnalysisPlan>(
+    `/research/analysis-plans/${planId}/review`,
+    { decision: "reviewed_demo", note },
+  );
+  return response.data;
+}
+
+export async function executeAnalysisPlan(planId: string) {
+  const response = await api.post<AnalysisRun>(
+    `/research/analysis-plans/${planId}/runs`,
+  );
+  return response.data;
+}
+
+export async function exportResearchPackage(analysisRunId: string) {
+  const response = await api.post<ResearchPackage>(
+    `/research/analysis-runs/${analysisRunId}/package`,
+  );
+  return response.data;
+}
+
+export async function fetchPatientJourney(studyId: string, patientId: number) {
+  const response = await api.get<PatientJourney>(
+    `/research/studies/${studyId}/patient-journey/${patientId}`,
+  );
   return response.data;
 }
 
@@ -936,12 +1191,19 @@ export async function createEvidenceLink(payload: Record<string, unknown>) {
 }
 
 export async function fetchPharmacyInterventions() {
-  const response = await api.get<PharmacyIntervention[]>("/pharmacy/interventions");
+  const response = await api.get<PharmacyIntervention[]>(
+    "/pharmacy/interventions",
+  );
   return response.data;
 }
 
-export async function createPharmacyIntervention(payload: PharmacyInterventionPayload) {
-  const response = await api.post<PharmacyIntervention>("/pharmacy/interventions", payload);
+export async function createPharmacyIntervention(
+  payload: PharmacyInterventionPayload,
+) {
+  const response = await api.post<PharmacyIntervention>(
+    "/pharmacy/interventions",
+    payload,
+  );
   return response.data;
 }
 
@@ -980,7 +1242,10 @@ async function downloadFromApi(
   const filename = filenameFromDisposition(disposition) ?? fallbackFilename;
   const contentType = response.headers["content-type"];
   const blob = new Blob([response.data], {
-    type: typeof contentType === "string" ? contentType : "application/octet-stream",
+    type:
+      typeof contentType === "string"
+        ? contentType
+        : "application/octet-stream",
   });
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");

@@ -1,26 +1,37 @@
 from __future__ import annotations
 
+import re
 import time
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database.models import (
     AIInteractionModel,
     EvidenceSourceModel,
+    PatientClinicalTimelineEventModel,
+    PatientModel,
     ResearchStudyModel,
     UserModel,
 )
 from app.schemas.ai_task_schema import AIInteractionReviewRequest, AIRequestSchema
+from app.schemas.research_schema import AnalysisPlanCreate, CohortDefinitionCreate
 from app.services.ai_settings import AISettingsService
 from app.services.audit_service import AuditService
 from app.services.canonical_json import canonical_sha256, json_compatible
 from app.services.cohort_dsl import CohortDSLValidationError, CohortDSLValidator
+from app.services.research_analysis_service import ResearchAnalysisService
+from app.services.research_service import ResearchService
 
 TASK_TEMPLATE_VERSIONS = {
     "clinical_decision_explanation": "clinical-explanation-v1",
     "research_question_structuring": "research-question-v1",
+    "protocol_completeness_review": "protocol-completeness-v1",
+    "cohort_drafting": "cohort-draft-v1",
+    "analysis_plan_draft": "analysis-plan-draft-v1",
+    "results_explanation": "results-explanation-v1",
     "cohort_draft": "cohort-draft-v1",
     "study_protocol_draft": "study-protocol-draft-v1",
     "evidence_summary": "evidence-summary-v1",
@@ -36,6 +47,14 @@ OUTPUT_CONTRACTS = {
     "cohort_draft": {
         "required": {"definition", "unresolved_questions", "status"},
         "allowed": {"definition", "unresolved_questions", "status"},
+    },
+    "cohort_drafting": {
+        "required": {"definition", "unresolved_questions", "status"},
+        "allowed": {"definition", "unresolved_questions", "status"},
+    },
+    "analysis_plan_draft": {
+        "required": {"plan", "unresolved_questions", "status"},
+        "allowed": {"plan", "unresolved_questions", "status"},
     },
     "evidence_summary": {
         "required": {"claims", "status", "source_ids"},
@@ -151,6 +170,15 @@ class AITaskRouter:
             **(interaction.usage_metadata or {}),
             "review_note_hash": canonical_sha256(payload.note),
         }
+        if payload.decision == "accepted_as_draft":
+            try:
+                created = self._accept_as_draft(interaction, actor)
+            except ValueError as exc:
+                raise AITaskError(f"Proposta não pôde criar draft: {exc}") from exc
+            interaction.usage_metadata = {
+                **interaction.usage_metadata,
+                "accepted_draft": created,
+            }
         self.db.flush()
         AuditService(self.db).record_action(
             user=actor,
@@ -167,8 +195,21 @@ class AITaskRouter:
             study = self.db.get(ResearchStudyModel, request.study_id)
             if study is None or study.institution_id != actor.institution_id:
                 raise AITaskError("Estudo não encontrado.")
-        if request.patient_id and request.data_classification not in {"sensitive", "restricted"}:
-            raise AITaskError("Dados de paciente exigem classificação sensitive/restricted.")
+        if request.patient_id:
+            patient = self.db.get(PatientModel, request.patient_id)
+            if patient is None or patient.institution_id != actor.institution_id:
+                raise AITaskError("Paciente fora do escopo autorizado.")
+            synthetic_journey = (
+                request.task_type == "patient_journey_summary"
+                and request.data_classification == "synthetic"
+                and request.study_id
+                and self._synthetic_journey_sources(request.patient_id, actor.institution_id)
+            )
+            if not synthetic_journey and request.data_classification not in {
+                "sensitive",
+                "restricted",
+            }:
+                raise AITaskError("Dados de paciente exigem classificação sensitive/restricted.")
         for source_id in request.source_ids:
             source = self.db.get(EvidenceSourceModel, source_id)
             if source is None or source.institution_id != actor.institution_id:
@@ -233,11 +274,17 @@ class AITaskRouter:
                 ],
                 "status": "proposal_only_not_executed",
             }
-        if request.task_type == "cohort_draft":
+        if request.task_type in {"cohort_draft", "cohort_drafting"}:
             return {
                 "definition": request.input.get("definition")
                 or {"all": [{"criterion": "age", "operator": "gte", "value": 18}]},
                 "unresolved_questions": ["Confirmar concept sets e fontes."],
+                "status": "proposal_only_not_executed",
+            }
+        if request.task_type == "analysis_plan_draft":
+            return {
+                "plan": request.input.get("plan") or {},
+                "unresolved_questions": ["Confirmar métodos, variáveis e outputs."],
                 "status": "proposal_only_not_executed",
             }
         if request.task_type == "evidence_summary":
@@ -279,19 +326,22 @@ class AITaskRouter:
             )
         if unsupported:
             raise AITaskError(
-                "Saída de IA contém campos não suportados: "
-                + ", ".join(sorted(unsupported))
-                + "."
+                "Saída de IA contém campos não suportados: " + ", ".join(sorted(unsupported)) + "."
             )
         status = output.get("status")
         if not isinstance(status, str) or not status:
             raise AITaskError("Saída de IA contém status inválido.")
-        if request.task_type == "cohort_draft":
+        if request.task_type in {"cohort_draft", "cohort_drafting"}:
             definition = output.get("definition")
             try:
                 CohortDSLValidator(self.db, actor.institution_id).validate(definition)
             except CohortDSLValidationError as exc:
                 raise AITaskError(f"Saída de IA contém cohort DSL inválida: {exc}") from exc
+        if request.task_type == "analysis_plan_draft":
+            try:
+                AnalysisPlanCreate.model_validate(output.get("plan"))
+            except ValueError as exc:
+                raise AITaskError("Saída de IA contém plano de análise inválido.") from exc
         if request.task_type == "evidence_summary":
             allowed = set(request.source_ids)
             claims = output.get("claims")
@@ -303,6 +353,76 @@ class AITaskRouter:
                 if not isinstance(claim, dict) or claim.get("source_id") not in allowed:
                     raise AITaskError("Resumo de evidência contém source_id não autorizado.")
         if request.task_type == "patient_journey_summary":
-            if not isinstance(output.get("source_event_ids", []), list):
+            source_event_ids = output.get("source_event_ids", [])
+            if not isinstance(source_event_ids, list):
                 raise AITaskError("Resumo de jornada sem eventos-fonte válidos.")
+            allowed_event_ids = {
+                str(item.get("event_ref") or item.get("id"))
+                for item in request.input.get("events", [])
+                if isinstance(item, dict)
+            }
+            if not set(map(str, source_event_ids)) <= allowed_event_ids:
+                raise AITaskError("Resumo de jornada citou evento fora do contexto autorizado.")
+        if request.task_type == "results_explanation":
+            allowed_numbers = self._numbers(request.input)
+            if not self._numbers(output) <= allowed_numbers:
+                raise AITaskError("Explicação de resultados inventou valor numérico.")
         return json_compatible(output)
+
+    def _accept_as_draft(self, interaction: AIInteractionModel, actor: UserModel) -> dict:
+        if interaction.task_type in {"cohort_draft", "cohort_drafting"}:
+            version = ResearchService(self.db).create_cohort_version(
+                interaction.study_id or "",
+                CohortDefinitionCreate(
+                    name=f"Copilot draft {interaction.id[:8]}",
+                    definition=interaction.output_payload["definition"],
+                ),
+                actor,
+            )
+            return {
+                "resource_type": "cohort_definition_version",
+                "id": version.id,
+                "status": "draft",
+            }
+        if interaction.task_type == "analysis_plan_draft":
+            plan = ResearchAnalysisService(self.db).create_plan(
+                interaction.study_id or "",
+                AnalysisPlanCreate.model_validate(interaction.output_payload["plan"]),
+                actor,
+            )
+            return {"resource_type": "analysis_plan", "id": plan.id, "status": "draft"}
+        return {"resource_type": "ai_proposal", "id": interaction.id, "status": "draft"}
+
+    def _synthetic_journey_sources(self, patient_id: int, institution_id: str) -> bool:
+        events = list(
+            self.db.scalars(
+                select(PatientClinicalTimelineEventModel).where(
+                    PatientClinicalTimelineEventModel.patient_id == patient_id,
+                    PatientClinicalTimelineEventModel.institution_id == institution_id,
+                )
+            )
+        )
+        return bool(events) and all(
+            event.source_type == "synthetic_fixture"
+            and (event.provenance or {}).get("demo_only") is True
+            for event in events
+        )
+
+    @staticmethod
+    def _numbers(value: Any) -> set[str]:
+        found: set[str] = set()
+        if isinstance(value, bool):
+            return found
+        if isinstance(value, (int, float)):
+            found.add(str(value))
+        elif isinstance(value, str):
+            found.update(
+                re.findall(r"(?<![A-Za-z0-9_])[-+]?\d+(?:\.\d+)?(?![A-Za-z0-9_])", value)
+            )
+        elif isinstance(value, dict):
+            for item in value.values():
+                found |= AITaskRouter._numbers(item)
+        elif isinstance(value, list):
+            for item in value:
+                found |= AITaskRouter._numbers(item)
+        return found

@@ -8,6 +8,9 @@ from app.database.models import UserModel
 from app.database.session import get_db
 from app.domain.user import Capability
 from app.schemas.research_schema import (
+    AnalysisPlanCreate,
+    AnalysisPlanRead,
+    AnalysisRunRead,
     CohortDefinitionCreate,
     CohortReviewRequest,
     CohortRunRead,
@@ -19,6 +22,9 @@ from app.schemas.research_schema import (
     ConceptSetVersionRead,
     OutcomeDefinitionCreate,
     OutcomeDefinitionRead,
+    OutcomeReviewRequest,
+    PatientJourneyRead,
+    ResearchPackageRead,
     ResearchReviewRequest,
     ResearchSnapshotRead,
     ResearchStudyCreate,
@@ -28,6 +34,7 @@ from app.schemas.research_schema import (
     StudyProtocolVersionRead,
     StudyWorkspaceRead,
 )
+from app.services.research_analysis_service import ResearchAnalysisService
 from app.services.research_service import (
     ResearchConflict,
     ResearchError,
@@ -78,6 +85,26 @@ CohortWriter = Annotated[
 CohortExecutor = Annotated[
     UserModel,
     Depends(require_any_capability(Capability.RESEARCH_COHORT_EXECUTE)),
+]
+AnalysisReader = Annotated[
+    UserModel,
+    Depends(require_any_capability(Capability.RESEARCH_ANALYSIS_READ)),
+]
+AnalysisWriter = Annotated[
+    UserModel,
+    Depends(require_any_capability(Capability.RESEARCH_ANALYSIS_WRITE)),
+]
+AnalysisExecutor = Annotated[
+    UserModel,
+    Depends(require_any_capability(Capability.RESEARCH_ANALYSIS_EXECUTE)),
+]
+JourneyReader = Annotated[
+    UserModel,
+    Depends(require_any_capability(Capability.RESEARCH_PATIENT_JOURNEY_READ)),
+]
+PackageExporter = Annotated[
+    UserModel,
+    Depends(require_any_capability(Capability.RESEARCH_PACKAGE_EXPORT)),
 ]
 
 
@@ -286,6 +313,19 @@ def create_outcome(
         raise _research_http_error(exc) from exc
 
 
+@router.post("/outcomes/{outcome_id}/review", response_model=OutcomeDefinitionRead)
+def review_outcome(
+    outcome_id: str,
+    payload: OutcomeReviewRequest,
+    db: DbSession,
+    current_user: StudyReviewer,
+) -> OutcomeDefinitionRead:
+    try:
+        return ResearchService(db).review_outcome(outcome_id, payload, current_user)
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
 @router.post(
     "/cohort-versions/{version_id}/runs",
     response_model=CohortRunRead,
@@ -342,5 +382,109 @@ def run_snapshot(
 ) -> ResearchSnapshotRead:
     try:
         return ResearchService(db).run_snapshot(run_id, current_user)
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.post(
+    "/studies/{study_id}/analysis-plans",
+    response_model=AnalysisPlanRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_analysis_plan(
+    study_id: str,
+    payload: AnalysisPlanCreate,
+    db: DbSession,
+    current_user: AnalysisWriter,
+) -> AnalysisPlanRead:
+    try:
+        return ResearchAnalysisService(db).create_plan(study_id, payload, current_user)
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.get("/studies/{study_id}/analysis-plans", response_model=list[AnalysisPlanRead])
+def list_analysis_plans(
+    study_id: str,
+    db: DbSession,
+    current_user: AnalysisReader,
+) -> list[AnalysisPlanRead]:
+    try:
+        return ResearchAnalysisService(db).list_plans(study_id, current_user)
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.post("/analysis-plans/{plan_id}/review", response_model=AnalysisPlanRead)
+def review_analysis_plan(
+    plan_id: str,
+    payload: ResearchReviewRequest,
+    db: DbSession,
+    current_user: StudyReviewer,
+) -> AnalysisPlanRead:
+    try:
+        return ResearchAnalysisService(db).review_plan(plan_id, payload, current_user)
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.post(
+    "/analysis-plans/{plan_id}/runs",
+    response_model=AnalysisRunRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def execute_analysis_plan(
+    plan_id: str,
+    db: DbSession,
+    current_user: AnalysisExecutor,
+) -> AnalysisRunRead:
+    try:
+        return ResearchAnalysisService(db).execute(plan_id, current_user)
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.get("/studies/{study_id}/analysis-runs", response_model=list[AnalysisRunRead])
+def list_analysis_runs(
+    study_id: str,
+    db: DbSession,
+    current_user: AnalysisReader,
+) -> list[AnalysisRunRead]:
+    try:
+        return ResearchAnalysisService(db).list_runs(study_id, current_user)
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.post(
+    "/analysis-runs/{analysis_run_id}/package",
+    response_model=ResearchPackageRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def export_research_package(
+    analysis_run_id: str,
+    db: DbSession,
+    current_user: PackageExporter,
+) -> ResearchPackageRead:
+    try:
+        return ResearchAnalysisService(db).export_package(analysis_run_id, current_user)
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.get(
+    "/studies/{study_id}/patient-journey/{patient_id}",
+    response_model=PatientJourneyRead,
+)
+def patient_journey(
+    study_id: str,
+    patient_id: int,
+    db: DbSession,
+    current_user: JourneyReader,
+) -> PatientJourneyRead:
+    try:
+        return PatientJourneyRead.model_validate(
+            ResearchAnalysisService(db).patient_journey(study_id, patient_id, current_user)
+        )
     except ResearchError as exc:
         raise _research_http_error(exc) from exc

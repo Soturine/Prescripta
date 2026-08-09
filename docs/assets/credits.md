@@ -1,5 +1,10 @@
 # Créditos de Assets
 
+## v0.9.0
+
+As duas capturas em `docs/assets/v0.9.0/` foram geradas da aplicação local com fixture exclusivamente
+sintética pelo script `scripts/capture-v090-research-assets.mjs`; não contêm dados de pacientes reais.
+
 ## v0.8.9
 
 As 10 capturas e o GIF em `docs/assets/current/` foram gerados sobre a aplicação v0.8.9 com banco

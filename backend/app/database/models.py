@@ -71,17 +71,13 @@ class PatientPsychologicalContextModel(Base):
     )
     institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     purpose: Mapped[str] = mapped_column(String(40), nullable=False)
-    medication_safety_factors: Mapped[list[str]] = mapped_column(
-        JSON, default=list, nullable=False
-    )
+    medication_safety_factors: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     confidential_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     consent_status: Mapped[str] = mapped_column(
         String(40), default="policy_required", nullable=False
     )
     policy_reference: Mapped[str | None] = mapped_column(String(160), nullable=True)
-    updated_by_user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), nullable=False
-    )
+    updated_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
@@ -287,9 +283,7 @@ class MedicationModel(Base):
     usual_dose_low: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
     usual_dose_high: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
     usual_dose_unit: Mapped[str] = mapped_column(String(40), default="mg", nullable=False)
-    usual_range_scope: Mapped[str] = mapped_column(
-        String(40), default="daily", nullable=False
-    )
+    usual_range_scope: Mapped[str] = mapped_column(String(40), default="daily", nullable=False)
     max_single_dose: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
     max_single_dose_unit: Mapped[str] = mapped_column(String(40), default="mg", nullable=False)
     max_per_procedure: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
@@ -342,12 +336,8 @@ class MedicationModel(Base):
     psychotropic_class: Mapped[str | None] = mapped_column(String(100), nullable=True)
     psychotropic_profile: Mapped[dict] = mapped_column(JSON, default=dict)
     max_duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    max_cumulative_dose_mg: Mapped[Decimal | None] = mapped_column(
-        Numeric(24, 12), nullable=True
-    )
-    max_cumulative_dose_unit: Mapped[str] = mapped_column(
-        String(40), default="mg", nullable=False
-    )
+    max_cumulative_dose_mg: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
+    max_cumulative_dose_unit: Mapped[str] = mapped_column(String(40), default="mg", nullable=False)
     continuous_use: Mapped[bool] = mapped_column(default=False, nullable=False)
     monitoring_required: Mapped[bool] = mapped_column(default=False, nullable=False)
     monitoring_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -612,9 +602,7 @@ class AIProviderRuntimeStateModel(Base):
 
     provider: Mapped[str] = mapped_column(String(40), primary_key=True)
     failure_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    degraded_until: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    degraded_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_error_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -712,17 +700,13 @@ class PatientAccessGrantModel(Base):
     purpose: Mapped[str] = mapped_column(
         String(40), default="treatment", nullable=False, index=True
     )
-    granted_by_user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id"), nullable=True
-    )
+    granted_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     starts_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    revoked_by_user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id"), nullable=True
-    )
+    revoked_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     revocation_reason: Mapped[str | None] = mapped_column(String(220), nullable=True)
     care_episode_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(30), default="active", nullable=False, index=True)
@@ -799,9 +783,7 @@ class BreakGlassAccessModel(Base):
         String(30), default="pending_review", nullable=False, index=True
     )
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    reviewed_by_user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id"), nullable=True
-    )
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     review_notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
     objects_accessed: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
     idempotency_key: Mapped[str] = mapped_column(String(160), nullable=False)
@@ -891,9 +873,7 @@ class DecisionOverrideModel(Base):
     requested_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
-    reviewed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 @event.listens_for(PrescriptionAuditModel, "before_update")
@@ -1218,9 +1198,7 @@ class InstitutionalClinicalProtocolVersionModel(Base):
         String(40), default="pending_review", nullable=False, index=True
     )
     effective_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    effective_until: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    effective_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     source_refs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     clinical_context: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     eligible_professions: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
@@ -1232,9 +1210,7 @@ class InstitutionalClinicalProtocolVersionModel(Base):
     override_policy: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     definition_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    reviewed_by_user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id"), nullable=True
-    )
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
@@ -1336,9 +1312,7 @@ class PharmacyInterventionModel(Base):
     idempotency_key: Mapped[str] = mapped_column(String(160), nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     cosignature_required: Mapped[bool] = mapped_column(default=False, nullable=False)
-    cosigned_by_user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id"), nullable=True
-    )
+    cosigned_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     cosigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     decision_actor_user_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id"), nullable=True
@@ -1670,6 +1644,7 @@ class OutcomeDefinitionModel(Base):
     definition_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     authored_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
@@ -1700,17 +1675,26 @@ class AnalysisPlanModel(Base):
     )
     institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     version: Mapped[int] = mapped_column(Integer, nullable=False)
+    cohort_run_id: Mapped[str | None] = mapped_column(ForeignKey("cohort_runs.id"), index=True)
     objectives: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    variables: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    steps: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
     descriptive_metrics: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     subgroup_definitions: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
     missing_data_approach: Mapped[str] = mapped_column(Text, nullable=False)
     methods: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     planned_outputs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    output_specification: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    source_refs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     limitations: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     definition_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(String(40), default="draft", nullable=False)
     authored_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
 
 
 class CohortRunModel(Base):
@@ -1774,6 +1758,51 @@ class ResearchSnapshotModel(Base):
     )
 
 
+class ResearchAnalysisRunModel(Base):
+    __tablename__ = "research_analysis_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    study_id: Mapped[str] = mapped_column(
+        ForeignKey("research_studies.id"), nullable=False, index=True
+    )
+    analysis_plan_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_plans.id"), nullable=False, index=True
+    )
+    cohort_run_id: Mapped[str] = mapped_column(
+        ForeignKey("cohort_runs.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    data_snapshot_marker: Mapped[str] = mapped_column(String(160), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    results: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    provenance: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    executed_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    executed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ResearchPackageModel(Base):
+    __tablename__ = "research_packages"
+    __table_args__ = (UniqueConstraint("analysis_run_id", "content_hash"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    study_id: Mapped[str] = mapped_column(
+        ForeignKey("research_studies.id"), nullable=False, index=True
+    )
+    analysis_run_id: Mapped[str] = mapped_column(
+        ForeignKey("research_analysis_runs.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    manifest: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    files: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    aggregate_only: Mapped[bool] = mapped_column(default=True, nullable=False)
+    exported_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
 class EvidenceSourceModel(Base):
     __tablename__ = "evidence_sources"
     __table_args__ = (UniqueConstraint("institution_id", "identifier"),)
@@ -1817,13 +1846,24 @@ class EvidenceLinkModel(Base):
     target_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     relationship: Mapped[str] = mapped_column(String(80), nullable=False)
     locator: Mapped[str] = mapped_column(String(220), default="", nullable=False)
-    review_status: Mapped[str] = mapped_column(
-        String(40), default="pending_review", nullable=False
-    )
+    review_status: Mapped[str] = mapped_column(String(40), default="pending_review", nullable=False)
     created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
+
+
+class DataQualityRunModel(Base):
+    __tablename__ = "data_quality_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    study_id: Mapped[str | None] = mapped_column(ForeignKey("research_studies.id"), index=True)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    summary: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    executed_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    executed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class DataQualityFindingModel(Base):
@@ -1833,6 +1873,7 @@ class DataQualityFindingModel(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    run_id: Mapped[str | None] = mapped_column(ForeignKey("data_quality_runs.id"), index=True)
     institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     rule: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     severity: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
@@ -1941,6 +1982,51 @@ def _immutable_reviewed_cohort_version(_mapper, _connection, target) -> None:
     )
 
 
+@event.listens_for(OutcomeDefinitionModel, "before_update")
+def _immutable_reviewed_outcome(_mapper, _connection, target) -> None:
+    state = inspect(target)
+    history = state.attrs.review_status.history
+    previous = history.deleted[0] if history.deleted else target.review_status
+    if previous in {"reviewed_demo", "rejected", "superseded"} and any(
+        state.attrs[field].history.has_changes()
+        for field in {
+            "name",
+            "domain",
+            "concept_set_version_ids",
+            "event_qualification",
+            "observation_window",
+            "temporal_relationship",
+            "source_refs",
+            "limitations",
+            "definition_hash",
+        }
+    ):
+        raise ValueError("Outcome revisado é imutável; crie uma nova versão.")
+
+
+@event.listens_for(AnalysisPlanModel, "before_update")
+def _immutable_reviewed_analysis_plan(_mapper, _connection, target) -> None:
+    _block_changes_after_review(
+        target,
+        {"reviewed_demo", "archived"},
+        {
+            "cohort_run_id",
+            "objectives",
+            "variables",
+            "steps",
+            "descriptive_metrics",
+            "subgroup_definitions",
+            "missing_data_approach",
+            "methods",
+            "planned_outputs",
+            "output_specification",
+            "source_refs",
+            "limitations",
+            "definition_hash",
+        },
+    )
+
+
 @event.listens_for(CohortRunModel, "before_update")
 def _immutable_cohort_run(_mapper, _connection, _target) -> None:
     raise ValueError("CohortRun é um snapshot imutável.")
@@ -1949,3 +2035,13 @@ def _immutable_cohort_run(_mapper, _connection, _target) -> None:
 @event.listens_for(ResearchSnapshotModel, "before_update")
 def _immutable_research_snapshot(_mapper, _connection, _target) -> None:
     raise ValueError("ResearchSnapshot é imutável.")
+
+
+@event.listens_for(ResearchAnalysisRunModel, "before_update")
+def _immutable_analysis_run(_mapper, _connection, _target) -> None:
+    raise ValueError("ResearchAnalysisRun é imutável.")
+
+
+@event.listens_for(ResearchPackageModel, "before_update")
+def _immutable_research_package(_mapper, _connection, _target) -> None:
+    raise ValueError("ResearchPackage é imutável.")

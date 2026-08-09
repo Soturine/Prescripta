@@ -11,11 +11,14 @@ from app.database.models import (
     CohortDefinitionVersionModel,
     ConceptSetVersionModel,
     DataQualityFindingModel,
+    DataQualityRunModel,
     PatientClinicalTimelineEventModel,
+    ResearchStudyModel,
     UserModel,
 )
 from app.domain.dose import parse_unit
 from app.services.audit_service import AuditService
+from app.services.canonical_json import canonical_sha256
 
 
 class DataQualityService:
@@ -24,14 +27,29 @@ class DataQualityService:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def run(self, actor: UserModel) -> dict:
+    def run(self, actor: UserModel, study_id: str | None = None) -> dict:
         now = datetime.now(UTC)
+        if study_id:
+            study = self.db.get(ResearchStudyModel, study_id)
+            if study is None or study.institution_id != actor.institution_id:
+                raise ValueError("Estudo não encontrado no escopo institucional.")
+        run = DataQualityRunModel(
+            institution_id=actor.institution_id,
+            study_id=study_id,
+            status="running",
+            summary={},
+            content_hash=canonical_sha256({"status": "running"}),
+            executed_by_user_id=actor.id,
+            executed_at=now,
+        )
+        self.db.add(run)
+        self.db.flush()
         candidates: list[dict] = []
         events = list(
             self.db.scalars(
-                select(PatientClinicalTimelineEventModel).where(
-                    PatientClinicalTimelineEventModel.institution_id == actor.institution_id
-                ).order_by(
+                select(PatientClinicalTimelineEventModel)
+                .where(PatientClinicalTimelineEventModel.institution_id == actor.institution_id)
+                .order_by(
                     PatientClinicalTimelineEventModel.patient_id,
                     PatientClinicalTimelineEventModel.event_date,
                     PatientClinicalTimelineEventModel.created_at,
@@ -123,12 +141,9 @@ class DataQualityService:
                 select(CohortCriterionModel)
                 .join(
                     CohortDefinitionVersionModel,
-                    CohortCriterionModel.cohort_version_id
-                    == CohortDefinitionVersionModel.id,
+                    CohortCriterionModel.cohort_version_id == CohortDefinitionVersionModel.id,
                 )
-                .where(
-                    CohortDefinitionVersionModel.institution_id == actor.institution_id
-                )
+                .where(CohortDefinitionVersionModel.institution_id == actor.institution_id)
             )
         )
         for criterion in criteria:
@@ -168,6 +183,7 @@ class DataQualityService:
             if existing is None:
                 self.db.add(
                     DataQualityFindingModel(
+                        run_id=run.id,
                         institution_id=actor.institution_id,
                         detected_at=now,
                         status="open",
@@ -178,6 +194,39 @@ class DataQualityService:
         self.db.flush()
         open_findings = self.list(actor, status="open", limit=10_000)
         by_rule = Counter(item.rule for item in open_findings)
+        by_severity = Counter(item.severity for item in open_findings)
+        summary = {
+            "findings_created": created,
+            "findings_open": len(open_findings),
+            "by_rule": dict(by_rule),
+            "by_severity": dict(by_severity),
+            "dimensions": {
+                "completeness": by_rule.get("orphan_concept", 0),
+                "validity": sum(
+                    by_rule[name]
+                    for name in (
+                        "impossible_future_date",
+                        "end_before_start",
+                        "non_positive_quantity",
+                        "unknown_unit",
+                    )
+                ),
+                "consistency": by_rule.get("medication_end_before_start", 0),
+                "conformance": by_rule.get("criterion_without_concept_version", 0),
+            },
+            "analysis_blocked": bool(by_severity.get("critical")),
+        }
+        run.status = "completed"
+        run.summary = summary
+        run.content_hash = canonical_sha256(
+            {
+                "institution_id": actor.institution_id,
+                "study_id": study_id,
+                "summary": summary,
+                "ruleset": "prescripta-data-quality-v2",
+            }
+        )
+        self.db.flush()
         AuditService(self.db).record_action(
             user=actor,
             action="data_quality.run",
@@ -187,10 +236,39 @@ class DataQualityService:
             details={"findings_created": created, "findings_open": len(open_findings)},
         )
         return {
-            "findings_created": created,
-            "findings_open": len(open_findings),
-            "by_rule": dict(by_rule),
+            "id": run.id,
+            "institution_id": run.institution_id,
+            "study_id": run.study_id,
+            "status": run.status,
+            "summary": summary,
+            "content_hash": run.content_hash,
+            "executed_by_user_id": run.executed_by_user_id,
+            "executed_at": run.executed_at,
+            **{key: summary[key] for key in ("findings_created", "findings_open", "by_rule")},
         }
+
+    def acknowledge(
+        self, finding_id: str, resolution: str, actor: UserModel
+    ) -> DataQualityFindingModel:
+        finding = self.db.get(DataQualityFindingModel, finding_id)
+        if finding is None or finding.institution_id != actor.institution_id:
+            raise ValueError("Finding não encontrado no escopo institucional.")
+        if finding.status != "open":
+            raise ValueError("Finding já foi tratado.")
+        finding.status = "acknowledged"
+        finding.resolution = resolution
+        finding.resolved_by_user_id = actor.id
+        finding.resolved_at = datetime.now(UTC)
+        self.db.flush()
+        AuditService(self.db).record_action(
+            user=actor,
+            action="data_quality.acknowledge",
+            resource_type="data_quality_finding",
+            resource_id=finding.id,
+            status=finding.status,
+            details={"rule": finding.rule, "resolution": resolution},
+        )
+        return finding
 
     def list(
         self,
@@ -224,7 +302,7 @@ class DataQualityService:
             "resource_id": str(resource_id),
             "field": field,
             "message": message,
-            "source": "prescripta-data-quality-v1",
+            "source": "prescripta-data-quality-v2",
         }
 
     @staticmethod

@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.0] - 2026-08-09
+
+### Research & RWE MVP
+
+- Study Workspace em cinco áreas com prontidão em oito etapas, protocolo e outcomes versionados,
+  revisão humana independente e detalhes técnicos progressivos;
+- Cohort DSL v2 declarativa, compatível com v1, com grupos `all`/`any`, profundidade e custo
+  limitados, temporalidade, builder visual acessível, prévia agregada e attrition;
+- Data Quality ganha runs persistidos, dimensões, acknowledgement auditado e bloqueio de análise
+  apenas para finding crítico aberto;
+- Analysis Plan e Research Analysis Run executam somente métodos descritivos allowlisted, com
+  Table 1, missingness, prevalência com denominador/janela e hashes estáveis;
+- Patient Journey falha fechado fora de fixture sintética e Research Package exporta somente
+  arquivos lógicos agregados com manifesto e hashes por arquivo;
+- Research Copilot v1 permanece proposal-only, estruturado e revisável; aceitação cria draft nunca
+  revisado e não existe tradução de linguagem natural para SQL.
+
 ## [0.8.9] - 2026-08-09
 
 ### Qualidade e supply chain

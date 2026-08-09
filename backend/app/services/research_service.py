@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.version import APP_VERSION
 from app.database.models import (
+    AnalysisPlanModel,
     CohortCriterionModel,
     CohortDefinitionModel,
     CohortDefinitionVersionModel,
@@ -18,7 +19,10 @@ from app.database.models import (
     ConceptSetModel,
     ConceptSetVersionModel,
     DataQualityFindingModel,
+    DataQualityRunModel,
     OutcomeDefinitionModel,
+    ResearchAnalysisRunModel,
+    ResearchPackageModel,
     ResearchSnapshotModel,
     ResearchStudyModel,
     StudyProtocolVersionModel,
@@ -31,6 +35,7 @@ from app.schemas.research_schema import (
     ConceptSetCreate,
     ConceptSetReviewRequest,
     OutcomeDefinitionCreate,
+    OutcomeReviewRequest,
     ResearchReviewRequest,
     ResearchStudyCreate,
     StudyProtocolVersionCreate,
@@ -311,9 +316,9 @@ class ResearchService:
     ) -> CohortDefinitionVersionModel:
         study = self.study(study_id, actor)
         try:
-            normalized, criteria, cost = CohortDSLValidator(
-                self.db, actor.institution_id
-            ).validate(payload.definition)
+            normalized, criteria, cost = CohortDSLValidator(self.db, actor.institution_id).validate(
+                payload.definition
+            )
         except CohortDSLValidationError as exc:
             raise ResearchError(f"cohort-invalid: {exc}") from exc
         cohort = self.db.scalar(
@@ -409,15 +414,18 @@ class ResearchService:
         for version_id in payload.concept_set_version_ids:
             self._concept_version(version_id, actor)
         definition = payload.model_dump(mode="json")
-        version_number = int(
-            self.db.scalar(
-                select(func.max(OutcomeDefinitionModel.version)).where(
-                    OutcomeDefinitionModel.study_id == study.id,
-                    OutcomeDefinitionModel.name == payload.name,
+        version_number = (
+            int(
+                self.db.scalar(
+                    select(func.max(OutcomeDefinitionModel.version)).where(
+                        OutcomeDefinitionModel.study_id == study.id,
+                        OutcomeDefinitionModel.name == payload.name,
+                    )
                 )
+                or 0
             )
-            or 0
-        ) + 1
+            + 1
+        )
         outcome = OutcomeDefinitionModel(
             study_id=study.id,
             institution_id=study.institution_id,
@@ -436,6 +444,33 @@ class ResearchService:
             outcome.id,
             "pending_review",
             {"study_id": study.id, "definition_hash": outcome.definition_hash},
+        )
+        return outcome
+
+    def review_outcome(
+        self,
+        outcome_id: str,
+        payload: OutcomeReviewRequest,
+        actor: UserModel,
+    ) -> OutcomeDefinitionModel:
+        outcome = self.db.get(OutcomeDefinitionModel, outcome_id)
+        if outcome is None or outcome.institution_id != actor.institution_id:
+            raise ResearchNotFound("Outcome não encontrado.")
+        if outcome.authored_by_user_id == actor.id:
+            raise ResearchError("A revisão do outcome deve ser independente do autor.")
+        if outcome.review_status != "pending_review":
+            raise ResearchConflict("O outcome já foi revisado.")
+        outcome.review_status = payload.decision
+        outcome.reviewed_by_user_id = actor.id
+        outcome.reviewed_at = datetime.now(UTC)
+        self.db.flush()
+        self._audit(
+            actor,
+            "outcome.review",
+            "outcome_definition",
+            outcome.id,
+            outcome.review_status,
+            {"note": payload.note},
         )
         return outcome
 
@@ -512,9 +547,7 @@ class ResearchService:
             engine_version=ENGINE_VERSION,
             prescripta_version=APP_VERSION,
             status="completed_demo",
-            warnings=[
-                "Dados sintéticos/demonstrativos; não usar para inferência clínica."
-            ],
+            warnings=["Dados sintéticos/demonstrativos; não usar para inferência clínica."],
             run_hash=canonical_sha256(run_basis),
         )
         self.db.add(run)
@@ -589,9 +622,7 @@ class ResearchService:
     def run_snapshot(self, run_id: str, actor: UserModel) -> ResearchSnapshotModel:
         run = self.run(run_id, actor)
         snapshot = self.db.scalar(
-            select(ResearchSnapshotModel).where(
-                ResearchSnapshotModel.cohort_run_id == run.id
-            )
+            select(ResearchSnapshotModel).where(ResearchSnapshotModel.cohort_run_id == run.id)
         )
         if snapshot is None:
             raise ResearchNotFound("Snapshot de execução não encontrado.")
@@ -643,12 +674,46 @@ class ResearchService:
             )
         )
         runs = self.list_runs(actor, study.id, limit=100)
+        analysis_plans = list(
+            self.db.scalars(
+                select(AnalysisPlanModel)
+                .where(
+                    AnalysisPlanModel.study_id == study.id,
+                    AnalysisPlanModel.institution_id == actor.institution_id,
+                )
+                .order_by(AnalysisPlanModel.version.desc())
+            )
+        )
+        analysis_runs = list(
+            self.db.scalars(
+                select(ResearchAnalysisRunModel)
+                .where(
+                    ResearchAnalysisRunModel.study_id == study.id,
+                    ResearchAnalysisRunModel.institution_id == actor.institution_id,
+                )
+                .order_by(ResearchAnalysisRunModel.executed_at.desc())
+            )
+        )
+        packages = list(
+            self.db.scalars(
+                select(ResearchPackageModel)
+                .where(
+                    ResearchPackageModel.study_id == study.id,
+                    ResearchPackageModel.institution_id == actor.institution_id,
+                )
+                .order_by(ResearchPackageModel.created_at.desc())
+            )
+        )
+        latest_dq = self.db.scalar(
+            select(DataQualityRunModel)
+            .where(DataQualityRunModel.institution_id == actor.institution_id)
+            .order_by(DataQualityRunModel.executed_at.desc())
+        )
         concept_versions = sorted(
             {
                 str(item.get("concept_set_version_id"))
                 for cohort in cohorts
-                for group in ("all", "exclude")
-                for item in (cohort.definition or {}).get(group, [])
+                for item in self._definition_criteria(cohort.definition or {})
                 if item.get("concept_set_version_id")
             }
             | {
@@ -657,6 +722,28 @@ class ResearchService:
                 for version_id in outcome.concept_set_version_ids or []
             }
         )
+        readiness = [
+            {"step": "question", "ready": bool(study.research_question)},
+            {
+                "step": "protocol",
+                "ready": any(item.status == "reviewed_demo" for item in protocols),
+            },
+            {"step": "cohort", "ready": any(item.status == "reviewed_demo" for item in cohorts)},
+            {
+                "step": "outcome",
+                "ready": any(item.review_status == "reviewed_demo" for item in outcomes),
+            },
+            {
+                "step": "data_quality",
+                "ready": latest_dq is not None and not latest_dq.summary.get("analysis_blocked"),
+            },
+            {
+                "step": "analysis_plan",
+                "ready": any(item.status == "reviewed_demo" for item in analysis_plans),
+            },
+            {"step": "results", "ready": bool(analysis_runs)},
+            {"step": "evidence_package", "ready": bool(packages)},
+        ]
         return {
             "study": study,
             "protocol_versions": protocols,
@@ -664,16 +751,37 @@ class ResearchService:
             "outcomes": outcomes,
             "runs": runs,
             "concept_set_version_ids": concept_versions,
+            "analysis_plans": analysis_plans,
+            "analysis_runs": analysis_runs,
+            "data_quality": latest_dq.summary if latest_dq else {"status": "not_run"},
+            "readiness": readiness,
+            "research_packages": packages,
         }
 
     def _cohort_concept_source_refs(self, definition: dict, actor: UserModel) -> list[str]:
         sources: list[str] = []
-        for group in ("all", "exclude"):
-            for criterion in definition.get(group, []):
-                version_id = criterion.get("concept_set_version_id")
-                if version_id:
-                    sources.extend(self._concept_version(version_id, actor).source_refs or [])
+        for criterion in self._definition_criteria(definition):
+            version_id = criterion.get("concept_set_version_id")
+            if version_id:
+                sources.extend(self._concept_version(version_id, actor).source_refs or [])
         return sources
+
+    @staticmethod
+    def _definition_criteria(definition: dict) -> list[dict]:
+        if "schema_version" not in definition:
+            return [item for group in ("all", "exclude") for item in definition.get(group, [])]
+        found: list[dict] = []
+
+        def visit(node: dict) -> None:
+            if "items" in node:
+                for child in node.get("items", []):
+                    visit(child)
+            elif "criterion" in node:
+                found.append(node)
+
+        visit(definition.get("inclusion", {}))
+        visit(definition.get("exclusion", {}))
+        return found
 
     def _protocol(self, version_id: str | None, actor: UserModel) -> StudyProtocolVersionModel:
         version = self.db.get(StudyProtocolVersionModel, version_id) if version_id else None
@@ -687,21 +795,20 @@ class ResearchService:
             raise ResearchNotFound("Concept set/version não encontrado.")
         return version
 
-    def _cohort_version(
-        self, version_id: str, actor: UserModel
-    ) -> CohortDefinitionVersionModel:
+    def _cohort_version(self, version_id: str, actor: UserModel) -> CohortDefinitionVersionModel:
         version = self.db.get(CohortDefinitionVersionModel, version_id)
         if version is None or version.institution_id != actor.institution_id:
             raise ResearchNotFound("Versão de coorte não encontrada.")
         return version
 
     def _next_version(self, model, key: str, value: str) -> int:
-        return int(
-            self.db.scalar(
-                select(func.max(model.version)).where(getattr(model, key) == value)
+        return (
+            int(
+                self.db.scalar(select(func.max(model.version)).where(getattr(model, key) == value))
+                or 0
             )
-            or 0
-        ) + 1
+            + 1
+        )
 
     def _count(self, model, institution_id: str) -> int:
         return int(
@@ -737,8 +844,6 @@ class ResearchService:
 def criterion_counts(definition: dict) -> dict[str, int]:
     return dict(
         Counter(
-            item["criterion"]
-            for group in ("all", "exclude")
-            for item in definition.get(group, [])
+            item["criterion"] for group in ("all", "exclude") for item in definition.get(group, [])
         )
     )

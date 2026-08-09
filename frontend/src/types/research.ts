@@ -105,19 +105,50 @@ export type CohortVersion = {
 };
 
 export type CohortCriterion = {
-  criterion: "age" | "sex" | "medication_exposure" | "condition" | "measurement_exists" | "procedure" | "date" | "demographic";
+  id?: string;
+  criterion:
+    | "age"
+    | "sex"
+    | "drug_exposure"
+    | "medication_exposure"
+    | "condition"
+    | "measurement"
+    | "measurement_exists"
+    | "procedure"
+    | "visit"
+    | "medication_concurrency"
+    | "date_window"
+    | "date"
+    | "demographic";
   operator: string;
   value?: string | number | string[] | number[] | null;
   field?: string | null;
   concept_set_version_id?: string | null;
   window?: { before_index_days?: number; after_index_days?: number };
+  temporal_relationship?:
+    "before_index" | "after_index" | "on_index" | "during_window" | null;
   label?: string;
 };
 
-export type CohortDefinition = {
+export type CohortGroup = {
+  id?: string;
+  operator: "all" | "any";
+  items: Array<CohortCriterion | CohortGroup>;
+  label?: string;
+};
+
+export type CohortDefinitionV1 = {
   all: CohortCriterion[];
   exclude: CohortCriterion[];
 };
+
+export type CohortDefinitionV2 = {
+  schema_version: "2";
+  inclusion: CohortGroup;
+  exclusion: CohortGroup;
+};
+
+export type CohortDefinition = CohortDefinitionV1 | CohortDefinitionV2;
 
 export type OutcomeDefinition = {
   id: string;
@@ -136,6 +167,7 @@ export type OutcomeDefinition = {
   definition_hash: string;
   authored_by_user_id: number;
   reviewed_by_user_id: number | null;
+  reviewed_at: string | null;
   created_at: string;
 };
 
@@ -187,10 +219,16 @@ export type StudyWorkspace = {
   outcomes: OutcomeDefinition[];
   runs: CohortRun[];
   concept_set_version_ids: string[];
+  analysis_plans: AnalysisPlan[];
+  analysis_runs: AnalysisRun[];
+  data_quality: Record<string, unknown>;
+  readiness: Array<{ step: string; ready: boolean }>;
+  research_packages: ResearchPackage[];
 };
 
 export type DataQualityFinding = {
   id: string;
+  run_id: string | null;
   institution_id: string;
   rule: string;
   severity: string;
@@ -202,6 +240,97 @@ export type DataQualityFinding = {
   detected_at: string;
   status: string;
   resolution: string | null;
+};
+
+export type AnalysisPlan = {
+  id: string;
+  study_id: string;
+  institution_id: string;
+  version: number;
+  cohort_run_id: string | null;
+  objectives: string[];
+  variables: Array<Record<string, unknown>>;
+  steps: Array<Record<string, unknown>>;
+  descriptive_metrics: string[];
+  subgroup_definitions: Array<Record<string, unknown>>;
+  missing_data_approach: string;
+  methods: string[];
+  planned_outputs: string[];
+  output_specification: Record<string, unknown>;
+  source_refs: string[];
+  limitations: string[];
+  definition_hash: string;
+  status: string;
+  authored_by_user_id: number;
+  reviewed_by_user_id: number | null;
+  reviewed_at: string | null;
+  created_at: string;
+};
+
+export type AnalysisPlanPayload = Omit<
+  AnalysisPlan,
+  | "id"
+  | "study_id"
+  | "institution_id"
+  | "version"
+  | "definition_hash"
+  | "status"
+  | "authored_by_user_id"
+  | "reviewed_by_user_id"
+  | "reviewed_at"
+  | "created_at"
+> & { cohort_run_id: string };
+
+export type AnalysisRun = {
+  id: string;
+  study_id: string;
+  analysis_plan_id: string;
+  cohort_run_id: string;
+  institution_id: string;
+  data_snapshot_marker: string;
+  status: string;
+  results: Record<string, unknown>;
+  provenance: Record<string, unknown>;
+  content_hash: string;
+  executed_by_user_id: number;
+  executed_at: string;
+};
+
+export type ResearchPackage = {
+  id: string;
+  study_id: string;
+  analysis_run_id: string;
+  institution_id: string;
+  manifest: Record<string, unknown>;
+  files: Record<string, unknown>;
+  content_hash: string;
+  aggregate_only: boolean;
+  exported_by_user_id: number;
+  created_at: string;
+};
+
+export type DataQualityRun = {
+  id: string;
+  institution_id: string;
+  study_id: string | null;
+  status: string;
+  summary: Record<string, unknown>;
+  content_hash: string;
+  executed_by_user_id: number;
+  executed_at: string;
+  findings_created: number;
+  findings_open: number;
+  by_rule: Record<string, number>;
+};
+
+export type PatientJourney = {
+  study_id: string;
+  patient_ref: string;
+  events: Array<Record<string, unknown>>;
+  event_count: number;
+  aggregate_only: boolean;
+  synthetic_only: boolean;
+  warning: string;
 };
 
 export type AIInteraction = {

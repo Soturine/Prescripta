@@ -1,46 +1,60 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Beaker,
   Bot,
   CheckCircle2,
-  Database,
-  FlaskConical,
-  GitBranch,
+  Download,
+  FileBarChart,
   Play,
   Plus,
-  ShieldAlert,
+  X,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import LoadingState from "../components/LoadingState";
 import PageHeader from "../components/PageHeader";
-import AttritionFlow from "../components/research/AttritionFlow";
+import CohortBuilder, {
+  initialCohortDefinition,
+} from "../components/research/CohortBuilder";
+import PopulationAnalytics from "../components/research/PopulationAnalytics";
 import Badge from "../components/ui/Badge";
 import StatusPanel from "../components/ui/StatusPanel";
 import Tabs from "../components/ui/Tabs";
 import { useAuth } from "../context/AuthContext";
 import {
+  acknowledgeDataQualityFinding,
+  createAnalysisPlan,
   createCohortVersion,
-  createConceptSet,
   createOutcomeDefinition,
   createResearchStudy,
   createStudyProtocolVersion,
   executeAITask,
+  executeAnalysisPlan,
   executeCohortVersion,
+  exportResearchPackage,
   fetchConceptSets,
   fetchDataQualityFindings,
+  fetchPatientJourney,
   fetchResearchStudies,
   fetchResearchWorkspace,
   fetchStudyWorkspace,
+  reviewAnalysisPlan,
   reviewCohortVersion,
-  reviewConceptSetVersion,
+  reviewOutcomeDefinition,
   reviewStudyProtocolVersion,
   runDataQuality,
 } from "../services/api";
-import type { CohortDefinition, ResearchStudyPayload } from "../types/research";
-import { formatDateTime, formatStatus, humanizeTechnicalValue } from "../utils/formatters";
+import type {
+  AnalysisPlanPayload,
+  CohortDefinitionV2,
+  ResearchStudyPayload,
+  StudyWorkspace,
+} from "../types/research";
+import {
+  formatDateTime,
+  formatStatus,
+  humanizeTechnicalValue,
+} from "../utils/formatters";
 
 const emptyStudy: ResearchStudyPayload = {
   title: "",
@@ -52,258 +66,1271 @@ const emptyStudy: ResearchStudyPayload = {
   data_source_classification: "synthetic",
 };
 
-export default function Research() {
-  const queryClient = useQueryClient();
-  const { can, user } = useAuth();
-  const { t } = useTranslation();
-  const tabs = useMemo(() => [
-    { id: "overview", label: t("research.tabs.overview") },
-    { id: "protocol", label: t("research.tabs.protocol") },
-    { id: "cohort", label: t("research.tabs.cohort") },
-    { id: "concepts", label: t("research.tabs.concepts") },
-    { id: "outcomes", label: t("research.tabs.outcomes") },
-    { id: "runs", label: t("research.tabs.runs") },
-    { id: "provenance", label: t("research.tabs.provenance") },
-  ], [t]);
-  const [selectedStudyId, setSelectedStudyId] = useState("");
-  const [tab, setTab] = useState("overview");
-  const [studyForm, setStudyForm] = useState(emptyStudy);
-  const [conceptForm, setConceptForm] = useState({ name: "", code: "", label: "", source: "" });
-  const [cohortName, setCohortName] = useState("Coorte adulta demonstrativa");
-  const [minimumAge, setMinimumAge] = useState(18);
-  const [selectedConceptVersion, setSelectedConceptVersion] = useState("");
-  const [snapshotMarker, setSnapshotMarker] = useState("synthetic-demo-v088");
-  const [copilotResult, setCopilotResult] = useState<Record<string, unknown> | null>(null);
+const defaultProtocol = {
+  population: "",
+  exposure: "",
+  comparator: "",
+  outcome: "",
+  indexDate: "data_snapshot_marker",
+  washoutDays: 0,
+  followUpDays: 90,
+  censoring: "none_demo",
+  missingData: "report_missingness",
+  limitations: "Synthetic data without external validity.",
+  sourceRef: "synthetic-dataset:prescripta:v090",
+};
 
-  const workspaceQuery = useQuery({ queryKey: ["research-workspace"], queryFn: fetchResearchWorkspace });
-  const studiesQuery = useQuery({ queryKey: ["research-studies"], queryFn: fetchResearchStudies });
-  const conceptsQuery = useQuery({ queryKey: ["research-concept-sets"], queryFn: fetchConceptSets });
-  const dqQuery = useQuery({ queryKey: ["data-quality-findings"], queryFn: fetchDataQualityFindings, enabled: can("data_quality.read") });
-  const studyWorkspaceQuery = useQuery({
+export default function Research() {
+  const { t } = useTranslation();
+  const { can, user } = useAuth();
+  const queryClient = useQueryClient();
+  const [selectedStudyId, setSelectedStudyId] = useState("");
+  const [tab, setTab] = useState("design");
+  const [showCreateStudy, setShowCreateStudy] = useState(false);
+  const [studyForm, setStudyForm] = useState(emptyStudy);
+  const [protocol, setProtocol] = useState(defaultProtocol);
+  const [cohortName, setCohortName] = useState("Synthetic adult cohort");
+  const [cohort, setCohort] = useState<CohortDefinitionV2>(
+    initialCohortDefinition(),
+  );
+  const [snapshot, setSnapshot] = useState("synthetic-demo-v090");
+  const [journeyPatientId, setJourneyPatientId] = useState(1);
+  const [copilotTask, setCopilotTask] = useState(
+    "research_question_structuring",
+  );
+  const [copilotResult, setCopilotResult] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
+
+  const workspaceQuery = useQuery({
+    queryKey: ["research-workspace"],
+    queryFn: fetchResearchWorkspace,
+  });
+  const studiesQuery = useQuery({
+    queryKey: ["research-studies"],
+    queryFn: fetchResearchStudies,
+  });
+  const conceptsQuery = useQuery({
+    queryKey: ["research-concept-sets"],
+    queryFn: fetchConceptSets,
+  });
+  const dqQuery = useQuery({
+    queryKey: ["data-quality-findings"],
+    queryFn: fetchDataQualityFindings,
+    enabled: can("data_quality.read"),
+  });
+  const studyQuery = useQuery({
     queryKey: ["study-workspace", selectedStudyId],
     queryFn: () => fetchStudyWorkspace(selectedStudyId),
     enabled: Boolean(selectedStudyId),
   });
+  const journeyQuery = useQuery({
+    queryKey: ["research-journey", selectedStudyId, journeyPatientId],
+    queryFn: () => fetchPatientJourney(selectedStudyId, journeyPatientId),
+    enabled: false,
+    retry: false,
+  });
 
   useEffect(() => {
-    if (!selectedStudyId && studiesQuery.data?.length) setSelectedStudyId(studiesQuery.data[0].id);
+    if (!selectedStudyId && studiesQuery.data?.length) {
+      setSelectedStudyId(studiesQuery.data[0].id);
+    }
   }, [selectedStudyId, studiesQuery.data]);
 
-  async function refreshResearch() {
+  async function refresh() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["research-workspace"] }),
       queryClient.invalidateQueries({ queryKey: ["research-studies"] }),
-      queryClient.invalidateQueries({ queryKey: ["research-concept-sets"] }),
       queryClient.invalidateQueries({ queryKey: ["study-workspace"] }),
+      queryClient.invalidateQueries({ queryKey: ["data-quality-findings"] }),
     ]);
   }
 
+  const mutation = useMutation({
+    mutationFn: async (action: () => Promise<unknown>) => action(),
+    onSuccess: refresh,
+  });
   const createStudyMutation = useMutation({
     mutationFn: createResearchStudy,
     onSuccess: async (study) => {
-      setStudyForm(emptyStudy);
       setSelectedStudyId(study.id);
-      await refreshResearch();
+      setShowCreateStudy(false);
+      setStudyForm(emptyStudy);
+      await refresh();
     },
-  });
-  const createConceptMutation = useMutation({
-    mutationFn: () => createConceptSet({
-      name: conceptForm.name,
-      domain: "condition",
-      terminology_versions: { "CID-10": "2026-demo" },
-      include_descendants: false,
-      source_refs: [conceptForm.source],
-      license_metadata: { fixture: true, redistribution: "synthetic-only" },
-      provenance: { origin: "manual-demo", demo_only: true },
-      members: [{ terminology_system: "CID-10", terminology_version: "2026-demo", concept_code: conceptForm.code, label: conceptForm.label, excluded: false }],
-    }),
-    onSuccess: async (concept) => {
-      setSelectedConceptVersion(concept.version?.id ?? "");
-      setConceptForm({ name: "", code: "", label: "", source: "" });
-      await refreshResearch();
-    },
-  });
-  const protocolMutation = useMutation({
-    mutationFn: () => createStudyProtocolVersion(selectedStudyId, {
-      population: { description: "População sintética definida no study workspace" },
-      exposure: { description: "Exposição demonstrativa" },
-      comparator: { description: "Sem comparação causal nesta release" },
-      outcome: { description: "Outcome versionado no workspace" },
-      index_date: { event: "data_snapshot_marker" },
-      washout: { days: 0 },
-      follow_up: { days: 90 },
-      censoring: { strategy: "none_demo" },
-      inclusion: [{ criterion: `age_gte_${minimumAge}` }],
-      exclusion: [],
-      covariates: [],
-      missing_data_strategy: { strategy: "report_missingness" },
-      statistical_plan: { methods: ["descriptive_only"] },
-      limitations: ["Dados sintéticos sem validade externa."],
-      source_refs: ["synthetic-dataset:v088"],
-    }),
-    onSuccess: refreshResearch,
-  });
-  const cohortDefinition = useMemo<CohortDefinition>(() => ({
-    all: [
-      { criterion: "age", operator: "gte", value: minimumAge, label: `Idade ≥ ${minimumAge}` },
-      ...(selectedConceptVersion ? [{ criterion: "condition" as const, operator: "exists", concept_set_version_id: selectedConceptVersion, label: "Condição no concept set revisado" }] : []),
-    ],
-    exclude: [],
-  }), [minimumAge, selectedConceptVersion]);
-  const cohortMutation = useMutation({
-    mutationFn: () => createCohortVersion(selectedStudyId, cohortName, cohortDefinition),
-    onSuccess: refreshResearch,
-  });
-  const outcomeMutation = useMutation({
-    mutationFn: () => createOutcomeDefinition(selectedStudyId, {
-      name: "Outcome demonstrativo em 90 dias",
-      domain: "condition",
-      concept_set_version_ids: selectedConceptVersion ? [selectedConceptVersion] : [],
-      event_qualification: { minimum_events: 1 },
-      observation_window: { after_index_days: 90 },
-      temporal_relationship: "after_index",
-      source_refs: ["synthetic-dataset:v088"],
-      limitations: ["Definição demonstrativa pendente de validação externa."],
-    }),
-    onSuccess: refreshResearch,
-  });
-  const runMutation = useMutation({
-    mutationFn: (versionId: string) => executeCohortVersion(versionId, snapshotMarker),
-    onSuccess: refreshResearch,
-  });
-  const dqMutation = useMutation({
-    mutationFn: runDataQuality,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["data-quality-findings"] });
-      await queryClient.invalidateQueries({ queryKey: ["research-workspace"] });
-    },
-  });
-  const copilotMutation = useMutation({
-    mutationFn: () => executeAITask({
-      task_type: "research_question_structuring",
-      data_classification: "synthetic",
-      study_id: selectedStudyId,
-      source_ids: [],
-      preferred_provider: "fallback",
-      allowed_providers: ["fallback"],
-      purpose: "research_protocol_draft",
-      input: { question: studyWorkspaceQuery.data?.study.research_question },
-    }),
-    onSuccess: (interaction) => setCopilotResult(interaction.output_payload),
   });
 
-  if (workspaceQuery.isLoading || studiesQuery.isLoading) return <LoadingState label={t("research.loading")} />;
-  if (workspaceQuery.isError || studiesQuery.isError || !workspaceQuery.data) {
-    return <StatusPanel title={t("research.errorTitle")} tone="danger">{t("research.errorBody")}</StatusPanel>;
+  const studyWorkspace = studyQuery.data;
+  const currentRun = studyWorkspace?.runs[0];
+  const currentAnalysisRun = studyWorkspace?.analysis_runs[0];
+  const reviewedConcepts = (conceptsQuery.data ?? [])
+    .filter((item) =>
+      ["human_reviewed", "approved_for_demo_study"].includes(
+        item.version?.status ?? "",
+      ),
+    )
+    .map((item) => ({ id: item.version?.id ?? "", label: item.name }))
+    .filter((item) => item.id);
+  const tabs = useMemo(
+    () => [
+      { id: "design", label: t("research.tabs.design") },
+      { id: "cohort", label: t("research.tabs.cohort") },
+      { id: "analysis", label: t("research.tabs.analysis") },
+      { id: "results", label: t("research.tabs.results") },
+      { id: "evidence", label: t("research.tabs.evidence") },
+    ],
+    [t],
+  );
+
+  function createProtocol() {
+    if (!selectedStudyId) return;
+    mutation.mutate(() =>
+      createStudyProtocolVersion(selectedStudyId, {
+        population: { description: protocol.population },
+        exposure: { description: protocol.exposure },
+        comparator: { description: protocol.comparator },
+        outcome: { description: protocol.outcome },
+        index_date: { event: protocol.indexDate },
+        washout: { days: protocol.washoutDays },
+        follow_up: { days: protocol.followUpDays },
+        censoring: { strategy: protocol.censoring },
+        inclusion: [{ criterion: "visual_cohort_definition" }],
+        exclusion: [],
+        covariates: [],
+        missing_data_strategy: { strategy: protocol.missingData },
+        statistical_plan: { methods: ["descriptive_only"] },
+        limitations: [protocol.limitations],
+        source_refs: [protocol.sourceRef],
+      }),
+    );
   }
-  const studyWorkspace = studyWorkspaceQuery.data;
-  const selectedConcept = conceptsQuery.data?.find((item) => item.version?.id === selectedConceptVersion);
-  const metrics: Array<{ label: string; value: number; Icon: LucideIcon }> = [
-    { label: t("research.studies"), value: workspaceQuery.data.studies, Icon: FlaskConical },
-    { label: t("research.conceptSets"), value: workspaceQuery.data.concept_sets, Icon: Database },
-    { label: t("research.cohortRuns"), value: workspaceQuery.data.cohort_runs, Icon: GitBranch },
-    {
-      label: t("research.openDQ"),
-      value: workspaceQuery.data.open_data_quality_findings,
-      Icon: ShieldAlert,
-    },
-  ];
+
+  function createOutcome() {
+    if (!selectedStudyId) return;
+    mutation.mutate(() =>
+      createOutcomeDefinition(selectedStudyId, {
+        name: t("research.defaultOutcomeName"),
+        domain: "event",
+        concept_set_version_ids: [],
+        event_qualification: { minimum_events: 1 },
+        observation_window: { after_index_days: protocol.followUpDays },
+        temporal_relationship: "after_index",
+        source_refs: [protocol.sourceRef],
+        limitations: [protocol.limitations],
+      }),
+    );
+  }
+
+  function createPlan() {
+    if (!selectedStudyId || !currentRun) return;
+    const payload: AnalysisPlanPayload = {
+      cohort_run_id: currentRun.id,
+      objectives: [
+        studyWorkspace?.study.objective ?? t("research.descriptiveObjective"),
+      ],
+      variables: [
+        { name: "age_years", type: "numeric" },
+        { name: "sex", type: "categorical" },
+      ],
+      steps: [
+        { method: "population_count" },
+        { method: "baseline_table_1" },
+        { method: "prevalence" },
+      ],
+      descriptive_metrics: [
+        "n",
+        "missing",
+        "mean",
+        "sd",
+        "median",
+        "q1",
+        "q3",
+        "iqr",
+        "min",
+        "max",
+      ],
+      subgroup_definitions: [],
+      missing_data_approach: "report_only",
+      methods: [
+        "population_count",
+        "numeric_summary",
+        "categorical_distribution",
+        "prevalence",
+        "baseline_table_1",
+        "resource_utilization",
+      ],
+      planned_outputs: [
+        "summary_cards",
+        "table_1",
+        "distribution_chart",
+        "attrition_table",
+        "research_package",
+      ],
+      output_specification: { aggregate_only: true, small_cell_threshold: 5 },
+      source_refs: currentRun.source_version_refs,
+      limitations: [t("research.syntheticLimitation")],
+    };
+    mutation.mutate(() => createAnalysisPlan(selectedStudyId, payload));
+  }
+
+  function executeCopilot() {
+    if (!studyWorkspace) return;
+    mutation.mutate(
+      async () => {
+        const interaction = await executeAITask({
+          task_type: copilotTask,
+          data_classification: "synthetic",
+          study_id: selectedStudyId,
+          ...(copilotTask === "patient_journey_summary"
+            ? { patient_id: journeyPatientId }
+            : {}),
+          source_ids: [],
+          preferred_provider: "fallback",
+          allowed_providers: ["fallback"],
+          purpose: "research_proposal_only",
+          input: {
+            question: studyWorkspace.study.research_question,
+            protocol: studyWorkspace.protocol_versions[0] ?? {},
+            results: currentAnalysisRun?.results ?? currentRun?.analytics ?? {},
+            events: journeyQuery.data?.events ?? [],
+          },
+        });
+        setCopilotResult(interaction.output_payload);
+        return interaction;
+      },
+      { onSuccess: () => undefined },
+    );
+  }
+
+  if (workspaceQuery.isLoading || studiesQuery.isLoading) {
+    return <LoadingState label={t("research.loading")} />;
+  }
+  if (!workspaceQuery.data || workspaceQuery.isError || studiesQuery.isError) {
+    return (
+      <StatusPanel title={t("research.errorTitle")} tone="danger">
+        {t("research.errorBody")}
+      </StatusPanel>
+    );
+  }
 
   return (
     <div className="grid gap-6 lg:gap-8">
       <PageHeader
-        title={t("research.title")}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Badge tone="warning">{t("research.synthetic")}</Badge>
+            <Badge tone="info">{t("research.aggregate")}</Badge>
+            {can("research.study.create") ? (
+              <button
+                className="btn-primary"
+                onClick={() => setShowCreateStudy(true)}
+                type="button"
+              >
+                <Plus aria-hidden="true" className="h-4 w-4" />{" "}
+                {t("research.newStudy")}
+              </button>
+            ) : null}
+          </div>
+        }
         description={t("research.description")}
-        actions={<><Badge tone="warning">{t("research.synthetic")}</Badge><Badge tone="info">{t("research.aggregate")}</Badge></>}
+        title={t("research.title")}
       />
       <StatusPanel title={t("research.useLimit")} tone="warning">
         {workspaceQuery.data.synthetic_demo_notice} {t("research.useLimitBody")}
       </StatusPanel>
 
-      <section aria-label={t("research.summary")} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map(({ label, value, Icon }) => (
-          <div className="surface-card p-5" key={label}>
-            <Icon aria-hidden="true" className="h-5 w-5 text-ocean" />
-            <p className="mt-4 text-3xl font-black text-ink">{value}</p>
-            <p className="text-sm font-bold text-slate-600">{label}</p>
+      <section className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <aside className="surface-card h-fit p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-black">{t("research.studies")}</h2>
+            <Badge>{studiesQuery.data?.length ?? 0}</Badge>
           </div>
-        ))}
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[22rem_minmax(0,1fr)]">
-        <aside className="surface-card p-5">
-          <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-black">{t("research.studies")}</h2><Badge>{studiesQuery.data?.length ?? 0}</Badge></div>
-          <div className="mt-4 grid gap-2">
+          <div className="mt-3 grid gap-2">
             {studiesQuery.data?.map((study) => (
-              <button className={`rounded-xl border p-3 text-left ${selectedStudyId === study.id ? "border-cyan-400 bg-cyan-50" : "border-slate-200 hover:bg-slate-50"}`} key={study.id} onClick={() => setSelectedStudyId(study.id)} type="button">
-                <span className="block text-sm font-extrabold text-ink">{study.title}</span>
-                <span className="mt-1 block text-xs text-slate-500">{humanizeTechnicalValue(study.design)} · {formatStatus(study.status)}</span>
+              <button
+                aria-current={study.id === selectedStudyId ? "page" : undefined}
+                className={`rounded-xl border p-3 text-left ${study.id === selectedStudyId ? "border-cyan-400 bg-cyan-50" : "border-slate-200"}`}
+                key={study.id}
+                onClick={() => setSelectedStudyId(study.id)}
+                type="button"
+              >
+                <span className="block text-sm font-black">{study.title}</span>
+                <span className="mt-1 block text-xs text-slate-500">
+                  {humanizeTechnicalValue(study.design)}
+                </span>
               </button>
             ))}
-            {!studiesQuery.data?.length ? <p className="py-6 text-sm text-slate-500">{t("research.noStudies")}</p> : null}
+            {!studiesQuery.data?.length ? (
+              <p className="py-4 text-sm text-slate-500">{t("research.noStudies")}</p>
+            ) : null}
           </div>
-          {can("research.study.create") ? <StudyForm form={studyForm} pending={createStudyMutation.isPending} setForm={setStudyForm} submit={() => createStudyMutation.mutate(studyForm)} /> : null}
         </aside>
 
-        <div className="min-w-0 grid gap-5">
-          {!selectedStudyId ? <StatusPanel title={t("research.selectStudyTitle")} tone="info">{t("research.selectStudyBody")}</StatusPanel> : studyWorkspaceQuery.isLoading ? <LoadingState label={t("research.workspaceLoading")} /> : studyWorkspaceQuery.isError || !studyWorkspace ? <StatusPanel title={t("research.workspaceErrorTitle")} tone="danger">{t("research.workspaceErrorBody")}</StatusPanel> : <>
-            <div className="surface-card p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-xl font-black">{studyWorkspace.study.title}</h2><p className="mt-1 text-sm text-slate-600">{studyWorkspace.study.research_question}</p></div><Badge tone={studyWorkspace.study.status.includes("reviewed") ? "success" : "warning"}>{formatStatus(studyWorkspace.study.status)}</Badge></div><div className="mt-5"><Tabs label={t("research.studyAreas")} onChange={setTab} options={tabs} value={tab} /></div></div>
-            {tab === "overview" ? <Overview study={studyWorkspace.study} copilotResult={copilotResult} canUseAI={can("research.ai.use")} onCopilot={() => copilotMutation.mutate()} pending={copilotMutation.isPending} /> : null}
-            {tab === "protocol" ? <ProtocolPanel versions={studyWorkspace.protocol_versions} canWrite={can("research.study.write")} canReview={can("research.study.review")} currentUserId={user?.id} create={() => protocolMutation.mutate()} review={(id) => reviewStudyProtocolVersion(id, "reviewed_demo", "Revisão humana independente para uso demonstrativo.").then(refreshResearch)} pending={protocolMutation.isPending} /> : null}
-            {tab === "concepts" ? <ConceptPanel concepts={conceptsQuery.data ?? []} form={conceptForm} setForm={setConceptForm} selected={selectedConceptVersion} setSelected={setSelectedConceptVersion} canWrite={can("research.concept_set.write")} canReview={can("research.study.review")} currentUserId={user?.id} create={() => createConceptMutation.mutate()} review={(id, decision) => reviewConceptSetVersion(id, decision, "Revisão humana da fixture terminológica demonstrativa.").then(refreshResearch)} pending={createConceptMutation.isPending} /> : null}
-            {tab === "cohort" ? <CohortPanel versions={studyWorkspace.cohort_versions} name={cohortName} setName={setCohortName} age={minimumAge} setAge={setMinimumAge} concept={selectedConcept?.name} definition={cohortDefinition} canWrite={can("research.cohort.write")} canReview={can("research.study.review")} currentUserId={user?.id} create={() => cohortMutation.mutate()} review={(id) => reviewCohortVersion(id, "reviewed_demo", "DSL revisada por pessoa independente.").then(refreshResearch)} pending={cohortMutation.isPending} /> : null}
-            {tab === "outcomes" ? <OutcomePanel outcomes={studyWorkspace.outcomes} concept={selectedConcept?.name} canWrite={can("research.study.write")} create={() => outcomeMutation.mutate()} pending={outcomeMutation.isPending} /> : null}
-            {tab === "runs" ? <RunsPanel runs={studyWorkspace.runs} cohorts={studyWorkspace.cohort_versions} marker={snapshotMarker} setMarker={setSnapshotMarker} canExecute={can("research.cohort.execute")} execute={(id) => runMutation.mutate(id)} pending={runMutation.isPending} /> : null}
-            {tab === "provenance" ? <ProvenancePanel workspace={studyWorkspace} /> : null}
-          </>}
-        </div>
+        <main className="min-w-0 grid gap-4">
+          {!selectedStudyId ? (
+            <StatusPanel title={t("research.selectStudyTitle")} tone="info">
+              {t("research.selectStudyBody")}
+            </StatusPanel>
+          ) : studyQuery.isLoading ? (
+            <LoadingState label={t("research.workspaceLoading")} />
+          ) : !studyWorkspace || studyQuery.isError ? (
+            <StatusPanel
+              title={t("research.workspaceErrorTitle")}
+              tone="danger"
+            >
+              {t("research.workspaceErrorBody")}
+            </StatusPanel>
+          ) : (
+            <>
+              <StudyHeader workspace={studyWorkspace} />
+              <div className="surface-card p-3 sm:p-4">
+                <Tabs
+                  label={t("research.studyAreas")}
+                  onChange={setTab}
+                  options={tabs}
+                  value={tab}
+                />
+              </div>
+
+              {tab === "design" ? (
+                <DesignPanel
+                  canReview={can("research.study.review")}
+                  canWrite={can("research.study.write")}
+                  createOutcome={createOutcome}
+                  createProtocol={createProtocol}
+                  currentUserId={user?.id}
+                  mutationPending={mutation.isPending}
+                  protocol={protocol}
+                  reviewOutcome={(id) =>
+                    mutation.mutate(() =>
+                      reviewOutcomeDefinition(
+                        id,
+                        "reviewed_demo",
+                        t("research.humanReviewNote"),
+                      ),
+                    )
+                  }
+                  reviewProtocol={(id) =>
+                    mutation.mutate(() =>
+                      reviewStudyProtocolVersion(
+                        id,
+                        "reviewed_demo",
+                        t("research.humanReviewNote"),
+                      ),
+                    )
+                  }
+                  setProtocol={setProtocol}
+                  workspace={studyWorkspace}
+                />
+              ) : null}
+
+              {tab === "cohort" ? (
+                <section className="grid gap-4">
+                  <div className="surface-card p-5">
+                    <h2 className="mb-4 font-black">{t("research.cohortBuilder")}</h2>
+                    <div className="flex flex-wrap items-end gap-3">
+                      <label className="min-w-64 flex-1 text-sm font-bold">
+                        {t("research.cohortName")}
+                        <input
+                          className="field mt-1 w-full"
+                          onChange={(event) =>
+                            setCohortName(event.target.value)
+                          }
+                          value={cohortName}
+                        />
+                      </label>
+                      {can("research.cohort.write") ? (
+                        <button
+                          className="btn-primary"
+                          disabled={mutation.isPending || cohortName.length < 3}
+                          onClick={() =>
+                            mutation.mutate(() =>
+                              createCohortVersion(
+                                selectedStudyId,
+                                cohortName,
+                                cohort,
+                              ),
+                            )
+                          }
+                          type="button"
+                        >
+                          {t("research.saveVersion")}
+                        </button>
+                      ) : null}
+                    </div>
+                    <div className="mt-5">
+                      <CohortBuilder
+                        conceptVersions={reviewedConcepts}
+                        onChange={setCohort}
+                        value={cohort}
+                      />
+                    </div>
+                    <details className="mt-4">
+                      <summary className="cursor-pointer text-sm font-bold text-ocean">
+                        {t("research.advancedJson")}
+                      </summary>
+                      <pre className="mt-2 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
+                        {JSON.stringify(cohort, null, 2)}
+                      </pre>
+                    </details>
+                  </div>
+                  <div className="surface-card p-5">
+                    <h3 className="font-black">
+                      {t("research.cohortPreview")}
+                    </h3>
+                    <label className="mt-3 block text-sm font-bold">
+                      {t("research.snapshot")}
+                      <input
+                        className="field mt-1 w-full"
+                        onChange={(event) => setSnapshot(event.target.value)}
+                        value={snapshot}
+                      />
+                    </label>
+                    <div className="mt-4 grid gap-3">
+                      {studyWorkspace.cohort_versions.map((version) => (
+                        <VersionRow
+                          author={version.authored_by_user_id}
+                          canReview={can("research.study.review")}
+                          currentUserId={user?.id}
+                          hash={version.definition_hash}
+                          key={version.id}
+                          label={`v${version.version} · ${t("research.cost", { cost: version.query_cost })}`}
+                          onExecute={
+                            version.status === "reviewed_demo" &&
+                            can("research.cohort.execute")
+                              ? () =>
+                                  mutation.mutate(() =>
+                                    executeCohortVersion(version.id, snapshot),
+                                  )
+                              : undefined
+                          }
+                          onReview={
+                            version.status === "draft"
+                              ? () =>
+                                  mutation.mutate(() =>
+                                    reviewCohortVersion(
+                                      version.id,
+                                      "reviewed_demo",
+                                      t("research.humanReviewNote"),
+                                    ),
+                                  )
+                              : undefined
+                          }
+                          status={version.status}
+                        />
+                      ))}
+                    </div>
+                    {currentRun ? (
+                      <PopulationAnalytics cohortRun={currentRun} />
+                    ) : null}
+                  </div>
+                </section>
+              ) : null}
+
+              {tab === "analysis" ? (
+                <AnalysisPanel
+                  canAcknowledge={can("data_quality.acknowledge")}
+                  canExecute={can("research.analysis.execute")}
+                  canReview={can("research.study.review")}
+                  canRunDQ={can("data_quality.run")}
+                  canWrite={can("research.analysis.write")}
+                  createPlan={createPlan}
+                  currentUserId={user?.id}
+                  findings={dqQuery.data ?? []}
+                  mutationPending={mutation.isPending}
+                  onAcknowledge={(id) =>
+                    mutation.mutate(() =>
+                      acknowledgeDataQualityFinding(
+                        id,
+                        t("research.dqAcknowledgement"),
+                      ),
+                    )
+                  }
+                  onExecute={(id) =>
+                    mutation.mutate(() => executeAnalysisPlan(id))
+                  }
+                  onReview={(id) =>
+                    mutation.mutate(() =>
+                      reviewAnalysisPlan(id, t("research.humanReviewNote")),
+                    )
+                  }
+                  onRunDQ={() =>
+                    mutation.mutate(() => runDataQuality(selectedStudyId))
+                  }
+                  workspace={studyWorkspace}
+                />
+              ) : null}
+
+              {tab === "results" ? (
+                <section className="grid gap-4">
+                  <div className="surface-card p-5">
+                    <h2 className="font-black">
+                      {t("research.populationAnalytics")}
+                    </h2>
+                    <div className="mt-4">
+                      <PopulationAnalytics
+                        analysisRun={currentAnalysisRun}
+                        cohortRun={currentRun}
+                      />
+                    </div>
+                  </div>
+                  {can("research.patient_journey.read") ? (
+                    <div className="surface-card p-5">
+                      <h2 className="font-black">
+                        {t("research.patientJourney")}
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-600">
+                        {t("research.patientJourneyBody")}
+                      </p>
+                      <div className="mt-4 flex gap-2">
+                        <input
+                          aria-label={t("research.syntheticPatientId")}
+                          className="field"
+                          min={1}
+                          onChange={(event) =>
+                            setJourneyPatientId(Number(event.target.value))
+                          }
+                          type="number"
+                          value={journeyPatientId}
+                        />
+                        <button
+                          className="btn-secondary"
+                          onClick={() => journeyQuery.refetch()}
+                          type="button"
+                        >
+                          {t("research.loadJourney")}
+                        </button>
+                      </div>
+                      {journeyQuery.isError ? (
+                        <p className="mt-3 text-sm font-bold text-red-700">
+                          {t("research.journeyFailedClosed")}
+                        </p>
+                      ) : null}
+                      {journeyQuery.data ? (
+                        <ol className="mt-4 grid gap-2">
+                          {journeyQuery.data.events.map((event) => (
+                            <li
+                              className="rounded-xl border border-slate-200 p-3 text-sm"
+                              key={String(event.event_ref)}
+                            >
+                              <strong>{String(event.title)}</strong>
+                              <span className="mt-1 block text-xs text-slate-500">
+                                {String(event.occurred_at)} ·{" "}
+                                {String(event.event_type)}
+                              </span>
+                              <p className="mt-2">{String(event.summary)}</p>
+                            </li>
+                          ))}
+                        </ol>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </section>
+              ) : null}
+
+              {tab === "evidence" ? (
+                <EvidencePanel
+                  canExport={can("research.package.export")}
+                  copilotResult={copilotResult}
+                  copilotTask={copilotTask}
+                  executeCopilot={executeCopilot}
+                  exportPackage={(id) =>
+                    mutation.mutate(() => exportResearchPackage(id))
+                  }
+                  mutationPending={mutation.isPending}
+                  setCopilotTask={setCopilotTask}
+                  workspace={studyWorkspace}
+                />
+              ) : null}
+            </>
+          )}
+        </main>
       </section>
 
-      {can("data_quality.read") ? <section className="surface-card p-5 sm:p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-black">{t("research.dataQuality")}</h2><p className="mt-1 text-sm text-slate-600">{t("research.dataQualityBody")}</p></div>{can("data_quality.run") ? <button className="btn-secondary" disabled={dqMutation.isPending} onClick={() => dqMutation.mutate()} type="button">{dqMutation.isPending ? t("research.runningChecks") : t("research.runChecks")}</button> : null}</div><div className="mt-4 grid gap-2">{dqQuery.data?.slice(0, 8).map((item) => <div className="rounded-xl border border-slate-200 p-3" key={item.id}><div className="flex justify-between gap-3"><p className="text-sm font-extrabold">{formatStatus(item.rule)}</p><Badge tone={item.severity === "critical" || item.severity === "high" ? "danger" : "warning"}>{formatStatus(item.severity)}</Badge></div><p className="mt-1 text-xs text-slate-600">{item.message} · <code>{item.resource_type}.{item.field}</code></p><details className="mt-2 text-xs"><summary className="font-bold text-ocean">{t("research.technicalDetails")}</summary><code>{item.rule}</code></details></div>)}{!dqQuery.data?.length ? <p className="text-sm text-slate-500">{t("research.noFindings")}</p> : null}</div></section> : null}
+      {showCreateStudy ? (
+        <StudyDialog
+          close={() => setShowCreateStudy(false)}
+          form={studyForm}
+          pending={createStudyMutation.isPending}
+          setForm={setStudyForm}
+          submit={() => createStudyMutation.mutate(studyForm)}
+        />
+      ) : null}
     </div>
   );
 }
 
-function StudyForm({ form, setForm, submit, pending }: { form: ResearchStudyPayload; setForm: (value: ResearchStudyPayload) => void; submit: () => void; pending: boolean }) {
+function StudyHeader({ workspace }: { workspace: StudyWorkspace }) {
   const { t } = useTranslation();
-  const valid = form.title.length >= 5 && form.slug.length >= 3 && form.research_question.length >= 10 && form.objective.length >= 10;
-  return <form className="mt-6 grid gap-3 border-t border-slate-200 pt-5" onSubmit={(event) => { event.preventDefault(); submit(); }}><h3 className="text-sm font-black">{t("research.newStudy")}</h3><input aria-label={t("research.studyTitle")} className="field" onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder={t("research.studyTitle")} value={form.title} /><input aria-label={t("research.studySlug")} className="field" onChange={(event) => setForm({ ...form, slug: event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })} placeholder="study-slug" value={form.slug} /><textarea aria-label={t("research.question")} className="field min-h-20" onChange={(event) => setForm({ ...form, research_question: event.target.value })} placeholder={t("research.question")} value={form.research_question} /><textarea aria-label={t("research.objective")} className="field min-h-20" onChange={(event) => setForm({ ...form, objective: event.target.value })} placeholder={t("research.objective")} value={form.objective} /><button className="btn-primary" disabled={!valid || pending} type="submit"><Plus aria-hidden="true" className="h-4 w-4" />{t("research.createStudy")}</button></form>;
+  return (
+    <section className="surface-card p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-ocean">
+            {t("research.studyWorkspace")}
+          </p>
+          <h2 className="mt-1 text-2xl font-black">{workspace.study.title}</h2>
+          <p className="mt-2 max-w-3xl text-sm text-slate-600">
+            {workspace.study.research_question}
+          </p>
+        </div>
+        <Badge
+          tone={
+            workspace.study.status.includes("reviewed") ? "success" : "warning"
+          }
+        >
+          {formatStatus(workspace.study.status)}
+        </Badge>
+      </div>
+      <ol
+        aria-label={t("research.readiness")}
+        className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8"
+      >
+        {workspace.readiness.map((item, index) => (
+          <li
+            className={`rounded-xl p-2 text-center text-xs font-bold ${item.ready ? "bg-emerald-50 text-emerald-800" : "bg-slate-100 text-slate-500"}`}
+            key={item.step}
+          >
+            <span className="block text-base">
+              {item.ready ? "✓" : index + 1}
+            </span>
+            {t(`research.readinessSteps.${item.step}`)}
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
 }
 
-function Overview({ study, canUseAI, onCopilot, pending, copilotResult }: { study: { objective: string; description: string; demo_only: boolean }; canUseAI: boolean; onCopilot: () => void; pending: boolean; copilotResult: Record<string, unknown> | null }) {
+function DesignPanel({
+  workspace,
+  protocol,
+  setProtocol,
+  createProtocol,
+  createOutcome,
+  reviewProtocol,
+  reviewOutcome,
+  canWrite,
+  canReview,
+  currentUserId,
+  mutationPending,
+}: {
+  workspace: StudyWorkspace;
+  protocol: typeof defaultProtocol;
+  setProtocol: (value: typeof defaultProtocol) => void;
+  createProtocol: () => void;
+  createOutcome: () => void;
+  reviewProtocol: (id: string) => void;
+  reviewOutcome: (id: string) => void;
+  canWrite: boolean;
+  canReview: boolean;
+  currentUserId?: number;
+  mutationPending: boolean;
+}) {
   const { t } = useTranslation();
-  return <section className="grid gap-4 lg:grid-cols-2"><div className="surface-card p-5"><h3 className="font-black">{t("research.objective")}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{study.objective}</p><p className="mt-4 text-xs font-bold text-amber-800">{t("research.demoOnly")}: {String(study.demo_only)}</p></div><div className="surface-card p-5"><div className="flex items-center gap-2"><Bot aria-hidden="true" className="h-5 w-5 text-violet-700" /><h3 className="font-black">{t("research.copilot")}</h3></div><p className="mt-2 text-sm text-slate-600">{t("research.copilotBody")}</p>{canUseAI ? <button className="btn-secondary mt-4" disabled={pending} onClick={onCopilot} type="button">{t("research.structureQuestion")}</button> : null}{copilotResult ? <pre className="mt-4 max-h-52 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">{JSON.stringify(copilotResult, null, 2)}</pre> : null}</div></section>;
+  const fields: Array<{
+    key: keyof typeof defaultProtocol;
+    label: string;
+    numeric?: boolean;
+  }> = [
+    { key: "population", label: t("research.protocolFields.population") },
+    { key: "exposure", label: t("research.protocolFields.exposure") },
+    { key: "comparator", label: t("research.protocolFields.comparator") },
+    { key: "outcome", label: t("research.protocolFields.outcome") },
+    { key: "indexDate", label: t("research.protocolFields.indexDate") },
+    {
+      key: "washoutDays",
+      label: t("research.protocolFields.washout"),
+      numeric: true,
+    },
+    {
+      key: "followUpDays",
+      label: t("research.protocolFields.followUp"),
+      numeric: true,
+    },
+    { key: "censoring", label: t("research.protocolFields.censoring") },
+    { key: "missingData", label: t("research.protocolFields.missingData") },
+    { key: "limitations", label: t("research.protocolFields.limitations") },
+    { key: "sourceRef", label: t("research.protocolFields.source") },
+  ];
+  return (
+    <section className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(18rem,.75fr)]">
+      <div className="surface-card p-5">
+        <h3 className="font-black">{t("research.protocolEditor")}</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          {t("research.immutableVersions")}
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {fields.map((field) => (
+            <label className="grid gap-1 text-sm font-bold" key={field.key}>
+              {field.label}
+              <input
+                className="field"
+                onChange={(event) =>
+                  setProtocol({
+                    ...protocol,
+                    [field.key]: field.numeric
+                      ? Number(event.target.value)
+                      : event.target.value,
+                  })
+                }
+                type={field.numeric ? "number" : "text"}
+                value={protocol[field.key]}
+              />
+            </label>
+          ))}
+        </div>
+        {canWrite ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              className="btn-primary"
+              disabled={mutationPending}
+              onClick={createProtocol}
+              type="button"
+            >
+              {t("research.newVersion")}
+            </button>
+            <button
+              className="btn-secondary"
+              disabled={mutationPending}
+              onClick={createOutcome}
+              type="button"
+            >
+              {t("research.createOutcome")}
+            </button>
+          </div>
+        ) : null}
+      </div>
+      <div className="grid content-start gap-4">
+        <VersionList
+          canReview={canReview}
+          currentUserId={currentUserId}
+          items={workspace.protocol_versions.map((item) => ({
+            id: item.id,
+            author: item.authored_by_user_id,
+            label: `${t("research.protocol")} v${item.version}`,
+            status: item.status,
+            hash: item.definition_hash,
+          }))}
+          onReview={reviewProtocol}
+        />
+        <VersionList
+          canReview={canReview}
+          currentUserId={currentUserId}
+          items={workspace.outcomes.map((item) => ({
+            id: item.id,
+            author: item.authored_by_user_id,
+            label: `${item.name} · v${item.version}`,
+            status: item.review_status,
+            hash: item.definition_hash,
+          }))}
+          onReview={reviewOutcome}
+        />
+        <details className="surface-card p-4">
+          <summary className="cursor-pointer font-bold text-ocean">
+            {t("research.technicalDetails")}
+          </summary>
+          <p className="mt-3 text-xs text-slate-600">
+            {t("research.conceptSets")}:{" "}
+            {workspace.concept_set_version_ids.length}
+          </p>
+        </details>
+      </div>
+    </section>
+  );
 }
 
-function ProtocolPanel({ versions, canWrite, canReview, currentUserId, create, review, pending }: { versions: Array<{ id: string; version: number; status: string; definition_hash: string; authored_by_user_id: number; source_refs: string[] }>; canWrite: boolean; canReview: boolean; currentUserId?: number; create: () => void; review: (id: string) => void; pending: boolean }) {
+function AnalysisPanel({
+  workspace,
+  findings,
+  createPlan,
+  onRunDQ,
+  onReview,
+  onExecute,
+  onAcknowledge,
+  canWrite,
+  canReview,
+  canExecute,
+  canRunDQ,
+  canAcknowledge,
+  currentUserId,
+  mutationPending,
+}: {
+  workspace: StudyWorkspace;
+  findings: Array<{
+    id: string;
+    rule: string;
+    severity: string;
+    message: string;
+    status: string;
+  }>;
+  createPlan: () => void;
+  onRunDQ: () => void;
+  onReview: (id: string) => void;
+  onExecute: (id: string) => void;
+  onAcknowledge: (id: string) => void;
+  canWrite: boolean;
+  canReview: boolean;
+  canExecute: boolean;
+  canRunDQ: boolean;
+  canAcknowledge: boolean;
+  currentUserId?: number;
+  mutationPending: boolean;
+}) {
   const { t } = useTranslation();
-  return <section className="surface-card p-5"><div className="flex justify-between gap-3"><div><h3 className="font-black">{t("research.protocolVersions")}</h3><p className="text-sm text-slate-600">{t("research.immutableVersions")}</p></div>{canWrite ? <button className="btn-primary" disabled={pending} onClick={create} type="button"><Plus aria-hidden="true" className="h-4 w-4" />{t("research.newVersion")}</button> : null}</div><div className="mt-4 grid gap-3">{versions.map((item) => <div className="rounded-xl border border-slate-200 p-4" key={item.id}><div className="flex flex-wrap justify-between gap-2"><p className="font-extrabold">v{item.version}</p><Badge tone={item.status === "reviewed_demo" ? "success" : "warning"}>{formatStatus(item.status)}</Badge></div><p className="mt-2 break-all font-mono text-[0.6875rem] text-slate-500">{item.definition_hash}</p>{canReview && item.status === "draft" && item.authored_by_user_id !== currentUserId ? <button className="btn-secondary mt-3" onClick={() => review(item.id)} type="button"><CheckCircle2 aria-hidden="true" className="h-4 w-4" />{t("research.reviewDemo")}</button> : null}</div>)}{!versions.length ? <p className="text-sm text-slate-500">{t("research.noProtocol")}</p> : null}</div></section>;
+  const dqSummary = workspace.data_quality as {
+    analysis_blocked?: boolean;
+    dimensions?: Record<string, number>;
+  };
+  return (
+    <section className="grid gap-4 xl:grid-cols-2">
+      <div className="surface-card p-5">
+        <div className="flex flex-wrap justify-between gap-3">
+          <div>
+            <h3 className="font-black">{t("research.dataQuality")}</h3>
+            <p className="text-sm text-slate-600">
+              {t("research.dataQualityBody")}
+            </p>
+          </div>
+          {canRunDQ ? (
+            <button
+              className="btn-secondary"
+              disabled={mutationPending}
+              onClick={onRunDQ}
+              type="button"
+            >
+              {t("research.runChecks")}
+            </button>
+          ) : null}
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {Object.entries(dqSummary.dimensions ?? {}).map(([name, value]) => (
+            <div className="rounded-xl bg-slate-50 p-3" key={name}>
+              <strong className="text-xl">{value}</strong>
+              <span className="block text-xs text-slate-500">
+                {humanizeTechnicalValue(name)}
+              </span>
+            </div>
+          ))}
+        </div>
+        {dqSummary.analysis_blocked ? (
+          <p className="mt-3 text-sm font-bold text-red-700" role="alert">
+            {t("research.analysisBlocked")}
+          </p>
+        ) : null}
+        <div className="mt-4 grid gap-2">
+          {findings.slice(0, 8).map((finding) => (
+            <div
+              className="rounded-xl border border-slate-200 p-3"
+              key={finding.id}
+            >
+              <div className="flex justify-between gap-2">
+                <strong className="text-sm">
+                  {formatStatus(finding.rule)}
+                </strong>
+                <Badge
+                  tone={
+                    finding.severity === "critical" ||
+                    finding.severity === "high"
+                      ? "danger"
+                      : "warning"
+                  }
+                >
+                  {formatStatus(finding.severity)}
+                </Badge>
+              </div>
+              <p className="mt-1 text-xs text-slate-600">{finding.message}</p>
+              {canAcknowledge && finding.status === "open" ? (
+                <button
+                  className="btn-secondary mt-2"
+                  onClick={() => onAcknowledge(finding.id)}
+                  type="button"
+                >
+                  {t("research.acknowledge")}
+                </button>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="surface-card p-5">
+        <div className="flex flex-wrap justify-between gap-3">
+          <div>
+            <h3 className="font-black">{t("research.analysisPlan")}</h3>
+            <p className="text-sm text-slate-600">
+              {t("research.analysisPlanBody")}
+            </p>
+          </div>
+          {canWrite ? (
+            <button
+              className="btn-primary"
+              disabled={!workspace.runs.length || mutationPending}
+              onClick={createPlan}
+              type="button"
+            >
+              <Plus aria-hidden="true" className="h-4 w-4" />
+              {t("research.createPlan")}
+            </button>
+          ) : null}
+        </div>
+        <div className="mt-4 grid gap-3">
+          {workspace.analysis_plans.map((plan) => (
+            <VersionRow
+              author={plan.authored_by_user_id}
+              canReview={canReview}
+              currentUserId={currentUserId}
+              hash={plan.definition_hash}
+              key={plan.id}
+              label={`${t("research.analysisPlan")} v${plan.version}`}
+              onExecute={
+                plan.status === "reviewed_demo" && canExecute
+                  ? () => onExecute(plan.id)
+                  : undefined
+              }
+              onReview={
+                plan.status === "draft" ? () => onReview(plan.id) : undefined
+              }
+              status={plan.status}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }
 
-function ConceptPanel({ concepts, form, setForm, selected, setSelected, canWrite, canReview, currentUserId, create, review, pending }: { concepts: Array<{ id: string; name: string; status: string; version: { id: string; status: string; authored_by_user_id: number } | null }>; form: { name: string; code: string; label: string; source: string }; setForm: (value: { name: string; code: string; label: string; source: string }) => void; selected: string; setSelected: (id: string) => void; canWrite: boolean; canReview: boolean; currentUserId?: number; create: () => void; review: (id: string, decision: "human_reviewed" | "approved_for_demo_study") => void; pending: boolean }) {
+function EvidencePanel({
+  workspace,
+  exportPackage,
+  canExport,
+  copilotTask,
+  setCopilotTask,
+  executeCopilot,
+  copilotResult,
+  mutationPending,
+}: {
+  workspace: StudyWorkspace;
+  exportPackage: (id: string) => void;
+  canExport: boolean;
+  copilotTask: string;
+  setCopilotTask: (task: string) => void;
+  executeCopilot: () => void;
+  copilotResult: Record<string, unknown> | null;
+  mutationPending: boolean;
+}) {
   const { t } = useTranslation();
-  const placeholders = { name: t("research.name"), code: t("research.demoCode"), label: t("research.label"), source: t("research.sourceRef") };
-  return <section className="grid gap-4 lg:grid-cols-2"><div className="surface-card p-5"><h3 className="font-black">{t("research.conceptSets")}</h3><div className="mt-4 grid gap-2">{concepts.map((item) => <button className={`rounded-xl border p-3 text-left ${selected === item.version?.id ? "border-cyan-400 bg-cyan-50" : "border-slate-200"}`} key={item.id} onClick={() => setSelected(item.version?.id ?? "")} type="button"><span className="font-extrabold">{item.name}</span><span className="mt-1 block text-xs text-slate-500">{formatStatus(item.status)}</span>{canReview && item.version && item.version.authored_by_user_id !== currentUserId && item.version.status === "terminology_matched" ? <span className="btn-secondary mt-2" onClick={(event) => { event.stopPropagation(); review(item.version!.id, "human_reviewed"); }}>{t("research.reviewTerminology")}</span> : null}{canReview && item.version?.status === "human_reviewed" ? <span className="btn-secondary mt-2" onClick={(event) => { event.stopPropagation(); review(item.version!.id, "approved_for_demo_study"); }}>{t("research.approveDemo")}</span> : null}</button>)}</div></div>{canWrite ? <form className="surface-card grid content-start gap-3 p-5" onSubmit={(event) => { event.preventDefault(); create(); }}><h3 className="font-black">{t("research.newConceptSet")}</h3>{(["name", "code", "label", "source"] as const).map((field) => <input aria-label={placeholders[field]} className="field" key={field} onChange={(event) => setForm({ ...form, [field]: event.target.value })} placeholder={placeholders[field]} value={form[field]} />)}<button className="btn-primary" disabled={pending || Object.values(form).some((value) => value.length < 2)} type="submit">{t("research.createTerminologyVersion")}</button></form> : null}</section>;
+  const tasks = [
+    "research_question_structuring",
+    "protocol_completeness_review",
+    "cohort_drafting",
+    "analysis_plan_draft",
+    "data_quality_explanation",
+    "results_explanation",
+    "patient_journey_summary",
+  ];
+  return (
+    <section className="grid gap-4 xl:grid-cols-2">
+      <div className="surface-card p-5">
+        <div className="flex items-center gap-2">
+          <FileBarChart aria-hidden="true" className="h-5 w-5 text-ocean" />
+          <h3 className="font-black">{t("research.researchPackage")}</h3>
+        </div>
+        <p className="mt-2 text-sm text-slate-600">
+          {t("research.researchPackageBody")}
+        </p>
+        <div className="mt-4 grid gap-3">
+          {workspace.analysis_runs.map((run) => (
+            <div
+              className="rounded-xl border border-slate-200 p-3"
+              key={run.id}
+            >
+              <div className="flex flex-wrap justify-between gap-2">
+                <div>
+                  <strong>{formatDateTime(run.executed_at)}</strong>
+                  <p className="mt-1 break-all font-mono text-xs text-slate-500">
+                    {run.content_hash}
+                  </p>
+                </div>
+                {canExport ? (
+                  <button
+                    className="btn-secondary"
+                    disabled={mutationPending}
+                    onClick={() => exportPackage(run.id)}
+                    type="button"
+                  >
+                    <Download aria-hidden="true" className="h-4 w-4" />
+                    {t("research.exportPackage")}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+        {workspace.research_packages.map((item) => (
+          <details className="mt-3 rounded-xl bg-emerald-50 p-3" key={item.id}>
+            <summary className="cursor-pointer text-sm font-bold text-emerald-900">
+              {t("research.packageReady")} · {item.content_hash.slice(0, 12)}
+            </summary>
+            <pre className="mt-2 overflow-auto text-xs">
+              {JSON.stringify(item.manifest, null, 2)}
+            </pre>
+          </details>
+        ))}
+        <details className="mt-4">
+          <summary className="cursor-pointer text-sm font-bold text-ocean">
+            {t("research.provenance")}
+          </summary>
+          <pre className="mt-2 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
+            {JSON.stringify(
+              workspace.analysis_runs[0]?.provenance ?? {},
+              null,
+              2,
+            )}
+          </pre>
+        </details>
+      </div>
+      <div className="surface-card p-5">
+        <div className="flex items-center gap-2">
+          <Bot aria-hidden="true" className="h-5 w-5 text-violet-700" />
+          <h3 className="font-black">{t("research.copilot")}</h3>
+        </div>
+        <p className="mt-2 text-sm text-slate-600">
+          {t("research.copilotBody")}
+        </p>
+        <label className="mt-4 grid gap-1 text-sm font-bold">
+          {t("research.copilotTask")}
+          <select
+            className="field"
+            onChange={(event) => setCopilotTask(event.target.value)}
+            value={copilotTask}
+          >
+            {tasks.map((task) => (
+              <option key={task} value={task}>
+                {t(`research.copilotTasks.${task}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          className="btn-secondary mt-3"
+          disabled={mutationPending}
+          onClick={executeCopilot}
+          type="button"
+        >
+          {t("research.generateProposal")}
+        </button>
+        {copilotResult ? (
+          <pre className="mt-4 max-h-80 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
+            {JSON.stringify(copilotResult, null, 2)}
+          </pre>
+        ) : null}
+      </div>
+    </section>
+  );
 }
 
-function CohortPanel({ versions, name, setName, age, setAge, concept, definition, canWrite, canReview, currentUserId, create, review, pending }: { versions: Array<{ id: string; version: number; status: string; definition_hash: string; authored_by_user_id: number; query_cost: number }>; name: string; setName: (value: string) => void; age: number; setAge: (value: number) => void; concept?: string; definition: CohortDefinition; canWrite: boolean; canReview: boolean; currentUserId?: number; create: () => void; review: (id: string) => void; pending: boolean }) {
+function StudyDialog({
+  form,
+  setForm,
+  submit,
+  close,
+  pending,
+}: {
+  form: ResearchStudyPayload;
+  setForm: (form: ResearchStudyPayload) => void;
+  submit: () => void;
+  close: () => void;
+  pending: boolean;
+}) {
   const { t } = useTranslation();
-  return <section className="grid gap-4 lg:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)]"><form className="surface-card grid content-start gap-3 p-5" onSubmit={(event) => { event.preventDefault(); create(); }}><h3 className="font-black">{t("research.cohortBuilder")}</h3><label className="grid gap-1 text-sm font-bold">{t("research.name")}<input className="field" onChange={(event) => setName(event.target.value)} value={name} /></label><label className="grid gap-1 text-sm font-bold">{t("research.minimumAge")}<input className="field" min={0} onChange={(event) => setAge(Number(event.target.value))} type="number" value={age} /></label><div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-600">{t("research.conditionConcept")}: <strong>{concept ?? t("research.notSelected")}</strong></div><details><summary className="cursor-pointer text-xs font-bold text-ocean">{t("research.advancedJson")}</summary><pre className="mt-2 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">{JSON.stringify(definition, null, 2)}</pre></details>{canWrite ? <button className="btn-primary" disabled={pending || name.length < 3} type="submit">{t("research.saveVersion")}</button> : null}</form><div className="surface-card p-5"><h3 className="font-black">{t("research.versions")}</h3><div className="mt-4 grid gap-3">{versions.map((item) => <div className="rounded-xl border border-slate-200 p-4" key={item.id}><div className="flex justify-between gap-2"><p className="font-extrabold">v{item.version} · {t("research.cost", { cost: item.query_cost })}</p><Badge tone={item.status === "reviewed_demo" ? "success" : "warning"}>{formatStatus(item.status)}</Badge></div><p className="mt-2 break-all font-mono text-[0.6875rem] text-slate-500">{item.definition_hash}</p>{canReview && item.status === "draft" && item.authored_by_user_id !== currentUserId ? <button className="btn-secondary mt-3" onClick={() => review(item.id)} type="button">{t("research.reviewDsl")}</button> : null}</div>)}</div></div></section>;
+  const fields: Array<{
+    key: "title" | "slug" | "research_question" | "objective" | "description";
+    label: string;
+  }> = [
+    { key: "title", label: t("research.studyTitle") },
+    { key: "slug", label: t("research.studySlug") },
+    { key: "research_question", label: t("research.question") },
+    { key: "objective", label: t("research.objective") },
+    { key: "description", label: t("research.studyDescription") },
+  ];
+  const valid =
+    form.title.length >= 5 &&
+    form.slug.length >= 3 &&
+    form.research_question.length >= 10 &&
+    form.objective.length >= 10;
+  return (
+    <div
+      aria-labelledby="create-study-title"
+      aria-modal="true"
+      className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4"
+      role="dialog"
+    >
+      <form
+        className="surface-card max-h-[90vh] w-full max-w-2xl overflow-auto p-6"
+        onSubmit={(event) => {
+          event.preventDefault();
+          submit();
+        }}
+      >
+        <div className="flex justify-between gap-3">
+          <h2 className="text-xl font-black" id="create-study-title">
+            {t("research.newStudy")}
+          </h2>
+          <button
+            aria-label={t("common.close")}
+            className="rounded-lg p-2"
+            onClick={close}
+            type="button"
+          >
+            <X aria-hidden="true" />
+          </button>
+        </div>
+        <p className="mt-2 text-sm text-slate-600">
+          {t("research.studyWizardBody")}
+        </p>
+        <div className="mt-5 grid gap-3">
+          {fields.map((field, index) => (
+            <label className="grid gap-1 text-sm font-bold" key={field.key}>
+              {`${index + 1}. ${field.label}`}
+              {field.key === "research_question" ||
+              field.key === "objective" ||
+              field.key === "description" ? (
+                <textarea
+                  className="field min-h-20"
+                  onChange={(event) =>
+                    setForm({ ...form, [field.key]: event.target.value })
+                  }
+                  value={form[field.key]}
+                />
+              ) : (
+                <input
+                  className="field"
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      [field.key]:
+                        field.key === "slug"
+                          ? event.target.value
+                              .toLowerCase()
+                              .replace(/[^a-z0-9-]/g, "-")
+                          : event.target.value,
+                    })
+                  }
+                  value={form[field.key]}
+                />
+              )}
+            </label>
+          ))}
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button className="btn-secondary" onClick={close} type="button">
+            {t("research.cancel")}
+          </button>
+          <button
+            className="btn-primary"
+            disabled={!valid || pending}
+            type="submit"
+          >
+            {t("research.createStudy")}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
 }
 
-function OutcomePanel({ outcomes, concept, canWrite, create, pending }: { outcomes: Array<{ id: string; name: string; version: number; review_status: string; definition_hash: string }>; concept?: string; canWrite: boolean; create: () => void; pending: boolean }) {
-  const { t } = useTranslation();
-  return <section className="surface-card p-5"><div className="flex flex-wrap justify-between gap-3"><div><h3 className="font-black">{t("research.outcomeDefinitions")}</h3><p className="text-sm text-slate-600">{t("research.selectedConcept", { concept: concept ?? t("research.none") })}</p></div>{canWrite ? <button className="btn-primary" disabled={pending} onClick={create} type="button"><Plus aria-hidden="true" className="h-4 w-4" />{t("research.createOutcome")}</button> : null}</div><div className="mt-4 grid gap-3">{outcomes.map((item) => <div className="rounded-xl border border-slate-200 p-4" key={item.id}><div className="flex justify-between gap-2"><p className="font-extrabold">{item.name} · v{item.version}</p><Badge tone="warning">{formatStatus(item.review_status)}</Badge></div><p className="mt-2 break-all font-mono text-[0.6875rem] text-slate-500">{item.definition_hash}</p></div>)}</div></section>;
+function VersionList({
+  items,
+  onReview,
+  canReview,
+  currentUserId,
+}: {
+  items: Array<{
+    id: string;
+    author: number;
+    label: string;
+    status: string;
+    hash: string;
+  }>;
+  onReview: (id: string) => void;
+  canReview: boolean;
+  currentUserId?: number;
+}) {
+  return (
+    <div className="surface-card grid gap-2 p-4">
+      {items.map((item) => (
+        <VersionRow
+          author={item.author}
+          canReview={canReview}
+          currentUserId={currentUserId}
+          hash={item.hash}
+          key={item.id}
+          label={item.label}
+          onReview={
+            item.status === "draft" || item.status === "pending_review"
+              ? () => onReview(item.id)
+              : undefined
+          }
+          status={item.status}
+        />
+      ))}
+      {!items.length ? <p className="text-sm text-slate-500">—</p> : null}
+    </div>
+  );
 }
 
-function RunsPanel({ runs, cohorts, marker, setMarker, canExecute, execute, pending }: { runs: Array<{ id: string; result_count: number; executed_at: string; status: string; run_hash: string; attrition: Array<{ sequence: number; label: string; before_count: number; excluded_count: number; after_count: number }> }>; cohorts: Array<{ id: string; version: number; status: string }>; marker: string; setMarker: (value: string) => void; canExecute: boolean; execute: (id: string) => void; pending: boolean }) {
+function VersionRow({
+  label,
+  status,
+  hash,
+  author,
+  onReview,
+  onExecute,
+  canReview,
+  currentUserId,
+}: {
+  label: string;
+  status: string;
+  hash: string;
+  author: number;
+  onReview?: () => void;
+  onExecute?: () => void;
+  canReview: boolean;
+  currentUserId?: number;
+}) {
   const { t } = useTranslation();
-  const reviewed = cohorts.filter((item) => item.status === "reviewed_demo");
-  return <section className="grid gap-4"><div className="surface-card p-5"><div className="flex flex-wrap items-end gap-3"><label className="min-w-64 flex-1 text-sm font-bold">{t("research.snapshot")}<input className="field mt-1 w-full" onChange={(event) => setMarker(event.target.value)} value={marker} /></label>{canExecute ? reviewed.map((item) => <button className="btn-primary" disabled={pending || marker.length < 3} key={item.id} onClick={() => execute(item.id)} type="button"><Play aria-hidden="true" className="h-4 w-4" />{t("research.executeCohort", { version: item.version })}</button>) : null}</div></div>{runs.map((run) => <article className="surface-card p-5" key={run.id}><div className="flex flex-wrap justify-between gap-3"><div><p className="text-3xl font-black">N = {run.result_count}</p><p className="text-xs text-slate-500">{formatDateTime(run.executed_at)}</p></div><Badge tone="success">{formatStatus(run.status)}</Badge></div><AttritionFlow steps={run.attrition} /><p className="mt-4 break-all font-mono text-[0.6875rem] text-slate-500">run {run.run_hash}</p></article>)}{!runs.length ? <StatusPanel title={t("research.noRunsTitle")} tone="info">{t("research.noRunsBody")}</StatusPanel> : null}</section>;
-}
-
-function ProvenancePanel({ workspace }: { workspace: { protocol_versions: Array<{ id: string; definition_hash: string; source_refs: string[] }>; cohort_versions: Array<{ id: string; definition_hash: string }>; runs: Array<{ id: string; run_hash: string; engine_version: string; prescripta_version: string; source_version_refs: string[] }> } }) {
-  const { t } = useTranslation();
-  const records = [...workspace.protocol_versions.map((item) => ({ type: "protocol", id: item.id, hash: item.definition_hash, meta: item.source_refs.join(", ") })), ...workspace.cohort_versions.map((item) => ({ type: "cohort", id: item.id, hash: item.definition_hash, meta: t("research.validatedDsl") })), ...workspace.runs.map((item) => ({ type: "run", id: item.id, hash: item.run_hash, meta: `${item.engine_version} · Prescripta ${item.prescripta_version} · ${item.source_version_refs.join(", ")}` }))];
-  return <section className="surface-card p-5"><div className="flex items-center gap-2"><Beaker aria-hidden="true" className="h-5 w-5 text-ocean" /><h3 className="font-black">{t("research.provenance")}</h3></div><div className="mt-4 grid gap-3">{records.map((item) => <div className="rounded-xl border border-slate-200 p-3" key={`${item.type}-${item.id}`}><p className="text-xs font-extrabold uppercase text-ocean">{humanizeTechnicalValue(item.type)}</p><p className="mt-1 break-all font-mono text-[0.6875rem]">{item.hash}</p><p className="mt-1 text-xs text-slate-500">{item.meta}</p></div>)}</div></section>;
+  return (
+    <div className="rounded-xl border border-slate-200 p-3">
+      <div className="flex flex-wrap justify-between gap-2">
+        <strong className="text-sm">{label}</strong>
+        <Badge
+          tone={
+            status === "reviewed_demo" || status === "completed_demo"
+              ? "success"
+              : "warning"
+          }
+        >
+          {formatStatus(status)}
+        </Badge>
+      </div>
+      <p className="mt-2 break-all font-mono text-[0.6875rem] text-slate-500">
+        {hash}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {onReview && canReview && author !== currentUserId ? (
+          <button className="btn-secondary" onClick={onReview} type="button">
+            <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
+            {t("research.reviewDemo")}
+          </button>
+        ) : null}
+        {onExecute ? (
+          <button className="btn-primary" onClick={onExecute} type="button">
+            <Play aria-hidden="true" className="h-4 w-4" />
+            {t("research.execute")}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
 }

@@ -57,7 +57,7 @@ interna usa busca lexical indexada, não um RAG clinicamente validado.
 
 | Research Workspace | Attrition reproduzível |
 | --- | --- |
-| ![Workspace Research e RWE sobre dados sintéticos](docs/assets/current/research-workspace-v0.8.9.png) | ![Execução de coorte demonstrativa com attrition por critério](docs/assets/current/cohort-attrition-v0.8.9.png) |
+| ![Study Workspace Research e RWE sobre dados sintéticos](docs/assets/v0.9.0/research-study-workspace-v0.9.0.png) | ![Population Analytics agregada com Table 1 e attrition](docs/assets/v0.9.0/research-results-v0.9.0.png) |
 
 A [galeria corrente e seu manifesto SHA-256](docs/assets/current/manifest.json) também incluem checagem estruturada, auditoria e mobile.
 

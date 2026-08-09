@@ -31,12 +31,14 @@ from app.schemas.clinical_protocol_schema import (
 )
 from app.schemas.pharmacy_schema import PharmacyInterventionCreate
 from app.schemas.research_schema import (
+    AnalysisPlanCreate,
     CohortDefinitionCreate,
     CohortReviewRequest,
     CohortRunRequest,
     ConceptSetCreate,
     ConceptSetReviewRequest,
     OutcomeDefinitionCreate,
+    OutcomeReviewRequest,
     ResearchReviewRequest,
     ResearchStudyCreate,
     StudyProtocolVersionCreate,
@@ -51,6 +53,7 @@ from app.services.institutional_protocol_service import (
 from app.services.normalizer import normalize_text
 from app.services.patient_identifier_service import hash_identifier, mask_identifier
 from app.services.pharmacy_workflow_service import PharmacyWorkflowService
+from app.services.research_analysis_service import ResearchAnalysisService
 from app.services.research_service import ResearchService
 
 BULARIO_URL = "https://consultas.anvisa.gov.br/#/bulario/"
@@ -1434,9 +1437,7 @@ def _seed_users(db: Session) -> None:
             user.capability_policy_version = "explicit-v1"
             user.specialty_codes = [specialty] if specialty else []
             user.sensitive_data_segments = (
-                ["psychological"]
-                if "patient.sensitive_psychology.read" in capabilities
-                else []
+                ["psychological"] if "patient.sensitive_psychology.read" in capabilities else []
             )
             if role == UserRole.MEDICO and not user.specialty_code:
                 user.specialty_code = specialty
@@ -1488,18 +1489,12 @@ def _seed_v088_workflows(db: Session) -> None:
 
     admin = db.scalar(select(UserModel).where(UserModel.email == "admin@prescripta.local"))
     reviewer = db.scalar(select(UserModel).where(UserModel.email == "safety@prescripta.local"))
-    researcher = db.scalar(
-        select(UserModel).where(UserModel.email == "pesquisa@prescripta.local")
-    )
+    researcher = db.scalar(select(UserModel).where(UserModel.email == "pesquisa@prescripta.local"))
     research_reviewer = db.scalar(
         select(UserModel).where(UserModel.email == "revisao.pesquisa@prescripta.local")
     )
-    nurse = db.scalar(
-        select(UserModel).where(UserModel.email == "enfermagem@prescripta.local")
-    )
-    pharmacist = db.scalar(
-        select(UserModel).where(UserModel.email == "farmacia@prescripta.local")
-    )
+    nurse = db.scalar(select(UserModel).where(UserModel.email == "enfermagem@prescripta.local"))
+    pharmacist = db.scalar(select(UserModel).where(UserModel.email == "farmacia@prescripta.local"))
     patient = db.scalar(select(PatientModel).order_by(PatientModel.id))
     medication = db.scalar(select(MedicationModel).order_by(MedicationModel.id))
     if any(
@@ -1689,7 +1684,7 @@ def _seed_v088_workflows(db: Session) -> None:
     existing_study = db.scalar(
         select(ResearchStudyModel).where(
             ResearchStudyModel.institution_id == researcher.institution_id,
-            ResearchStudyModel.slug == "seguranca-medicamentosa-sintetica-v088",
+            ResearchStudyModel.slug == "seguranca-medicamentosa-sintetica-v090",
         )
     )
     if existing_study is not None:
@@ -1698,8 +1693,8 @@ def _seed_v088_workflows(db: Session) -> None:
     research_service = ResearchService(db)
     study = research_service.create_study(
         ResearchStudyCreate(
-            title="Estudo sintético de segurança medicamentosa v0.8.8",
-            slug="seguranca-medicamentosa-sintetica-v088",
+            title="Estudo sintético de segurança medicamentosa v0.9.0",
+            slug="seguranca-medicamentosa-sintetica-v090",
             description="Vertical slice demonstrativo e reprodutível, sem dados reais.",
             research_question=(
                 "Qual é o perfil agregado da condição sintética entre pacientes adultos demo?"
@@ -1727,7 +1722,7 @@ def _seed_v088_workflows(db: Session) -> None:
             missing_data_strategy={"strategy": "report_missingness"},
             statistical_plan={"methods": ["descriptive_only"]},
             limitations=["Fixture sem validade clínica ou externa."],
-            source_refs=["synthetic-dataset:prescripta:v088"],
+            source_refs=["synthetic-dataset:prescripta:v090"],
         ),
         researcher,
     )
@@ -1741,11 +1736,11 @@ def _seed_v088_workflows(db: Session) -> None:
     )
     concept = research_service.create_concept_set(
         ConceptSetCreate(
-            name="Condição metabólica sintética v0.8.8",
+            name="Condição metabólica sintética v0.9.0",
             domain="condition",
             terminology_versions={"CID-10": "2026-demo"},
             include_descendants=False,
-            source_refs=["terminology-fixture:cid10:v088"],
+            source_refs=["terminology-fixture:cid10:v090"],
             license_metadata={"fixture": True, "redistribution": "synthetic-only"},
             provenance={"origin": "prescripta-demo-seed", "demo_only": True},
             members=[
@@ -1802,7 +1797,7 @@ def _seed_v088_workflows(db: Session) -> None:
         ),
         research_reviewer,
     )
-    research_service.create_outcome(
+    outcome = research_service.create_outcome(
         study.id,
         OutcomeDefinitionCreate(
             name="Condição sintética em até 90 dias",
@@ -1811,14 +1806,78 @@ def _seed_v088_workflows(db: Session) -> None:
             event_qualification={"minimum_events": 1},
             observation_window={"after_index_days": 90},
             temporal_relationship="after_index",
-            source_refs=["synthetic-dataset:prescripta:v088"],
+            source_refs=["synthetic-dataset:prescripta:v090"],
             limitations=["Outcome demonstrativo sem validação clínica."],
         ),
         researcher,
     )
-    research_service.execute_cohort(
+    research_service.review_outcome(
+        outcome.id,
+        OutcomeReviewRequest(
+            decision="reviewed_demo",
+            note="Outcome sintético revisado de forma independente para a demonstração.",
+        ),
+        research_reviewer,
+    )
+    cohort_run = research_service.execute_cohort(
         cohort.id,
-        CohortRunRequest(data_snapshot_marker="synthetic-seed-v088-001"),
+        CohortRunRequest(data_snapshot_marker="synthetic-seed-v090-001"),
         researcher,
     )
-    DataQualityService(db).run(researcher)
+    DataQualityService(db).run(researcher, study.id)
+    analysis_service = ResearchAnalysisService(db)
+    plan = analysis_service.create_plan(
+        study.id,
+        AnalysisPlanCreate(
+            cohort_run_id=cohort_run.id,
+            objectives=["Descrever a população sintética elegível."],
+            variables=[
+                {"name": "age_years", "type": "numeric"},
+                {"name": "sex", "type": "categorical"},
+            ],
+            steps=[{"method": "population_count"}, {"method": "baseline_table_1"}],
+            descriptive_metrics=[
+                "n",
+                "missing",
+                "mean",
+                "sd",
+                "median",
+                "q1",
+                "q3",
+                "iqr",
+                "min",
+                "max",
+            ],
+            subgroup_definitions=[],
+            missing_data_approach="report_only",
+            methods=[
+                "population_count",
+                "numeric_summary",
+                "categorical_distribution",
+                "prevalence",
+                "baseline_table_1",
+                "resource_utilization",
+            ],
+            planned_outputs=[
+                "summary_cards",
+                "table_1",
+                "distribution_chart",
+                "attrition_table",
+                "research_package",
+            ],
+            output_specification={"small_cell_threshold": 5, "aggregate_only": True},
+            source_refs=["synthetic-dataset:prescripta:v090"],
+            limitations=["Fixture sintética sem validade clínica ou externa."],
+        ),
+        researcher,
+    )
+    analysis_service.review_plan(
+        plan.id,
+        ResearchReviewRequest(
+            decision="reviewed_demo",
+            note="Plano descritivo revisado de forma independente para demonstração.",
+        ),
+        research_reviewer,
+    )
+    analysis_run = analysis_service.execute(plan.id, researcher)
+    analysis_service.export_package(analysis_run.id, researcher)

@@ -1,30 +1,23 @@
-# Cohort Definition DSL
+# Cohort DSL v2
 
-A definição de coorte é JSON declarativo validado. SQL livre, nomes de tabela, funções,
-joins e comandos não fazem parte do contrato.
+A DSL é JSON declarativo e nunca aceita SQL, expressão livre, nome de tabela ou campo arbitrário.
+Definições v1 (`all`/`exclude`) continuam executáveis e são normalizadas para v2.
 
-```json
-{
-  "all": [
-    {"criterion": "age", "operator": "gte", "value": 18},
-    {
-      "criterion": "condition",
-      "operator": "exists",
-      "concept_set_version_id": "uuid-revisado"
-    }
-  ],
-  "exclude": []
-}
-```
+## Estrutura
 
-Critérios iniciais: idade, sexo, exposição a medicamento, condição, existência de
-medição, procedimento, data e campos demográficos permitidos. Critérios clínicos exigem
-uma versão de concept set da mesma instituição e com revisão humana.
+- `schema_version: "2"`;
+- grupos raiz `inclusion` e `exclusion`;
+- cada grupo usa `operator: all|any`, `items`, identificador e rótulo;
+- grupos podem ser aninhados até profundidade 2;
+- até 30 critérios e custo estimado máximo 100.
 
-Guardrails: no máximo 30 predicados, estrutura sem recursão arbitrária, janelas de até
-3.650 dias e orçamento de query 100. Campos, operadores e tipos desconhecidos são
-rejeitados. A execução usa SQLAlchemy e avaliação determinística; a IA nunca conta
-pacientes.
+Critérios permitidos: idade, sexo, condição, exposição medicamentosa, medição, procedimento, visita,
+concomitância medicamentosa, janela de data e demografia allowlisted. Critérios clínicos exigem
+versão explícita de concept set do mesmo tenant e revisada por pessoa.
 
-Attrition é persistido por etapa com contagem anterior, removidos, contagem final e hash
-do critério. O retorno padrão contém somente agregados.
+Temporalidade aceita `before_index`, `after_index`, `on_index` e `during_window`, com janelas entre 0
+e 3650 dias. Operadores incompatíveis, nesting excessivo, custo alto, concept set cross-tenant e
+qualquer campo desconhecido são rejeitados.
+
+O engine aplica cada item raiz sequencialmente para produzir attrition. Grupos aninhados contam como
+uma etapa legível. O resultado contém somente contagens, estatísticas agregadas e hashes.
