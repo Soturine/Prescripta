@@ -27,7 +27,7 @@ Guia para agentes e colaboradores que forem evoluir o Prescripta.
 - `frontend/src/components`: componentes reutilizáveis.
 - `frontend/src/i18n`: resolução de locale e catálogos estáticos PT-BR/EN-US.
 - `frontend/src/services`: cliente HTTP e integração com API.
-- `docker-compose.yml`: stack reprodutível com PostgreSQL, migration, backend e frontend.
+- `compose.yaml`: stack reprodutível com PostgreSQL, migration, backend e frontend.
 - `scripts`: utilitários locais.
 - `docs`: documentação de arquitetura, produto, regras clínicas, segurança e releases.
 

@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.8.9] - 2026-08-09
+
+### Qualidade e supply chain
+
+- quality ratchets independentes elevam cobertura combinada/branches do backend e statements,
+  branches, functions e lines do frontend, com validação incremental documentada;
+- cenários adversariais cobrem contratos/fallback do AI Task Router, transições de Research,
+  autorização farmacêutica e regras profissionais sem reduzir severidade;
+- install scripts npm usam inventário fail-closed por path e versão exatos; Actions permanecem
+  fixadas por SHA;
+- imagens recebem scan HIGH/CRITICAL e SBOM CycloneDX; manifests de dependência e SBOMs recebem
+  attestations de provenance no workflow de tag.
+
+### Containers e operação
+
+- imagens backend/frontend multi-stage usam bases oficiais fixadas por digest, runtime sem root,
+  filesystem somente leitura, capabilities removidas e healthchecks;
+- Compose inclui PostgreSQL interno, migration one-shot idempotente, dependências por health,
+  segmentação de rede e limites de recursos;
+- smoke reproduzível valida build, migrations, health, restart e usuários sem repetir pytest,
+  Vitest ou Playwright.
+
+### Produto, i18n e documentação
+
+- shell healthtech light-first organiza cuidado, evidência, pesquisa e governança, com drawer e
+  barra inferior mobile;
+- dashboard, paciente, checagem clínica, farmácia, evidências, Research e auditoria recebem
+  hierarquia e componentes de domínio com aprofundamento progressivo;
+- PT-BR e EN-US usam catálogos estáticos, detecção segura, override persistido, equivalência de
+  status e preservação de códigos, unidades e valores canônicos;
+- ajuda contextual, guia por rota, glossário, arquitetura frontend, threat model, hazard log,
+  roadmap e screenshots sintéticos foram atualizados.
+
 ## [0.8.8] - 2026-08-08
 
 ### Workflows e segurança clínica

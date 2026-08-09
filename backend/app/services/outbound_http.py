@@ -112,7 +112,7 @@ class SafeOutboundHTTPClient:
                 raise SafeOutboundHTTPError("Payload externo excede o limite permitido.")
             headers.setdefault("Content-Type", "application/json")
         headers.setdefault("Accept", "application/json")
-        headers.setdefault("User-Agent", "Prescripta/0.8.8")
+        headers.setdefault("User-Agent", "Prescripta/0.8.9")
         headers.setdefault("Connection", "close")
         rendered_host = f"[{target.host}]" if ":" in target.host else target.host
         default_port = 443 if target.scheme == "https" else 80

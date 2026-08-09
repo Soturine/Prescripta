@@ -6,13 +6,14 @@
 
 O Prescripta é uma plataforma demonstrativa e educacional organizada em três pilares: Medication
 Safety, Research & RWE e Evidence Intelligence. Ela reúne contexto fictício, regras determinísticas,
-coortes agregadas, fontes rastreáveis, revisão humana, relatórios e auditoria em FastAPI + React.
+coortes agregadas, fontes rastreáveis, revisão humana, relatórios e auditoria em uma experiência
+healthtech responsiva, disponível em PT-BR e EN-US.
 
 > Não é dispositivo médico, não possui validação clínica, regulatória ou institucional e não deve ser
 > usado em atendimento real. Não substitui avaliação profissional, bula, protocolo, autoridade
 > sanitária ou decisão institucional. Use somente dados fictícios.
 
-![Fluxo demonstrativo atual do Prescripta, com dashboard, paciente, decisão clínica e Research](docs/assets/current/prescripta-overview-v0.8.8.gif)
+![Fluxo demonstrativo atual do Prescripta, com dashboard, paciente, decisão clínica e Research](docs/assets/current/prescripta-overview-v0.8.9.gif)
 
 ## O que é — e o que não é
 
@@ -43,22 +44,37 @@ interna usa busca lexical indexada, não um RAG clinicamente validado.
 - estudos e protocolos versionados, concept sets revisados, cohort DSL sem SQL livre e attrition;
 - runs determinísticos aggregate-first, snapshots, hashes, provenance e Data Quality;
 - EvidenceSource/EvidenceLink e AI Task Router proposal-only com revisão humana obrigatória.
+- stack Docker Compose com PostgreSQL, migração one-shot, imagens sem root e healthchecks;
+- shell healthtech responsivo, localização PT-BR/EN-US e guia contextual por rota.
 
 ## Galeria
 
 | Workspace profissional | Paciente autorizado |
 | --- | --- |
-| ![Dashboard profissional organizado pelas capacidades concedidas](docs/assets/current/dashboard-v0.8.8.png) | ![Workspace longitudinal de paciente fictício autorizado](docs/assets/current/patient-workspace-v0.8.8.png) |
+| ![Dashboard profissional organizado pelas capacidades concedidas](docs/assets/current/dashboard-v0.8.9.png) | ![Workspace longitudinal de paciente fictício autorizado](docs/assets/current/patient-workspace-v0.8.9.png) |
 | Decisão clínica | Revisão farmacêutica |
-| ![Resultado determinístico com cobertura, abstention e auditoria](docs/assets/current/clinical-decision-v0.8.8.png) | ![Workflow farmacêutico demonstrativo](docs/assets/current/pharmacy-review-v0.8.8.png) |
+| ![Resultado determinístico com cobertura, abstention e auditoria](docs/assets/current/clinical-decision-v0.8.9.png) | ![Workflow farmacêutico demonstrativo](docs/assets/current/pharmacy-review-v0.8.9.png) |
 
 | Research Workspace | Attrition reproduzível |
 | --- | --- |
-| ![Workspace Research e RWE sobre dados sintéticos](docs/assets/current/research-workspace-v0.8.8.png) | ![Execução de coorte demonstrativa com attrition por critério](docs/assets/current/cohort-attrition-v0.8.8.png) |
+| ![Workspace Research e RWE sobre dados sintéticos](docs/assets/current/research-workspace-v0.8.9.png) | ![Execução de coorte demonstrativa com attrition por critério](docs/assets/current/cohort-attrition-v0.8.9.png) |
 
 A [galeria corrente e seu manifesto SHA-256](docs/assets/current/manifest.json) também incluem checagem estruturada, auditoria e mobile.
 
-## Instalação local
+## Quick Start A — Docker
+
+Requer Docker com Compose v2. A stack inicia PostgreSQL, executa migrations e publica a interface em
+`http://localhost:8080` e a API em `http://localhost:8000`.
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build
+```
+
+Use `docker compose down` para parar preservando o volume. `docker compose down --volumes` também
+remove todos os dados demonstrativos locais. Consulte o [guia Docker](docs/operations/docker.md).
+
+## Quick Start B — desenvolvimento nativo
 
 Requer Python 3.12+, Node.js 24+ e npm.
 
@@ -77,7 +93,8 @@ credenciais demonstrativas. Em terminais separados:
 powershell -ExecutionPolicy Bypass -File scripts/dev.ps1
 ```
 
-Ou consulte o [guia de setup local](docs/getting-started/local-setup.md).
+Ou consulte o [guia de setup local](docs/getting-started/local-setup.md). Docker complementa esse
+fluxo; não substitui o ambiente Python/Node útil durante desenvolvimento.
 
 ## Arquitetura resumida
 
@@ -120,13 +137,14 @@ O [modelo de ameaça](docs/security/threat-model.md), o
 ## Documentação
 
 - [índice da documentação](docs/README.md)
+- [guia do usuário por rota](docs/user-guide/README.md)
 - [arquitetura](docs/architecture/overview.md)
 - [roadmap v0.8.8–v1.0](docs/ROADMAP.md)
 - [regras clínicas](docs/clinical-rules/risk-engine.md)
 - [Research & RWE](docs/research/README.md) e [Evidence Intelligence](docs/evidence/README.md)
 - [interoperabilidade](docs/interoperability/architecture.md)
 - [IA](docs/ai/multi-provider-ai.md) e [busca lexical](docs/rag/clinical-rag.md)
-- [testes](docs/testing/ci-and-release-gates.md) e [operações](docs/operations/README.md)
+- [frontend e i18n](docs/frontend/architecture.md), [testes](docs/testing/ci-and-release-gates.md) e [operações](docs/operations/README.md)
 - [auditorias históricas](docs/audits/README.md), [changelog](CHANGELOG.md) e
   [índice de releases](docs/releases/README.md)
 

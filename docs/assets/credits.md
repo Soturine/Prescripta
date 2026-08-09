@@ -1,5 +1,14 @@
 # Créditos de Assets
 
+## v0.8.9
+
+As 10 capturas e o GIF em `docs/assets/current/` foram gerados sobre a aplicação v0.8.9 com banco
+temporário, dados sintéticos e IA externa desativada. O roteiro reproduzível é
+`scripts/capture-current-assets.mjs`; `manifest.json` registra hash, dimensões e bytes. A amostra
+EN-US usa a mesma sessão e os mesmos dados do dashboard PT-BR. Não foram usados assets externos,
+hotlinks ou imagens geradas por terceiros nesta versão; os ícones Lucide já constam da árvore de
+dependências e sua licença é verificada pelo gate de licenças.
+
 ## v0.8.6
 
 As 25 capturas e cinco GIFs em `docs/assets/v0.8.6/` foram gerados novamente sobre a aplicação

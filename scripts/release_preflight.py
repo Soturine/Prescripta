@@ -33,9 +33,11 @@ for checker in (
     "check_markdown_links.py",
     "check_assets.py",
     "check_version_consistency.py",
+    "check_install_scripts.py",
     "check_npm_audit.py",
 ):
     run(sys.executable, f"scripts/{checker}")
+run("node", "scripts/check_i18n_catalogs.mjs")
 run(sys.executable, "-m", "ruff", "check", ".", "--no-cache", cwd=ROOT / "backend")
 run(
     sys.executable,
@@ -44,8 +46,19 @@ run(
     "--cov=app",
     "--cov-branch",
     "--cov-report=term-missing",
-    "--cov-fail-under=80",
+    "--cov-report=json:coverage.json",
+    "--cov-fail-under=0",
     f"--basetemp={ROOT / '.tmp' / 'pytest'}",
+    cwd=ROOT / "backend",
+)
+run(
+    sys.executable,
+    "../scripts/check_coverage_ratchet.py",
+    "coverage.json",
+    "--combined",
+    "82",
+    "--branches",
+    "65",
     cwd=ROOT / "backend",
 )
 run(NPM, "ci", cwd=ROOT / "frontend")
@@ -84,7 +97,7 @@ for _ in range(90):
     required = {
         item["workflowName"]: item
         for item in runs
-        if item.get("headSha") == sha and item.get("workflowName") in {"CI", "Security"}
+        if item.get("headSha") == sha and item.get("workflowName") in {"CI", "Security", "Container"}
     }
     failed = [
         item for item in required.values()
@@ -93,7 +106,7 @@ for _ in range(90):
     if failed:
         details = ", ".join(f"{item['workflowName']}: {item['url']}" for item in failed)
         raise SystemExit(f"Workflow obrigatório falhou: {details}")
-    if set(required) == {"CI", "Security"} and all(
+    if set(required) == {"CI", "Security", "Container"} and all(
         item["status"] == "completed" and item["conclusion"] == "success"
         for item in required.values()
     ):
@@ -101,7 +114,7 @@ for _ in range(90):
             f"- {name}: run {item['databaseId']} — {item['url']}"
             for name, item in sorted(required.items())
         )
-        print(f"CI e Security verdes para v{VERSION} no SHA {sha}:\n{evidence}\nA tag pode ser criada.")
+        print(f"CI, Security e Container verdes para v{VERSION} no SHA {sha}:\n{evidence}\nA tag pode ser criada.")
         sys.exit(0)
     time.sleep(10)
-raise SystemExit("Timeout aguardando CI e Security no SHA final; não crie a tag.")
+raise SystemExit("Timeout aguardando CI, Security e Container no SHA final; não crie a tag.")

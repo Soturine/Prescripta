@@ -2,6 +2,7 @@
 
 As notas são imutáveis e versionadas. Consulte a versão desejada:
 
+- [v0.8.9](v0.8.9.md)
 - [v0.8.8](v0.8.8.md)
 - [v0.8.7](v0.8.7.md)
 - [v0.8.6](v0.8.6.md)

@@ -51,7 +51,7 @@ class AIRequestSchema(BaseModel):
         if self.task_type == "patient_journey_summary" and not self.patient_id:
             raise ValueError("resumo de jornada exige patient_id")
         if not self.requires_structured_output:
-            raise ValueError("v0.8.8 aceita somente saída estruturada")
+            raise ValueError("o Prescripta aceita somente saída estruturada")
         return self
 
 

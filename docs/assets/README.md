@@ -31,9 +31,9 @@ release alterar UI, fluxos ou textos visíveis.
 
 ## Captura corrente
 
-A vitrine v0.8.8 contém dashboard, paciente, checagem, decisão, workflow farmacêutico, auditoria,
-mobile, Research Workspace, attrition e GIF de apresentação. O manifesto é a fonte exata do
-inventário e dos hashes.
+A vitrine v0.8.9 contém dashboard PT-BR, amostra EN-US, paciente, checagem, decisão, workflow
+farmacêutico, auditoria, mobile, Research Workspace, attrition e GIF de apresentação. O manifesto é
+a fonte exata do inventário e dos hashes.
 
 Na raiz do repositório, com dependências backend/frontend e Chromium do Playwright instalados:
 

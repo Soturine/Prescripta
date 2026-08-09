@@ -8,6 +8,10 @@ Documentação viva do subsistema de auditoria fica em [`docs/auditing`](../audi
 
 Marco corrente:
 
+- [gap analysis v0.8.9](v0.8.9-pre-implementation-gap-analysis.md);
+- [matriz de fechamento v0.8.9](v0.8.9-implementation-closure-matrix.md);
+- [relatório do release candidate v0.8.9](v0.8.9-release-candidate-quality-report.md);
+
 - [gap analysis v0.8.8](v0.8.8-pre-implementation-gap-analysis.md);
 - [matriz de fechamento v0.8.8](v0.8.8-implementation-closure-matrix.md);
 - [relatório final v0.8.8](v0.8.8-final-quality-and-release-report.md).
