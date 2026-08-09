@@ -12,10 +12,12 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import AlertCard from "../components/AlertCard";
 import AlternativeMedicationsCard from "../components/AlternativeMedicationsCard";
 import ClinicalContextGraphCard from "../components/ClinicalContextGraphCard";
+import ClinicalCheckStepper from "../components/clinical/ClinicalCheckStepper";
 import CompatibilityBadge from "../components/CompatibilityBadge";
 import DoseAccumulationCard from "../components/DoseAccumulationCard";
 import EmptyState from "../components/EmptyState";
@@ -53,10 +55,12 @@ import type {
   PrescriptionExplanationPayload,
 } from "../types/prescription";
 import type { DecisionEvidenceItem, DecisionTimelineItem, ReportPreview } from "../types/report";
+import { formatStatus } from "../utils/formatters";
 
 export default function PrescriptionCheck() {
   const queryClient = useQueryClient();
   const { can } = useAuth();
+  const { t } = useTranslation();
   const [lastPayload, setLastPayload] = useState<PrescriptionCheckPayload | null>(null);
   const [anonymizedReport, setAnonymizedReport] = useState(false);
   const [viewMode, setViewMode] = useState<"clinical" | "technical">("clinical");
@@ -193,14 +197,15 @@ export default function PrescriptionCheck() {
   return (
     <div className="grid gap-6">
       <PageHeader
-        title="Checagem de prescrição"
-        description="Fluxo orientado por paciente autorizado, dose dimensional, cobertura e decisão persistida. IA só fica disponível depois da decisão."
+        title={t("prescription.title")}
+        description={t("prescription.description")}
       />
+      <ClinicalCheckStepper hasResult={Boolean(checkMutation.data)} />
 
       <section className="surface-card p-4 sm:p-6">
-        {isLoading ? <LoadingState label="Carregando dados" /> : null}
+        {isLoading ? <LoadingState label={t("prescription.loading")} /> : null}
         {!isLoading && !hasRequiredData ? (
-          <EmptyState title="Cadastre ao menos um paciente e um medicamento" />
+          <EmptyState title={t("prescription.missingData")} />
         ) : null}
         {!isLoading && hasRequiredData ? (
           <PrescriptionForm
@@ -210,7 +215,7 @@ export default function PrescriptionCheck() {
             patients={patients}
           />
         ) : null}
-        {checkMutation.isError ? <div className="mt-4"><StatusPanel title="A checagem não foi executada" tone="danger">Revise os campos dimensionais, o vínculo com o paciente e tente novamente. Nenhuma decisão foi presumida no frontend.</StatusPanel></div> : null}
+        {checkMutation.isError ? <div className="mt-4"><StatusPanel title={t("prescription.errorTitle")} tone="danger">{t("prescription.errorBody")}</StatusPanel></div> : null}
       </section>
 
       {checkMutation.data ? (
@@ -219,7 +224,7 @@ export default function PrescriptionCheck() {
           <div className="surface-card p-5 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-bold text-ink">Resultado</h2>
+                <h2 className="text-lg font-bold text-ink">{t("prescription.result")}</h2>
                 <p className="mt-1 text-sm text-slate-600">{checkMutation.data.recommendation}</p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -235,7 +240,7 @@ export default function PrescriptionCheck() {
                 type="button"
               >
                 <ShieldCheck aria-hidden="true" className="h-4 w-4" />
-                Modo clínico
+                {t("prescription.clinicalMode")}
               </button>
               {canGenerateTechnical ? (
                 <button
@@ -244,29 +249,29 @@ export default function PrescriptionCheck() {
                   type="button"
                 >
                   <FileJson aria-hidden="true" className="h-4 w-4" />
-                  Modo técnico
+                  {t("prescription.technicalMode")}
                 </button>
               ) : null}
               {overrideAllowed ? (
                 <button className="btn-secondary" onClick={() => setOverrideOpen(true)} type="button">
                   <AlertTriangle aria-hidden="true" className="h-4 w-4" />
-                  Solicitar override
+                  {t("prescription.requestOverride")}
                 </button>
               ) : null}
             </div>
             <div className="mt-4 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
               <div>
-                Revisão humana:{" "}
+                {t("prescription.humanReview")}:{" "}
                 <span className="font-semibold text-ink">
-                  {checkMutation.data.human_review_required ? "Sim" : "Não"}
+                  {checkMutation.data.human_review_required ? t("prescription.yes") : t("prescription.no")}
                 </span>
               </div>
               <div>
-                Auditoria:{" "}
+                {t("prescription.audit")}:{" "}
                 <span className="font-semibold text-ink">#{checkMutation.data.audit_id}</span>
               </div>
               <div className="sm:col-span-2">
-                Fonte do medicamento:{" "}
+                {t("prescription.medicationSource")}:{" "}
                 {selectedMedication ? (
                   <SourceBadge
                     jurisdiction={selectedMedication.source_jurisdiction}
@@ -283,22 +288,22 @@ export default function PrescriptionCheck() {
                 className="btn-secondary"
                 disabled={!canExplain || explanationMutation.isPending}
                 onClick={handleExplain}
-                title="Explicar com IA"
+                title={t("prescription.explainAI")}
                 type="button"
               >
                 <Sparkles aria-hidden="true" className="h-4 w-4" />
-                {explanationMutation.isPending ? "Explicando..." : "Explicar com IA"}
+                {explanationMutation.isPending ? t("prescription.explaining") : t("prescription.explainAI")}
               </button>
               {explanationMutation.data ? (
                 <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">
                   {explanationMutation.data.used_fallback
                     ? "Fallback determinístico"
-                    : "Provider configurado"}
+                    : t("prescription.configuredProvider")}
                 </span>
               ) : null}
               {explanationMutation.isError ? (
                 <span className="text-sm font-semibold text-danger">
-                  Não foi possível gerar a explicação.
+                  {t("prescription.explanationError")}
                 </span>
               ) : null}
             </div>
@@ -310,7 +315,7 @@ export default function PrescriptionCheck() {
                   onChange={(event) => setAnonymizedReport(event.target.checked)}
                   type="checkbox"
                 />
-                Dados anonimizados
+                {t("prescription.anonymized")}
               </label>
               {canGenerateTechnical ? (
                 <button
@@ -584,7 +589,7 @@ function ClinicalIntelligenceCards({
     <div className="grid gap-4 xl:grid-cols-3">
       <section className="rounded-lg border border-cyan-100 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-bold text-ink">Dose Intelligence</h2>
-        <p className="mt-2 text-sm text-slate-600">Status: {dose.status}</p>
+        <p className="mt-2 text-sm text-slate-600">Status: {formatStatus(dose.status)}</p>
         <p className="mt-1 text-sm text-slate-600">
           Faixa calculada: {dose.calculated_dose ?? "dados insuficientes"} {dose.calculated_unit}
         </p>
@@ -601,7 +606,7 @@ function ClinicalIntelligenceCards({
       </section>
       <section className="rounded-lg border border-amber-100 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-bold text-ink">Política de prescrição</h2>
-        <p className="mt-2 text-sm font-semibold text-slate-700">{policy.status}</p>
+        <p className="mt-2 text-sm font-semibold text-slate-700">{formatStatus(policy.status)}</p>
         <p className="mt-2 text-sm text-slate-600">Requer revisão: {policy.requires_human_review ? "Sim" : "Não"}</p>
         {policy.warnings.map((warning) => <p className="mt-2 text-xs text-amber-900" key={warning}>{warning}</p>)}
         {technical ? <pre className="mt-3 overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-100">{JSON.stringify(policy, null, 2)}</pre> : null}
@@ -786,7 +791,7 @@ function DecisionTimelineCard({ timeline }: { timeline: DecisionTimelineItem[] }
               </span>
               <div>
                 <p className="font-semibold text-ink">{item.title}</p>
-                <p className="mt-1 text-sm text-slate-600">{item.status}</p>
+                <p className="mt-1 text-sm text-slate-600">{formatStatus(item.status)}</p>
               </div>
             </li>
           ))

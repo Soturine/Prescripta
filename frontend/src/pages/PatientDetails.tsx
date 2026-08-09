@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, FileText, ShieldCheck, Sparkles, UsersRound } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
 import ClinicalContextGraphCard from "../components/ClinicalContextGraphCard";
@@ -43,9 +44,11 @@ import type {
   QuickTriagePayload,
 } from "../types/patient";
 import type { Capability } from "../types/user";
+import { formatStatus, humanizeTechnicalValue } from "../utils/formatters";
 
 export default function PatientDetails() {
   const { can } = useAuth();
+  const { t } = useTranslation();
   const canManagePatient = can("patient.write");
   const canReadPsychology = can("patient.sensitive_psychology.read");
   const canWritePsychology = can("psychology.context.write");
@@ -203,7 +206,7 @@ export default function PatientDetails() {
   });
 
   if (isLoading) {
-    return <LoadingState label="Carregando paciente" />;
+    return <LoadingState label={t("patients.loading")} />;
   }
 
   if (!patient) {
@@ -211,10 +214,10 @@ export default function PatientDetails() {
       <div className="grid gap-4">
         <Link className="btn-secondary w-fit" to="/patients">
           <ArrowLeft aria-hidden="true" className="h-4 w-4" />
-          Voltar
+          {t("patients.back")}
         </Link>
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
-          Paciente não encontrado.
+          {t("patients.notFound")}
         </div>
       </div>
     );
@@ -226,22 +229,22 @@ export default function PatientDetails() {
         actions={
           <Link className="btn-secondary w-fit" to="/patients">
             <ArrowLeft aria-hidden="true" className="h-4 w-4" />
-            Voltar à lista
+            {t("patients.backList")}
           </Link>
         }
-        description="Workspace clínico longitudinal. Cada segmento respeita vínculo, finalidade e capacidade explícitos."
+        description={t("patients.workspaceDescription")}
         title={patient.name}
       />
 
-      <nav aria-label="Seções do paciente" className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+      <nav aria-label={t("patients.sections")} className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
         <div className="flex min-w-max gap-1">
           {[
-            ["#profile", "Perfil"],
-            ["#documents", "Documentos"],
-            ["#functional", "Perfil funcional"],
-            ["#psychology", "Contexto psicológico"],
-            ["#access", "Equipe e acesso"],
-            ["#activity", "Atividade"],
+            ["#profile", t("patients.profile")],
+            ["#documents", t("patients.documents")],
+            ["#functional", t("patients.functional")],
+            ["#psychology", t("patients.psychology")],
+            ["#access", t("patients.access")],
+            ["#activity", t("patients.activity")],
           ].map(([href, label]) => (
             <a className="rounded-xl px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 hover:text-ink" href={href} key={href}>
               {label}
@@ -387,7 +390,7 @@ export default function PatientDetails() {
                     <div>
                       <p className="font-bold text-ink">{document.title}</p>
                       <p className="mt-1 text-sm text-slate-600">
-                        {document.document_type} · {document.review_status}
+                        {humanizeTechnicalValue(document.document_type)} · {formatStatus(document.review_status)}
                       </p>
                     </div>
                     {canManagePatient ? (

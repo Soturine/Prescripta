@@ -65,5 +65,6 @@ export function formatAuditAction(action: string) {
     "user.status_update": "Alterou status de usuário",
     "user.role_update": "Alterou perfil de usuário",
   };
-  return labels[action] ?? action;
+  if (currentLocale() === "en-US") return humanizeTechnicalValue(action);
+  return labels[action] ?? humanizeTechnicalValue(action);
 }

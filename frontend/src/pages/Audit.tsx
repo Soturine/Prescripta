@@ -1,10 +1,12 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Download, Eye, FileJson, FileText, RotateCcw } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
 import EmptyState from "../components/EmptyState";
 import LoadingState from "../components/LoadingState";
+import PageHeader from "../components/PageHeader";
 import RiskBadge from "../components/RiskBadge";
 import SourceBadge from "../components/SourceBadge";
 import {
@@ -17,9 +19,10 @@ import {
 } from "../services/api";
 import type { AuditRecord } from "../types/audit";
 import type { AuditFilters } from "../types/report";
-import { formatAuditAction, formatDateTime, formatRole } from "../utils/formatters";
+import { formatAuditAction, formatDateTime, formatRole, formatStatus } from "../utils/formatters";
 
 export default function Audit() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = useMemo(() => paramsToFilters(searchParams), [searchParams]);
   const [draft, setDraft] = useState<AuditFilters>(filters);
@@ -55,30 +58,32 @@ export default function Audit() {
 
   return (
     <div className="grid gap-6">
-      <header>
-        <h1 className="text-3xl font-bold tracking-normal text-ink">Auditoria</h1>
-      </header>
+      <PageHeader title={t("audit.title")} description={t("audit.description")} />
 
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
-          <FilterInput label="Texto livre" value={draft.text} onChange={(text) => setDraft({ ...draft, text })} />
-          <FilterInput label="Usuário" value={draft.user} onChange={(user) => setDraft({ ...draft, user })} />
-          <FilterInput label="Paciente" value={draft.patient} onChange={(patient) => setDraft({ ...draft, patient })} />
-          <FilterInput label="Medicamento" value={draft.medication} onChange={(medication) => setDraft({ ...draft, medication })} />
-          <FilterInput label="Princípio ativo" value={draft.active_ingredient} onChange={(active_ingredient) => setDraft({ ...draft, active_ingredient })} />
-          <FilterInput label="Protocolo" value={draft.protocol} onChange={(protocol) => setDraft({ ...draft, protocol })} />
-          <FilterInput label="Categoria protocolo" value={draft.protocol_category} onChange={(protocol_category) => setDraft({ ...draft, protocol_category })} />
-          <FilterInput label="Versão protocolo" value={draft.protocol_version} onChange={(protocol_version) => setDraft({ ...draft, protocol_version })} />
-          <FilterInput label="Execução" value={draft.execution} onChange={(execution) => setDraft({ ...draft, execution })} />
-          <FilterInput label="Tipo de evento" value={draft.action} onChange={(action) => setDraft({ ...draft, action })} />
-          <FilterInput label="Risco" value={draft.risk_level} onChange={(risk_level) => setDraft({ ...draft, risk_level })} />
-          <FilterInput label="Status" value={draft.status} onChange={(status) => setDraft({ ...draft, status })} />
-          <FilterInput label="Provider IA" value={draft.ai_provider} onChange={(ai_provider) => setDraft({ ...draft, ai_provider })} />
-          <FilterInput label="Modelo IA" value={draft.ai_model} onChange={(ai_model) => setDraft({ ...draft, ai_model })} />
-          <FilterInput label="Fonte" value={draft.source} onChange={(source) => setDraft({ ...draft, source })} />
-          <FilterInput label="Jurisdição" value={draft.jurisdiction} onChange={(jurisdiction) => setDraft({ ...draft, jurisdiction })} />
+      <section className="surface-card p-5">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <FilterInput label={t("audit.freeText")} value={draft.text} onChange={(text) => setDraft({ ...draft, text })} />
+          <FilterInput label={t("audit.user")} value={draft.user} onChange={(user) => setDraft({ ...draft, user })} />
+          <FilterInput label={t("audit.patient")} value={draft.patient} onChange={(patient) => setDraft({ ...draft, patient })} />
+          <FilterInput label={t("audit.eventType")} value={draft.action} onChange={(action) => setDraft({ ...draft, action })} />
+        </div>
+        <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+          <summary className="cursor-pointer text-sm font-black text-ocean">{t("audit.advancedFilters")}</summary>
+          <div className="mt-4 grid gap-3 md:grid-cols-3 xl:grid-cols-5">
+          <FilterInput label={t("audit.medication")} value={draft.medication} onChange={(medication) => setDraft({ ...draft, medication })} />
+          <FilterInput label={t("audit.activeIngredient")} value={draft.active_ingredient} onChange={(active_ingredient) => setDraft({ ...draft, active_ingredient })} />
+          <FilterInput label={t("audit.protocol")} value={draft.protocol} onChange={(protocol) => setDraft({ ...draft, protocol })} />
+          <FilterInput label={t("audit.protocolCategory")} value={draft.protocol_category} onChange={(protocol_category) => setDraft({ ...draft, protocol_category })} />
+          <FilterInput label={t("audit.protocolVersion")} value={draft.protocol_version} onChange={(protocol_version) => setDraft({ ...draft, protocol_version })} />
+          <FilterInput label={t("audit.execution")} value={draft.execution} onChange={(execution) => setDraft({ ...draft, execution })} />
+          <FilterInput label={t("audit.risk")} value={draft.risk_level} onChange={(risk_level) => setDraft({ ...draft, risk_level })} />
+          <FilterInput label={t("audit.status")} value={draft.status} onChange={(status) => setDraft({ ...draft, status })} />
+          <FilterInput label={t("audit.aiProvider")} value={draft.ai_provider} onChange={(ai_provider) => setDraft({ ...draft, ai_provider })} />
+          <FilterInput label={t("audit.aiModel")} value={draft.ai_model} onChange={(ai_model) => setDraft({ ...draft, ai_model })} />
+          <FilterInput label={t("audit.source")} value={draft.source} onChange={(source) => setDraft({ ...draft, source })} />
+          <FilterInput label={t("audit.jurisdiction")} value={draft.jurisdiction} onChange={(jurisdiction) => setDraft({ ...draft, jurisdiction })} />
           <label className="grid gap-1.5">
-            <span className="label">Data inicial</span>
+            <span className="label">{t("audit.startDate")}</span>
             <input
               className="field"
               type="date"
@@ -87,7 +92,7 @@ export default function Audit() {
             />
           </label>
           <label className="grid gap-1.5">
-            <span className="label">Data final</span>
+            <span className="label">{t("audit.endDate")}</span>
             <input
               className="field"
               type="date"
@@ -96,45 +101,46 @@ export default function Audit() {
             />
           </label>
           <label className="grid gap-1.5">
-            <span className="label">Ordenação</span>
+            <span className="label">{t("audit.sort")}</span>
             <select
               className="field"
               value={draft.sort ?? "desc"}
               onChange={(event) => setDraft({ ...draft, sort: event.target.value as "asc" | "desc" })}
             >
-              <option value="desc">Mais recentes</option>
-              <option value="asc">Mais antigos</option>
+              <option value="desc">{t("audit.newest")}</option>
+              <option value="asc">{t("audit.oldest")}</option>
             </select>
           </label>
-        </div>
+          </div>
+        </details>
         <div className="mt-4 flex flex-wrap gap-3">
           <button className="btn-primary" onClick={applyFilters} type="button">
             <Eye aria-hidden="true" className="h-4 w-4" />
-            Filtrar
+            {t("audit.filter")}
           </button>
           <button className="btn-secondary" onClick={clearFilters} type="button">
             <RotateCcw aria-hidden="true" className="h-4 w-4" />
-            Limpar
+            {t("audit.clear")}
           </button>
           <button className="btn-secondary" onClick={() => jsonMutation.mutate()} type="button">
             <FileJson aria-hidden="true" className="h-4 w-4" />
-            Exportar JSON
+            {t("audit.exportJson")}
           </button>
           <button className="btn-secondary" onClick={() => csvMutation.mutate()} type="button">
             <Download aria-hidden="true" className="h-4 w-4" />
-            Exportar CSV
+            {t("audit.exportCsv")}
           </button>
           <button className="btn-secondary" onClick={() => pdfMutation.mutate()} type="button">
             <FileText aria-hidden="true" className="h-4 w-4" />
-            Gerar PDF
+            {t("audit.generatePdf")}
           </button>
         </div>
         <ActiveFilterChips filters={filters} onClear={clearFilters} />
       </section>
 
-      {isLoading ? <LoadingState label="Carregando auditoria" /> : null}
+      {isLoading ? <LoadingState label={t("audit.loading")} /> : null}
       {!isLoading && records.length === 0 ? (
-        <EmptyState title="Nenhum evento registrado" />
+        <EmptyState title={t("audit.empty")} />
       ) : null}
       {!isLoading && records.length > 0 ? (
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -142,15 +148,15 @@ export default function Audit() {
             <table className="w-full min-w-[980px] text-left text-sm">
               <thead className="bg-slate-50 text-xs font-bold uppercase tracking-normal text-slate-500">
                 <tr>
-                  <th className="px-4 py-3">Data</th>
-                  <th className="px-4 py-3">Usuário</th>
-                  <th className="px-4 py-3">Perfil</th>
-                  <th className="px-4 py-3">Ação</th>
-                  <th className="px-4 py-3">Recurso</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Risco</th>
-                  <th className="px-4 py-3">Badges</th>
-                  <th className="px-4 py-3 text-right">Detalhe</th>
+                  <th className="px-4 py-3">{t("audit.date")}</th>
+                  <th className="px-4 py-3">{t("audit.user")}</th>
+                  <th className="px-4 py-3">{t("audit.profile")}</th>
+                  <th className="px-4 py-3">{t("audit.action")}</th>
+                  <th className="px-4 py-3">{t("audit.resource")}</th>
+                  <th className="px-4 py-3">{t("audit.status")}</th>
+                  <th className="px-4 py-3">{t("audit.risk")}</th>
+                  <th className="px-4 py-3">{t("audit.badges")}</th>
+                  <th className="px-4 py-3 text-right">{t("audit.detail")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -181,7 +187,7 @@ export default function Audit() {
                     <td className="px-4 py-3 text-right">
                       <button className="btn-secondary" onClick={() => setSelected(record)} type="button">
                         <Eye aria-hidden="true" className="h-4 w-4" />
-                        Ver
+                        {t("audit.view")}
                       </button>
                     </td>
                   </tr>
@@ -190,10 +196,10 @@ export default function Audit() {
             </table>
           </div>
           <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm">
-            <span>{auditPage?.total ?? 0} eventos · página {auditPage?.page ?? 1} de {auditPage?.total_pages || 1}</span>
+            <span>{t("audit.pagination", { total: auditPage?.total ?? 0, page: auditPage?.page ?? 1, pages: auditPage?.total_pages || 1 })}</span>
             <div className="flex gap-2">
-              <button className="btn-secondary" disabled={!auditPage?.has_previous} onClick={() => setSearchParams(filtersToParams({ ...filters, page: (auditPage?.page ?? 1) - 1 }))} type="button">Anterior</button>
-              <button className="btn-secondary" disabled={!auditPage?.has_next} onClick={() => setSearchParams(filtersToParams({ ...filters, page: (auditPage?.page ?? 1) + 1 }))} type="button">Próxima</button>
+              <button className="btn-secondary" disabled={!auditPage?.has_previous} onClick={() => setSearchParams(filtersToParams({ ...filters, page: (auditPage?.page ?? 1) - 1 }))} type="button">{t("audit.previous")}</button>
+              <button className="btn-secondary" disabled={!auditPage?.has_next} onClick={() => setSearchParams(filtersToParams({ ...filters, page: (auditPage?.page ?? 1) + 1 }))} type="button">{t("audit.next")}</button>
             </div>
           </div>
         </section>
@@ -207,6 +213,7 @@ export default function Audit() {
 }
 
 function ActiveFilterChips({ filters, onClear }: { filters: AuditFilters; onClear: () => void }) {
+  const { t } = useTranslation();
   const entries = Object.entries(filters).filter(
     ([, value]) => value !== undefined && value !== null && String(value).trim() !== "",
   );
@@ -220,11 +227,11 @@ function ActiveFilterChips({ filters, onClear }: { filters: AuditFilters; onClea
           className="rounded-lg bg-cyan-50 px-2.5 py-1 text-xs font-bold text-cyan-800"
           key={key}
         >
-          {labelFilterKey(key)}: {String(value)}
+          {t(labelFilterKey(key))}: {String(value)}
         </span>
       ))}
       <button className="btn-secondary" onClick={onClear} type="button">
-        Limpar filtros
+        {t("audit.clearFilters")}
       </button>
     </div>
   );
@@ -232,27 +239,27 @@ function ActiveFilterChips({ filters, onClear }: { filters: AuditFilters; onClea
 
 function labelFilterKey(key: string) {
   const labels: Record<string, string> = {
-    action: "Evento",
-    active_ingredient: "Princípio ativo",
-    ai_model: "Modelo IA",
-    ai_provider: "Provider IA",
-    date_from: "Data inicial",
-    date_to: "Data final",
-    jurisdiction: "Jurisdição",
-    medication: "Medicamento",
-    patient: "Paciente",
-    protocol: "Protocolo",
-    protocol_category: "Categoria protocolo",
-    protocol_version: "Versão protocolo",
-    execution: "Execução",
-    risk_level: "Risco",
-    sort: "Ordenação",
-    source: "Fonte",
-    status: "Status",
-    text: "Texto",
-    user: "Usuário",
+    action: "audit.event",
+    active_ingredient: "audit.activeIngredient",
+    ai_model: "audit.aiModel",
+    ai_provider: "audit.aiProvider",
+    date_from: "audit.startDate",
+    date_to: "audit.endDate",
+    jurisdiction: "audit.jurisdiction",
+    medication: "audit.medication",
+    patient: "audit.patient",
+    protocol: "audit.protocol",
+    protocol_category: "audit.protocolCategory",
+    protocol_version: "audit.protocolVersion",
+    execution: "audit.execution",
+    risk_level: "audit.risk",
+    sort: "audit.sort",
+    source: "audit.source",
+    status: "audit.status",
+    text: "audit.freeText",
+    user: "audit.user",
   };
-  return labels[key] ?? key;
+  return labels[key] ?? "audit.detail";
 }
 
 function FilterInput({
@@ -307,11 +314,12 @@ function AuditDetail({
   evidence: Array<Record<string, unknown>>;
   timeline: Array<Record<string, unknown>>;
 }) {
+  const { t } = useTranslation();
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="surface-card p-5">
       <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 className="text-lg font-bold text-ink">Detalhe do evento #{record.id}</h2>
+          <h2 className="text-lg font-bold text-ink">{t("audit.eventDetail", { id: record.id })}</h2>
           <p className="mt-1 text-sm text-slate-600">
             {formatAuditAction(record.action)} - {formatDateTime(record.created_at)}
           </p>
@@ -320,18 +328,18 @@ function AuditDetail({
       </div>
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
         <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-          <h3 className="text-sm font-bold text-ink">Linha do tempo da decisão</h3>
+          <h3 className="text-sm font-bold text-ink">{t("audit.decisionTimeline")}</h3>
           <ol className="mt-3 grid gap-2">
             {timeline.map((item, index) => (
               <li className="text-sm text-slate-700" key={index}>
-                <span className="font-bold">{String(item.title ?? "Evento")}</span>:{" "}
-                {String(item.status ?? "-")}
+                <span className="font-bold">{String(item.title ?? t("audit.event"))}</span>:{" "}
+                {formatStatus(String(item.status ?? "-"))}
               </li>
             ))}
           </ol>
         </div>
         <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-          <h3 className="text-sm font-bold text-ink">Ver evidências</h3>
+          <h3 className="text-sm font-bold text-ink">{t("audit.viewEvidence")}</h3>
           <div className="mt-3 grid gap-2">
             {evidence.length ? (
               evidence.map((item, index) => (
@@ -341,14 +349,12 @@ function AuditDetail({
                 </p>
               ))
             ) : (
-              <p className="text-sm text-slate-600">Sem evidência vinculada.</p>
+              <p className="text-sm text-slate-600">{t("audit.noEvidence")}</p>
             )}
           </div>
         </div>
       </div>
-      <pre className="mt-4 max-h-80 overflow-auto rounded-lg bg-slate-950 p-4 text-xs text-slate-100">
-        {JSON.stringify(record.details, null, 2)}
-      </pre>
+      <details className="mt-4"><summary className="cursor-pointer text-sm font-bold text-ocean">{t("audit.rawDetails")}</summary><pre className="mt-3 max-h-80 overflow-auto rounded-lg bg-slate-950 p-4 text-xs text-slate-100">{JSON.stringify(record.details, null, 2)}</pre></details>
     </section>
   );
 }

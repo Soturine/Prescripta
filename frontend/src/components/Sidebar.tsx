@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
-import { APP_SUBTITLE, APP_VERSION } from "../config/appVersion";
+import { APP_VERSION } from "../config/appVersion";
 import { APP_ROUTES, NAV_SECTION_KEYS } from "../config/routes";
 import { useAuth } from "../context/AuthContext";
 import type { Capability } from "../types/user";
@@ -50,7 +50,7 @@ export default function Sidebar({ collapsed, mobileOpen, onCollapsedChange, onMo
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-ocean text-white shadow-soft"><HeartPulse aria-hidden="true" className="h-6 w-6" /></div>
           <div className={`${collapsed ? "lg:hidden" : ""} min-w-0 flex-1`}>
             <p className="truncate text-lg font-black tracking-[-0.03em]">Prescripta</p>
-            <p className="truncate text-[0.6875rem] font-medium text-slate-500">{APP_SUBTITLE}</p>
+            <p className="truncate text-[0.6875rem] font-medium text-slate-500">{t("shell.subtitle")}</p>
           </div>
           <button aria-label={t("shell.closeNavigation")} className="icon-button lg:hidden" onClick={() => onMobileOpenChange(false)} ref={closeButtonRef} type="button"><X aria-hidden="true" className="h-5 w-5" /></button>
         </div>
