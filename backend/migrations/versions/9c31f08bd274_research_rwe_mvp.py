@@ -17,32 +17,33 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column("outcome_definitions", sa.Column("reviewed_at", sa.DateTime(timezone=True)))
-    op.add_column("analysis_plans", sa.Column("cohort_run_id", sa.String(36)))
-    op.add_column(
-        "analysis_plans", sa.Column("variables", sa.JSON(), nullable=False, server_default="[]")
-    )
-    op.add_column(
-        "analysis_plans", sa.Column("steps", sa.JSON(), nullable=False, server_default="[]")
-    )
-    op.add_column(
-        "analysis_plans",
-        sa.Column("output_specification", sa.JSON(), nullable=False, server_default="{}"),
-    )
-    op.add_column(
-        "analysis_plans", sa.Column("source_refs", sa.JSON(), nullable=False, server_default="[]")
-    )
-    op.add_column("analysis_plans", sa.Column("reviewed_at", sa.DateTime(timezone=True)))
-    op.add_column(
-        "analysis_plans",
-        sa.Column(
-            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
-        ),
-    )
-    op.create_foreign_key(
-        "fk_analysis_plans_cohort_run", "analysis_plans", "cohort_runs", ["cohort_run_id"], ["id"]
-    )
-    op.create_index(op.f("ix_analysis_plans_cohort_run_id"), "analysis_plans", ["cohort_run_id"])
+    with op.batch_alter_table("outcome_definitions") as batch_op:
+        batch_op.add_column(sa.Column("reviewed_at", sa.DateTime(timezone=True)))
+    with op.batch_alter_table("analysis_plans") as batch_op:
+        batch_op.add_column(sa.Column("cohort_run_id", sa.String(36)))
+        batch_op.add_column(
+            sa.Column("variables", sa.JSON(), nullable=False, server_default="[]")
+        )
+        batch_op.add_column(sa.Column("steps", sa.JSON(), nullable=False, server_default="[]"))
+        batch_op.add_column(
+            sa.Column("output_specification", sa.JSON(), nullable=False, server_default="{}")
+        )
+        batch_op.add_column(
+            sa.Column("source_refs", sa.JSON(), nullable=False, server_default="[]")
+        )
+        batch_op.add_column(sa.Column("reviewed_at", sa.DateTime(timezone=True)))
+        batch_op.add_column(
+            sa.Column(
+                "created_at",
+                sa.DateTime(timezone=True),
+                nullable=False,
+                server_default=sa.func.now(),
+            )
+        )
+        batch_op.create_foreign_key(
+            "fk_analysis_plans_cohort_run", "cohort_runs", ["cohort_run_id"], ["id"]
+        )
+        batch_op.create_index(op.f("ix_analysis_plans_cohort_run_id"), ["cohort_run_id"])
 
     op.create_table(
         "data_quality_runs",
@@ -59,15 +60,15 @@ def upgrade() -> None:
     )
     for column in ("institution_id", "study_id", "status", "content_hash"):
         op.create_index(op.f(f"ix_data_quality_runs_{column}"), "data_quality_runs", [column])
-    op.add_column("data_quality_findings", sa.Column("run_id", sa.String(36)))
-    op.create_foreign_key(
-        "fk_data_quality_findings_run",
-        "data_quality_findings",
-        "data_quality_runs",
-        ["run_id"],
-        ["id"],
-    )
-    op.create_index(op.f("ix_data_quality_findings_run_id"), "data_quality_findings", ["run_id"])
+    with op.batch_alter_table("data_quality_findings") as batch_op:
+        batch_op.add_column(sa.Column("run_id", sa.String(36)))
+        batch_op.create_foreign_key(
+            "fk_data_quality_findings_run",
+            "data_quality_runs",
+            ["run_id"],
+            ["id"],
+        )
+        batch_op.create_index(op.f("ix_data_quality_findings_run_id"), ["run_id"])
 
     op.create_table(
         "research_analysis_runs",
@@ -137,22 +138,25 @@ def downgrade() -> None:
             op.f(f"ix_research_analysis_runs_{column}"), table_name="research_analysis_runs"
         )
     op.drop_table("research_analysis_runs")
-    op.drop_index(op.f("ix_data_quality_findings_run_id"), table_name="data_quality_findings")
-    op.drop_constraint("fk_data_quality_findings_run", "data_quality_findings", type_="foreignkey")
-    op.drop_column("data_quality_findings", "run_id")
+    with op.batch_alter_table("data_quality_findings") as batch_op:
+        batch_op.drop_index(op.f("ix_data_quality_findings_run_id"))
+        batch_op.drop_constraint("fk_data_quality_findings_run", type_="foreignkey")
+        batch_op.drop_column("run_id")
     for column in ("content_hash", "status", "study_id", "institution_id"):
         op.drop_index(op.f(f"ix_data_quality_runs_{column}"), table_name="data_quality_runs")
     op.drop_table("data_quality_runs")
-    op.drop_index(op.f("ix_analysis_plans_cohort_run_id"), table_name="analysis_plans")
-    op.drop_constraint("fk_analysis_plans_cohort_run", "analysis_plans", type_="foreignkey")
-    for column in (
-        "created_at",
-        "reviewed_at",
-        "source_refs",
-        "output_specification",
-        "steps",
-        "variables",
-        "cohort_run_id",
-    ):
-        op.drop_column("analysis_plans", column)
-    op.drop_column("outcome_definitions", "reviewed_at")
+    with op.batch_alter_table("analysis_plans") as batch_op:
+        batch_op.drop_index(op.f("ix_analysis_plans_cohort_run_id"))
+        batch_op.drop_constraint("fk_analysis_plans_cohort_run", type_="foreignkey")
+        for column in (
+            "created_at",
+            "reviewed_at",
+            "source_refs",
+            "output_specification",
+            "steps",
+            "variables",
+            "cohort_run_id",
+        ):
+            batch_op.drop_column(column)
+    with op.batch_alter_table("outcome_definitions") as batch_op:
+        batch_op.drop_column("reviewed_at")

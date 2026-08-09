@@ -1681,6 +1681,8 @@ def _seed_v088_workflows(db: Session) -> None:
             )
     db.flush()
 
+    _seed_legacy_research_v088(db, researcher, research_reviewer)
+
     existing_study = db.scalar(
         select(ResearchStudyModel).where(
             ResearchStudyModel.institution_id == researcher.institution_id,
@@ -1881,3 +1883,146 @@ def _seed_v088_workflows(db: Session) -> None:
     )
     analysis_run = analysis_service.execute(plan.id, researcher)
     analysis_service.export_package(analysis_run.id, researcher)
+
+
+def _seed_legacy_research_v088(
+    db: Session,
+    researcher: UserModel,
+    research_reviewer: UserModel,
+) -> None:
+    existing_study = db.scalar(
+        select(ResearchStudyModel).where(
+            ResearchStudyModel.institution_id == researcher.institution_id,
+            ResearchStudyModel.slug == "seguranca-medicamentosa-sintetica-v088",
+        )
+    )
+    if existing_study is not None:
+        return
+
+    research_service = ResearchService(db)
+    study = research_service.create_study(
+        ResearchStudyCreate(
+            title="Estudo sintético de segurança medicamentosa v0.8.8",
+            slug="seguranca-medicamentosa-sintetica-v088",
+            description="Vertical slice demonstrativo e reprodutível, sem dados reais.",
+            research_question=(
+                "Qual é o perfil agregado da condição sintética entre pacientes adultos demo?"
+            ),
+            objective="Demonstrar coorte, attrition, provenance e Data Quality determinísticos.",
+            design="retrospective_cohort",
+            data_source_classification="synthetic",
+        ),
+        researcher,
+    )
+    protocol = research_service.create_protocol_version(
+        study.id,
+        StudyProtocolVersionCreate(
+            population={"description": "Pacientes adultos exclusivamente sintéticos"},
+            exposure={"description": "Condição codificada na timeline demo"},
+            comparator={"description": "Sem comparação causal"},
+            outcome={"description": "Presença agregada do evento sintético"},
+            index_date={"event": "data_snapshot_marker"},
+            washout={"days": 0},
+            follow_up={"days": 90},
+            censoring={"strategy": "none_demo"},
+            inclusion=[{"criterion": "age_gte_18"}],
+            exclusion=[],
+            covariates=[],
+            missing_data_strategy={"strategy": "report_missingness"},
+            statistical_plan={"methods": ["descriptive_only"]},
+            limitations=["Fixture sem validade clínica ou externa."],
+            source_refs=["synthetic-dataset:prescripta:v088"],
+        ),
+        researcher,
+    )
+    research_service.review_protocol(
+        protocol.id,
+        ResearchReviewRequest(
+            decision="reviewed_demo",
+            note="Revisão metodológica humana independente para demonstração sintética.",
+        ),
+        research_reviewer,
+    )
+    concept = research_service.create_concept_set(
+        ConceptSetCreate(
+            name="Condição metabólica sintética v0.8.8",
+            domain="condition",
+            terminology_versions={"CID-10": "2026-demo"},
+            include_descendants=False,
+            source_refs=["terminology-fixture:cid10:v088"],
+            license_metadata={"fixture": True, "redistribution": "synthetic-only"},
+            provenance={"origin": "prescripta-demo-seed", "demo_only": True},
+            members=[
+                {
+                    "terminology_system": "CID-10",
+                    "terminology_version": "2026-demo",
+                    "concept_code": "E11-DEMO",
+                    "label": "Condição metabólica sintética",
+                    "excluded": False,
+                }
+            ],
+        ),
+        researcher,
+    )
+    concept_version_id = concept["version"]["id"]
+    for decision in ("human_reviewed", "approved_for_demo_study"):
+        research_service.review_concept_set(
+            concept_version_id,
+            ConceptSetReviewRequest(
+                decision=decision,
+                note="Revisão humana independente da terminologia sintética demonstrativa.",
+            ),
+            research_reviewer,
+        )
+    cohort = research_service.create_cohort_version(
+        study.id,
+        CohortDefinitionCreate(
+            name="Adultos com condição sintética",
+            definition={
+                "all": [
+                    {
+                        "criterion": "age",
+                        "operator": "gte",
+                        "value": 18,
+                        "label": "Adultos",
+                    },
+                    {
+                        "criterion": "condition",
+                        "operator": "exists",
+                        "concept_set_version_id": concept_version_id,
+                        "label": "Condição metabólica sintética",
+                    },
+                ],
+                "exclude": [],
+            },
+        ),
+        researcher,
+    )
+    research_service.review_cohort(
+        cohort.id,
+        CohortReviewRequest(
+            decision="reviewed_demo",
+            note="DSL e concept set revisados por pessoa independente do autor.",
+        ),
+        research_reviewer,
+    )
+    research_service.create_outcome(
+        study.id,
+        OutcomeDefinitionCreate(
+            name="Condição sintética em até 90 dias",
+            domain="condition",
+            concept_set_version_ids=[concept_version_id],
+            event_qualification={"minimum_events": 1},
+            observation_window={"after_index_days": 90},
+            temporal_relationship="after_index",
+            source_refs=["synthetic-dataset:prescripta:v088"],
+            limitations=["Outcome demonstrativo sem validação clínica."],
+        ),
+        researcher,
+    )
+    research_service.execute_cohort(
+        cohort.id,
+        CohortRunRequest(data_snapshot_marker="synthetic-seed-v088-001"),
+        researcher,
+    )
+    DataQualityService(db).run(researcher)
