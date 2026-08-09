@@ -5,7 +5,11 @@ from datetime import UTC, datetime, timedelta
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.database.models import UserModel
+from app.database.models import (
+    InstitutionalClinicalProtocolModel,
+    InstitutionalClinicalProtocolVersionModel,
+    UserModel,
+)
 from app.domain.user import Capability, UserRole
 
 
@@ -196,6 +200,79 @@ def test_nursing_prescribing_is_bound_to_reviewed_protocol_scope(
     assert (
         outside_scope.json()["technical_details"]["prescribing_policy"]["status"]
         == "blocked_by_policy"
+    )
+
+    wrong_condition = client.post(
+        "/api/prescriptions/check",
+        headers=nurse_headers,
+        json={
+            **base_request,
+            "condition_codes": ["X99"],
+            "protocol_version_id": version.json()["id"],
+        },
+    )
+    assert (
+        wrong_condition.json()["technical_details"]["prescribing_policy"]["status"]
+        == "blocked_by_policy"
+    )
+
+    version_row = db_session.get(
+        InstitutionalClinicalProtocolVersionModel, version.json()["id"]
+    )
+    protocol_row = db_session.get(
+        InstitutionalClinicalProtocolModel, protocol.json()["id"]
+    )
+    assert version_row is not None and protocol_row is not None
+
+    version_row.requires_second_review = True
+    db_session.commit()
+    second_review = client.post(
+        "/api/prescriptions/check",
+        headers=nurse_headers,
+        json={**base_request, "protocol_version_id": version_row.id},
+    )
+    assert (
+        second_review.json()["technical_details"]["prescribing_policy"]["status"]
+        == "requires_second_review"
+    )
+    version_row.requires_second_review = False
+
+    version_row.source_refs = []
+    db_session.commit()
+    missing_source = client.post(
+        "/api/prescriptions/check",
+        headers=nurse_headers,
+        json={**base_request, "protocol_version_id": version_row.id},
+    )
+    assert (
+        missing_source.json()["technical_details"]["prescribing_policy"]["status"]
+        == "insufficient_protocol_context"
+    )
+    version_row.source_refs = ["institutional:protocol:nursing-primary-care:2026.08"]
+
+    protocol_row.status = "revoked"
+    db_session.commit()
+    revoked = client.post(
+        "/api/prescriptions/check",
+        headers=nurse_headers,
+        json={**base_request, "protocol_version_id": version_row.id},
+    )
+    assert (
+        revoked.json()["technical_details"]["prescribing_policy"]["status"]
+        == "blocked_by_policy"
+    )
+    protocol_row.status = "active"
+
+    nurse.credential_expires_at = datetime.now(UTC) - timedelta(days=1)
+    db_session.commit()
+    expired_credential = client.post(
+        "/api/prescriptions/check",
+        headers=nurse_headers,
+        json={**base_request, "protocol_version_id": version_row.id},
+    )
+    assert (
+        expired_credential.json()["technical_details"]["prescribing_policy"]["status"]
+        == "insufficient_credentials"
     )
 
     stored_reviewer = db_session.get(UserModel, reviewer.id)

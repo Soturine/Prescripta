@@ -215,12 +215,18 @@ class PharmacyWorkflowService:
         if priority:
             statement = statement.where(PharmacyInterventionModel.priority == priority)
         statement = statement.order_by(PharmacyInterventionModel.created_at.desc())
-        return list(self.db.scalars(statement))
+        rows = list(self.db.scalars(statement))
+        return [
+            row
+            for row in rows
+            if self._can_access_patient(actor, row.patient_id)
+        ]
 
     def events(
         self, intervention_id: int, actor: UserModel
     ) -> list[PharmacyInterventionEventModel]:
-        self._intervention(intervention_id, actor)
+        intervention = self._intervention(intervention_id, actor)
+        self._require_patient(actor, intervention.patient_id)
         return list(
             self.db.scalars(
                 select(PharmacyInterventionEventModel)
@@ -423,15 +429,18 @@ class PharmacyWorkflowService:
         patient = self.db.get(PatientModel, patient_id)
         if patient is None or patient.institution_id != actor.institution_id:
             raise PharmacyWorkflowError("Paciente não encontrado.")
-        if not ObjectAuthorizationService(self.db).can_access_patient(
+        if not self._can_access_patient(actor, patient.id):
+            raise PharmacyWorkflowError("Vínculo assistencial ativo obrigatório.")
+        return patient
+
+    def _can_access_patient(self, actor: UserModel, patient_id: int) -> bool:
+        return ObjectAuthorizationService(self.db).can_access_patient(
             actor,
-            patient,
+            patient_id,
             capability="patient.read",
             purpose="treatment",
             record_break_glass_object=False,
-        ):
-            raise PharmacyWorkflowError("Vínculo assistencial ativo obrigatório.")
-        return patient
+        )
 
     @staticmethod
     def _expected_version(actual: int, expected: int) -> None:

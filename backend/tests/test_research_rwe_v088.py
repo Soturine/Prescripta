@@ -121,6 +121,16 @@ def test_research_vertical_slice_is_aggregate_reproducible_and_tenant_scoped(
     reviewer_headers = auth_headers("reviewer@rwe.local", "Reviewer@12345")
     outside_headers = auth_headers("outside@rwe.local", "Outside@12345")
 
+    create_test_user(
+        email="doctor-no-research@rwe.local",
+        password="DoctorNoResearch@12345",
+        role=UserRole.MEDICO,
+    )
+    no_capability_headers = auth_headers(
+        "doctor-no-research@rwe.local", "DoctorNoResearch@12345"
+    )
+    assert client.get("/api/research/workspace", headers=no_capability_headers).status_code == 403
+
     _create_patient(client, admin_headers, "Synthetic Patient A", 45, ["diabetes"])
     _create_patient(client, admin_headers, "Synthetic Patient B", 16, [])
     _create_patient(client, admin_headers, "Synthetic Patient C", 33, [])
@@ -175,6 +185,29 @@ def test_research_vertical_slice_is_aggregate_reproducible_and_tenant_scoped(
     )
     assert concept.status_code == 201, concept.text
     concept_version_id = concept.json()["version"]["id"]
+    outside_concept = client.post(
+        "/api/research/concept-sets",
+        headers=outside_headers,
+        json={**_concept_payload(), "name": "Concept set externo"},
+    )
+    assert outside_concept.status_code == 201, outside_concept.text
+    cross_tenant_cohort = client.post(
+        f"/api/research/studies/{study_id}/cohorts",
+        headers=author_headers,
+        json={
+            "name": "Coorte cross-tenant inválida",
+            "definition": {
+                "all": [
+                    {
+                        "criterion": "condition",
+                        "operator": "exists",
+                        "concept_set_version_id": outside_concept.json()["version"]["id"],
+                    }
+                ]
+            },
+        },
+    )
+    assert cross_tenant_cohort.status_code == 422
     for decision in ("human_reviewed", "approved_for_demo_study"):
         reviewed = client.post(
             f"/api/research/concept-set-versions/{concept_version_id}/review",
@@ -426,3 +459,12 @@ def test_evidence_ai_timeline_and_data_quality_boundaries(
     )
     assert reviewed.status_code == 200, reviewed.text
     assert reviewed.json()["status"] == "accepted_as_draft"
+    review_conflict = client.post(
+        f"/api/ai/tasks/{interaction.json()['id']}/review",
+        headers=review_headers,
+        json={
+            "decision": "rejected",
+            "note": "Segunda revisão conflitante deve ser recusada.",
+        },
+    )
+    assert review_conflict.status_code == 422

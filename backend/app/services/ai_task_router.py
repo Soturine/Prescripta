@@ -28,6 +28,28 @@ TASK_TEMPLATE_VERSIONS = {
     "data_quality_explanation": "data-quality-explanation-v1",
 }
 KNOWN_PROVIDERS = {"fallback", "openai", "gemini", "ollama", "openai_compatible"}
+OUTPUT_CONTRACTS = {
+    "research_question_structuring": {
+        "required": {"proposal", "unresolved_questions", "status"},
+        "allowed": {"proposal", "unresolved_questions", "status"},
+    },
+    "cohort_draft": {
+        "required": {"definition", "unresolved_questions", "status"},
+        "allowed": {"definition", "unresolved_questions", "status"},
+    },
+    "evidence_summary": {
+        "required": {"claims", "status", "source_ids"},
+        "allowed": {"claims", "status", "source_ids"},
+    },
+    "patient_journey_summary": {
+        "required": {"summary_items", "missing_context", "source_event_ids", "status"},
+        "allowed": {"summary_items", "missing_context", "source_event_ids", "status"},
+    },
+}
+DEFAULT_OUTPUT_CONTRACT = {
+    "required": {"summary_items", "unresolved_questions", "status"},
+    "allowed": {"summary_items", "unresolved_questions", "status"},
+}
 
 
 class AITaskError(ValueError):
@@ -159,6 +181,8 @@ class AITaskRouter:
             raise AITaskError("Provider não reconhecido na policy de IA.")
         if request.preferred_provider and request.preferred_provider not in KNOWN_PROVIDERS:
             raise AITaskError("Provider preferido inválido.")
+        if request.preferred_provider and request.preferred_provider not in requested:
+            raise AITaskError("Provider preferido negado pela policy da tarefa.")
         if request.data_classification in {"sensitive", "restricted"}:
             permitted = requested & {"fallback", "ollama"}
             if configured_provider == "ollama" and "ollama" in permitted:
@@ -166,10 +190,13 @@ class AITaskRouter:
             if "fallback" in permitted:
                 return "fallback"
             raise AITaskError("Policy exige provider local para a classificação informada.")
-        if request.preferred_provider and request.preferred_provider != configured_provider:
-            if request.preferred_provider == "fallback" and "fallback" in requested:
-                return "fallback"
-        return configured_provider if configured_provider in requested else "fallback"
+        if request.preferred_provider == "fallback":
+            return "fallback"
+        if configured_provider in requested:
+            return configured_provider
+        if "fallback" in requested:
+            return "fallback"
+        raise AITaskError("Provider configurado não é permitido e fallback está desabilitado.")
 
     @staticmethod
     def _system_instructions(task_type: str) -> str:
@@ -240,6 +267,25 @@ class AITaskRouter:
     ) -> dict:
         if not isinstance(output, dict):
             raise AITaskError("Saída de IA não atende ao schema estruturado.")
+        if request.schema_version != "v1":
+            raise AITaskError("Versão de schema não suportada para a tarefa de IA.")
+        contract = OUTPUT_CONTRACTS.get(request.task_type, DEFAULT_OUTPUT_CONTRACT)
+        keys = set(output)
+        missing = contract["required"] - keys
+        unsupported = keys - contract["allowed"]
+        if missing:
+            raise AITaskError(
+                "Saída de IA omitiu campos obrigatórios: " + ", ".join(sorted(missing)) + "."
+            )
+        if unsupported:
+            raise AITaskError(
+                "Saída de IA contém campos não suportados: "
+                + ", ".join(sorted(unsupported))
+                + "."
+            )
+        status = output.get("status")
+        if not isinstance(status, str) or not status:
+            raise AITaskError("Saída de IA contém status inválido.")
         if request.task_type == "cohort_draft":
             definition = output.get("definition")
             try:
@@ -248,7 +294,12 @@ class AITaskRouter:
                 raise AITaskError(f"Saída de IA contém cohort DSL inválida: {exc}") from exc
         if request.task_type == "evidence_summary":
             allowed = set(request.source_ids)
-            for claim in output.get("claims", []):
+            claims = output.get("claims")
+            if not isinstance(claims, list):
+                raise AITaskError("Resumo de evidência sem lista de claims válida.")
+            if output.get("source_ids") != request.source_ids:
+                raise AITaskError("Resumo de evidência alterou as fontes autorizadas.")
+            for claim in claims:
                 if not isinstance(claim, dict) or claim.get("source_id") not in allowed:
                     raise AITaskError("Resumo de evidência contém source_id não autorizado.")
         if request.task_type == "patient_journey_summary":
