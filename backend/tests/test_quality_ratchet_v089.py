@@ -287,7 +287,7 @@ def test_pharmacy_queue_reapplies_patient_scope_and_idempotency(
         "problem": "Dose sintética exige revisão farmacêutica humana.",
         "recommendation": "Revisar o contexto com o prescritor responsável.",
         "source_refs": ["fixture:pharmacy:v089"],
-        "idempotency_key": "pharmacy-v089-scope-001",
+        "idempotency_key": "test-test-test",
     }
     unauthorized = client.post(
         "/api/pharmacy/interventions", headers=doctor_headers, json=payload
