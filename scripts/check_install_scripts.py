@@ -5,29 +5,25 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK = ROOT / "frontend" / "package-lock.json"
-
-EXPECTED = {
-    "node_modules/esbuild": "0.28.1",
-    "node_modules/fsevents": "2.3.3",
-    "node_modules/playwright/node_modules/fsevents": "2.3.2",
-}
+POLICY = Path(__file__).with_name("install-script-policy.json")
 
 
 def main() -> None:
     lock = json.loads(LOCK.read_text(encoding="utf-8"))
+    expected = json.loads(POLICY.read_text(encoding="utf-8"))
     packages = lock.get("packages", {})
     observed = {
         path: metadata.get("version")
         for path, metadata in packages.items()
         if metadata.get("hasInstallScript") is True
     }
-    if observed != EXPECTED:
-        missing = sorted(set(EXPECTED) - set(observed))
-        unexpected = sorted(set(observed) - set(EXPECTED))
+    if observed != expected:
+        missing = sorted(set(expected) - set(observed))
+        unexpected = sorted(set(observed) - set(expected))
         changed = sorted(
             path
-            for path in set(EXPECTED) & set(observed)
-            if EXPECTED[path] != observed[path]
+            for path in set(expected) & set(observed)
+            if expected[path] != observed[path]
         )
         raise SystemExit(
             "Install-script inventory changed; review before install. "

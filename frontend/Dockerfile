@@ -3,7 +3,9 @@ FROM node:24.17.0-trixie-slim@sha256:9022946fb57e6fb6a2503931470deba4b49db02bfc8
 
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+COPY scripts/check_install_scripts.mjs scripts/install-script-policy.json /tmp/prescripta-scripts/
+RUN node /tmp/prescripta-scripts/check_install_scripts.mjs /app/package-lock.json \
+    && npm ci
 
 COPY frontend/index.html frontend/tsconfig.json frontend/tsconfig.node.json frontend/vite.config.ts ./
 COPY frontend/src ./src

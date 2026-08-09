@@ -49,6 +49,11 @@ nenhum modelo é incorporado à imagem ou baixado no CI.
 `bash scripts/container-smoke.sh` valida Compose, builds, PostgreSQL, migration, health, restart e
 usuários non-root. Ele não repete pytest, Vitest ou Playwright.
 
+O workflow `Container` executa esse smoke, examina as duas imagens com Trivy e publica relatórios e
+SBOMs CycloneDX das imagens. Achados HIGH ou CRITICAL falham o gate depois que ambos os relatórios
+foram preservados. O workflow `Release Provenance` gera os SBOMs de dependências reproduzíveis e
+publica atestações associadas aos manifests travados.
+
 Se a porta estiver ocupada, altere `PRESCRIPTA_FRONTEND_PORT` ou `PRESCRIPTA_BACKEND_PORT`. Em falha
 de banco, consulte `docker compose logs postgres migrate`. Uma falha de migration bloqueia o backend;
 ela nunca é ignorada para deixar o container aparentemente saudável.

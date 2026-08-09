@@ -1,0 +1,96 @@
+name: Container
+
+on:
+  push:
+    paths:
+      - ".github/workflows/container.yml"
+      - "backend/**"
+      - "frontend/**"
+      - "scripts/container-smoke.sh"
+      - "scripts/check_install_scripts.*"
+      - "scripts/install-script-policy.json"
+      - "compose.yaml"
+      - ".dockerignore"
+      - "VERSION"
+  pull_request:
+    paths:
+      - ".github/workflows/container.yml"
+      - "backend/**"
+      - "frontend/**"
+      - "scripts/container-smoke.sh"
+      - "scripts/check_install_scripts.*"
+      - "scripts/install-script-policy.json"
+      - "compose.yaml"
+      - ".dockerignore"
+      - "VERSION"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-smoke-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Verify reviewed install scripts
+        run: python scripts/check_install_scripts.py
+      - name: Build and smoke the complete stack
+        run: bash scripts/container-smoke.sh
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        continue-on-error: true
+        with:
+          image-ref: prescripta-smoke-backend
+          format: json
+          output: trivy-backend.json
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+          exit-code: 1
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        continue-on-error: true
+        with:
+          image-ref: prescripta-smoke-frontend
+          format: json
+          output: trivy-frontend.json
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+          exit-code: 1
+          skip-setup-trivy: true
+      - name: Generate backend image SBOM
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: prescripta-smoke-backend
+          format: cyclonedx
+          output: sbom-image-backend.json
+          skip-setup-trivy: true
+      - name: Generate frontend image SBOM
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: prescripta-smoke-frontend
+          format: cyclonedx
+          output: sbom-image-frontend.json
+          skip-setup-trivy: true
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: container-security-reports
+          path: |
+            trivy-*.json
+            sbom-image-*.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Require clean HIGH and CRITICAL scan reports
+        run: |
+          for report in trivy-backend.json trivy-frontend.json; do
+            test -s "$report"
+            jq --exit-status '[.Results[]?.Vulnerabilities[]?] | length == 0' "$report" >/dev/null
+          done

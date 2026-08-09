@@ -1,7 +1,9 @@
 # Inventário de install scripts npm
 
-Revisado em 9 de agosto de 2026. `scripts/check_install_scripts.py` compara o lockfile com caminhos e
-versões exatos; pacote novo, remoção ou mudança de versão exige nova revisão. Não há wildcard.
+Revisado em 9 de agosto de 2026. Os validadores Python e Node em `scripts/check_install_scripts.*`
+comparam o lockfile com os caminhos e versões exatos de `scripts/install-script-policy.json`;
+pacote novo, remoção ou mudança de versão exige nova revisão. Não há wildcard. O validador Node
+também executa dentro do estágio de build da imagem frontend, antes de `npm ci`.
 
 | Pacote | Versão | Script/finalidade | Relação | Fonte | Decisão | Risco |
 | --- | --- | --- | --- | --- | --- | --- |
