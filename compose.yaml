@@ -1,0 +1,110 @@
+name: prescripta
+
+services:
+  postgres:
+    image: postgres:17.10-bookworm@sha256:9b18b78397054fce88a9552e9d5a3ad5bb7fd258c5b3cc1c5028e46373d6ea8f
+    environment:
+      POSTGRES_DB: ${PRESCRIPTA_POSTGRES_DB:-prescripta}
+      POSTGRES_USER: ${PRESCRIPTA_POSTGRES_USER:-prescripta}
+      POSTGRES_PASSWORD: ${PRESCRIPTA_POSTGRES_PASSWORD:-prescripta_local_demo}
+      TZ: ${PRESCRIPTA_TIMEZONE:-America/Sao_Paulo}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - data
+    restart: unless-stopped
+    shm_size: 128mb
+    mem_limit: 768m
+    security_opt:
+      - no-new-privileges:true
+
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["alembic", "upgrade", "head"]
+    entrypoint: []
+    environment: &backend-environment
+      PRESCRIPTA_ENV: development
+      PRESCRIPTA_DATABASE_URL: postgresql+psycopg://${PRESCRIPTA_POSTGRES_USER:-prescripta}:${PRESCRIPTA_POSTGRES_PASSWORD:-prescripta_local_demo}@postgres:5432/${PRESCRIPTA_POSTGRES_DB:-prescripta}
+      PRESCRIPTA_SECRET_KEY: ${PRESCRIPTA_SECRET_KEY:-prescripta-local-demo-secret-change-before-production}
+      PRESCRIPTA_AUTO_SEED: "false"
+      PRESCRIPTA_AI_ENABLE_EXTERNAL_CALLS: "false"
+      PRESCRIPTA_CORS_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - data
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      <<: *backend-environment
+      PRESCRIPTA_AUTO_SEED: ${PRESCRIPTA_AUTO_SEED:-true}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "${PRESCRIPTA_BACKEND_PORT:-8000}:8000"
+    networks:
+      - app
+      - data
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 768m
+    cpus: 1.5
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${PRESCRIPTA_FRONTEND_PORT:-8080}:8080"
+    networks:
+      - app
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 128m
+    cpus: 0.5
+
+volumes:
+  postgres-data:
+
+networks:
+  app:
+  data:
+    internal: true
