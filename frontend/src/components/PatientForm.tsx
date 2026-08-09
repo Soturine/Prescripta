@@ -1,6 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { TFunction } from "i18next";
 import { Plus, Save } from "lucide-react";
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 
 import type { Patient, PatientPayload } from "../types/patient";
@@ -13,12 +16,12 @@ import {
 import { joinList, splitList } from "../utils/formatters";
 import ControlledSelect from "./ControlledSelect";
 
-const patientSchema = z
+const createPatientSchema = (t: TFunction) => z
   .object({
-    name: z.string().min(2, "Informe o nome."),
+    name: z.string().min(2, t("patientForm.errors.name")),
     birth_date: z.string().optional(),
     age: z.number().min(0).max(130).optional(),
-    weight_kg: z.number().positive("Informe o peso."),
+    weight_kg: z.number().positive(t("patientForm.errors.weight")),
     height_cm: z.number().min(1).max(260).optional(),
     sex_for_dosing_calculation: z.enum(["male", "female"]).or(z.literal("")).optional(),
     phone: z.string().optional(),
@@ -40,11 +43,11 @@ const patientSchema = z
     clinical_notes: z.string().optional(),
   })
   .refine((data) => data.age !== undefined || Boolean(data.birth_date), {
-    message: "Informe idade ou data de nascimento.",
+    message: t("patientForm.errors.ageOrBirth"),
     path: ["age"],
   });
 
-type PatientFormValues = z.infer<typeof patientSchema>;
+type PatientFormValues = z.infer<ReturnType<typeof createPatientSchema>>;
 
 type PatientFormProps = {
   initialPatient?: Patient;
@@ -53,13 +56,15 @@ type PatientFormProps = {
 };
 
 export default function PatientForm({ initialPatient, submitLabel, onSubmit }: PatientFormProps) {
+  const { t } = useTranslation();
+  const schema = useMemo(() => createPatientSchema(t), [t]);
   const {
     formState: { errors, isSubmitting },
     handleSubmit,
     register,
     reset,
   } = useForm<PatientFormValues>({
-    resolver: zodResolver(patientSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       name: initialPatient?.name ?? "",
       birth_date: initialPatient?.birth_date ?? "",
@@ -153,13 +158,13 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
     <form className="grid gap-4" onSubmit={handleSubmit(submit)}>
       <div className="grid gap-4 md:grid-cols-2">
         <label className="grid gap-1.5">
-          <span className="label">Nome</span>
+          <span className="label">{t("patientForm.name")}</span>
           <input className="field" {...register("name")} />
           {errors.name ? <span className="text-xs text-danger">{errors.name.message}</span> : null}
         </label>
 
         <label className="grid gap-1.5">
-          <span className="label">Idade</span>
+          <span className="label">{t("patientForm.age")}</span>
           <input
             className="field"
             min="0"
@@ -172,12 +177,12 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
         </label>
 
         <label className="grid gap-1.5">
-          <span className="label">Data de nascimento</span>
+          <span className="label">{t("patientForm.birthDate")}</span>
           <input className="field" type="date" {...register("birth_date")} />
         </label>
 
         <label className="grid gap-1.5">
-          <span className="label">Peso kg</span>
+          <span className="label">{t("patientForm.weightKg")}</span>
           <input
             className="field"
             min="0"
@@ -191,7 +196,7 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
         </label>
 
         <label className="grid gap-1.5">
-          <span className="label">Altura cm</span>
+          <span className="label">{t("patientForm.heightCm")}</span>
           <input
             className="field"
             min="0"
@@ -204,51 +209,51 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
         </label>
 
         <label className="grid gap-1.5">
-          <span className="label">Sexo para fórmulas de dose</span>
+          <span className="label">{t("patientForm.dosingSex")}</span>
           <select className="field" {...register("sex_for_dosing_calculation")}>
-            <option value="">Não informado</option>
-            <option value="female">Feminino (parâmetro fisiológico)</option>
-            <option value="male">Masculino (parâmetro fisiológico)</option>
+            <option value="">{t("patientForm.notReported")}</option>
+            <option value="female">{t("patientForm.femalePhysiology")}</option>
+            <option value="male">{t("patientForm.malePhysiology")}</option>
           </select>
           <span className="text-xs text-muted">
-            Usado somente quando uma fórmula farmacológica exigir; não representa identidade de gênero.
+            {t("patientForm.dosingSexHint")}
           </span>
         </label>
 
         <label className="grid gap-1.5">
-          <span className="label">Telefone</span>
-          <input className="field" placeholder="demo sem dado real" {...register("phone")} />
+          <span className="label">{t("patientForm.phone")}</span>
+          <input className="field" placeholder={t("patientForm.demoPlaceholder")} {...register("phone")} />
         </label>
 
         <label className="grid gap-1.5">
-          <span className="label">E-mail</span>
+          <span className="label">{t("patientForm.email")}</span>
           <input className="field" placeholder="paciente@demo.local" {...register("email")} />
         </label>
 
         <label className="grid gap-1.5">
-          <span className="label">Nome da mãe</span>
-          <input className="field" placeholder="apoio a matching" {...register("mother_name")} />
+          <span className="label">{t("patientForm.motherName")}</span>
+          <input className="field" placeholder={t("patientForm.matchingHint")} {...register("mother_name")} />
         </label>
 
         <label className="grid gap-1.5">
-          <span className="label">Alergias</span>
+          <span className="label">{t("patientForm.allergies")}</span>
           <input className="field" placeholder="dipirona" {...register("allergies")} />
         </label>
       </div>
 
       <label className="grid gap-1.5">
-        <span className="label">Comorbidades</span>
+        <span className="label">{t("patientForm.comorbidities")}</span>
         <input className="field" {...register("comorbidities")} />
       </label>
 
       <label className="grid gap-1.5">
-        <span className="label">Medicamentos contínuos</span>
+        <span className="label">{t("patientForm.currentMedications")}</span>
         <input className="field" {...register("current_medications")} />
       </label>
 
       <div className="grid gap-4 md:grid-cols-2">
         <label className="grid gap-1.5">
-          <span className="label">Perfil neuropsiquiátrico</span>
+          <span className="label">{t("patientForm.neuropsychiatric")}</span>
           <input
             className="field"
             placeholder="uso_isrs, epilepsia_convulsoes"
@@ -257,7 +262,7 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
         </label>
 
         <label className="grid gap-1.5">
-          <span className="label">Perfil reprodutivo/ginecológico</span>
+          <span className="label">{t("patientForm.reproductive")}</span>
           <input
             className="field"
             placeholder="uso_anticoncepcional_hormonal, gestante"
@@ -267,12 +272,12 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <ControlledSelect label="Condição renal" options={renalOptions} {...register("renal_condition")} />
-        <ControlledSelect label="Condição hepática" options={hepaticOptions} {...register("hepatic_condition")} />
-        <ControlledSelect label="Risco cardiovascular" options={cardiacOptions} {...register("cardiac_condition")} />
+        <ControlledSelect label={t("patientForm.renal")} options={localizedOptions(renalOptions, t)} {...register("renal_condition")} />
+        <ControlledSelect label={t("patientForm.hepatic")} options={localizedOptions(hepaticOptions, t)} {...register("hepatic_condition")} />
+        <ControlledSelect label={t("patientForm.cardiovascular")} options={localizedOptions(cardiacOptions, t)} {...register("cardiac_condition")} />
         <ControlledSelect
-          label="Histórico gastrointestinal"
-          options={gastrointestinalOptions}
+          label={t("patientForm.gastrointestinal")}
+          options={localizedOptions(gastrointestinalOptions, t)}
           {...register("gastrointestinal_history")}
         />
       </div>
@@ -280,11 +285,11 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       <div className="grid gap-3 md:grid-cols-3">
         <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
           <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("hypertension")} />
-          Hipertensão
+          {t("patientForm.hypertension")}
         </label>
         <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
           <input className="h-4 w-4 accent-ocean" type="checkbox" {...register("diabetes")} />
-          Diabetes
+          {t("patientForm.diabetes")}
         </label>
         <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
           <input
@@ -292,17 +297,17 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
             type="checkbox"
             {...register("pregnancy_or_lactation")}
           />
-          Gravidez/lactação
+          {t("patientForm.pregnancyLactation")}
         </label>
       </div>
 
       <label className="grid gap-1.5">
-        <span className="label">Reações adversas anteriores</span>
+        <span className="label">{t("patientForm.adverseReactions")}</span>
         <input className="field" {...register("adverse_reactions")} />
       </label>
 
       <label className="grid gap-1.5">
-        <span className="label">Observações clínicas</span>
+        <span className="label">{t("patientForm.clinicalNotes")}</span>
         <textarea className="field min-h-20 resize-y" {...register("clinical_notes")} />
       </label>
 
@@ -314,4 +319,11 @@ export default function PatientForm({ initialPatient, submitLabel, onSubmit }: P
       </div>
     </form>
   );
+}
+
+function localizedOptions(options: typeof renalOptions, t: TFunction) {
+  return options.map((option) => ({
+    ...option,
+    label: t(`clinicalVocabulary.${option.value || "not_reported"}`),
+  }));
 }

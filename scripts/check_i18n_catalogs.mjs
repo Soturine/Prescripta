@@ -43,6 +43,8 @@ const migratedFiles = [
   "frontend/src/components/Sidebar.tsx",
   "frontend/src/components/LanguageSelector.tsx",
   "frontend/src/components/PageHeader.tsx",
+  "frontend/src/components/PatientForm.tsx",
+  "frontend/src/components/PrescriptionForm.tsx",
   "frontend/src/pages/Dashboard.tsx",
   "frontend/src/pages/Login.tsx",
   "frontend/src/pages/Help.tsx",
