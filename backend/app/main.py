@@ -21,12 +21,14 @@ from app.api.routes import (
     integrations,
     medication_catalog,
     medications,
+    omop,
     patients,
     pharmacy,
     prescriptions,
     protocols,
     reports,
     research,
+    terminology,
     users,
 )
 from app.api.routes import (
@@ -84,6 +86,8 @@ app.include_router(clinical_protocols.router, prefix=settings.api_prefix)
 app.include_router(pharmacy.router, prefix=settings.api_prefix)
 app.include_router(evidence.router, prefix=settings.api_prefix)
 app.include_router(research.router, prefix=settings.api_prefix)
+app.include_router(terminology.router, prefix=settings.api_prefix)
+app.include_router(omop.router, prefix=settings.api_prefix)
 app.include_router(data_quality.router, prefix=settings.api_prefix)
 app.include_router(ai_tasks.router, prefix=settings.api_prefix)
 app.include_router(cds.router, prefix=settings.api_prefix)
