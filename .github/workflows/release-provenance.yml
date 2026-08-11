@@ -35,7 +35,7 @@ jobs:
           python scripts/check_install_scripts.py
           npm ci --prefix frontend
           cd frontend
-          npm exec --yes --package=@cyclonedx/cyclonedx-npm@6.0.0 -- cyclonedx-npm --omit optional --output-reproducible --validate --output-file ../sbom-frontend.json package.json
+          npm exec --yes --allow-scripts=libxmljs2@0.37.0 --package=@cyclonedx/cyclonedx-npm@6.0.0 -- cyclonedx-npm --omit optional --output-reproducible --validate --output-file ../sbom-frontend.json package.json
           cd ..
           python scripts/stamp_cyclonedx_serial.py frontend/package-lock.json sbom-frontend.json
       - name: Build release images

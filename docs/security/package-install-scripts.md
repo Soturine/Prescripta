@@ -1,6 +1,6 @@
 # Inventário de install scripts npm
 
-Revisado em 9 de agosto de 2026. Os validadores Python e Node em `scripts/check_install_scripts.*`
+Revisado em 11 de agosto de 2026. Os validadores Python e Node em `scripts/check_install_scripts.*`
 comparam o lockfile com os caminhos e versões exatos de `scripts/install-script-policy.json`;
 pacote novo, remoção ou mudança de versão exige nova revisão. Não há wildcard. O validador Node
 também executa dentro do estágio de build da imagem frontend, antes de `npm ci`.
@@ -11,6 +11,10 @@ também executa dentro do estágio de build da imagem frontend, antes de `npm ci
 | `fsevents` | 2.3.3 | instalação nativa opcional para eventos de filesystem no macOS | transitiva/dev/opcional | pacote npm com integrity no lock | permitido somente no path exato | não instalado em Linux/Windows; revisar mudança |
 | `playwright/fsevents` | 2.3.2 | variante transitiva opcional do Playwright para macOS | transitiva/dev/opcional | pacote npm com integrity no lock | permitido somente no path exato | não instalado em Linux/Windows; revisar mudança |
 
-O npm usado pelo projeto não oferece uma allowlist nativa equivalente por pacote no lock atual.
-`ignore-scripts=true` quebraria a instalação verificada do binário do esbuild; por isso o controle é
-fail-closed sobre `hasInstallScript`, antes da instalação nos workflows.
+O projeto fixa npm 11.18.0 e registra `allowScripts` por pacote/versão no `package.json`, com
+`strict-allow-scripts=true`. O inventário adicional por path no lock continua fail-closed antes da
+instalação e impede que uma resolução transitiva aproveite outro pacote com o mesmo nome.
+
+O gerador one-off `@cyclonedx/cyclonedx-npm@6.0.0` usa `libxmljs2@0.37.0` para validar o SBOM. Essa
+ferramenta não integra o lock/runtime do produto; Security e Release Provenance aprovam o script
+somente nessa invocação, por nome e versão exatos. Mudança em qualquer versão exige nova revisão.
