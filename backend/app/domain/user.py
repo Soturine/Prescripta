@@ -59,6 +59,12 @@ class Capability(StrEnum):
     RESEARCH_PATIENT_JOURNEY_READ = "research.patient_journey.read"
     RESEARCH_PACKAGE_EXPORT = "research.package.export"
     RESEARCH_AI_USE = "research.ai.use"
+    TERMINOLOGY_READ = "terminology.read"
+    TERMINOLOGY_MANAGE = "terminology.manage"
+    TERMINOLOGY_MAPPING_PROPOSE = "terminology.mapping.propose"
+    TERMINOLOGY_MAPPING_REVIEW = "terminology.mapping.review"
+    OMOP_PREVIEW = "omop.preview"
+    OMOP_EXPORT = "omop.export"
     EVIDENCE_READ = "evidence.read"
     EVIDENCE_WRITE = "evidence.write"
     DATA_QUALITY_READ = "data_quality.read"
@@ -121,6 +127,12 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.RESEARCH_PATIENT_JOURNEY_READ,
         Capability.RESEARCH_PACKAGE_EXPORT,
         Capability.RESEARCH_AI_USE,
+        Capability.TERMINOLOGY_READ,
+        Capability.TERMINOLOGY_MANAGE,
+        Capability.TERMINOLOGY_MAPPING_PROPOSE,
+        Capability.TERMINOLOGY_MAPPING_REVIEW,
+        Capability.OMOP_PREVIEW,
+        Capability.OMOP_EXPORT,
         Capability.EVIDENCE_READ,
         Capability.EVIDENCE_WRITE,
         Capability.DATA_QUALITY_READ,
@@ -196,6 +208,7 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.RESEARCH_COHORT_READ,
         Capability.RESEARCH_CONCEPT_SET_READ,
         Capability.RESEARCH_ANALYSIS_READ,
+        Capability.TERMINOLOGY_READ,
         Capability.EVIDENCE_READ,
         Capability.DATA_QUALITY_READ,
     ),
@@ -216,6 +229,11 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.RESEARCH_PATIENT_JOURNEY_READ,
         Capability.RESEARCH_PACKAGE_EXPORT,
         Capability.RESEARCH_AI_USE,
+        Capability.TERMINOLOGY_READ,
+        Capability.TERMINOLOGY_MAPPING_PROPOSE,
+        Capability.TERMINOLOGY_MAPPING_REVIEW,
+        Capability.OMOP_PREVIEW,
+        Capability.OMOP_EXPORT,
         Capability.EVIDENCE_READ,
         Capability.EVIDENCE_WRITE,
         Capability.DATA_QUALITY_READ,
@@ -238,6 +256,9 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.RESEARCH_STUDY_REVIEW,
         Capability.RESEARCH_COHORT_READ,
         Capability.RESEARCH_CONCEPT_SET_READ,
+        Capability.TERMINOLOGY_READ,
+        Capability.TERMINOLOGY_MAPPING_REVIEW,
+        Capability.OMOP_PREVIEW,
         Capability.EVIDENCE_READ,
         Capability.EVIDENCE_WRITE,
         Capability.DATA_QUALITY_READ,

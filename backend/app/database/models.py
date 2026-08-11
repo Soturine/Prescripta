@@ -1676,6 +1676,9 @@ class AnalysisPlanModel(Base):
     institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     cohort_run_id: Mapped[str | None] = mapped_column(ForeignKey("cohort_runs.id"), index=True)
+    data_quality_run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("data_quality_runs.id"), index=True
+    )
     objectives: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     variables: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
     steps: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
@@ -1771,6 +1774,9 @@ class ResearchAnalysisRunModel(Base):
     cohort_run_id: Mapped[str] = mapped_column(
         ForeignKey("cohort_runs.id"), nullable=False, index=True
     )
+    data_quality_run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("data_quality_runs.id"), index=True
+    )
     institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     data_snapshot_marker: Mapped[str] = mapped_column(String(160), nullable=False)
     status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
@@ -1859,6 +1865,16 @@ class DataQualityRunModel(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     study_id: Mapped[str | None] = mapped_column(ForeignKey("research_studies.id"), index=True)
+    cohort_run_id: Mapped[str | None] = mapped_column(ForeignKey("cohort_runs.id"), index=True)
+    data_snapshot_marker: Mapped[str | None] = mapped_column(String(160), index=True)
+    data_snapshot_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    terminology_snapshot: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    ruleset_version: Mapped[str] = mapped_column(
+        String(80), default="prescripta-data-quality-v3", nullable=False
+    )
+    scope_status: Mapped[str] = mapped_column(
+        String(40), default="legacy_unscoped", nullable=False, index=True
+    )
     status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
     summary: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
@@ -1869,7 +1885,7 @@ class DataQualityRunModel(Base):
 class DataQualityFindingModel(Base):
     __tablename__ = "data_quality_findings"
     __table_args__ = (
-        UniqueConstraint("institution_id", "rule", "resource_type", "resource_id", "field"),
+        UniqueConstraint("run_id", "rule", "resource_type", "resource_id", "field"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
@@ -1887,6 +1903,226 @@ class DataQualityFindingModel(Base):
     resolution: Mapped[str | None] = mapped_column(String(500))
     resolved_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AnalysisPlanOutcomeModel(Base):
+    __tablename__ = "analysis_plan_outcomes"
+    __table_args__ = (UniqueConstraint("analysis_plan_id", "outcome_version_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    analysis_plan_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_plans.id"), nullable=False, index=True
+    )
+    outcome_version_id: Mapped[str] = mapped_column(
+        ForeignKey("outcome_definitions.id"), nullable=False, index=True
+    )
+    outcome_logical_name: Mapped[str] = mapped_column(String(220), nullable=False)
+    outcome_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    outcome_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    review_status: Mapped[str] = mapped_column(String(40), nullable=False)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    terminology_refs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+
+
+class AnalysisRunOutcomeModel(Base):
+    __tablename__ = "analysis_run_outcomes"
+    __table_args__ = (UniqueConstraint("analysis_run_id", "outcome_version_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    analysis_run_id: Mapped[str] = mapped_column(
+        ForeignKey("research_analysis_runs.id"), nullable=False, index=True
+    )
+    outcome_version_id: Mapped[str] = mapped_column(
+        ForeignKey("outcome_definitions.id"), nullable=False, index=True
+    )
+    outcome_logical_name: Mapped[str] = mapped_column(String(220), nullable=False)
+    outcome_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    outcome_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    review_status: Mapped[str] = mapped_column(String(40), nullable=False)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    terminology_refs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+
+
+class TerminologySourceModel(Base):
+    __tablename__ = "terminology_sources"
+    __table_args__ = (UniqueConstraint("institution_id", "canonical_system"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    canonical_system: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    public_name: Mapped[str] = mapped_column(String(220), nullable=False)
+    steward: Mapped[str] = mapped_column(String(220), nullable=False)
+    family: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    source_reference: Mapped[str] = mapped_column(String(500), nullable=False)
+    jurisdiction: Mapped[str | None] = mapped_column(String(80))
+    locale: Mapped[str | None] = mapped_column(String(40))
+    active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class TerminologyReleaseModel(Base):
+    __tablename__ = "terminology_releases"
+    __table_args__ = (
+        UniqueConstraint("source_id", "edition", "version", "source_checksum"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("terminology_sources.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    edition: Mapped[str] = mapped_column(String(120), default="", nullable=False)
+    version: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    release_date: Mapped[date | None] = mapped_column(Date)
+    imported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    source_checksum: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    source_artifact_name: Mapped[str] = mapped_column(String(240), nullable=False)
+    license_identifier: Mapped[str] = mapped_column(String(120), nullable=False)
+    license_name: Mapped[str] = mapped_column(String(240), nullable=False)
+    license_reference: Mapped[str] = mapped_column(String(500), nullable=False)
+    redistributable: Mapped[bool] = mapped_column(default=False, nullable=False)
+    requires_license: Mapped[bool] = mapped_column(default=False, nullable=False)
+    requires_login: Mapped[bool] = mapped_column(default=False, nullable=False)
+    requires_attribution: Mapped[bool] = mapped_column(default=False, nullable=False)
+    commercial_redistribution_allowed: Mapped[bool | None] = mapped_column()
+    license_note: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    license_status: Mapped[str] = mapped_column(
+        String(40), default="metadata_only", nullable=False, index=True
+    )
+    status: Mapped[str] = mapped_column(String(40), default="configured", nullable=False)
+    provenance: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    imported_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    import_run_id: Mapped[str | None] = mapped_column(String(36), index=True)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+
+
+class TerminologyConceptModel(Base):
+    __tablename__ = "terminology_concepts"
+    __table_args__ = (UniqueConstraint("release_id", "source_code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    release_id: Mapped[str] = mapped_column(
+        ForeignKey("terminology_releases.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    source_system: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    source_code: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
+    display: Mapped[str] = mapped_column(String(500), nullable=False)
+    normalized_display: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
+    aliases: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    domain: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    concept_class: Mapped[str | None] = mapped_column(String(120))
+    standard_status: Mapped[str] = mapped_column(
+        String(40), default="source", nullable=False, index=True
+    )
+    omop_concept_id: Mapped[int | None] = mapped_column(Integer, index=True)
+    valid_start_date: Mapped[date | None] = mapped_column(Date)
+    valid_end_date: Mapped[date | None] = mapped_column(Date)
+    invalid_reason: Mapped[str | None] = mapped_column(String(80), index=True)
+    provenance: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class TerminologyImportRunModel(Base):
+    __tablename__ = "terminology_import_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    release_id: Mapped[str] = mapped_column(
+        ForeignKey("terminology_releases.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    input_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    artifact_name: Mapped[str] = mapped_column(String(240), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    inserted_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    updated_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    skipped_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    rejected_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    error_summary: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    imported_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class TerminologyMappingModel(Base):
+    __tablename__ = "terminology_mappings"
+    __table_args__ = (UniqueConstraint("mapping_family_id", "version"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    mapping_family_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    source_concept_id: Mapped[str] = mapped_column(
+        ForeignKey("terminology_concepts.id"), nullable=False, index=True
+    )
+    target_concept_id: Mapped[str] = mapped_column(
+        ForeignKey("terminology_concepts.id"), nullable=False, index=True
+    )
+    relationship_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    mapping_method: Mapped[str] = mapped_column(String(80), nullable=False)
+    domain_expectation: Mapped[str] = mapped_column(String(80), nullable=False)
+    confidence: Mapped[float | None] = mapped_column(Float)
+    rationale: Mapped[str] = mapped_column(Text, nullable=False)
+    provenance: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    mapping_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(40), default="proposed", nullable=False, index=True)
+    authored_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    review_note: Mapped[str | None] = mapped_column(Text)
+    supersedes_mapping_id: Mapped[str | None] = mapped_column(
+        ForeignKey("terminology_mappings.id"), index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class ConceptSetTerminologyRefModel(Base):
+    __tablename__ = "concept_set_terminology_refs"
+    __table_args__ = (UniqueConstraint("concept_set_version_id", "release_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    concept_set_version_id: Mapped[str] = mapped_column(
+        ForeignKey("concept_set_versions.id"), nullable=False, index=True
+    )
+    release_id: Mapped[str] = mapped_column(
+        ForeignKey("terminology_releases.id"), nullable=False, index=True
+    )
+    mapping_hashes: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    expansion_policy: Mapped[str] = mapped_column(String(80), default="none", nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class OmopEtlRunModel(Base):
+    __tablename__ = "omop_etl_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    study_id: Mapped[str | None] = mapped_column(ForeignKey("research_studies.id"), index=True)
+    cohort_run_id: Mapped[str | None] = mapped_column(ForeignKey("cohort_runs.id"), index=True)
+    source_classification: Mapped[str] = mapped_column(String(80), nullable=False)
+    synthetic_only: Mapped[bool] = mapped_column(default=True, nullable=False)
+    source_snapshot_marker: Mapped[str] = mapped_column(String(160), nullable=False)
+    source_snapshot_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_schema_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    adapter_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    cdm_version: Mapped[str] = mapped_column(String(20), nullable=False)
+    terminology_release_ids: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    mapping_hashes: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    metrics: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    warnings: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    errors: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    manifest: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    export_files: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    export_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    executed_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class AIInteractionModel(Base):
