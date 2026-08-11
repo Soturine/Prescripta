@@ -2189,6 +2189,9 @@ class ResearchComparisonRunModel(Base):
     data_quality_run_id: Mapped[str] = mapped_column(
         ForeignKey("data_quality_runs.id"), nullable=False, index=True
     )
+    dataset_snapshot_marker: Mapped[str] = mapped_column(
+        String(160), nullable=False, index=True
+    )
     exact_references: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     configuration: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     results: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)

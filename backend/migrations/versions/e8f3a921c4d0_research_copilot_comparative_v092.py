@@ -45,6 +45,7 @@ def upgrade() -> None:
         sa.Column("exposed_cohort_run_id", sa.String(length=36), nullable=False),
         sa.Column("comparator_cohort_run_id", sa.String(length=36), nullable=False),
         sa.Column("data_quality_run_id", sa.String(length=36), nullable=False),
+        sa.Column("dataset_snapshot_marker", sa.String(length=160), nullable=False),
         sa.Column("exact_references", sa.JSON(), nullable=False),
         sa.Column("configuration", sa.JSON(), nullable=False),
         sa.Column("results", sa.JSON(), nullable=False),
@@ -75,6 +76,7 @@ def upgrade() -> None:
         "exposed_cohort_run_id",
         "comparator_cohort_run_id",
         "data_quality_run_id",
+        "dataset_snapshot_marker",
         "input_hash",
         "content_hash",
         "status",
@@ -177,7 +179,7 @@ def upgrade() -> None:
         )
     op.execute(
         "CREATE VIEW research_aggregate_comparisons AS "
-        "SELECT id, study_id, institution_id, status, exposed_n, comparator_n, "
+        "SELECT id, study_id, institution_id, dataset_snapshot_marker, status, exposed_n, comparator_n, "
         "exposed_events, comparator_events, content_hash, executed_at "
         "FROM research_comparison_runs"
     )

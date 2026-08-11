@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 
 import CohortBuilder, {
   initialCohortDefinition,
@@ -137,6 +138,8 @@ const studyWorkspace = {
   data_quality: {
     id: "dq-run-1",
     cohort_run_id: "run-1",
+    data_snapshot_marker: "snapshot:synthetic-v1",
+    data_snapshot_hash: "z".repeat(64),
     ruleset_version: "prescripta-data-quality-v3",
     scope_status: "scoped",
     content_hash: "q".repeat(64),
@@ -162,7 +165,11 @@ function BuilderHarness() {
 
 function renderPage(node: React.ReactNode) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  return render(<QueryClientProvider client={client}>{node}</QueryClientProvider>);
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={client}>{node}</QueryClientProvider>
+    </MemoryRouter>,
+  );
 }
 
 beforeEach(() => {

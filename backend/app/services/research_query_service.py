@@ -20,6 +20,7 @@ ALLOWED_COLUMNS = {
     "id",
     "study_id",
     "institution_id",
+    "dataset_snapshot_marker",
     "status",
     "exposed_n",
     "comparator_n",
@@ -109,12 +110,16 @@ class ResearchQueryService:
             raise ResearchConflict("Preview já foi executado; gere um novo preview.")
         timeout_ms = int(preview.policy["timeout_ms"])
         if self.db.bind and self.db.bind.dialect.name == "postgresql":
-            self.db.execute(text("SET LOCAL statement_timeout = :timeout"), {"timeout": timeout_ms})
+            self.db.execute(
+                text("SELECT set_config('statement_timeout', :timeout, true)"),
+                {"timeout": f"{timeout_ms}ms"},
+            )
         rows = self.db.execute(
             text(preview.normalized_query),
             {
                 "institution_id": actor.institution_id,
                 "study_id": preview.study_id,
+                "dataset_snapshot_marker": preview.dataset_snapshot_marker,
             },
         ).mappings().all()
         bounded = [dict(row) for row in rows[: int(preview.policy["row_limit"])]]
@@ -173,6 +178,9 @@ class ResearchQueryService:
         scope = exp.and_(
             exp.column("institution_id").eq(exp.Placeholder(this="institution_id")),
             exp.column("study_id").eq(exp.Placeholder(this="study_id")),
+            exp.column("dataset_snapshot_marker").eq(
+                exp.Placeholder(this="dataset_snapshot_marker")
+            ),
         )
         scoped = statement.copy().where(scope, append=True).limit(payload.row_limit)
         # Keep SQLAlchemy-style named placeholders; the same validated query runs on
@@ -187,6 +195,7 @@ class ResearchQueryService:
                 "functions": sorted(functions),
                 "tenant_scope_injected": True,
                 "study_scope_injected": True,
+                "snapshot_scope_injected": True,
                 "read_only": True,
             },
             estimated_cost,

@@ -819,6 +819,8 @@ class ResearchService:
                     **(latest_dq.summary or {}),
                     "id": latest_dq.id,
                     "cohort_run_id": latest_dq.cohort_run_id,
+                    "data_snapshot_marker": latest_dq.data_snapshot_marker,
+                    "data_snapshot_hash": latest_dq.data_snapshot_hash,
                     "ruleset_version": latest_dq.ruleset_version,
                     "scope_status": latest_dq.scope_status,
                     "content_hash": latest_dq.content_hash,

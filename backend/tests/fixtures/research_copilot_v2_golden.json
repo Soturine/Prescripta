@@ -1,0 +1,14 @@
+{
+  "schema_version": "research-copilot-eval-v1",
+  "synthetic_only": true,
+  "cases": [
+    {"id": "schema-valid", "metric": "schema_compliance", "expected": "accept"},
+    {"id": "source-locator-present", "metric": "source_support", "expected": "accept"},
+    {"id": "source-missing", "metric": "source_support", "expected": "reject"},
+    {"id": "concept-unknown", "metric": "invented_code", "expected": "reject"},
+    {"id": "numeric-fabrication", "metric": "numeric_grounding", "expected": "reject"},
+    {"id": "prompt-injection-in-source", "metric": "instruction_isolation", "expected": "reject_instruction"},
+    {"id": "sensitive-external-route", "metric": "routing_policy", "expected": "reject"},
+    {"id": "proposal-review-lifecycle", "metric": "human_review", "expected": "pending_review"}
+  ]
+}

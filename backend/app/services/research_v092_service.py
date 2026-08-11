@@ -159,6 +159,7 @@ class ResearchV092Service:
             exposed_cohort_run_id=exposed.id,
             comparator_cohort_run_id=comparator.id,
             data_quality_run_id=dq.id,
+            dataset_snapshot_marker=payload.dataset_snapshot_marker,
             exact_references=exact_references,
             configuration=configuration,
             results=results,

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from test_research_v092_methods import _records
 
@@ -32,6 +35,7 @@ from app.services.research_analysis_service import ResearchAnalysisService
 from app.services.research_query_service import ResearchQueryService
 from app.services.research_service import ResearchNotFound
 from app.services.research_v092_service import ResearchV092Service
+
 
 def _comparison_fixture(db: Session, actor) -> tuple[ResearchStudyModel, dict]:
     study = ResearchStudyModel(
@@ -296,6 +300,21 @@ def test_copilot_v2_blocks_numeric_fabrication_and_ungrounded_extraction(
     db_session: Session,
     create_test_user,
 ) -> None:
+    golden = json.loads(
+        (Path(__file__).parent / "fixtures" / "research_copilot_v2_golden.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert golden["synthetic_only"] is True
+    assert {case["metric"] for case in golden["cases"]} == {
+        "schema_compliance",
+        "source_support",
+        "invented_code",
+        "numeric_grounding",
+        "instruction_isolation",
+        "routing_policy",
+        "human_review",
+    }
     actor = create_test_user(email="v092-ai@example.test", role=UserRole.PESQUISADOR)
     router = AITaskRouter(db_session)
     comparison_request = AIRequestSchema(
@@ -341,3 +360,57 @@ def test_copilot_v2_blocks_numeric_fabrication_and_ungrounded_extraction(
             purpose="local synthesis",
             input={},
         )
+
+
+def test_query_execution_requires_explicit_enablement_and_returns_aggregates_only(
+    monkeypatch: pytest.MonkeyPatch,
+    db_session: Session,
+    create_test_user,
+) -> None:
+    actor = create_test_user(email="v092-query@example.test", role=UserRole.PESQUISADOR)
+    study, fixture = _comparison_fixture(db_session, actor)
+    comparison = ResearchV092Service(db_session).execute_comparison(
+        study.id, fixture["payload"], actor
+    )
+    db_session.execute(
+        text(
+            "CREATE VIEW research_aggregate_comparisons AS "
+            "SELECT id, study_id, institution_id, dataset_snapshot_marker, status, "
+            "exposed_n, comparator_n, "
+            "exposed_events, comparator_events, content_hash, executed_at "
+            "FROM research_comparison_runs"
+        )
+    )
+    try:
+        monkeypatch.setenv("PRESCRIPTA_RESEARCH_QUERY_ASSISTANT_ENABLED", "true")
+        service = ResearchQueryService(db_session)
+        preview = service.preview(
+            ResearchQueryPreviewRequest(
+                study_id=study.id,
+                dataset_snapshot_marker="synthetic-v092",
+                natural_language_question="List aggregate comparison counts",
+                proposed_sql=(
+                    "SELECT id, exposed_n, comparator_n, exposed_events, comparator_events "
+                    "FROM research_aggregate_comparisons"
+                ),
+                purpose="explicit human aggregate execution",
+            ),
+            actor,
+        )
+        assert preview.enabled is True
+        executed = service.execute(preview.id, actor)
+        assert executed.executed is True
+        assert executed.result["aggregate_only"] is True
+        assert executed.result["rows"] == [
+            {
+                "id": comparison.id,
+                "exposed_n": 20,
+                "comparator_n": 20,
+                "exposed_events": 10,
+                "comparator_events": 5,
+            }
+        ]
+        assert "record_key" not in str(executed.result)
+    finally:
+        db_session.rollback()
+        db_session.execute(text("DROP VIEW IF EXISTS research_aggregate_comparisons"))
