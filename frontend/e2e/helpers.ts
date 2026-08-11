@@ -14,12 +14,28 @@ export const credentials = {
 export type DemoRole = keyof typeof credentials;
 
 const guardedPages = new WeakSet<Page>();
+const allowedConsolePatterns = new WeakMap<Page, RegExp[]>();
+
+export function allowConsoleMessage(page: Page, pattern: RegExp) {
+  const patterns = allowedConsolePatterns.get(page) ?? [];
+  patterns.push(pattern);
+  allowedConsolePatterns.set(page, patterns);
+}
 
 function guardBrowserConsole(page: Page) {
   if (guardedPages.has(page)) return;
   guardedPages.add(page);
   page.on("console", (message) => {
-    if (["warning", "error"].includes(message.type())) {
+    const expectedAnonymousSessionProbe =
+      message.type() === "error"
+      && message.text() === "Failed to load resource: the server responded with a status of 401 (Unauthorized)";
+    const explicitlyAllowed = (allowedConsolePatterns.get(page) ?? [])
+      .some((pattern) => pattern.test(message.text()));
+    if (
+      ["warning", "error"].includes(message.type())
+      && !expectedAnonymousSessionProbe
+      && !explicitlyAllowed
+    ) {
       throw new Error(`Unexpected browser console ${message.type()}: ${message.text()}`);
     }
   });

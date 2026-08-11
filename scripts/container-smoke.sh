@@ -16,7 +16,7 @@ cleanup() {
 trap cleanup EXIT
 
 "${compose[@]}" config --quiet
-"${compose[@]}" build backend frontend
+"${compose[@]}" build backend frontend migrate
 "${compose[@]}" up --detach --wait
 
 curl --fail --silent --show-error http://127.0.0.1:8000/health >/dev/null

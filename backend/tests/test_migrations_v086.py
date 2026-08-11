@@ -28,8 +28,13 @@ def test_alembic_upgrade_downgrade_and_schema_check(tmp_path: Path):
         "PRESCRIPTA_DATABASE_URL": url,
     }
     _alembic(backend, env, "upgrade", "head")
-    tables = set(inspect(create_engine(url)).get_table_names())
+    inspector = inspect(create_engine(url))
+    tables = set(inspector.get_table_names())
     assert {"patients", "prescription_audits", "alembic_version"} <= tables
+    assert "reviewed_at" in {
+        column["name"] for column in inspector.get_columns("outcome_definitions")
+    }
+    assert "terminology_sources" in tables
     _alembic(backend, env, "downgrade", "base")
     _alembic(backend, env, "upgrade", "head")
     _alembic(backend, env, "check")

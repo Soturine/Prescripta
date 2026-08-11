@@ -1,0 +1,27 @@
+{
+  "version": "0.9.1",
+  "generator": "scripts/capture-v091-terminology-omop-assets.mjs",
+  "assets": [
+    {
+      "file": "research-terminology-governance-v0.9.1.png",
+      "bytes": 146200,
+      "width": 1440,
+      "height": 1307,
+      "sha256": "c0fcc8a7c6e31e810133dfa20f83f44cda9cf0509b9a1523d90b8ecede53eae0"
+    },
+    {
+      "file": "research-omop-compatibility-v0.9.1.png",
+      "bytes": 188119,
+      "width": 1440,
+      "height": 1649,
+      "sha256": "e2b6d4f48de3e7cf4c12741725377b84e470dafd89b68d3060c546d59342bb29"
+    },
+    {
+      "file": "research-omop-en-US-v0.9.1.png",
+      "bytes": 183828,
+      "width": 1440,
+      "height": 1617,
+      "sha256": "49bb11b7705c2abc8f96da216fb716292d1dd0429a19ad27a48da0df1839aaf6"
+    }
+  ]
+}

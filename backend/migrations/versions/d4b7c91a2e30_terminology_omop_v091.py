@@ -21,6 +21,20 @@ def _index(table: str, *columns: str) -> None:
         op.create_index(op.f(f"ix_{table}_{column}"), table, [column])
 
 
+def _legacy_dq_unique_name() -> str:
+    expected = {"institution_id", "rule", "resource_type", "resource_id", "field"}
+    constraints = sa.inspect(op.get_bind()).get_unique_constraints(
+        "data_quality_findings"
+    )
+    for constraint in constraints:
+        if set(constraint.get("column_names") or []) == expected:
+            return str(
+                constraint.get("name")
+                or "uq_data_quality_findings_institution_id"
+            )
+    raise RuntimeError("Legacy Data Quality unique constraint was not found.")
+
+
 def upgrade() -> None:
     with op.batch_alter_table("data_quality_runs") as batch:
         batch.add_column(sa.Column("cohort_run_id", sa.String(36)))
@@ -56,13 +70,12 @@ def upgrade() -> None:
         ):
             batch.create_index(op.f(f"ix_data_quality_runs_{column}"), [column])
 
+    legacy_dq_unique = _legacy_dq_unique_name()
     with op.batch_alter_table(
         "data_quality_findings",
         naming_convention={"uq": "uq_%(table_name)s_%(column_0_name)s"},
     ) as batch:
-        batch.drop_constraint(
-            "uq_data_quality_findings_institution_id", type_="unique"
-        )
+        batch.drop_constraint(legacy_dq_unique, type_="unique")
         batch.create_unique_constraint(
             "uq_data_quality_findings_run_scope",
             ["run_id", "rule", "resource_type", "resource_id", "field"],

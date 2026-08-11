@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { login, loginWith, logout } from "./helpers";
+import { allowConsoleMessage, login, loginWith, logout } from "./helpers";
 
 test.describe("sessão, perfis e autorização", () => {
   test("login, logout e expiração por 401", async ({ page }) => {
@@ -83,6 +83,10 @@ test.describe("sessão, perfis e autorização", () => {
 test.describe("estados resilientes", () => {
   test("erro de API oferece retry e vazio não vira dado clínico", async ({ page }) => {
     await login(page, "medico");
+    allowConsoleMessage(
+      page,
+      /^Failed to load resource: the server responded with a status of 503 \(Service Unavailable\)$/,
+    );
     let returnEmpty = false;
     await page.route("**/api/patients", async (route) => {
       if (!returnEmpty) await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ detail: "offline demo" }) });

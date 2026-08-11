@@ -129,6 +129,19 @@ def test_governed_terminology_import_mapping_review_and_drift(
     )
     assert len(codes) == 2
     assert {item.release_id for item in codes} == {release_v1.id, release_v2.id}
+    assert service.search(author, query="C1")["suggestion_only"] is True
+    suggested = service.search(
+        author,
+        query="Sy",
+        release_id=release_v1.id,
+        domain="Condition",
+        standard_status="source",
+        active_only=True,
+    )
+    assert suggested["suggestion_only"] is True
+    assert suggested["total"] == 1
+    with pytest.raises(TerminologyError, match="Paginação"):
+        service.search(author, limit=101)
     drift = service.drift(release_v1.id, release_v2.id, author)
     assert drift["summary"]["target_changed"] == 1
     assert drift["summary"]["source_concept_deprecated"] == 1
@@ -152,6 +165,7 @@ def test_governed_terminology_import_mapping_review_and_drift(
     target_release, _ = _import_csv(
         service, target_source, target_raw, "fixture-standard-v1", author
     )
+    assert service.search(author, query="STD-C")["suggestion_only"] is False
     source_concept = db_session.scalar(
         select(TerminologyConceptModel).where(
             TerminologyConceptModel.release_id == release_v1.id,
@@ -195,6 +209,56 @@ def test_governed_terminology_import_mapping_review_and_drift(
     )
     assert approved.reviewed_by_user_id == reviewer.id
     assert approved.status == "approved_for_demo"
+    assert service.list_mappings(author, status="approved_for_demo") == [approved]
+    with pytest.raises(TerminologyError, match="Somente mapping proposed"):
+        service.review_mapping(
+            approved.id,
+            TerminologyMappingReview(
+                decision="rejected",
+                note="Already reviewed mapping cannot transition a second time.",
+            ),
+            reviewer,
+        )
+    with pytest.raises(TerminologyError, match="distintos"):
+        service.propose_mapping(
+            TerminologyMappingCreate(
+                source_concept_id=source_concept.id,
+                target_concept_id=source_concept.id,
+                relationship_type="Maps to",
+                mapping_method="explicit_fixture",
+                domain_expectation="Condition",
+                rationale="Self mapping must be rejected by governance.",
+                provenance={"synthetic_fixture": True},
+            ),
+            author,
+        )
+    superseding = service.propose_mapping(
+        TerminologyMappingCreate(
+            source_concept_id=source_concept.id,
+            target_concept_id=target_concept.id,
+            relationship_type="Maps to",
+            mapping_method="manual",
+            domain_expectation="Condition",
+            rationale="Versioned replacement proposal for branch coverage.",
+            provenance={"synthetic_fixture": True},
+            supersedes_mapping_id=approved.id,
+        ),
+        author,
+    )
+    assert superseding.version == 2
+    assert superseding.mapping_family_id == approved.mapping_family_id
+    rejected = service.review_mapping(
+        superseding.id,
+        TerminologyMappingReview(
+            decision="rejected",
+            note="Independent reviewer rejects this replacement proposal.",
+        ),
+        reviewer,
+    )
+    assert rejected.status == "rejected"
+    assert service.drift(release_v1.id, release_v1.id, author)["summary"] == {
+        "unchanged": 2
+    }
 
     bad_buffer = io.BytesIO()
     with zipfile.ZipFile(bad_buffer, "w") as archive:
