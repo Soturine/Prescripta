@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.9.2] - 2026-08-11
+
+### Research Copilot v2 e Comparative RWE
+
+- comparação determinística de coortes sintéticas com Table 1, missingness, SMD, risco,
+  diferença de risco, RR, OR, intervalos, pessoa-tempo e incidência;
+- PSM e IPTW experimentais com estimand/configuração explícitos, overlap, balance, ESS, pesos
+  extremos, abstention e salvaguardas permanentes contra alegações causais;
+- Research Copilot v2 proposal-only para protocolo, conceitos, evidência e explicações, com
+  grounding, proveniência, revisão humana e evals adversariais;
+- Literature workspace com extração por fonte/locator e resistência a prompt injection;
+- NL→SQL experimental desativado por padrão, validado por AST, limitado a view agregada e
+  escopado por instituição, estudo e snapshot antes de execução humana explícita;
+- ponte “Explorar em RWE” cria apenas um draft de pesquisa a partir de achado auditado;
+- Research Package v3 preserva lineage comparativo, métodos e evidências sem linhas de paciente.
+
+### Limitações
+
+- somente dados sintéticos/demonstrativos; sem validação epidemiológica, clínica ou regulatória;
+- PSM/IPTW não têm validação externa independente e não autorizam conclusão causal;
+- query assistant continua default-off e o conteúdo de IA permanece proposta pendente de revisão.
+
 ## [0.9.1] - 2026-08-11
 
 ### Terminologia e OMOP parcial
