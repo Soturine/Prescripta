@@ -10,3 +10,5 @@ PyJWT>=2.10.0
 pwdlib[argon2]>=0.3.0
 openai>=2.51.0
 cryptography>=50.0.0
+scikit-learn>=1.9.0
+sqlglot>=30.16.0

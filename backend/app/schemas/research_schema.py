@@ -382,6 +382,7 @@ class AnalysisPlanCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     cohort_run_id: str
+    comparator_cohort_run_id: str | None = None
     data_quality_run_id: str | None = None
     outcome_version_ids: list[str] = Field(default_factory=list, max_length=20)
     objectives: list[str] = Field(min_length=1, max_length=20)
@@ -398,16 +399,54 @@ class AnalysisPlanCreate(BaseModel):
             "prevalence",
             "baseline_table_1",
             "resource_utilization",
+            "comparative_table_1",
+            "risk_ratio",
+            "odds_ratio",
+            "incidence_rate",
+            "psm_experimental",
+            "iptw_experimental",
         ]
     ] = Field(min_length=1, max_length=10)
     planned_outputs: list[
         Literal[
-            "summary_cards", "table_1", "distribution_chart", "attrition_table", "research_package"
+            "summary_cards",
+            "table_1",
+            "distribution_chart",
+            "attrition_table",
+            "balance_diagnostics",
+            "propensity_diagnostics",
+            "weight_diagnostics",
+            "research_package",
         ]
     ] = Field(min_length=1, max_length=10)
     output_specification: dict = Field(default_factory=dict)
     source_refs: list[str] = Field(min_length=1, max_length=30)
     limitations: list[str] = Field(min_length=1, max_length=30)
+    exact_reference_set: dict = Field(default_factory=dict)
+    method_configuration: dict = Field(default_factory=dict)
+    causal_assumptions: dict = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def comparative_contract(self) -> AnalysisPlanCreate:
+        comparative = bool(
+            set(self.methods)
+            & {
+                "comparative_table_1",
+                "risk_ratio",
+                "odds_ratio",
+                "incidence_rate",
+                "psm_experimental",
+                "iptw_experimental",
+            }
+        )
+        if comparative and not self.comparator_cohort_run_id:
+            raise ValueError("Plano comparativo exige comparator_cohort_run_id.")
+        if comparative and not self.exact_reference_set:
+            raise ValueError("Plano comparativo exige exact_reference_set.")
+        if set(self.methods) & {"psm_experimental", "iptw_experimental"}:
+            if not self.method_configuration or not self.causal_assumptions:
+                raise ValueError("PSM/IPTW exigem configuração e causal assumptions.")
+        return self
 
 
 class AnalysisPlanRead(BaseModel):
@@ -418,6 +457,7 @@ class AnalysisPlanRead(BaseModel):
     institution_id: str
     version: int
     cohort_run_id: str | None
+    comparator_cohort_run_id: str | None
     data_quality_run_id: str | None
     outcome_version_refs: list[dict] = Field(default_factory=list)
     objectives: list[str]
@@ -431,6 +471,9 @@ class AnalysisPlanRead(BaseModel):
     output_specification: dict
     source_refs: list[str]
     limitations: list[str]
+    exact_reference_set: dict
+    method_configuration: dict
+    causal_assumptions: dict
     definition_hash: str
     status: str
     authored_by_user_id: int
@@ -463,7 +506,8 @@ class ResearchPackageRead(BaseModel):
 
     id: str
     study_id: str
-    analysis_run_id: str
+    analysis_run_id: str | None
+    comparison_run_id: str | None = None
     institution_id: str
     manifest: dict
     files: dict

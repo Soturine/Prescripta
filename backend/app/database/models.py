@@ -1676,6 +1676,9 @@ class AnalysisPlanModel(Base):
     institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     cohort_run_id: Mapped[str | None] = mapped_column(ForeignKey("cohort_runs.id"), index=True)
+    comparator_cohort_run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("cohort_runs.id"), index=True
+    )
     data_quality_run_id: Mapped[str | None] = mapped_column(
         ForeignKey("data_quality_runs.id"), index=True
     )
@@ -1690,6 +1693,9 @@ class AnalysisPlanModel(Base):
     output_specification: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     source_refs: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     limitations: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    exact_reference_set: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    method_configuration: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    causal_assumptions: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     definition_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(String(40), default="draft", nullable=False)
     authored_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
@@ -1789,14 +1795,20 @@ class ResearchAnalysisRunModel(Base):
 
 class ResearchPackageModel(Base):
     __tablename__ = "research_packages"
-    __table_args__ = (UniqueConstraint("analysis_run_id", "content_hash"),)
+    __table_args__ = (
+        UniqueConstraint("analysis_run_id", "content_hash"),
+        UniqueConstraint("comparison_run_id", "content_hash"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     study_id: Mapped[str] = mapped_column(
         ForeignKey("research_studies.id"), nullable=False, index=True
     )
-    analysis_run_id: Mapped[str] = mapped_column(
-        ForeignKey("research_analysis_runs.id"), nullable=False, index=True
+    analysis_run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("research_analysis_runs.id"), index=True
+    )
+    comparison_run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("research_comparison_runs.id"), index=True
     )
     institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     manifest: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
@@ -2157,6 +2169,112 @@ class AIInteractionModel(Base):
     output_payload: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
 
 
+class ResearchComparisonRunModel(Base):
+    __tablename__ = "research_comparison_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    study_id: Mapped[str] = mapped_column(
+        ForeignKey("research_studies.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    analysis_plan_id: Mapped[str | None] = mapped_column(
+        ForeignKey("analysis_plans.id"), index=True
+    )
+    exposed_cohort_run_id: Mapped[str] = mapped_column(
+        ForeignKey("cohort_runs.id"), nullable=False, index=True
+    )
+    comparator_cohort_run_id: Mapped[str] = mapped_column(
+        ForeignKey("cohort_runs.id"), nullable=False, index=True
+    )
+    data_quality_run_id: Mapped[str] = mapped_column(
+        ForeignKey("data_quality_runs.id"), nullable=False, index=True
+    )
+    exact_references: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    configuration: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    results: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    diagnostics: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    provenance: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    exposed_n: Mapped[int] = mapped_column(Integer, nullable=False)
+    comparator_n: Mapped[int] = mapped_column(Integer, nullable=False)
+    exposed_events: Mapped[int | None] = mapped_column(Integer)
+    comparator_events: Mapped[int | None] = mapped_column(Integer)
+    input_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    synthetic_only: Mapped[bool] = mapped_column(default=True, nullable=False)
+    executed_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    executed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class MedicationSafetyResearchDraftModel(Base):
+    __tablename__ = "medication_safety_research_drafts"
+    __table_args__ = (UniqueConstraint("institution_id", "study_id", "source_finding_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    study_id: Mapped[str] = mapped_column(
+        ForeignKey("research_studies.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    source_finding_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    medication_candidate: Mapped[str] = mapped_column(String(220), nullable=False)
+    outcome_candidate: Mapped[str] = mapped_column(String(220), nullable=False)
+    suggested_question: Mapped[str] = mapped_column(Text, nullable=False)
+    source_evidence_ids: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    limitations: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="proposal", nullable=False)
+    synthetic_only: Mapped[bool] = mapped_column(default=True, nullable=False)
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class EvidenceExtractionModel(Base):
+    __tablename__ = "evidence_extractions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_sources.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    schema_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    extracted_fields: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    claims: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    prompt_injection_detected: Mapped[bool] = mapped_column(default=False, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(40), default="pending_review", nullable=False, index=True
+    )
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class ResearchQueryPreviewModel(Base):
+    __tablename__ = "research_query_previews"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    study_id: Mapped[str] = mapped_column(
+        ForeignKey("research_studies.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    dataset_snapshot_marker: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
+    natural_language_question_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    normalized_query: Mapped[str] = mapped_column(Text, nullable=False)
+    structured_interpretation: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    policy: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    estimated_cost: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
+    executed: Mapped[bool] = mapped_column(default=False, nullable=False)
+    result: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
 def _block_changes_after_review(target, reviewed_states: set[str], fields: set[str]) -> None:
     state = inspect(target)
     history = state.attrs.status.history
@@ -2247,6 +2365,7 @@ def _immutable_reviewed_analysis_plan(_mapper, _connection, target) -> None:
         {"reviewed_demo", "archived"},
         {
             "cohort_run_id",
+            "comparator_cohort_run_id",
             "objectives",
             "variables",
             "steps",
@@ -2258,6 +2377,9 @@ def _immutable_reviewed_analysis_plan(_mapper, _connection, target) -> None:
             "output_specification",
             "source_refs",
             "limitations",
+            "exact_reference_set",
+            "method_configuration",
+            "causal_assumptions",
             "definition_hash",
         },
     )
@@ -2281,3 +2403,38 @@ def _immutable_analysis_run(_mapper, _connection, _target) -> None:
 @event.listens_for(ResearchPackageModel, "before_update")
 def _immutable_research_package(_mapper, _connection, _target) -> None:
     raise ValueError("ResearchPackage é imutável.")
+
+
+@event.listens_for(ResearchComparisonRunModel, "before_update")
+def _immutable_comparison_run(_mapper, _connection, _target) -> None:
+    raise ValueError("ResearchComparisonRun é imutável.")
+
+
+@event.listens_for(EvidenceExtractionModel, "before_update")
+def _immutable_evidence_extraction(_mapper, _connection, _target) -> None:
+    raise ValueError("EvidenceExtraction é imutável; gere uma nova extração.")
+
+
+@event.listens_for(ResearchQueryPreviewModel, "before_update")
+def _immutable_query_preview(_mapper, _connection, target) -> None:
+    state = inspect(target)
+    immutable_fields = {
+        "study_id",
+        "institution_id",
+        "dataset_snapshot_marker",
+        "natural_language_question_hash",
+        "normalized_query",
+        "structured_interpretation",
+        "policy",
+        "estimated_cost",
+        "enabled",
+        "created_by_user_id",
+        "created_at",
+    }
+    if any(state.attrs[field].history.has_changes() for field in immutable_fields):
+        raise ValueError("A policy e a query do preview são imutáveis; gere novo preview.")
+    if (
+        state.attrs.executed.history.has_changes()
+        and state.attrs.executed.history.deleted == [True]
+    ):
+        raise ValueError("Execução de query não pode ser revertida.")

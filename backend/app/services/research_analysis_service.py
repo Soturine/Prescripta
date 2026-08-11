@@ -36,6 +36,20 @@ ALLOWED_METHODS = {
     "prevalence",
     "baseline_table_1",
     "resource_utilization",
+    "comparative_table_1",
+    "risk_ratio",
+    "odds_ratio",
+    "incidence_rate",
+    "psm_experimental",
+    "iptw_experimental",
+}
+COMPARATIVE_METHODS = {
+    "comparative_table_1",
+    "risk_ratio",
+    "odds_ratio",
+    "incidence_rate",
+    "psm_experimental",
+    "iptw_experimental",
 }
 
 
@@ -52,6 +66,16 @@ class ResearchAnalysisService:
         cohort_run = self._cohort_run(payload.cohort_run_id, actor)
         if cohort_run.study_id != study.id or cohort_run.status != "completed_demo":
             raise ResearchError("O plano exige uma coorte concluída do mesmo estudo.")
+        comparator_run = None
+        if payload.comparator_cohort_run_id:
+            comparator_run = self._cohort_run(payload.comparator_cohort_run_id, actor)
+            if (
+                comparator_run.study_id != study.id
+                or comparator_run.status != "completed_demo"
+                or comparator_run.id == cohort_run.id
+                or comparator_run.data_snapshot_marker != cohort_run.data_snapshot_marker
+            ):
+                raise ResearchError("Comparator exige run distinto do mesmo estudo/snapshot.")
         methods = set(payload.methods)
         if not methods or not methods <= ALLOWED_METHODS:
             raise ResearchError("O plano contém método não permitido.")
@@ -73,10 +97,50 @@ class ResearchAnalysisService:
         dq_run = self._resolve_data_quality_run(
             cohort_run, actor, requested_dq_id=requested_dq_id
         )
+        if methods & COMPARATIVE_METHODS:
+            expected_reference_set = {
+                "exposed_cohort_run": {
+                    "id": cohort_run.id,
+                    "cohort_version_id": cohort_run.cohort_version_id,
+                    "run_hash": cohort_run.run_hash,
+                },
+                "comparator_cohort_run": {
+                    "id": comparator_run.id,
+                    "cohort_version_id": comparator_run.cohort_version_id,
+                    "run_hash": comparator_run.run_hash,
+                },
+                "outcomes": sorted(
+                    [self._outcome_ref(item) for item in outcomes],
+                    key=lambda item: item["outcome_version_id"],
+                ),
+                "data_quality_run": self._dq_ref(dq_run),
+                "dataset_snapshot": {
+                    "marker": cohort_run.data_snapshot_marker,
+                    "hash": dq_run.data_snapshot_hash,
+                },
+            }
+            if definition.get("exact_reference_set") != expected_reference_set:
+                raise ResearchError(
+                    "exact_reference_set deve corresponder aos IDs, versões e hashes resolvidos."
+                )
         definition_basis = {
             **definition,
             "outcome_version_refs": [self._outcome_ref(item) for item in outcomes],
             "data_quality_run_ref": self._dq_ref(dq_run),
+            "exposed_cohort_run_ref": {
+                "id": cohort_run.id,
+                "cohort_version_id": cohort_run.cohort_version_id,
+                "run_hash": cohort_run.run_hash,
+            },
+            "comparator_cohort_run_ref": (
+                {
+                    "id": comparator_run.id,
+                    "cohort_version_id": comparator_run.cohort_version_id,
+                    "run_hash": comparator_run.run_hash,
+                }
+                if comparator_run
+                else None
+            ),
         }
         plan = AnalysisPlanModel(
             study_id=study.id,
@@ -164,6 +228,10 @@ class ResearchAnalysisService:
         plan = self._plan(plan_id, actor)
         if plan.status != "reviewed_demo":
             raise ResearchError("Execução bloqueada: plano sem revisão humana.")
+        if set(plan.methods or []) & COMPARATIVE_METHODS:
+            raise ResearchError(
+                "Plano comparativo deve ser executado pelo endpoint determinístico de comparisons."
+            )
         study = self._study(plan.study_id, actor)
         if not study.demo_only or study.data_source_classification not in {
             "synthetic",
@@ -514,6 +582,7 @@ class ResearchAnalysisService:
         if manifest.get("schema_version") not in {
             "prescripta-research-package-v1",
             "prescripta-research-package-v2",
+            "prescripta-research-package-v3",
         }:
             return {"valid": False, "errors": ["unknown_schema"]}
         expected = manifest.get("files", {})
@@ -532,7 +601,10 @@ class ResearchAnalysisService:
         )
         if calculated_package_hash != package.content_hash:
             errors.append("package_hash_mismatch")
-        if manifest.get("analysis_run_id") != package.analysis_run_id:
+        if manifest.get("schema_version") == "prescripta-research-package-v3":
+            if manifest.get("comparison_run_id") != package.comparison_run_id:
+                errors.append("comparison_lineage_mismatch")
+        elif manifest.get("analysis_run_id") != package.analysis_run_id:
             errors.append("analysis_lineage_mismatch")
         result = {
             "valid": not errors,
