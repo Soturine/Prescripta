@@ -4,12 +4,14 @@ import {
   CheckCircle2,
   Download,
   FileBarChart,
+  FlaskConical,
   Play,
   Plus,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 
 import LoadingState from "../components/LoadingState";
 import PageHeader from "../components/PageHeader";
@@ -17,6 +19,7 @@ import CohortBuilder, {
   initialCohortDefinition,
 } from "../components/research/CohortBuilder";
 import PopulationAnalytics from "../components/research/PopulationAnalytics";
+import ResearchV092Panel from "../components/research/ResearchV092Panel";
 import TerminologyOmopPanel from "../components/research/TerminologyOmopPanel";
 import Badge from "../components/ui/Badge";
 import StatusPanel from "../components/ui/StatusPanel";
@@ -26,6 +29,7 @@ import {
   acknowledgeDataQualityFinding,
   createAnalysisPlan,
   createCohortVersion,
+  createMedicationSafetyResearchDraft,
   createOutcomeDefinition,
   createResearchStudy,
   createStudyProtocolVersion,
@@ -85,6 +89,7 @@ export default function Research() {
   const { t } = useTranslation();
   const { can, user } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedStudyId, setSelectedStudyId] = useState("");
   const [tab, setTab] = useState("design");
   const [showCreateStudy, setShowCreateStudy] = useState(false);
@@ -161,6 +166,22 @@ export default function Research() {
       await refresh();
     },
   });
+  const medicationDraftMutation = useMutation({
+    mutationFn: () =>
+      createMedicationSafetyResearchDraft(selectedStudyId, {
+        source_finding_id: searchParams.get("finding"),
+        medication_candidate:
+          searchParams.get("medication") ?? "Medication exposure",
+        outcome_candidate: searchParams.get("outcome") ?? "Safety outcome",
+        suggested_question: `Is ${searchParams.get("outcome") ?? "the safety outcome"} more frequent after ${searchParams.get("medication") ?? "the exposure"}?`,
+        source_evidence_ids: [],
+        limitations: [
+          "Exploratory synthetic research signal; not a causal or clinical conclusion.",
+        ],
+        synthetic_only: true,
+      }),
+    onSuccess: () => setSearchParams({}, { replace: true }),
+  });
 
   const studyWorkspace = studyQuery.data;
   const currentRun = studyWorkspace?.runs[0];
@@ -182,6 +203,7 @@ export default function Research() {
       { id: "design", label: t("research.tabs.design") },
       { id: "cohort", label: t("research.tabs.cohort") },
       { id: "analysis", label: t("research.tabs.analysis") },
+      { id: "comparative", label: t("research.tabs.comparative") },
       { id: "results", label: t("research.tabs.results") },
       { id: "evidence", label: t("research.tabs.evidence") },
       { id: "terminology", label: t("research.tabs.terminology") },
@@ -352,6 +374,20 @@ export default function Research() {
       <StatusPanel title={t("research.useLimit")} tone="warning">
         {workspaceQuery.data.synthetic_demo_notice} {t("research.useLimitBody")}
       </StatusPanel>
+      {searchParams.get("finding") ? (
+        <StatusPanel title={t("research.v092.bridge.title")} tone="info">
+          <p>{t("research.v092.bridge.body")}</p>
+          <button
+            className="btn-primary mt-3"
+            disabled={!selectedStudyId || medicationDraftMutation.isPending}
+            onClick={() => medicationDraftMutation.mutate()}
+            type="button"
+          >
+            <FlaskConical aria-hidden="true" className="h-4 w-4" />
+            {t("research.v092.bridge.create")}
+          </button>
+        </StatusPanel>
+      ) : null}
 
       <section className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
         <aside className="surface-card h-fit p-4">
@@ -539,6 +575,16 @@ export default function Research() {
                     ) : null}
                   </div>
                 </section>
+              ) : null}
+
+              {tab === "comparative" ? (
+                <ResearchV092Panel
+                  canExecute={can("research.analysis.execute")}
+                  canExport={can("research.package.export")}
+                  canUseAI={can("research.ai.use")}
+                  studyId={selectedStudyId}
+                  workspace={studyWorkspace}
+                />
               ) : null}
 
               {tab === "analysis" ? (

@@ -90,18 +90,21 @@ import type {
   CohortDefinition,
   CohortRun,
   CohortVersion,
+  ComparativeAnalysis,
   ConceptSet,
   ConceptSetVersion,
   DataQualityFinding,
   DataQualityRun,
   EvidenceLink,
   EvidenceSource,
+  EvidenceExtraction,
   OutcomeDefinition,
   PatientJourney,
   ResearchStudy,
   ResearchStudyPayload,
   ResearchWorkspace,
   ResearchPackage,
+  ResearchQueryPreview,
   StudyProtocolVersion,
   StudyWorkspace,
 } from "../types/research";
@@ -1227,6 +1230,58 @@ export async function exportResearchPackage(analysisRunId: string) {
   return response.data;
 }
 
+export async function fetchComparisons(studyId: string) {
+  const response = await api.get<ComparativeAnalysis[]>(
+    `/research/studies/${studyId}/comparisons`,
+  );
+  return response.data;
+}
+
+export async function executeComparison(
+  studyId: string,
+  payload: Record<string, unknown>,
+) {
+  const response = await api.post<ComparativeAnalysis>(
+    `/research/studies/${studyId}/comparisons`,
+    payload,
+  );
+  return response.data;
+}
+
+export async function createMedicationSafetyResearchDraft(
+  studyId: string,
+  payload: Record<string, unknown>,
+) {
+  const response = await api.post(
+    `/research/studies/${studyId}/medication-safety-drafts`,
+    payload,
+  );
+  return response.data as Record<string, unknown>;
+}
+
+export async function exportComparisonPackage(comparisonId: string) {
+  const response = await api.post<ResearchPackage>(
+    `/research/comparisons/${comparisonId}/package`,
+  );
+  return response.data;
+}
+
+export async function previewResearchQuery(payload: Record<string, unknown>) {
+  const response = await api.post<ResearchQueryPreview>(
+    "/research/query-assistant/previews",
+    payload,
+  );
+  return response.data;
+}
+
+export async function executeResearchQuery(previewId: string) {
+  const response = await api.post<ResearchQueryPreview>(
+    `/research/query-assistant/previews/${previewId}/execute`,
+    { confirm_preview: true },
+  );
+  return response.data;
+}
+
 export async function fetchPatientJourney(studyId: string, patientId: number) {
   const response = await api.get<PatientJourney>(
     `/research/studies/${studyId}/patient-journey/${patientId}`,
@@ -1246,6 +1301,14 @@ export async function fetchEvidenceSources() {
 
 export async function createEvidenceSource(payload: Record<string, unknown>) {
   const response = await api.post<EvidenceSource>("/evidence/sources", payload);
+  return response.data;
+}
+
+export async function createEvidenceExtraction(payload: Record<string, unknown>) {
+  const response = await api.post<EvidenceExtraction>(
+    "/evidence/extractions",
+    payload,
+  );
   return response.data;
 }
 

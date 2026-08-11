@@ -298,6 +298,7 @@
       "design": "Desenho",
       "cohort": "Coorte",
       "analysis": "Plano de análise",
+      "comparative": "RWE comparativa",
       "results": "Resultados",
       "evidence": "Evidências",
       "terminology": "Terminologias",
@@ -336,6 +337,88 @@
       "history": "Histórico e hashes",
       "denied": "OMOP restrito",
       "deniedBody": "Seu perfil não possui a capacidade de pré-visualização OMOP."
+    },
+    "v092": {
+      "noticeTitle": "Limite da pesquisa exploratória",
+      "notice": "Sinal exploratório de pesquisa — não é uma conclusão causal. Todos os inputs e resultados de RWE deste workspace são sintéticos, educacionais e dependem de interpretação humana.",
+      "areaLabel": "Áreas de Pesquisa e RWE comparativa",
+      "experimental": "Experimental",
+      "notReady": "Input exato revisado pendente",
+      "running": "Calculando…",
+      "packageV3": "Gerar Package v3",
+      "bridge": {
+        "title": "Explorar finding de Medication Safety em RWE",
+        "body": "Crie somente uma proposta sintética de pesquisa vinculada ao finding clínico. Nenhuma cohort é revisada e nenhum estudo é executado automaticamente.",
+        "create": "Criar draft de pesquisa"
+      },
+      "tabs": {
+        "signal": "Signal Explorer",
+        "comparison": "Comparação",
+        "methods": "Métodos causais",
+        "evidence": "Literatura",
+        "copilot": "Research Copilot",
+        "query": "Preview NL→SQL"
+      },
+      "signal": {
+        "eyebrow": "Medication Safety → Research",
+        "title": "Signal Explorer",
+        "exposure": "Cohort run de exposure",
+        "comparator": "Cohort run comparator",
+        "outcome": "Outcome revisado",
+        "timeAtRisk": "Time-at-risk",
+        "run": "Executar comparação sintética limitada",
+        "prerequisites": "São necessários dois cohort runs distintos do mesmo snapshot, um DQ run escopado exato e um outcome revisado. A fixture limitada aceita no máximo 5.000 registros sintéticos."
+      },
+      "journey": {
+        "title": "Treatment Journey sintética",
+        "body": "A sequência agregada é descritiva. Ordem temporal não estabelece causalidade.",
+        "start": "Início do tratamento",
+        "switch": "Troca",
+        "refill": "Refill",
+        "overlap": "Sobreposição concomitante",
+        "outcome": "Evento de outcome"
+      },
+      "comparison": {
+        "emptyTitle": "Nenhum run comparativo",
+        "emptyBody": "Conclua os pré-requisitos do Signal Explorer e execute uma comparação sintética limitada.",
+        "exposed": "N exposure",
+        "comparator": "N comparator",
+        "status": "Status do run",
+        "hash": "Hash de conteúdo"
+      },
+      "tableOne": {
+        "title": "Table 1 e balance",
+        "body": "Resumos e Standardized Mean Difference (SMD) calculados pelo servidor.",
+        "caption": "Table 1 acessível comparando cohorts sintéticas exposure e comparator",
+        "variable": "Variável",
+        "exposed": "Exposure",
+        "comparator": "Comparator"
+      },
+      "methods": {
+        "balanceSummary": "Diagnósticos de balance de {{method}}. Uma tabela equivalente aparece em seguida.",
+        "balanceTable": "Balance antes e depois de {{method}}",
+        "limitTitle": "Limite de interpretação",
+        "limit": "Balance melhorou ≠ ausência de confounding não mensurado. As estimativas continuam experimentais e não podem ser descritas como efeitos causais."
+      },
+      "evidence": {
+        "title": "Workspace governado de Literatura/Evidência",
+        "body": "Somente fontes registradas, abstracts legais, URLs aprovadas, documentos fornecidos pelo usuário e fixtures sintéticas são aceitos. Cada claim suportado exige fonte e locator; instruções do documento são tratadas apenas como dados.",
+        "registered": "Fontes de evidência registradas",
+        "empty": "Nenhuma fonte de evidência está registrada para esta instituição."
+      },
+      "copilot": {
+        "body": "Use ações contextuais de proposta. O LLM não calcula estatísticas, aprova terminologia, executa cohorts nem publica protocolo."
+      },
+      "query": {
+        "title": "Research Query Assistant — Experimental",
+        "body": "Preview AST validado, read-only e limitado a approved aggregate views. Desabilitado por default e nunca executado automaticamente.",
+        "proposal": "SQL proposto para preview da policy",
+        "preview": "Validar e visualizar",
+        "defaultOff": "Desabilitado por default",
+        "policy": "Instituição, estudo, snapshot, colunas, funções, linhas, timeout, bytes e custo ficam vinculados à policy.",
+        "cost": "Custo limitado estimado: {{cost}}",
+        "defaultQuestion": "Listar comparison runs agregados aprovados deste estudo"
+      }
     },
     "newStudy": "Novo estudo demonstrativo",
     "studyTitle": "Título do estudo",
@@ -583,6 +666,7 @@
     "clinicalMode": "Modo clínico",
     "technicalMode": "Modo técnico",
     "requestOverride": "Solicitar override",
+    "exploreRwe": "Explorar em RWE",
     "humanReview": "Revisão humana",
     "yes": "Sim",
     "no": "Não",

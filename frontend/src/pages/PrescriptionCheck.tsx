@@ -4,6 +4,7 @@ import {
   Download,
   FileJson,
   FileText,
+  FlaskConical,
   HelpCircle,
   History,
   ListChecks,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 import AlertCard from "../components/AlertCard";
 import AlternativeMedicationsCard from "../components/AlternativeMedicationsCard";
@@ -257,6 +259,15 @@ export default function PrescriptionCheck() {
                   <AlertTriangle aria-hidden="true" className="h-4 w-4" />
                   {t("prescription.requestOverride")}
                 </button>
+              ) : null}
+              {can("research.study.write") ? (
+                <Link
+                  className="btn-secondary"
+                  to={`/research?finding=${checkMutation.data.audit_id}&medication=${encodeURIComponent(selectedMedication?.active_ingredient ?? selectedMedication?.brand_name ?? "Medication exposure")}&outcome=${encodeURIComponent(checkMutation.data.alerts[0]?.title ?? "Safety outcome")}`}
+                >
+                  <FlaskConical aria-hidden="true" className="h-4 w-4" />
+                  {t("prescription.exploreRwe")}
+                </Link>
               ) : null}
             </div>
             <div className="mt-4 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">

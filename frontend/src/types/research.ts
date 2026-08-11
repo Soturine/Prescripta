@@ -248,6 +248,7 @@ export type AnalysisPlan = {
   institution_id: string;
   version: number;
   cohort_run_id: string | null;
+  comparator_cohort_run_id?: string | null;
   data_quality_run_id: string | null;
   outcome_version_refs: Array<Record<string, unknown>>;
   objectives: string[];
@@ -261,6 +262,9 @@ export type AnalysisPlan = {
   output_specification: Record<string, unknown>;
   source_refs: string[];
   limitations: string[];
+  exact_reference_set?: Record<string, unknown>;
+  method_configuration?: Record<string, unknown>;
+  causal_assumptions?: Record<string, unknown>;
   definition_hash: string;
   status: string;
   authored_by_user_id: number;
@@ -308,13 +312,67 @@ export type AnalysisRun = {
 export type ResearchPackage = {
   id: string;
   study_id: string;
-  analysis_run_id: string;
+  analysis_run_id: string | null;
+  comparison_run_id?: string | null;
   institution_id: string;
   manifest: Record<string, unknown>;
   files: Record<string, unknown>;
   content_hash: string;
   aggregate_only: boolean;
   exported_by_user_id: number;
+  created_at: string;
+};
+
+export type ComparativeAnalysis = {
+  id: string;
+  study_id: string;
+  institution_id: string;
+  analysis_plan_id: string | null;
+  exposed_cohort_run_id: string;
+  comparator_cohort_run_id: string;
+  data_quality_run_id: string;
+  exact_references: Record<string, unknown>;
+  configuration: Record<string, unknown>;
+  results: Record<string, unknown>;
+  diagnostics: Record<string, unknown>;
+  provenance: Record<string, unknown>;
+  input_hash: string;
+  content_hash: string;
+  status: string;
+  synthetic_only: boolean;
+  executed_by_user_id: number;
+  executed_at: string;
+};
+
+export type ResearchQueryPreview = {
+  id: string;
+  study_id: string;
+  institution_id: string;
+  dataset_snapshot_marker: string;
+  natural_language_question_hash: string;
+  normalized_query: string;
+  structured_interpretation: Record<string, unknown>;
+  policy: Record<string, unknown>;
+  estimated_cost: number;
+  status: string;
+  enabled: boolean;
+  executed: boolean;
+  result: Record<string, unknown>;
+  created_by_user_id: number;
+  created_at: string;
+};
+
+export type EvidenceExtraction = {
+  id: string;
+  source_id: string;
+  institution_id: string;
+  schema_version: string;
+  content_hash: string;
+  extracted_fields: Record<string, unknown>;
+  claims: Array<Record<string, unknown>>;
+  prompt_injection_detected: boolean;
+  status: string;
+  created_by_user_id: number;
   created_at: string;
 };
 

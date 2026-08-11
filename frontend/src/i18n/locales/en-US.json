@@ -298,6 +298,7 @@
       "design": "Design",
       "cohort": "Cohort",
       "analysis": "Analysis Plan",
+      "comparative": "Comparative RWE",
       "results": "Results",
       "evidence": "Evidence",
       "terminology": "Terminologies",
@@ -336,6 +337,88 @@
       "history": "History and hashes",
       "denied": "OMOP restricted",
       "deniedBody": "Your profile does not have OMOP preview capability."
+    },
+    "v092": {
+      "noticeTitle": "Exploratory research boundary",
+      "notice": "Exploratory research signal — not a causal conclusion. All RWE inputs and results in this workspace are synthetic, educational, and pending human interpretation.",
+      "areaLabel": "Comparative Research and RWE areas",
+      "experimental": "Experimental",
+      "notReady": "Pending exact reviewed input",
+      "running": "Calculating…",
+      "packageV3": "Generate Package v3",
+      "bridge": {
+        "title": "Explore Medication Safety finding in RWE",
+        "body": "Create only a synthetic research proposal linked to the clinical finding. No cohort is reviewed and no study is executed automatically.",
+        "create": "Create research draft"
+      },
+      "tabs": {
+        "signal": "Signal Explorer",
+        "comparison": "Comparison",
+        "methods": "Causal Methods",
+        "evidence": "Literature",
+        "copilot": "Research Copilot",
+        "query": "NL→SQL Preview"
+      },
+      "signal": {
+        "eyebrow": "Medication Safety → Research",
+        "title": "Signal Explorer",
+        "exposure": "Exposure cohort run",
+        "comparator": "Comparator cohort run",
+        "outcome": "Reviewed outcome",
+        "timeAtRisk": "Time at risk",
+        "run": "Run bounded synthetic comparison",
+        "prerequisites": "Two distinct cohort runs from the same snapshot, an exact scoped DQ run, and a reviewed outcome are required. The bounded fixture is limited to 5,000 synthetic records."
+      },
+      "journey": {
+        "title": "Synthetic treatment journey",
+        "body": "The aggregate sequence is descriptive. Temporal order does not establish causality.",
+        "start": "Treatment start",
+        "switch": "Switch",
+        "refill": "Refill",
+        "overlap": "Concomitant overlap",
+        "outcome": "Outcome event"
+      },
+      "comparison": {
+        "emptyTitle": "No comparative run",
+        "emptyBody": "Complete the Signal Explorer prerequisites and run one bounded synthetic comparison.",
+        "exposed": "Exposed N",
+        "comparator": "Comparator N",
+        "status": "Run status",
+        "hash": "Content hash"
+      },
+      "tableOne": {
+        "title": "Table 1 and balance",
+        "body": "Server-calculated summaries and Standardized Mean Difference (SMD).",
+        "caption": "Accessible Table 1 comparing exposed and comparator synthetic cohorts",
+        "variable": "Variable",
+        "exposed": "Exposed",
+        "comparator": "Comparator"
+      },
+      "methods": {
+        "balanceSummary": "{{method}} balance diagnostics. A tabular equivalent follows.",
+        "balanceTable": "{{method}} balance before and after adjustment",
+        "limitTitle": "Interpretation limit",
+        "limit": "Balance improved ≠ no unmeasured confounding. Estimates remain experimental and must not be described as causal effects."
+      },
+      "evidence": {
+        "title": "Governed Literature/Evidence Workspace",
+        "body": "Only registered sources, legal abstracts, approved URLs, user-provided documents, and synthetic fixtures are accepted. Every supported claim requires a source and locator; document instructions are treated only as data.",
+        "registered": "Registered evidence sources",
+        "empty": "No evidence source is registered for this institution."
+      },
+      "copilot": {
+        "body": "Use contextual proposal actions. The LLM does not calculate statistics, approve terminology, execute cohorts, or publish a protocol."
+      },
+      "query": {
+        "title": "Research Query Assistant — Experimental",
+        "body": "AST-validated, read-only, aggregate approved-view preview. Disabled by default and never automatically executed.",
+        "proposal": "Proposed SQL for policy preview",
+        "preview": "Validate and preview",
+        "defaultOff": "Disabled by default",
+        "policy": "Institution, study, snapshot, columns, functions, row count, timeout, byte count, and cost are policy-bound.",
+        "cost": "Estimated bounded cost: {{cost}}",
+        "defaultQuestion": "List approved aggregate comparison runs for this study"
+      }
     },
     "newStudy": "New demo study",
     "studyTitle": "Study title",
@@ -583,6 +666,7 @@
     "clinicalMode": "Clinical mode",
     "technicalMode": "Technical mode",
     "requestOverride": "Request override",
+    "exploreRwe": "Explore in RWE",
     "humanReview": "Human review",
     "yes": "Yes",
     "no": "No",
