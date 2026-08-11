@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
   attestations: write
   artifact-metadata: write
@@ -31,12 +31,32 @@ jobs:
         run: |
           python -m pip install -r backend/requirements-security.txt
           cyclonedx-py requirements backend/requirements-lock.txt -o sbom-backend.json
+          npm install --global npm@11.18.0
           python scripts/check_install_scripts.py
           npm ci --prefix frontend
           cd frontend
           npm exec --yes --package=@cyclonedx/cyclonedx-npm@6.0.0 -- cyclonedx-npm --omit optional --output-reproducible --validate --output-file ../sbom-frontend.json package.json
           cd ..
           python scripts/stamp_cyclonedx_serial.py frontend/package-lock.json sbom-frontend.json
+      - name: Build release images
+        run: |
+          docker build --file backend/Dockerfile --tag prescripta-release-backend .
+          docker build --file frontend/Dockerfile --tag prescripta-release-frontend .
+      - name: Generate backend image SBOM
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: prescripta-release-backend
+          format: cyclonedx
+          output: sbom-image-backend.json
+      - name: Generate frontend image SBOM
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: prescripta-release-frontend
+          format: cyclonedx
+          output: sbom-image-frontend.json
+          skip-setup-trivy: true
+      - name: Generate release asset checksums
+        run: sha256sum sbom-*.json > SHA256SUMS.txt
       - name: Attest backend dependency manifest with its SBOM
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.0.0
         with:
@@ -50,9 +70,31 @@ jobs:
       - name: Attest provenance of generated SBOM artifacts
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.0.0
         with:
-          subject-path: sbom-*.json
+          subject-path: |
+            sbom-*.json
+            SHA256SUMS.txt
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-sboms
-          path: sbom-*.json
+          path: |
+            sbom-*.json
+            SHA256SUMS.txt
           retention-days: 30
+      - name: Create draft release and attach SBOM assets
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          test "${tag}" = "v$(cat VERSION)"
+          if ! gh release view "${tag}" >/dev/null 2>&1; then
+            gh release create "${tag}" --draft --verify-tag \
+              --title "Prescripta ${tag} — Terminology & OMOP" \
+              --notes-file "docs/releases/${tag}.md"
+          fi
+          gh release upload "${tag}" sbom-*.json SHA256SUMS.txt --clobber
+          assets="$(gh release view "${tag}" --json assets --jq '.assets[].name')"
+          for expected in sbom-backend.json sbom-frontend.json \
+            sbom-image-backend.json sbom-image-frontend.json SHA256SUMS.txt; do
+            grep --fixed-strings --line-regexp "${expected}" <<<"${assets}"
+          done

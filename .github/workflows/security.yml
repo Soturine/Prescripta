@@ -48,6 +48,7 @@ jobs:
           python -m pip_audit -r backend/requirements-lock.txt
       - name: Frontend dependency audit
         run: |
+          npm install --global npm@11.18.0
           python scripts/check_install_scripts.py
           npm ci --prefix frontend
           python scripts/check_npm_audit.py

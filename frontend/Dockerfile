@@ -6,10 +6,11 @@ ENV NPM_CONFIG_FETCH_RETRIES=4 \
     NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=60000
 
 WORKDIR /app
-COPY frontend/package.json frontend/package-lock.json ./
+COPY frontend/package.json frontend/package-lock.json frontend/.npmrc ./
 COPY scripts/check_install_scripts.mjs scripts/install-script-policy.json /tmp/prescripta-scripts/
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
-    node /tmp/prescripta-scripts/check_install_scripts.mjs /app/package-lock.json \
+    npm install --global npm@11.18.0 \
+    && node /tmp/prescripta-scripts/check_install_scripts.mjs /app/package-lock.json \
     && npm ci --prefer-offline --no-audit --no-fund
 
 COPY frontend/index.html frontend/tsconfig.json frontend/tsconfig.node.json frontend/vite.config.ts ./

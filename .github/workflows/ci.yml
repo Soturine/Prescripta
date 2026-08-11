@@ -75,7 +75,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install dependencies
-        run: python ../scripts/check_install_scripts.py && npm ci
+        run: npm install --global npm@11.18.0 && python ../scripts/check_install_scripts.py && npm ci
       - name: Lint
         run: npm run lint
       - name: Typecheck
@@ -112,7 +112,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install dependencies
-        run: python ../scripts/check_install_scripts.py && npm ci
+        run: npm install --global npm@11.18.0 && python ../scripts/check_install_scripts.py && npm ci
       - name: Install Playwright browser
         run: npx playwright install chromium
       - name: Install E2E backend
