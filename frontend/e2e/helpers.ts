@@ -13,7 +13,23 @@ export const credentials = {
 
 export type DemoRole = keyof typeof credentials;
 
+const guardedPages = new WeakSet<Page>();
+
+function guardBrowserConsole(page: Page) {
+  if (guardedPages.has(page)) return;
+  guardedPages.add(page);
+  page.on("console", (message) => {
+    if (["warning", "error"].includes(message.type())) {
+      throw new Error(`Unexpected browser console ${message.type()}: ${message.text()}`);
+    }
+  });
+  page.on("pageerror", (error) => {
+    throw new Error(`Unexpected page error: ${error.message}`);
+  });
+}
+
 export async function login(page: Page, role: DemoRole) {
+  guardBrowserConsole(page);
   const [email, password] = credentials[role];
   await page.goto("/login");
   await page.getByLabel(/e-mail/i).fill(email);
@@ -23,6 +39,7 @@ export async function login(page: Page, role: DemoRole) {
 }
 
 export async function loginWith(page: Page, email: string, password: string) {
+  guardBrowserConsole(page);
   await page.context().clearCookies();
   await page.goto("/login");
   await page.getByLabel(/e-mail/i).fill(email);

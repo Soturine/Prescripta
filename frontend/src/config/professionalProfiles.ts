@@ -41,6 +41,12 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
   "data_quality.read": "Ler achados de qualidade",
   "data_quality.run": "Executar regras de qualidade",
   "data_quality.acknowledge": "Reconhecer achado de qualidade",
+  "terminology.read": "Ler terminologias governadas",
+  "terminology.manage": "Gerenciar fontes e releases terminológicos",
+  "terminology.mapping.propose": "Propor mapeamentos terminológicos",
+  "terminology.mapping.review": "Revisar mapeamentos terminológicos",
+  "omop.preview": "Pré-visualizar adaptador OMOP parcial",
+  "omop.export": "Exportar dados sintéticos no adaptador OMOP parcial",
   "patient.timeline.read": "Ler timeline autorizada",
   "psychology.context.write": "Editar contexto psicológico",
   "report.read": "Ler relatórios",
@@ -84,6 +90,12 @@ const researchCapabilities: Capability[] = [
   "data_quality.read",
   "data_quality.run",
   "data_quality.acknowledge",
+  "terminology.read",
+  "terminology.manage",
+  "terminology.mapping.propose",
+  "terminology.mapping.review",
+  "omop.preview",
+  "omop.export",
 ];
 
 export const PROFESSIONAL_TEMPLATES: Record<UserRole, ProfileTemplate> = {
@@ -115,7 +127,7 @@ export const PROFESSIONAL_TEMPLATES: Record<UserRole, ProfileTemplate> = {
   auditor: {
     profession: "audit",
     description: "Trilhas, evidência e pesquisa sem acesso assistencial implícito.",
-    capabilities: ["dashboard.view", "audit.read", "report.read", "ai.status.view", "research.study.read", "research.cohort.read", "research.concept_set.read", "research.analysis.read", "evidence.read", "data_quality.read"],
+    capabilities: ["dashboard.view", "audit.read", "report.read", "ai.status.view", "research.study.read", "research.cohort.read", "research.concept_set.read", "research.analysis.read", "evidence.read", "data_quality.read", "terminology.read"],
   },
   pesquisador: {
     profession: "research",
@@ -125,6 +137,6 @@ export const PROFESSIONAL_TEMPLATES: Record<UserRole, ProfileTemplate> = {
   clinical_safety_officer: {
     profession: "clinical_safety",
     description: "Hazards, rulesets, protocolos, evidência e governança clínica.",
-    capabilities: ["dashboard.view", "audit.read", "safety.review", "ruleset.review", "clinical_protocol.read", "clinical_protocol.manage", "clinical_protocol.review", "medication.read", "report.read", "access.manage", "research.study.read", "research.study.review", "research.cohort.read", "research.concept_set.read", "evidence.read", "evidence.write", "data_quality.read", "data_quality.run", "ai.status.view", "system.health.view"],
+    capabilities: ["dashboard.view", "audit.read", "safety.review", "ruleset.review", "clinical_protocol.read", "clinical_protocol.manage", "clinical_protocol.review", "medication.read", "report.read", "access.manage", "research.study.read", "research.study.review", "research.cohort.read", "research.concept_set.read", "evidence.read", "evidence.write", "data_quality.read", "data_quality.run", "terminology.read", "terminology.mapping.review", "omop.preview", "ai.status.view", "system.health.view"],
   },
 };

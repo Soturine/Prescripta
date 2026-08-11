@@ -17,6 +17,7 @@ import CohortBuilder, {
   initialCohortDefinition,
 } from "../components/research/CohortBuilder";
 import PopulationAnalytics from "../components/research/PopulationAnalytics";
+import TerminologyOmopPanel from "../components/research/TerminologyOmopPanel";
 import Badge from "../components/ui/Badge";
 import StatusPanel from "../components/ui/StatusPanel";
 import Tabs from "../components/ui/Tabs";
@@ -164,6 +165,10 @@ export default function Research() {
   const studyWorkspace = studyQuery.data;
   const currentRun = studyWorkspace?.runs[0];
   const currentAnalysisRun = studyWorkspace?.analysis_runs[0];
+  const currentDataQualityRunId =
+    typeof studyWorkspace?.data_quality.id === "string"
+      ? studyWorkspace.data_quality.id
+      : "";
   const reviewedConcepts = (conceptsQuery.data ?? [])
     .filter((item) =>
       ["human_reviewed", "approved_for_demo_study"].includes(
@@ -179,6 +184,8 @@ export default function Research() {
       { id: "analysis", label: t("research.tabs.analysis") },
       { id: "results", label: t("research.tabs.results") },
       { id: "evidence", label: t("research.tabs.evidence") },
+      { id: "terminology", label: t("research.tabs.terminology") },
+      { id: "omop", label: t("research.tabs.omop") },
     ],
     [t],
   );
@@ -223,9 +230,15 @@ export default function Research() {
   }
 
   function createPlan() {
-    if (!selectedStudyId || !currentRun) return;
+    if (!selectedStudyId || !currentRun || !currentDataQualityRunId) return;
+    const reviewedOutcomeIds = (studyWorkspace?.outcomes ?? [])
+      .filter((item) => item.review_status === "reviewed_demo")
+      .map((item) => item.id);
+    if (!reviewedOutcomeIds.length) return;
     const payload: AnalysisPlanPayload = {
       cohort_run_id: currentRun.id,
+      data_quality_run_id: currentDataQualityRunId,
+      outcome_version_ids: reviewedOutcomeIds,
       objectives: [
         studyWorkspace?.study.objective ?? t("research.descriptiveObjective"),
       ],
@@ -556,7 +569,11 @@ export default function Research() {
                     )
                   }
                   onRunDQ={() =>
-                    mutation.mutate(() => runDataQuality(selectedStudyId))
+                    currentRun
+                      ? mutation.mutate(() =>
+                          runDataQuality(selectedStudyId, currentRun.id),
+                        )
+                      : undefined
                   }
                   workspace={studyWorkspace}
                 />
@@ -627,6 +644,18 @@ export default function Research() {
                     </div>
                   ) : null}
                 </section>
+              ) : null}
+
+              {tab === "terminology" || tab === "omop" ? (
+                <TerminologyOmopPanel
+                  area={tab}
+                  canExportOmop={can("omop.export")}
+                  canPreviewOmop={can("omop.preview")}
+                  canReadTerminology={can("terminology.read")}
+                  canReviewMappings={can("terminology.mapping.review")}
+                  cohortRunId={currentRun?.id}
+                  studyId={selectedStudyId}
+                />
               ) : null}
 
               {tab === "evidence" ? (

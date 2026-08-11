@@ -106,6 +106,14 @@ import type {
   StudyWorkspace,
 } from "../types/research";
 import type {
+  OmopCompatibility,
+  OmopEtlRun,
+  TerminologyConceptPage,
+  TerminologyMapping,
+  TerminologyRelease,
+  TerminologySource,
+} from "../types/terminology";
+import type {
   PharmacyIntervention,
   PharmacyInterventionPayload,
 } from "../types/pharmacy";
@@ -1100,10 +1108,71 @@ export async function executeCohortVersion(
   return response.data;
 }
 
-export async function runDataQuality(studyId?: string) {
+export async function runDataQuality(studyId: string, cohortRunId: string) {
   const response = await api.post<DataQualityRun>("/data-quality/runs", {
-    study_id: studyId ?? null,
+    study_id: studyId,
+    cohort_run_id: cohortRunId,
   });
+  return response.data;
+}
+
+export async function fetchTerminologySources() {
+  const response = await api.get<TerminologySource[]>("/terminology/sources");
+  return response.data;
+}
+
+export async function fetchTerminologyReleases(sourceId?: string) {
+  const response = await api.get<TerminologyRelease[]>("/terminology/releases", {
+    params: sourceId ? { source_id: sourceId } : undefined,
+  });
+  return response.data;
+}
+
+export async function searchTerminologyConcepts(params: {
+  query?: string;
+  release_id?: string;
+  domain?: string;
+  standard_status?: string;
+  active_only?: boolean;
+}) {
+  const response = await api.get<TerminologyConceptPage>("/terminology/concepts", { params });
+  return response.data;
+}
+
+export async function fetchTerminologyMappings(mappingStatus?: string) {
+  const response = await api.get<TerminologyMapping[]>("/terminology/mappings", {
+    params: mappingStatus ? { mapping_status: mappingStatus } : undefined,
+  });
+  return response.data;
+}
+
+export async function reviewTerminologyMapping(
+  mappingId: string,
+  decision: "approved_for_demo" | "rejected" | "deprecated",
+  note: string,
+) {
+  const response = await api.post<TerminologyMapping>(
+    `/terminology/mappings/${mappingId}/review`,
+    { decision, note },
+  );
+  return response.data;
+}
+
+export async function fetchOmopCompatibility() {
+  const response = await api.get<OmopCompatibility>("/omop/compatibility");
+  return response.data;
+}
+
+export async function fetchOmopRuns() {
+  const response = await api.get<OmopEtlRun[]>("/omop/runs");
+  return response.data;
+}
+
+export async function executeOmopAdapter(
+  mode: "preview" | "exports",
+  payload: { study_id: string; cohort_run_id: string; terminology_release_ids: string[] },
+) {
+  const response = await api.post<OmopEtlRun>(`/omop/${mode}`, payload);
   return response.data;
 }
 

@@ -119,7 +119,7 @@ describe("workspace do paciente", () => {
   });
 
   it("distingue registro inexistente", async () => {
-    apiMocks.fetchPatient.mockResolvedValue(undefined);
+    apiMocks.fetchPatient.mockResolvedValue(null);
     renderPage();
     expect(await screen.findByText("Paciente não encontrado.")).toBeVisible();
   });

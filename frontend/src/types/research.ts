@@ -248,6 +248,8 @@ export type AnalysisPlan = {
   institution_id: string;
   version: number;
   cohort_run_id: string | null;
+  data_quality_run_id: string | null;
+  outcome_version_refs: Array<Record<string, unknown>>;
   objectives: string[];
   variables: Array<Record<string, unknown>>;
   steps: Array<Record<string, unknown>>;
@@ -279,13 +281,20 @@ export type AnalysisPlanPayload = Omit<
   | "reviewed_by_user_id"
   | "reviewed_at"
   | "created_at"
-> & { cohort_run_id: string };
+  | "outcome_version_refs"
+> & {
+  cohort_run_id: string;
+  data_quality_run_id: string;
+  outcome_version_ids: string[];
+};
 
 export type AnalysisRun = {
   id: string;
   study_id: string;
   analysis_plan_id: string;
   cohort_run_id: string;
+  data_quality_run_id: string | null;
+  outcome_version_refs: Array<Record<string, unknown>>;
   institution_id: string;
   data_snapshot_marker: string;
   status: string;
@@ -313,6 +322,12 @@ export type DataQualityRun = {
   id: string;
   institution_id: string;
   study_id: string | null;
+  cohort_run_id: string | null;
+  data_snapshot_marker: string | null;
+  data_snapshot_hash: string | null;
+  terminology_snapshot: Record<string, unknown>;
+  ruleset_version: string;
+  scope_status: string;
   status: string;
   summary: Record<string, unknown>;
   content_hash: string;
