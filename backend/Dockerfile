@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.11
-FROM python:3.12.13-alpine3.23@sha256:601d3d3797e90e2534782e69c85fafb7971b43f24c7b1b079b7e48dd435e458d AS runtime
+FROM python:3.12.13-slim-bookworm@sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2 AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -7,8 +7,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH"
 
 RUN python -m venv /opt/venv \
-    && addgroup -S -g 10001 prescripta \
-    && adduser -S -D -H -u 10001 -G prescripta prescripta
+    && groupadd --gid 10001 prescripta \
+    && useradd --uid 10001 --gid prescripta --no-create-home --shell /usr/sbin/nologin prescripta
 
 WORKDIR /app/backend
 
