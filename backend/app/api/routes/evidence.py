@@ -13,7 +13,9 @@ from app.schemas.evidence_schema import (
     EvidenceSourceCreate,
     EvidenceSourceRead,
 )
+from app.schemas.research_v092_schema import EvidenceExtractionCreate, EvidenceExtractionRead
 from app.services.evidence_service import EvidenceError, EvidenceService
+from app.services.literature_copilot_service import LiteratureCopilotService
 
 router = APIRouter(prefix="/evidence", tags=["evidence"])
 DbSession = Annotated[Session, Depends(get_db)]
@@ -85,3 +87,46 @@ def list_links(
         offset=offset,
         limit=limit,
     )
+
+
+@router.post(
+    "/extractions",
+    response_model=EvidenceExtractionRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def extract_registered_source(
+    payload: EvidenceExtractionCreate,
+    db: DbSession,
+    current_user: EvidenceWriter,
+) -> EvidenceExtractionRead:
+    try:
+        return LiteratureCopilotService(db).extract(payload, current_user)
+    except EvidenceError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get(
+    "/sources/{source_id}/extractions",
+    response_model=list[EvidenceExtractionRead],
+)
+def list_source_extractions(
+    source_id: str,
+    db: DbSession,
+    current_user: EvidenceReader,
+) -> list[EvidenceExtractionRead]:
+    try:
+        return LiteratureCopilotService(db).list_extractions(source_id, current_user)
+    except EvidenceError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/synthesis")
+def synthesize_registered_sources(
+    source_ids: Annotated[list[str], Query(min_length=1, max_length=30)],
+    db: DbSession,
+    current_user: EvidenceReader,
+) -> dict:
+    try:
+        return LiteratureCopilotService(db).synthesize(source_ids, current_user)
+    except EvidenceError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc

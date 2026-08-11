@@ -34,13 +34,24 @@ from app.schemas.research_schema import (
     StudyProtocolVersionRead,
     StudyWorkspaceRead,
 )
+from app.schemas.research_v092_schema import (
+    ComparativeAnalysisRead,
+    ComparativeAnalysisRequest,
+    MedicationSafetyResearchDraftCreate,
+    MedicationSafetyResearchDraftRead,
+    ResearchQueryExecuteRequest,
+    ResearchQueryPreviewRead,
+    ResearchQueryPreviewRequest,
+)
 from app.services.research_analysis_service import ResearchAnalysisService
+from app.services.research_query_service import ResearchQueryPolicyError, ResearchQueryService
 from app.services.research_service import (
     ResearchConflict,
     ResearchError,
     ResearchNotFound,
     ResearchService,
 )
+from app.services.research_v092_service import ResearchV092Service
 
 router = APIRouter(prefix="/research", tags=["research"])
 DbSession = Annotated[Session, Depends(get_db)]
@@ -498,5 +509,118 @@ def patient_journey(
         return PatientJourneyRead.model_validate(
             ResearchAnalysisService(db).patient_journey(study_id, patient_id, current_user)
         )
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.post(
+    "/studies/{study_id}/comparisons",
+    response_model=ComparativeAnalysisRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def execute_comparison(
+    study_id: str,
+    payload: ComparativeAnalysisRequest,
+    db: DbSession,
+    current_user: AnalysisExecutor,
+) -> ComparativeAnalysisRead:
+    try:
+        return ResearchV092Service(db).execute_comparison(study_id, payload, current_user)
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.get(
+    "/studies/{study_id}/comparisons",
+    response_model=list[ComparativeAnalysisRead],
+)
+def list_comparisons(
+    study_id: str,
+    db: DbSession,
+    current_user: AnalysisReader,
+) -> list[ComparativeAnalysisRead]:
+    try:
+        return ResearchV092Service(db).list_comparisons(study_id, current_user)
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.get("/comparisons/{comparison_id}", response_model=ComparativeAnalysisRead)
+def comparison_detail(
+    comparison_id: str,
+    db: DbSession,
+    current_user: AnalysisReader,
+) -> ComparativeAnalysisRead:
+    try:
+        return ResearchV092Service(db).comparison(comparison_id, current_user)
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.post(
+    "/comparisons/{comparison_id}/package",
+    response_model=ResearchPackageRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def export_comparison_package(
+    comparison_id: str,
+    db: DbSession,
+    current_user: PackageExporter,
+) -> ResearchPackageRead:
+    try:
+        return ResearchV092Service(db).export_comparison_package(comparison_id, current_user)
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.post(
+    "/studies/{study_id}/medication-safety-drafts",
+    response_model=MedicationSafetyResearchDraftRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def explore_medication_safety_in_research(
+    study_id: str,
+    payload: MedicationSafetyResearchDraftCreate,
+    db: DbSession,
+    current_user: StudyWriter,
+) -> MedicationSafetyResearchDraftRead:
+    try:
+        return ResearchV092Service(db).explore_medication_safety(
+            study_id, payload, current_user
+        )
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.post(
+    "/query-assistant/previews",
+    response_model=ResearchQueryPreviewRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def preview_research_query(
+    payload: ResearchQueryPreviewRequest,
+    db: DbSession,
+    current_user: AnalysisWriter,
+) -> ResearchQueryPreviewRead:
+    try:
+        return ResearchQueryService(db).preview(payload, current_user)
+    except ResearchQueryPolicyError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
+@router.post(
+    "/query-assistant/previews/{preview_id}/execute",
+    response_model=ResearchQueryPreviewRead,
+)
+def execute_research_query(
+    preview_id: str,
+    _payload: ResearchQueryExecuteRequest,
+    db: DbSession,
+    current_user: AnalysisExecutor,
+) -> ResearchQueryPreviewRead:
+    try:
+        return ResearchQueryService(db).execute(preview_id, current_user)
     except ResearchError as exc:
         raise _research_http_error(exc) from exc
