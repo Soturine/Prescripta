@@ -5,6 +5,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      target_tag:
+        description: Existing release tag to recover without moving it
+        required: false
+        type: string
 
 permissions:
   actions: read
@@ -20,12 +25,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          ref: ${{ inputs.target_tag || github.ref }}
       - name: Require successful final-SHA gates and reuse their artifacts
         env:
           GH_TOKEN: ${{ github.token }}
-          TARGET_SHA: ${{ github.sha }}
           REPOSITORY: ${{ github.repository }}
         run: |
+          TARGET_SHA="$(git rev-parse HEAD)"
           runs="$(gh api --method GET "repos/${REPOSITORY}/actions/runs" \
             -f head_sha="${TARGET_SHA}" -f status=success -f per_page=100)"
           gate_run() {
@@ -55,6 +61,8 @@ jobs:
             --argjson security "${security_run}" --argjson container "${container_run}" \
             '{sha: $sha, build_once: true, gates: {CI: $ci, Security: $security, Container: $container}}' \
             > release-evidence.json
+      - name: Normalize reproducible CycloneDX identity
+        run: python scripts/stamp_cyclonedx_serial.py frontend/package-lock.json sbom-frontend.json
       - name: Generate release asset checksums
         run: sha256sum sbom-*.json > SHA256SUMS.txt
       - name: Attest backend dependency manifest with its SBOM
@@ -81,11 +89,12 @@ jobs:
             SHA256SUMS.txt
           retention-days: 30
       - name: Create draft release and attach SBOM assets
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || inputs.target_tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
+          TARGET_TAG: ${{ inputs.target_tag }}
         run: |
-          tag="${GITHUB_REF_NAME}"
+          tag="${TARGET_TAG:-${GITHUB_REF_NAME}}"
           test "${tag}" = "v$(cat VERSION)"
           if ! gh release view "${tag}" >/dev/null 2>&1; then
             gh release create "${tag}" --draft --verify-tag \
