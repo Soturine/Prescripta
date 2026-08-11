@@ -1,14 +1,12 @@
 # syntax=docker/dockerfile:1.11
-FROM python:3.12.13-slim-bookworm@sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2 AS runtime
+FROM python:3.12.13-slim-trixie@sha256:229a2c5bfa27522db7815ea81f9bed70af17ccb9de9fc7ad142b1877b5830d36 AS build
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PATH="/opt/venv/bin:$PATH"
 
-RUN python -m venv /opt/venv \
-    && groupadd --gid 10001 prescripta \
-    && useradd --uid 10001 --gid prescripta --no-create-home --shell /usr/sbin/nologin prescripta
+RUN python -m venv /opt/venv
 
 WORKDIR /app/backend
 
@@ -16,12 +14,24 @@ COPY backend/requirements-lock.txt ./requirements-lock.txt
 RUN python -m pip install --no-cache-dir --requirement requirements-lock.txt \
     && python -m pip check
 
-COPY --chown=prescripta:prescripta VERSION /app/VERSION
-COPY --chown=prescripta:prescripta backend/app ./app
-COPY --chown=prescripta:prescripta backend/migrations ./migrations
-COPY --chown=prescripta:prescripta backend/alembic.ini ./alembic.ini
+FROM gcr.io/distroless/cc-debian13:nonroot@sha256:d97bc0a941b8d4be647dc0ee75b264ddbb772f1ac5ba690a4309c00723b23775 AS runtime
 
-USER 10001:10001
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app/backend
+
+COPY --from=build /usr/local /usr/local
+COPY --from=build /opt/venv /opt/venv
+COPY --from=build /usr/lib/x86_64-linux-gnu/libffi.so.8* /usr/lib/x86_64-linux-gnu/
+COPY --from=build /usr/lib/x86_64-linux-gnu/libsqlite3.so.0* /usr/lib/x86_64-linux-gnu/
+COPY --chown=65532:65532 VERSION /app/VERSION
+COPY --chown=65532:65532 backend/app ./app
+COPY --chown=65532:65532 backend/migrations ./migrations
+COPY --chown=65532:65532 backend/alembic.ini ./alembic.ini
+
+USER 65532:65532
 EXPOSE 8000
 
 HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=5 \
