@@ -179,7 +179,8 @@ def upgrade() -> None:
         )
     op.execute(
         "CREATE VIEW research_aggregate_comparisons AS "
-        "SELECT id, study_id, institution_id, dataset_snapshot_marker, status, exposed_n, comparator_n, "
+        "SELECT id, study_id, institution_id, dataset_snapshot_marker, status, "
+        "exposed_n, comparator_n, "
         "exposed_events, comparator_events, content_hash, executed_at "
         "FROM research_comparison_runs"
     )

@@ -116,6 +116,11 @@ beforeEach(() => {
     normalized_query:
       "SELECT id FROM research_aggregate_comparisons WHERE institution_id = :institution_id AND study_id = :study_id LIMIT 100",
   });
+  api.executeComparison.mockResolvedValue({ id: "comparison-new" });
+  api.exportComparisonPackage.mockResolvedValue({ id: "package-v3" });
+  api.executeAITask.mockResolvedValue({
+    output_payload: { status: "proposal_only", limitations: ["Synthetic"] },
+  });
 });
 
 describe("Research Copilot v2 and comparative RWE workspace", () => {
@@ -149,5 +154,25 @@ describe("Research Copilot v2 and comparative RWE workspace", () => {
     expect(await screen.findByText("disabled_by_default")).toBeVisible();
     expect(screen.getByText(/:institution_id/)).toBeVisible();
     expect(screen.queryByRole("button", { name: /executar/i })).not.toBeInTheDocument();
+  });
+
+  it("executes governed panel actions without bypassing human review", async () => {
+    renderPanel();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Executar comparação sintética limitada" }),
+    );
+    await waitFor(() => expect(api.executeComparison).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("tab", { name: "Comparação" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Gerar Package v3" }));
+    await waitFor(() => expect(api.exportComparisonPackage).toHaveBeenCalledWith("comparison-1"));
+
+    fireEvent.click(screen.getByRole("tab", { name: "Literatura" }));
+    expect(await screen.findByText("Synthetic registered article")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Research Copilot" }));
+    fireEvent.click(screen.getByRole("button", { name: "Estruturação da pergunta" }));
+    await waitFor(() => expect(api.executeAITask).toHaveBeenCalled());
+    expect(await screen.findByText(/proposal_only/)).toBeVisible();
   });
 });

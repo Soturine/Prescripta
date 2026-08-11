@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
 import pytest
 from pydantic import ValidationError
 
@@ -13,7 +14,13 @@ from app.schemas.research_v092_schema import (
     ResearchQueryPreviewRequest,
     SyntheticResearchRecord,
 )
-from app.services.comparative_analytics_service import ComparativeAnalyticsEngine
+from app.services.comparative_analytics_service import (
+    ComparativeAnalyticsEngine,
+    _binary_smd,
+    _continuous_smd,
+    _round,
+    _weighted_smd,
+)
 from app.services.research_query_service import ResearchQueryPolicyError, ResearchQueryService
 
 
@@ -205,6 +212,13 @@ def test_query_ast_scopes_allowed_select_and_blocks_adversarial_sql() -> None:
         "SELECT pg_read_file('/etc/passwd') FROM research_aggregate_comparisons",
         "SELECT secret FROM research_aggregate_comparisons",
         "SELECT id FROM research_comparison_runs",
+        "SELECT 1",
+        "SHOW statement_timeout",
+        (
+            "SELECT a.id FROM research_aggregate_comparisons a "
+            "JOIN research_aggregate_comparisons b ON a.id = b.id"
+        ),
+        "SELECT id FROM research_aggregate_comparisons WHERE (",
     ]
     for sql in blocked:
         with pytest.raises(ResearchQueryPolicyError):
@@ -222,3 +236,86 @@ def test_query_cost_budget_and_assumption_contract_fail_closed() -> None:
         )
     with pytest.raises(ValidationError, match="assumptions"):
         _payload(psm=PSMConfig(enabled=True, covariates=["age"]))
+
+
+def test_v092_schema_rejects_invalid_bounded_inputs() -> None:
+    base = _records()[0].model_dump()
+    with pytest.raises(ValidationError, match="30 covari"):
+        SyntheticResearchRecord.model_validate(
+            {**base, "covariates": {f"c{i}": i for i in range(31)}}
+        )
+    with pytest.raises(ValidationError, match="event_day"):
+        SyntheticResearchRecord.model_validate({**base, "event_day": None})
+    with pytest.raises(ValidationError, match="exceder"):
+        SyntheticResearchRecord.model_validate(
+            {**base, "follow_up_days": 5, "event_day": 6}
+        )
+    with pytest.raises(ValidationError, match="PSM exige"):
+        PSMConfig(enabled=True)
+    with pytest.raises(ValidationError, match="IPTW exige"):
+        IPTWConfig(enabled=True)
+    with pytest.raises(ValidationError, match="Percentis"):
+        IPTWConfig(truncation_percentiles=(99, 1))
+    with pytest.raises(ValidationError, match="grupos"):
+        _payload(records=[item for item in _records() if item.group == "exposed"])
+    duplicate = _records()
+    duplicate[1] = duplicate[1].model_copy(update={"record_key": duplicate[0].record_key})
+    with pytest.raises(ValidationError, match="único"):
+        _payload(records=duplicate)
+    with pytest.raises(ValidationError, match="não declarada"):
+        _payload(
+            psm=PSMConfig(enabled=True, covariates=["unknown"]),
+            causal_assumptions=_assumptions(),
+        )
+
+
+def test_statistical_helpers_fail_closed_on_degenerate_inputs() -> None:
+    assert _round(None) is None
+    assert _round(math.inf) is None
+    assert _continuous_smd([], [1.0]) is None
+    assert _continuous_smd([1.0], [1.0]) == 0.0
+    assert _continuous_smd([1.0], [2.0]) is None
+    assert _binary_smd(0.0, 0.0) == 0.0
+    assert _binary_smd(0.0, 1.0) is None
+    assert _weighted_smd(
+        np.asarray([1.0]), np.asarray([1]), np.asarray([1.0])
+    ) is None
+    assert _weighted_smd(
+        np.asarray([1.0, 1.0]), np.asarray([1, 0]), np.asarray([1.0, 1.0])
+    ) == 0.0
+    assert _weighted_smd(
+        np.asarray([1.0, 2.0]), np.asarray([1, 0]), np.asarray([1.0, 1.0])
+    ) is None
+    assert ComparativeAnalyticsEngine._numeric_summary([], 3) == {
+        "n": 0,
+        "mean": None,
+        "sd": None,
+        "missing": 3,
+    }
+
+    missing = [
+        item.model_copy(update={"covariates": {"age": None}}) for item in _records()
+    ]
+    assert ComparativeAnalyticsEngine()._psm(
+        missing, PSMConfig(enabled=True, covariates=["age"])
+    )["status"] == "abstained"
+    assert ComparativeAnalyticsEngine()._iptw(
+        missing, IPTWConfig(enabled=True, covariates=["age"])
+    )["status"] == "abstained"
+
+
+@pytest.mark.parametrize("estimand,stabilized", [("ATT", True), ("ATT", False), ("ATE", False)])
+def test_iptw_estimand_and_stabilization_branches(estimand: str, stabilized: bool) -> None:
+    payload = _payload(
+        iptw=IPTWConfig(
+            enabled=True,
+            covariates=["age", "sex"],
+            estimand=estimand,
+            stabilized=stabilized,
+        ),
+        causal_assumptions=_assumptions(),
+    )
+    result = ComparativeAnalyticsEngine().calculate(payload)[0]["adjusted"]["iptw"]
+    assert result["status"] == "computed_experimental"
+    assert result["estimand"] == estimand
+    assert result["stabilized"] is stabilized

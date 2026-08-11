@@ -33,7 +33,7 @@ from app.services.evidence_service import EvidenceError
 from app.services.literature_copilot_service import LiteratureCopilotService
 from app.services.research_analysis_service import ResearchAnalysisService
 from app.services.research_query_service import ResearchQueryService
-from app.services.research_service import ResearchNotFound
+from app.services.research_service import ResearchConflict, ResearchNotFound
 from app.services.research_v092_service import ResearchV092Service
 
 
@@ -294,6 +294,10 @@ def test_medication_bridge_is_proposal_only_and_query_assistant_is_default_off(
     assert ":institution_id" in preview.normalized_query
     assert ":study_id" in preview.normalized_query
     assert preview.executed is False
+    with pytest.raises(ResearchConflict, match="desabilitado"):
+        ResearchQueryService(db_session).execute(preview.id, actor)
+    with pytest.raises(ResearchNotFound, match="Query preview"):
+        ResearchQueryService(db_session).execute("missing-preview", actor)
 
 
 def test_copilot_v2_blocks_numeric_fabrication_and_ungrounded_extraction(
@@ -411,6 +415,8 @@ def test_query_execution_requires_explicit_enablement_and_returns_aggregates_onl
             }
         ]
         assert "record_key" not in str(executed.result)
+        with pytest.raises(ResearchConflict, match="já foi executado"):
+            service.execute(preview.id, actor)
     finally:
         db_session.rollback()
         db_session.execute(text("DROP VIEW IF EXISTS research_aggregate_comparisons"))
