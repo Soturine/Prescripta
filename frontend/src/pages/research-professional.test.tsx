@@ -90,7 +90,7 @@ const run = {
     categorical: { sex: { n: 1, missing: 0, categories: [{ value: "female", n: null, percent: null, suppressed: true }], small_cell_threshold: 5 } },
   },
   engine_version: "prescripta-cohort-deterministic-v2",
-  prescripta_version: "0.9.0",
+  prescripta_version: "0.9.1",
   status: "completed_demo",
   warnings: ["demo"],
   run_hash: "d".repeat(64),
@@ -134,7 +134,15 @@ const studyWorkspace = {
   analysis_runs: [
     { id: "analysis-run-1", executed_at: timestamp, content_hash: "j".repeat(64), results: run.analytics, provenance: { engine: "deterministic-v2" } },
   ],
-  data_quality: { analysis_blocked: false, dimensions: { completeness: 0, validity: 1, consistency: 0, conformance: 0 } },
+  data_quality: {
+    id: "dq-run-1",
+    cohort_run_id: "run-1",
+    ruleset_version: "prescripta-data-quality-v3",
+    scope_status: "scoped",
+    content_hash: "q".repeat(64),
+    analysis_blocked: false,
+    dimensions: { completeness: 0, validity: 1, consistency: 0, conformance: 0 },
+  },
   readiness: ["question", "protocol", "cohort", "outcome", "data_quality", "analysis_plan", "results", "evidence_package"].map((step, index) => ({ step, ready: index < 5 })),
   research_packages: [
     { id: "package-1", content_hash: "k".repeat(64), manifest: { aggregate_only: true } },
