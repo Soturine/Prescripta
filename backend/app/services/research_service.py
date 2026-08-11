@@ -17,6 +17,7 @@ from app.database.models import (
     CohortRunStepModel,
     ConceptSetMemberModel,
     ConceptSetModel,
+    ConceptSetTerminologyRefModel,
     ConceptSetVersionModel,
     DataQualityFindingModel,
     DataQualityRunModel,
@@ -26,6 +27,7 @@ from app.database.models import (
     ResearchSnapshotModel,
     ResearchStudyModel,
     StudyProtocolVersionModel,
+    TerminologyReleaseModel,
     UserModel,
 )
 from app.schemas.research_schema import (
@@ -185,6 +187,17 @@ class ResearchService:
         actor: UserModel,
     ) -> dict:
         definition = payload.model_dump(mode="json")
+        release_ids = definition.pop("terminology_release_ids")
+        releases = []
+        for release_id in sorted(set(release_ids)):
+            release = self.db.get(TerminologyReleaseModel, release_id)
+            if release is None or release.institution_id != actor.institution_id:
+                raise ResearchError("Terminology release inexistente ou cross-tenant.")
+            releases.append(release)
+        definition["terminology_release_refs"] = [
+            {"id": item.id, "version": item.version, "content_hash": item.content_hash}
+            for item in releases
+        ]
         concept_set = ConceptSetModel(
             institution_id=actor.institution_id,
             name=payload.name,
@@ -217,6 +230,23 @@ class ResearchService:
                 ConceptSetMemberModel(
                     concept_set_version_id=version.id,
                     **member.model_dump(),
+                )
+            )
+        for release in releases:
+            ref_basis = {
+                "concept_set_version_id": version.id,
+                "release_id": release.id,
+                "release_hash": release.content_hash,
+                "mapping_hashes": [],
+                "expansion_policy": "descendants" if payload.include_descendants else "none",
+            }
+            self.db.add(
+                ConceptSetTerminologyRefModel(
+                    concept_set_version_id=version.id,
+                    release_id=release.id,
+                    mapping_hashes=[],
+                    expansion_policy=ref_basis["expansion_policy"],
+                    content_hash=canonical_sha256(ref_basis),
                 )
             )
         concept_set.current_version_id = version.id
@@ -269,9 +299,35 @@ class ResearchService:
             if version
             else []
         )
+        terminology_refs = (
+            list(
+                self.db.scalars(
+                    select(ConceptSetTerminologyRefModel)
+                    .where(ConceptSetTerminologyRefModel.concept_set_version_id == version.id)
+                    .order_by(ConceptSetTerminologyRefModel.release_id)
+                )
+            )
+            if version
+            else []
+        )
         return {
             **self._row(concept_set),
-            "version": self._row(version) if version else None,
+            "version": (
+                {
+                    **self._row(version),
+                    "terminology_release_refs": [
+                        {
+                            "release_id": item.release_id,
+                            "mapping_hashes": item.mapping_hashes,
+                            "expansion_policy": item.expansion_policy,
+                            "content_hash": item.content_hash,
+                        }
+                        for item in terminology_refs
+                    ],
+                }
+                if version
+                else None
+            ),
             "members": [self._row(item) for item in members],
         }
 
@@ -706,7 +762,12 @@ class ResearchService:
         )
         latest_dq = self.db.scalar(
             select(DataQualityRunModel)
-            .where(DataQualityRunModel.institution_id == actor.institution_id)
+            .where(
+                DataQualityRunModel.institution_id == actor.institution_id,
+                DataQualityRunModel.study_id == study.id,
+                DataQualityRunModel.cohort_run_id == (runs[0].id if runs else None),
+                DataQualityRunModel.scope_status == "scoped",
+            )
             .order_by(DataQualityRunModel.executed_at.desc())
         )
         concept_versions = sorted(
@@ -753,7 +814,18 @@ class ResearchService:
             "concept_set_version_ids": concept_versions,
             "analysis_plans": analysis_plans,
             "analysis_runs": analysis_runs,
-            "data_quality": latest_dq.summary if latest_dq else {"status": "not_run"},
+            "data_quality": (
+                {
+                    **(latest_dq.summary or {}),
+                    "id": latest_dq.id,
+                    "cohort_run_id": latest_dq.cohort_run_id,
+                    "ruleset_version": latest_dq.ruleset_version,
+                    "scope_status": latest_dq.scope_status,
+                    "content_hash": latest_dq.content_hash,
+                }
+                if latest_dq
+                else {"status": "not_run"}
+            ),
             "readiness": readiness,
             "research_packages": packages,
         }

@@ -7,9 +7,13 @@ from sqlalchemy.orm import Session
 
 from app.database.models import (
     AnalysisPlanModel,
+    AnalysisPlanOutcomeModel,
+    AnalysisRunOutcomeModel,
+    CohortDefinitionVersionModel,
     CohortRunModel,
     DataQualityFindingModel,
     DataQualityRunModel,
+    EvidenceSourceModel,
     OutcomeDefinitionModel,
     PatientClinicalTimelineEventModel,
     PatientModel,
@@ -63,17 +67,39 @@ class ResearchAnalysisService:
             + 1
         )
         definition = payload.model_dump(mode="json")
+        outcome_version_ids = definition.pop("outcome_version_ids")
+        requested_dq_id = definition.pop("data_quality_run_id")
+        outcomes = self._resolve_outcomes(study.id, outcome_version_ids, actor)
+        dq_run = self._resolve_data_quality_run(
+            cohort_run, actor, requested_dq_id=requested_dq_id
+        )
+        definition_basis = {
+            **definition,
+            "outcome_version_refs": [self._outcome_ref(item) for item in outcomes],
+            "data_quality_run_ref": self._dq_ref(dq_run),
+        }
         plan = AnalysisPlanModel(
             study_id=study.id,
             institution_id=actor.institution_id,
+            data_quality_run_id=dq_run.id,
             version=version,
             **json_compatible(definition),
-            definition_hash=canonical_sha256(definition),
+            definition_hash=canonical_sha256(definition_basis),
             status="draft",
             authored_by_user_id=actor.id,
         )
         self.db.add(plan)
         self.db.flush()
+        for outcome in outcomes:
+            self.db.add(
+                AnalysisPlanOutcomeModel(
+                    analysis_plan_id=plan.id,
+                    outcome_version_id=outcome.id,
+                    **self._outcome_ref(outcome, relational=True),
+                )
+            )
+        self.db.flush()
+        plan.outcome_version_refs = [self._outcome_ref(item) for item in outcomes]
         self._audit(
             actor,
             "research.analysis_plan.create",
@@ -107,6 +133,19 @@ class ResearchAnalysisService:
             raise ResearchConflict("O plano já foi revisado.")
         if payload.decision not in {"reviewed_demo", "archived"}:
             raise ResearchError("Decisão inválida para o plano de análise.")
+        bindings = self._plan_outcomes(plan.id)
+        if not bindings:
+            raise ResearchError("Plano sem versões exatas de outcome.")
+        for binding in bindings:
+            outcome = self.db.get(OutcomeDefinitionModel, binding.outcome_version_id)
+            if (
+                outcome is None
+                or outcome.institution_id != actor.institution_id
+                or outcome.study_id != plan.study_id
+                or outcome.review_status != "reviewed_demo"
+                or outcome.definition_hash != binding.outcome_hash
+            ):
+                raise ResearchError("Outcome vinculado está ausente, alterado ou sem revisão.")
         plan.status = payload.decision
         plan.reviewed_by_user_id = actor.id
         plan.reviewed_at = datetime.now(UTC)
@@ -135,18 +174,28 @@ class ResearchAnalysisService:
         protocol = self.db.get(StudyProtocolVersionModel, cohort_run.protocol_version_id)
         if protocol is None or protocol.status != "reviewed_demo":
             raise ResearchError("Execução bloqueada: protocolo revisado ausente.")
-        reviewed_outcome = self.db.scalar(
-            select(func.count(OutcomeDefinitionModel.id)).where(
-                OutcomeDefinitionModel.study_id == study.id,
-                OutcomeDefinitionModel.institution_id == actor.institution_id,
-                OutcomeDefinitionModel.review_status == "reviewed_demo",
-            )
+        outcome_bindings = self._plan_outcomes(plan.id)
+        if not outcome_bindings:
+            raise ResearchError("Execução bloqueada: versões exatas de outcome ausentes.")
+        outcomes: list[OutcomeDefinitionModel] = []
+        for binding in outcome_bindings:
+            outcome = self.db.get(OutcomeDefinitionModel, binding.outcome_version_id)
+            if (
+                outcome is None
+                or outcome.study_id != study.id
+                or outcome.institution_id != actor.institution_id
+                or outcome.review_status != "reviewed_demo"
+                or outcome.definition_hash != binding.outcome_hash
+            ):
+                raise ResearchError("Execução bloqueada: outcome exato inválido ou alterado.")
+            outcomes.append(outcome)
+        dq_run = self._resolve_data_quality_run(
+            cohort_run, actor, requested_dq_id=plan.data_quality_run_id
         )
-        if not reviewed_outcome:
-            raise ResearchError("Execução bloqueada: outcome revisado ausente.")
         critical = int(
             self.db.scalar(
                 select(func.count(DataQualityFindingModel.id)).where(
+                    DataQualityFindingModel.run_id == dq_run.id,
                     DataQualityFindingModel.institution_id == actor.institution_id,
                     DataQualityFindingModel.status == "open",
                     DataQualityFindingModel.severity == "critical",
@@ -164,6 +213,8 @@ class ResearchAnalysisService:
             "analysis_plan_hash": plan.definition_hash,
             "cohort_run_hash": cohort_run.run_hash,
             "protocol_definition_hash": protocol.definition_hash,
+            "data_quality_run": self._dq_ref(dq_run),
+            "outcome_versions": [self._outcome_ref(item) for item in outcomes],
             "data_snapshot_marker": cohort_run.data_snapshot_marker,
             "source_version_refs": sorted(
                 set((cohort_run.source_version_refs or []) + (plan.source_refs or []))
@@ -180,6 +231,7 @@ class ResearchAnalysisService:
             study_id=study.id,
             analysis_plan_id=plan.id,
             cohort_run_id=cohort_run.id,
+            data_quality_run_id=dq_run.id,
             institution_id=actor.institution_id,
             data_snapshot_marker=cohort_run.data_snapshot_marker,
             status="completed_demo",
@@ -191,6 +243,16 @@ class ResearchAnalysisService:
         )
         self.db.add(analysis_run)
         self.db.flush()
+        for outcome in outcomes:
+            self.db.add(
+                AnalysisRunOutcomeModel(
+                    analysis_run_id=analysis_run.id,
+                    outcome_version_id=outcome.id,
+                    **self._outcome_ref(outcome, relational=True),
+                )
+            )
+        self.db.flush()
+        analysis_run.outcome_version_refs = [self._outcome_ref(item) for item in outcomes]
         self._audit(
             actor,
             "research.analysis.execute",
@@ -221,16 +283,47 @@ class ResearchAnalysisService:
         study = self._study(run.study_id, actor)
         plan = self._plan(run.analysis_plan_id, actor)
         cohort_run = self._cohort_run(run.cohort_run_id, actor)
+        protocol = self.db.get(StudyProtocolVersionModel, cohort_run.protocol_version_id)
+        cohort_version = self.db.get(CohortDefinitionVersionModel, cohort_run.cohort_version_id)
+        if protocol is None or cohort_version is None:
+            raise ResearchError("Lineage de protocolo/coorte está incompleto.")
         snapshot = self.db.scalar(
             select(ResearchSnapshotModel).where(
                 ResearchSnapshotModel.cohort_run_id == cohort_run.id
             )
         )
-        latest_dq = self.db.scalar(
-            select(DataQualityRunModel)
-            .where(DataQualityRunModel.institution_id == actor.institution_id)
-            .order_by(DataQualityRunModel.executed_at.desc())
+        dq_run = (
+            self.db.get(DataQualityRunModel, run.data_quality_run_id)
+            if run.data_quality_run_id
+            else None
         )
+        outcome_bindings = list(
+            self.db.scalars(
+                select(AnalysisRunOutcomeModel)
+                .where(AnalysisRunOutcomeModel.analysis_run_id == run.id)
+                .order_by(AnalysisRunOutcomeModel.outcome_version_id)
+            )
+        )
+        outcomes = [
+            self.db.get(OutcomeDefinitionModel, binding.outcome_version_id)
+            for binding in outcome_bindings
+        ]
+        if any(item is None for item in outcomes):
+            raise ResearchError("Lineage de outcome do run está quebrado.")
+        source_refs = sorted(
+            set(protocol.source_refs or [])
+            | set(cohort_run.source_version_refs or [])
+            | set(plan.source_refs or [])
+            | {ref for item in outcomes if item for ref in (item.source_refs or [])}
+        )
+        evidence_sources = list(
+            self.db.scalars(
+                select(EvidenceSourceModel).where(
+                    EvidenceSourceModel.institution_id == actor.institution_id,
+                    EvidenceSourceModel.identifier.in_(source_refs),
+                )
+            )
+        ) if source_refs else []
         files = {
             "study.json": {
                 "id": study.id,
@@ -240,11 +333,47 @@ class ResearchAnalysisService:
                 "design": study.design,
                 "synthetic_only": True,
             },
+            "protocol.json": {
+                "id": protocol.id,
+                "version": protocol.version,
+                "definition_hash": protocol.definition_hash,
+                "status": protocol.status,
+                "source_refs": sorted(protocol.source_refs or []),
+            },
             "cohort.json": {
+                "definition_version_id": cohort_version.id,
+                "definition_hash": cohort_version.definition_hash,
+                "cohort_run_id": cohort_run.id,
                 "run_hash": cohort_run.run_hash,
                 "result_count": cohort_run.result_count,
                 "attrition": cohort_run.attrition,
                 "snapshot_hash": snapshot.snapshot_hash if snapshot else None,
+            },
+            "concept-set-refs.json": {
+                "concept_set_version_ids": sorted(
+                    {
+                        ref
+                        for item in outcomes
+                        if item
+                        for ref in (item.concept_set_version_ids or [])
+                    }
+                )
+            },
+            "outcomes.json": {
+                "versions": [
+                    {
+                        **self._outcome_ref(item),
+                        "domain": item.domain,
+                        "concept_set_version_ids": sorted(item.concept_set_version_ids or []),
+                        "event_qualification": item.event_qualification,
+                        "observation_window": item.observation_window,
+                        "temporal_relationship": item.temporal_relationship,
+                        "source_refs": sorted(item.source_refs or []),
+                        "limitations": sorted(item.limitations or []),
+                    }
+                    for item in outcomes
+                    if item
+                ]
             },
             "analysis-plan.json": {
                 "id": plan.id,
@@ -252,22 +381,98 @@ class ResearchAnalysisService:
                 "methods": plan.methods,
                 "outputs": plan.planned_outputs,
                 "definition_hash": plan.definition_hash,
+                "outcome_versions": [
+                    self._binding_ref(item) for item in outcome_bindings
+                ],
             },
             "results.json": run.results,
-            "data-quality.json": latest_dq.summary if latest_dq else {"status": "not_run"},
-            "provenance.json": run.provenance,
-            "README.txt": (
-                "Pacote agregado e sintético. Não contém linhas de pacientes "
-                "e não possui validade clínica."
+            "data-quality-summary.json": (
+                {**self._dq_ref(dq_run), "summary": dq_run.summary}
+                if dq_run
+                else {
+                    "status": "legacy_unscoped",
+                    "reason": "Run histórico sem vínculo de Data Quality; nenhum run foi inferido.",
+                }
             ),
+            "provenance.json": run.provenance,
+            "sources.json": {
+                "source_refs": source_refs,
+                "evidence_sources": [
+                    {
+                        "id": item.id,
+                        "identifier": item.identifier,
+                        "title": item.title,
+                        "source_type": item.source_type,
+                        "source_version": item.source_version,
+                        "content_hash": item.content_hash,
+                        "review_status": item.review_status,
+                    }
+                    for item in sorted(evidence_sources, key=lambda value: value.identifier)
+                ],
+            },
+            "limitations.json": {
+                "synthetic_only": True,
+                "aggregate_only": True,
+                "limitations": sorted(
+                    set(protocol.limitations or [])
+                    | set(plan.limitations or [])
+                    | {value for item in outcomes if item for value in (item.limitations or [])}
+                ),
+                "claims_not_supported": [
+                    "clinical_validity",
+                    "causal_validity",
+                    "regulatory_validity",
+                    "ohdsi_network_readiness",
+                ],
+            },
+            "terminology.json": {
+                "status": "not_used",
+                "reason": "Este run histórico não vinculou releases governadas de terminology.",
+                "release_refs": [],
+            },
+            "mapping-refs.json": {
+                "status": "not_used",
+                "reason": "Nenhum mapping governado participou deste run.",
+                "mapping_hashes": [],
+            },
+            "omop-etl-lineage.json": {
+                "status": "not_applicable",
+                "reason": "A análise não utilizou o adapter OMOP.",
+            },
+            "compatibility.json": {
+                "level": "prescripta_internal",
+                "omop_used": False,
+                "ohdsi_tool_validated": False,
+            },
         }
         file_hashes = {name: canonical_sha256(content) for name, content in files.items()}
         manifest = {
-            "schema_version": "prescripta-research-package-v1",
+            "schema_version": "prescripta-research-package-v2",
+            "prescripta_version": "0.9.1",
             "analysis_run_id": run.id,
             "analysis_content_hash": run.content_hash,
             "aggregate_only": True,
             "synthetic_only": True,
+            "study_id": study.id,
+            "protocol_version": {"id": protocol.id, "hash": protocol.definition_hash},
+            "cohort": {
+                "definition_version_id": cohort_version.id,
+                "definition_hash": cohort_version.definition_hash,
+                "run_id": cohort_run.id,
+                "run_hash": cohort_run.run_hash,
+                "snapshot_hash": snapshot.snapshot_hash if snapshot else None,
+            },
+            "outcome_versions": [self._binding_ref(item) for item in outcome_bindings],
+            "analysis_plan": {
+                "id": plan.id,
+                "version": plan.version,
+                "hash": plan.definition_hash,
+            },
+            "data_quality_run": self._dq_ref(dq_run) if dq_run else None,
+            "terminology_release_refs": [],
+            "mapping_hashes": [],
+            "adapter_versions": {"research": "prescripta-descriptive-analytics-v1"},
+            "limitations_summary": files["limitations.json"]["claims_not_supported"],
             "files": file_hashes,
         }
         content_hash = canonical_sha256({"manifest": manifest, "files": files})
@@ -300,6 +505,51 @@ class ResearchAnalysisService:
             {"content_hash": content_hash, "aggregate_only": True},
         )
         return package
+
+    def verify_package(self, package_id: str, actor: UserModel) -> dict:
+        package = self.db.get(ResearchPackageModel, package_id)
+        if package is None or package.institution_id != actor.institution_id:
+            raise ResearchNotFound("Research Package não encontrado.")
+        manifest = package.manifest or {}
+        if manifest.get("schema_version") not in {
+            "prescripta-research-package-v1",
+            "prescripta-research-package-v2",
+        }:
+            return {"valid": False, "errors": ["unknown_schema"]}
+        expected = manifest.get("files", {})
+        actual = {name: canonical_sha256(content) for name, content in package.files.items()}
+        errors: list[str] = []
+        for name in expected:
+            if name not in actual:
+                errors.append(f"missing_file:{name}")
+            elif expected[name] != actual[name]:
+                errors.append(f"hash_mismatch:{name}")
+        for name in actual:
+            if name not in expected:
+                errors.append(f"unlisted_file:{name}")
+        calculated_package_hash = canonical_sha256(
+            {"manifest": manifest, "files": package.files}
+        )
+        if calculated_package_hash != package.content_hash:
+            errors.append("package_hash_mismatch")
+        if manifest.get("analysis_run_id") != package.analysis_run_id:
+            errors.append("analysis_lineage_mismatch")
+        result = {
+            "valid": not errors,
+            "schema_version": manifest.get("schema_version"),
+            "package_id": package.id,
+            "content_hash": package.content_hash,
+            "errors": sorted(errors),
+        }
+        self._audit(
+            actor,
+            "research.package.verify",
+            "research_package",
+            package.id,
+            "valid" if not errors else "invalid",
+            {"error_count": len(errors), "content_hash": package.content_hash},
+        )
+        return result
 
     def patient_journey(self, study_id: str, patient_id: int, actor: UserModel) -> dict:
         study = self._study(study_id, actor)
@@ -391,6 +641,157 @@ class ResearchAnalysisService:
         if study is None or study.institution_id != actor.institution_id:
             raise ResearchNotFound("Estudo não encontrado.")
         return study
+
+    def _resolve_outcomes(
+        self,
+        study_id: str,
+        requested_ids: list[str],
+        actor: UserModel,
+    ) -> list[OutcomeDefinitionModel]:
+        if requested_ids:
+            outcomes = [self.db.get(OutcomeDefinitionModel, item) for item in requested_ids]
+        else:
+            candidates = list(
+                self.db.scalars(
+                    select(OutcomeDefinitionModel)
+                    .where(
+                        OutcomeDefinitionModel.study_id == study_id,
+                        OutcomeDefinitionModel.institution_id == actor.institution_id,
+                        OutcomeDefinitionModel.review_status == "reviewed_demo",
+                    )
+                    .order_by(
+                        OutcomeDefinitionModel.name,
+                        OutcomeDefinitionModel.version.desc(),
+                    )
+                )
+            )
+            latest_by_name: dict[str, OutcomeDefinitionModel] = {}
+            for item in candidates:
+                latest_by_name.setdefault(item.name, item)
+            outcomes = list(latest_by_name.values())
+        if not outcomes:
+            raise ResearchError("O plano exige ao menos uma versão exata de outcome revisada.")
+        if any(
+            item is None
+            or item.study_id != study_id
+            or item.institution_id != actor.institution_id
+            or item.review_status != "reviewed_demo"
+            or item.reviewed_by_user_id is None
+            for item in outcomes
+        ):
+            raise ResearchError("Outcome inexistente, cross-tenant ou sem revisão humana.")
+        return sorted(outcomes, key=lambda item: item.id)  # type: ignore[union-attr]
+
+    def _resolve_data_quality_run(
+        self,
+        cohort_run: CohortRunModel,
+        actor: UserModel,
+        *,
+        requested_dq_id: str | None,
+    ) -> DataQualityRunModel:
+        snapshot = self.db.scalar(
+            select(ResearchSnapshotModel).where(
+                ResearchSnapshotModel.cohort_run_id == cohort_run.id
+            )
+        )
+        if snapshot is None:
+            raise ResearchError("Snapshot exato da coorte não foi encontrado.")
+        if requested_dq_id:
+            candidates = [self.db.get(DataQualityRunModel, requested_dq_id)]
+        else:
+            candidates = list(
+                self.db.scalars(
+                    select(DataQualityRunModel).where(
+                        DataQualityRunModel.institution_id == actor.institution_id,
+                        DataQualityRunModel.study_id == cohort_run.study_id,
+                        DataQualityRunModel.cohort_run_id == cohort_run.id,
+                        DataQualityRunModel.data_snapshot_marker
+                        == cohort_run.data_snapshot_marker,
+                        DataQualityRunModel.data_snapshot_hash == snapshot.snapshot_hash,
+                        DataQualityRunModel.scope_status == "scoped",
+                        DataQualityRunModel.status == "completed",
+                    )
+                )
+            )
+        if len(candidates) != 1:
+            raise ResearchError(
+                "Informe o Data Quality run exato; não existe um único run "
+                "compatível com o snapshot."
+            )
+        dq_run = candidates[0]
+        if (
+            dq_run is None
+            or dq_run.institution_id != actor.institution_id
+            or dq_run.study_id != cohort_run.study_id
+            or dq_run.cohort_run_id != cohort_run.id
+            or dq_run.data_snapshot_marker != cohort_run.data_snapshot_marker
+            or dq_run.data_snapshot_hash != snapshot.snapshot_hash
+            or dq_run.scope_status != "scoped"
+            or dq_run.status != "completed"
+        ):
+            raise ResearchError("Data Quality run incompatível com study/coorte/snapshot.")
+        return dq_run
+
+    def _plan_outcomes(self, plan_id: str) -> list[AnalysisPlanOutcomeModel]:
+        return list(
+            self.db.scalars(
+                select(AnalysisPlanOutcomeModel)
+                .where(AnalysisPlanOutcomeModel.analysis_plan_id == plan_id)
+                .order_by(AnalysisPlanOutcomeModel.outcome_version_id)
+            )
+        )
+
+    @staticmethod
+    def _outcome_ref(
+        outcome: OutcomeDefinitionModel,
+        *,
+        relational: bool = False,
+    ) -> dict:
+        terminology_refs = sorted(outcome.concept_set_version_ids or [])
+        if relational:
+            return {
+                "outcome_logical_name": outcome.name,
+                "outcome_version": outcome.version,
+                "outcome_hash": outcome.definition_hash,
+                "review_status": outcome.review_status,
+                "reviewed_by_user_id": outcome.reviewed_by_user_id,
+                "terminology_refs": terminology_refs,
+            }
+        return {
+            "outcome_id": outcome.name,
+            "outcome_version_id": outcome.id,
+            "version": outcome.version,
+            "content_hash": outcome.definition_hash,
+            "review_status": outcome.review_status,
+            "reviewed_by_user_id": outcome.reviewed_by_user_id,
+            "terminology_refs": terminology_refs,
+        }
+
+    @staticmethod
+    def _binding_ref(binding: AnalysisPlanOutcomeModel | AnalysisRunOutcomeModel) -> dict:
+        return {
+            "outcome_id": binding.outcome_logical_name,
+            "outcome_version_id": binding.outcome_version_id,
+            "version": binding.outcome_version,
+            "content_hash": binding.outcome_hash,
+            "review_status": binding.review_status,
+            "reviewed_by_user_id": binding.reviewed_by_user_id,
+            "terminology_refs": sorted(binding.terminology_refs or []),
+        }
+
+    @staticmethod
+    def _dq_ref(run: DataQualityRunModel) -> dict:
+        return {
+            "id": run.id,
+            "study_id": run.study_id,
+            "cohort_run_id": run.cohort_run_id,
+            "data_snapshot_marker": run.data_snapshot_marker,
+            "data_snapshot_hash": run.data_snapshot_hash,
+            "ruleset_version": run.ruleset_version,
+            "terminology_snapshot": run.terminology_snapshot,
+            "content_hash": run.content_hash,
+            "scope_status": run.scope_status,
+        }
 
     def _plan(self, plan_id: str, actor: UserModel) -> AnalysisPlanModel:
         plan = self.db.get(AnalysisPlanModel, plan_id)

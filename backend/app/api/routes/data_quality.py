@@ -39,8 +39,14 @@ def run_data_quality(
     payload: Annotated[DataQualityRunRequest, Body()] = EMPTY_DQ_RUN_REQUEST,
 ) -> DataQualityRunRead:
     try:
+        if payload.study_id is None and payload.cohort_run_id is None:
+            return DataQualityRunRead.model_validate(
+                DataQualityService(db).run_legacy_timeline(current_user)
+            )
         return DataQualityRunRead.model_validate(
-            DataQualityService(db).run(current_user, payload.study_id)
+            DataQualityService(db).run(
+                current_user, payload.study_id, payload.cohort_run_id
+            )
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

@@ -472,6 +472,18 @@ def export_research_package(
         raise _research_http_error(exc) from exc
 
 
+@router.post("/packages/{package_id}/verify")
+def verify_research_package(
+    package_id: str,
+    db: DbSession,
+    current_user: PackageExporter,
+) -> dict:
+    try:
+        return ResearchAnalysisService(db).verify_package(package_id, current_user)
+    except ResearchError as exc:
+        raise _research_http_error(exc) from exc
+
+
 @router.get(
     "/studies/{study_id}/patient-journey/{patient_id}",
     response_model=PatientJourneyRead,

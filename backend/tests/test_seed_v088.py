@@ -5,6 +5,7 @@ from app.database.models import (
     CohortRunModel,
     ConceptSetModel,
     DataQualityFindingModel,
+    DataQualityRunModel,
     InstitutionalClinicalProtocolVersionModel,
     PatientClinicalTimelineEventModel,
     PharmacyInterventionModel,
@@ -58,7 +59,12 @@ def test_v088_seed_is_idempotent_synthetic_and_verifiable(db_session: Session) -
     ) == 2
     assert db_session.scalar(
         select(func.count(DataQualityFindingModel.id)).where(
-            DataQualityFindingModel.rule == "unknown_unit"
+            DataQualityFindingModel.rule == "unknown_unit",
+            DataQualityFindingModel.run_id.in_(
+                select(DataQualityRunModel.id).where(
+                    DataQualityRunModel.cohort_run_id == run.id
+                )
+            ),
         )
     ) == 1
     assert db_session.scalar(

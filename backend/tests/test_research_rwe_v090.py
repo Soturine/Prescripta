@@ -3,9 +3,16 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
-from app.database.models import PatientClinicalTimelineEventModel, PatientModel
+from app.database.models import (
+    DataQualityFindingModel,
+    DataQualityRunModel,
+    PatientClinicalTimelineEventModel,
+    PatientModel,
+    ResearchPackageModel,
+)
 from app.domain.user import UserRole
 from app.schemas.ai_task_schema import AIInteractionReviewRequest, AIRequestSchema
 from app.schemas.research_schema import (
@@ -22,6 +29,7 @@ from app.schemas.research_schema import (
     StudyProtocolVersionCreate,
 )
 from app.services.ai_task_router import AITaskRouter
+from app.services.canonical_json import canonical_sha256
 from app.services.cohort_dsl import (
     CohortDSLValidationError,
     CohortDSLValidator,
@@ -253,15 +261,82 @@ def test_v090_deterministic_analysis_package_and_synthetic_journey(
         ),
         reviewer,
     )
+    outcome_v2 = research.create_outcome(
+        study.id,
+        OutcomeDefinitionCreate(
+            name="Synthetic outcome in 90 days",
+            domain="condition",
+            concept_set_version_ids=[concept_version_id],
+            event_qualification={"minimum_events": 2},
+            observation_window={"after_index_days": 120},
+            temporal_relationship="after_index",
+            source_refs=["synthetic-dataset:v091-outcome-v2"],
+            limitations=["Synthetic v2 created after the plan was bound."],
+        ),
+        author,
+    )
+    research.review_outcome(
+        outcome_v2.id,
+        OutcomeReviewRequest(
+            decision="reviewed_demo",
+            note="Independent review of the later synthetic outcome version.",
+        ),
+        reviewer,
+    )
+    unrelated_dq = DataQualityRunModel(
+        institution_id=author.institution_id,
+        study_id=None,
+        status="completed",
+        summary={"analysis_blocked": True},
+        content_hash=canonical_sha256({"unrelated": True}),
+        executed_by_user_id=author.id,
+        executed_at=datetime.now(UTC),
+        ruleset_version="prescripta-data-quality-v3",
+        scope_status="legacy_unscoped",
+    )
+    db_session.add(unrelated_dq)
+    db_session.flush()
+    db_session.add(
+        DataQualityFindingModel(
+            run_id=unrelated_dq.id,
+            institution_id=author.institution_id,
+            rule="unrelated_critical",
+            severity="critical",
+            resource_type="research_study",
+            resource_id="other-study",
+            field="snapshot",
+            message="Critical finding outside the analysis DQ run.",
+            source="v091-regression",
+            detected_at=datetime.now(UTC),
+            status="open",
+        )
+    )
+    db_session.flush()
     first_run = analysis.execute(plan.id, author)
     second_run = analysis.execute(plan.id, author)
     assert first_run.content_hash == second_run.content_hash
     assert first_run.results["aggregate_only"] is True
+    assert first_run.data_quality_run_id == dq_run["id"]
+    assert first_run.provenance["outcome_versions"][0]["outcome_version_id"] == outcome.id
+    assert first_run.provenance["outcome_versions"][0]["outcome_version_id"] != outcome_v2.id
     assert "patient" not in str(first_run.results).casefold()
     package = analysis.export_package(first_run.id, author)
     assert package.aggregate_only is True
     assert set(package.manifest["files"]) == set(package.files)
+    assert package.manifest["schema_version"] == "prescripta-research-package-v2"
+    assert package.manifest["data_quality_run"]["id"] == dq_run["id"]
+    assert package.files["outcomes.json"]["versions"][0]["outcome_version_id"] == outcome.id
+    assert analysis.verify_package(package.id, author)["valid"] is True
     assert "patient" not in str(package.files["results.json"]).casefold()
+    db_session.execute(
+        update(ResearchPackageModel)
+        .where(ResearchPackageModel.id == package.id)
+        .values(files={**package.files, "results.json": {"tampered": True}})
+    )
+    db_session.expire(package)
+    verification = analysis.verify_package(package.id, author)
+    assert verification["valid"] is False
+    assert "hash_mismatch:results.json" in verification["errors"]
 
     journey = analysis.patient_journey(study.id, patient.id, author)
     assert journey["synthetic_only"] is True

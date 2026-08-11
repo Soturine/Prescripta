@@ -113,6 +113,7 @@ class ConceptSetCreate(BaseModel):
     name: str = Field(min_length=3, max_length=220)
     domain: Literal["condition", "medication", "measurement", "procedure", "demographic"]
     terminology_versions: dict[str, str] = Field(min_length=1, max_length=10)
+    terminology_release_ids: list[str] = Field(default_factory=list, max_length=10)
     include_descendants: bool = False
     source_refs: list[str] = Field(min_length=1, max_length=30)
     license_metadata: dict = Field(min_length=1)
@@ -141,6 +142,7 @@ class ConceptSetVersionRead(BaseModel):
     version: int
     status: str
     terminology_versions: dict
+    terminology_release_refs: list[dict] = Field(default_factory=list)
     include_descendants: bool
     source_refs: list[str]
     license_metadata: dict
@@ -347,6 +349,12 @@ class DataQualityRunRead(BaseModel):
     id: str
     institution_id: str
     study_id: str | None
+    cohort_run_id: str | None
+    data_snapshot_marker: str | None
+    data_snapshot_hash: str | None
+    terminology_snapshot: dict
+    ruleset_version: str
+    scope_status: str
     status: str
     summary: dict
     content_hash: str
@@ -361,6 +369,7 @@ class DataQualityRunRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     study_id: str | None = None
+    cohort_run_id: str | None = None
 
 
 class DataQualityAcknowledgeRequest(BaseModel):
@@ -373,6 +382,8 @@ class AnalysisPlanCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     cohort_run_id: str
+    data_quality_run_id: str | None = None
+    outcome_version_ids: list[str] = Field(default_factory=list, max_length=20)
     objectives: list[str] = Field(min_length=1, max_length=20)
     variables: list[dict] = Field(default_factory=list, max_length=30)
     steps: list[dict] = Field(min_length=1, max_length=20)
@@ -407,6 +418,8 @@ class AnalysisPlanRead(BaseModel):
     institution_id: str
     version: int
     cohort_run_id: str | None
+    data_quality_run_id: str | None
+    outcome_version_refs: list[dict] = Field(default_factory=list)
     objectives: list[str]
     variables: list[dict]
     steps: list[dict]
@@ -433,6 +446,8 @@ class AnalysisRunRead(BaseModel):
     study_id: str
     analysis_plan_id: str
     cohort_run_id: str
+    data_quality_run_id: str | None
+    outcome_version_refs: list[dict] = Field(default_factory=list)
     institution_id: str
     data_snapshot_marker: str
     status: str

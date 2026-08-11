@@ -2020,9 +2020,9 @@ def _seed_legacy_research_v088(
         ),
         researcher,
     )
-    research_service.execute_cohort(
+    cohort_run = research_service.execute_cohort(
         cohort.id,
         CohortRunRequest(data_snapshot_marker="synthetic-seed-v088-001"),
         researcher,
     )
-    DataQualityService(db).run(researcher)
+    DataQualityService(db).run(researcher, study.id, cohort_run.id)
