@@ -23,6 +23,8 @@ Nenhum item foi avaliado por comitê clínico externo.
 | H-16 | resultado de RWE sintético é tratado como evidência clínica | maior | avisos persistentes, `demo_only`, aggregate-first, sem inferência causal e provenance completo | governança humana e barreiras organizacionais não podem ser garantidas pelo código |
 | H-17 | erro de coorte fica oculto pela contagem final | maior | attrition por critério, definition/run hashes, marcador do dataset e Data Quality determinística | validação epidemiológica de fenótipos e fontes reais pendente |
 | H-18 | tradução altera a interpretação de risco, status, unidade ou código clínico | catastrófica | catálogos estáticos revisáveis, valores canônicos preservados, units/codes não traduzidos, testes de equivalência PT-BR/EN-US e fallback PT-BR | revisão linguística clínica formal e validação com usuários bilíngues pendem |
+| H-19 | mapping terminológico incorreto transforma um código em conceito clínico diferente | catastrófica | sugestão não aprova; mapping versionado exige revisor independente, alvo Standard ativo, domínio compatível e falha fechada em ambiguidade | conteúdo e revisão clínica/epidemiológica externos pendem |
+| H-20 | export parcial é interpretado como OMOP válido ou RWE real | maior | synthetic-only, claim `omop_v5_4_partial_adapter`, source values, concept 0 e matriz DQD/Achilles/ATLAS explícita | barreiras organizacionais e validação externa não são garantidas pelo código |
 
 ## Critério de liberação
 

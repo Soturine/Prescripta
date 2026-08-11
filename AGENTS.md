@@ -110,6 +110,13 @@ powershell -ExecutionPolicy Bypass -File scripts/check-text-quality.ps1
 - Atualize `CHANGELOG.md` em mudanças relevantes.
 - Não versionar `.env`, bancos locais, caches, `node_modules` ou `dist`.
 - Não usar dados sensíveis reais em seeds, testes ou exemplos.
+- Não distribuir conteúdo completo/licenciado de SNOMED CT, LOINC, RxNorm, ICD, ATC ou Athena;
+  registre licença/checksum e importe apenas artefato autorizado fornecido pelo operador.
+- Busca terminológica e IA apenas sugerem mappings; aprovação exige revisão humana independente.
+- Declare o adapter como `OMOP CDM 5.4 parcial` até DQD, Achilles/ATLAS e compatibilidade externa
+  serem efetivamente executados e evidenciados.
+- Preserve `*_source_value`, use conceito 0 para não mapeado e falhe fechado em mapping ambíguo,
+  inválido, não Standard ou de domínio incompatível.
 - Imagens de aplicação devem rodar sem root, sem socket Docker, com bases por digest e mínimo privilégio.
 - Antes de release, faça uma validação completa no RC, verifique CI/Security/containers, reconsulte dependências e publique tag/release a partir do SHA validado.
 

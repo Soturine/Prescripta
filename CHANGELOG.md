@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.9.1] - 2026-08-11
+
+### Terminologia e OMOP parcial
+
+- registro institucional de fontes/releases com licença, proveniência, checksum, import seguro e
+  idempotente de subsets fornecidos pelo operador, busca limitada e drift;
+- mappings versionados, suggestion-only e aprovados somente por revisor humano independente, com
+  conceito Standard ativo, domínio compatível e falha fechada em ambiguidade;
+- adapter sintético OMOP CDM 5.4 parcial para sete tabelas, preservando valores de origem e conceito
+  zero quando não mapeado, com manifest, métricas, hashes e matriz de compatibilidade honesta;
+- UI PT-BR/EN-US para registro, licenças, conceitos, fila de mapping, preview/export e histórico.
+
+### Reprodutibilidade e supply chain
+
+- Data Quality passa a ser escopado pelo cohort run/snapshot exato; outcomes revisados são fixados no
+  plano e no run, sem interferência de achados ou versões não relacionados;
+- Research Package v2 agrega lineage terminológico/OMOP, hashes por arquivo e verificador de
+  adulteração, permanecendo aggregate-only e synthetic/demo-only;
+- npm 11.18.0 e install scripts pinados por path/versão; workflow de tag produz e atesta SBOMs de
+  dependências e imagens, além de checksums.
+
+### Limitações
+
+- DQD não foi executado; Achilles/ATLAS e readiness para rede OHDSI não são suportados.
+- Nenhum vocabulário completo/licenciado é distribuído e não há validade clínica, causal,
+  regulatória, OMOP completa ou RWE real.
+
 ## [0.9.0] - 2026-08-09
 
 ### Research & RWE MVP

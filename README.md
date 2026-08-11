@@ -39,11 +39,15 @@ interna usa busca lexical indexada, não um RAG clinicamente validado.
 - providers de IA opcionais com credenciais criptografadas, allowlist/SSRF, circuit breaker compartilhado
   e fallback local;
 - PDF/JSON/CSV, paginação, manifesto de truncamento e auditoria pseudonimizada;
-- Alembic, PostgreSQL em CI, testes automatizados, SAST/SCA, secret scan e SBOM.
+- Alembic, PostgreSQL em CI, testes automatizados, SAST/SCA, secret scan e SBOM de dependências e imagens;
 - workflows institucionais de enfermagem e farmácia, com protocolo/versionamento e transações únicas;
 - estudos e protocolos versionados, concept sets revisados, cohort DSL sem SQL livre e attrition;
 - runs determinísticos aggregate-first, snapshots, hashes, provenance e Data Quality;
 - EvidenceSource/EvidenceLink e AI Task Router proposal-only com revisão humana obrigatória.
+- registro governado de terminologias, releases, licenças, checksums, busca suggestion-only e
+  mappings versionados com revisão humana independente;
+- adaptador parcial OMOP CDM 5.4 para sete tabelas, exclusivamente sobre dados sintéticos, sem
+  alegação de compatibilidade com DQD, Achilles, ATLAS ou estudos em rede;
 - stack Docker Compose com PostgreSQL, migração one-shot, imagens sem root e healthchecks;
 - shell healthtech responsivo, localização PT-BR/EN-US e guia contextual por rota.
 

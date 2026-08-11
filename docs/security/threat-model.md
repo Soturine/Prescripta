@@ -46,6 +46,9 @@ API ── policy + autorização por objeto ── PostgreSQL
 | dependência/Action comprometida | lockfiles, Actions por SHA, Dependabot, CodeQL, SCA, gitleaks e SBOM | majors deferidos exigem nova revisão; não há exceção high/critical ativa |
 | imagem base maliciosa ou mutable tag | bases oficiais por versão e digest, multi-stage, Trivy, SBOM de imagem | digest protege imutabilidade, não prova origem benigna; monitorar advisory e reconstruir |
 | install script npm malicioso | lock com integrity e verificador fail-closed de path/versão exatos antes do `npm ci` | scripts permitidos ainda executam código de pacote; mudança exige revisão manual |
+| vocabulário ou ZIP terminológico adulterado | release com licença/checksum, limites de bytes/linhas, tipos allowlisted, rejeição de traversal/archive bomb e parsing sem execução | o operador continua responsável pela origem, autorização e atualização do artefato |
+| mapping incorreto ou ambíguo alimenta OMOP | proposta versionada, revisor independente, Standard ativo, domínio compatível e falha fechada | nenhuma revisão clínica/epidemiológica externa foi realizada |
+| export OMOP confundido com CDM completo | guarda synthetic-only, claim parcial persistente, matriz de compatibilidade e source values/concept 0 | DQD/Achilles/ATLAS e estudo em rede não foram validados |
 | controle do host pelo socket Docker | nenhum serviço monta o socket; processos sem root e capabilities removidas | quem controla o daemon/host permanece fora da fronteira da aplicação |
 | porta ou banco exposto indevidamente | PostgreSQL somente em rede interna; portas da API/UI configuráveis; CORS e startup seguro | Compose local publica API/UI no host; deployment real precisa TLS, firewall e proxy |
 | confusão por localização clínica | catálogos curados, equivalência testada, códigos/unidades/enum canônico não traduzidos | revisão linguística por profissionais e locales adicionais ainda pendem |
