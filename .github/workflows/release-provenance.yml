@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: write
   id-token: write
   attestations: write
@@ -19,42 +20,41 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.12"
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: "24"
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - name: Generate reproducible dependency SBOMs
+      - name: Require successful final-SHA gates and reuse their artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
         run: |
-          python -m pip install -r backend/requirements-security.txt
-          cyclonedx-py requirements backend/requirements-lock.txt -o sbom-backend.json
-          npm install --global npm@11.18.0
-          python scripts/check_install_scripts.py
-          npm ci --prefix frontend
-          cd frontend
-          npm exec --yes --allow-scripts=libxmljs2@0.37.0 --package=@cyclonedx/cyclonedx-npm@6.0.0 -- cyclonedx-npm --omit optional --output-reproducible --validate --output-file ../sbom-frontend.json package.json
-          cd ..
-          python scripts/stamp_cyclonedx_serial.py frontend/package-lock.json sbom-frontend.json
-      - name: Build release images
-        run: |
-          docker build --file backend/Dockerfile --tag prescripta-release-backend .
-          docker build --file frontend/Dockerfile --tag prescripta-release-frontend .
-      - name: Generate backend image SBOM
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: prescripta-release-backend
-          format: cyclonedx
-          output: sbom-image-backend.json
-      - name: Generate frontend image SBOM
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: prescripta-release-frontend
-          format: cyclonedx
-          output: sbom-image-frontend.json
-          skip-setup-trivy: true
+          runs="$(gh api --method GET "repos/${REPOSITORY}/actions/runs" \
+            -f head_sha="${TARGET_SHA}" -f status=success -f per_page=100)"
+          gate_run() {
+            jq --arg name "$1" --arg sha "${TARGET_SHA}" \
+              '[.workflow_runs[] | select(.name == $name and .head_sha == $sha and .event == "push" and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' \
+              <<<"${runs}"
+          }
+          ci_run="$(gate_run CI)"
+          security_run="$(gate_run Security)"
+          container_run="$(gate_run Container)"
+          test -n "${ci_run}" && test -n "${security_run}" && test -n "${container_run}"
+          mkdir dependency-artifacts container-artifacts
+          gh run download "${security_run}" --repo "${REPOSITORY}" \
+            --name cyclonedx-sboms --dir dependency-artifacts
+          gh run download "${container_run}" --repo "${REPOSITORY}" \
+            --name container-security-reports --dir container-artifacts
+          cp dependency-artifacts/sbom-backend.json sbom-backend.json
+          cp dependency-artifacts/sbom-frontend.json sbom-frontend.json
+          cp container-artifacts/sbom-image-backend.json sbom-image-backend.json
+          cp container-artifacts/sbom-image-frontend.json sbom-image-frontend.json
+          for sbom in sbom-*.json; do
+            test -s "${sbom}"
+            jq --exit-status '.bomFormat == "CycloneDX" and (.components | type == "array")' \
+              "${sbom}" >/dev/null
+          done
+          jq -n --arg sha "${TARGET_SHA}" --argjson ci "${ci_run}" \
+            --argjson security "${security_run}" --argjson container "${container_run}" \
+            '{sha: $sha, build_once: true, gates: {CI: $ci, Security: $security, Container: $container}}' \
+            > release-evidence.json
       - name: Generate release asset checksums
         run: sha256sum sbom-*.json > SHA256SUMS.txt
       - name: Attest backend dependency manifest with its SBOM
@@ -89,7 +89,7 @@ jobs:
           test "${tag}" = "v$(cat VERSION)"
           if ! gh release view "${tag}" >/dev/null 2>&1; then
             gh release create "${tag}" --draft --verify-tag \
-              --title "Prescripta ${tag} — Terminology & OMOP" \
+              --title "Prescripta ${tag} — Research Copilot v2 & Comparative RWE" \
               --notes-file "docs/releases/${tag}.md"
           fi
           gh release upload "${tag}" sbom-*.json SHA256SUMS.txt --clobber
