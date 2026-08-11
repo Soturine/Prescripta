@@ -14,6 +14,8 @@ from app.database.models import (
     PatientClinicalTimelineEventModel,
     PatientModel,
     ResearchStudyModel,
+    TerminologyConceptModel,
+    TerminologyReleaseModel,
     UserModel,
 )
 from app.schemas.ai_task_schema import AIInteractionReviewRequest, AIRequestSchema
@@ -29,14 +31,19 @@ TASK_TEMPLATE_VERSIONS = {
     "clinical_decision_explanation": "clinical-explanation-v1",
     "research_question_structuring": "research-question-v1",
     "protocol_completeness_review": "protocol-completeness-v1",
+    "study_protocol_draft": "study-protocol-draft-v2",
+    "concept_set_suggestion": "concept-set-suggestion-v2",
     "cohort_drafting": "cohort-draft-v1",
     "analysis_plan_draft": "analysis-plan-draft-v1",
     "results_explanation": "results-explanation-v1",
     "cohort_draft": "cohort-draft-v1",
-    "study_protocol_draft": "study-protocol-draft-v1",
     "evidence_summary": "evidence-summary-v1",
+    "evidence_extraction": "evidence-extraction-v2",
+    "evidence_synthesis": "evidence-synthesis-v2",
     "patient_journey_summary": "patient-journey-v1",
     "data_quality_explanation": "data-quality-explanation-v1",
+    "comparative_analysis_interpretation": "comparative-interpretation-v2",
+    "causal_methods_checklist": "causal-methods-checklist-v2",
 }
 KNOWN_PROVIDERS = {"fallback", "openai", "gemini", "ollama", "openai_compatible"}
 OUTPUT_CONTRACTS = {
@@ -64,6 +71,26 @@ OUTPUT_CONTRACTS = {
         "required": {"summary_items", "missing_context", "source_event_ids", "status"},
         "allowed": {"summary_items", "missing_context", "source_event_ids", "status"},
     },
+    "concept_set_suggestion": {
+        "required": {"suggestions", "unresolved_questions", "status"},
+        "allowed": {"suggestions", "unresolved_questions", "status"},
+    },
+    "evidence_extraction": {
+        "required": {"claims", "status", "source_ids"},
+        "allowed": {"claims", "status", "source_ids"},
+    },
+    "evidence_synthesis": {
+        "required": {"claims", "status", "source_ids", "gaps"},
+        "allowed": {"claims", "status", "source_ids", "gaps"},
+    },
+    "comparative_analysis_interpretation": {
+        "required": {"narrative_items", "numeric_refs", "limitations", "status"},
+        "allowed": {"narrative_items", "numeric_refs", "limitations", "status"},
+    },
+    "causal_methods_checklist": {
+        "required": {"assumptions", "missing_questions", "status"},
+        "allowed": {"assumptions", "missing_questions", "status"},
+    },
 }
 DEFAULT_OUTPUT_CONTRACT = {
     "required": {"summary_items", "unresolved_questions", "status"},
@@ -83,6 +110,9 @@ class AITaskRouter:
         self._authorize_context(request, actor)
         configured = AISettingsService(self.db).runtime_config()
         provider = self._provider_for(request, configured.provider)
+        if request.allowed_models and configured.model not in request.allowed_models:
+            if provider != "fallback":
+                raise AITaskError("Modelo configurado não pertence à allowlist da tarefa.")
         started = time.monotonic()
         fallback_used = provider == "fallback"
         sanitized_error: str | None = None
@@ -131,7 +161,14 @@ class AITaskRouter:
             data_classification=request.data_classification,
             human_review_status="needs_review",
             sanitized_error_class=sanitized_error,
-            usage_metadata={"raw_prompt_persisted": False, "cost_available": False},
+            usage_metadata={
+                "raw_prompt_persisted": False,
+                "cost_available": False,
+                "max_output_tokens": request.max_output_tokens,
+                "cost_budget_usd": request.cost_budget_usd,
+                "policy_version": request.policy_version,
+                "source_grounding_required": request.source_grounding_required,
+            },
             output_payload=output,
         )
         self.db.add(interaction)
@@ -147,6 +184,7 @@ class AITaskRouter:
                 "provider": provider,
                 "fallback_used": fallback_used,
                 "data_classification": request.data_classification,
+                "policy_version": request.policy_version,
             },
         )
         return interaction
@@ -224,7 +262,7 @@ class AITaskRouter:
             raise AITaskError("Provider preferido inválido.")
         if request.preferred_provider and request.preferred_provider not in requested:
             raise AITaskError("Provider preferido negado pela policy da tarefa.")
-        if request.data_classification in {"sensitive", "restricted"}:
+        if request.data_classification in {"sensitive", "restricted"} or request.local_only:
             permitted = requested & {"fallback", "ollama"}
             if configured_provider == "ollama" and "ollama" in permitted:
                 return "ollama"
@@ -256,6 +294,7 @@ class AITaskRouter:
             "task_type": request.task_type,
             "purpose": request.purpose,
             "source_ids": request.source_ids,
+            "policy_version": request.policy_version,
             "input": serialized,
             "notice": "proposal_only_not_executed",
         }
@@ -293,6 +332,42 @@ class AITaskRouter:
                 "status": "insufficient_source_support",
                 "source_ids": request.source_ids,
             }
+        if request.task_type == "concept_set_suggestion":
+            return {
+                "suggestions": [],
+                "unresolved_questions": [
+                    "Nenhum conceito é proposto sem lookup terminológico canônico."
+                ],
+                "status": "proposal_only_not_executed",
+            }
+        if request.task_type == "evidence_extraction":
+            return {
+                "claims": [],
+                "status": "insufficient_source_support",
+                "source_ids": request.source_ids,
+            }
+        if request.task_type == "evidence_synthesis":
+            return {
+                "claims": [],
+                "gaps": ["Extrações suportadas insuficientes para síntese."],
+                "status": "insufficient_source_support",
+                "source_ids": request.source_ids,
+            }
+        if request.task_type == "comparative_analysis_interpretation":
+            return {
+                "narrative_items": [],
+                "numeric_refs": request.input.get("numeric_refs", []),
+                "limitations": [
+                    "Fallback não interpreta estimativas; revisão humana necessária."
+                ],
+                "status": "proposal_only_not_executed",
+            }
+        if request.task_type == "causal_methods_checklist":
+            return {
+                "assumptions": request.input.get("assumptions", {}),
+                "missing_questions": ["Revisão metodológica humana necessária."],
+                "status": "proposal_only_not_executed",
+            }
         if request.task_type == "patient_journey_summary":
             return {
                 "summary_items": [],
@@ -314,7 +389,17 @@ class AITaskRouter:
     ) -> dict:
         if not isinstance(output, dict):
             raise AITaskError("Saída de IA não atende ao schema estruturado.")
-        if request.schema_version != "v1":
+        v2_tasks = {
+            "study_protocol_draft",
+            "concept_set_suggestion",
+            "evidence_extraction",
+            "evidence_synthesis",
+            "comparative_analysis_interpretation",
+            "causal_methods_checklist",
+        }
+        if request.schema_version != "v1" and not (
+            request.schema_version == "v2" and request.task_type in v2_tasks
+        ):
             raise AITaskError("Versão de schema não suportada para a tarefa de IA.")
         contract = OUTPUT_CONTRACTS.get(request.task_type, DEFAULT_OUTPUT_CONTRACT)
         keys = set(output)
@@ -342,7 +427,7 @@ class AITaskRouter:
                 AnalysisPlanCreate.model_validate(output.get("plan"))
             except ValueError as exc:
                 raise AITaskError("Saída de IA contém plano de análise inválido.") from exc
-        if request.task_type == "evidence_summary":
+        if request.task_type in {"evidence_summary", "evidence_extraction", "evidence_synthesis"}:
             allowed = set(request.source_ids)
             claims = output.get("claims")
             if not isinstance(claims, list):
@@ -352,6 +437,42 @@ class AITaskRouter:
             for claim in claims:
                 if not isinstance(claim, dict) or claim.get("source_id") not in allowed:
                     raise AITaskError("Resumo de evidência contém source_id não autorizado.")
+                if request.task_type == "evidence_extraction" and (
+                    not claim.get("locator")
+                    or claim.get("support_status") not in {"supported", "not_found"}
+                ):
+                    raise AITaskError("Extração exige locator e support_status.")
+        if request.task_type == "concept_set_suggestion":
+            for suggestion in output.get("suggestions", []):
+                if not isinstance(suggestion, dict) or not suggestion.get("concept_id"):
+                    raise AITaskError("Sugestão de conceito sem concept_id canônico.")
+                concept = self.db.get(TerminologyConceptModel, suggestion["concept_id"])
+                release = (
+                    self.db.get(TerminologyReleaseModel, concept.release_id)
+                    if concept
+                    else None
+                )
+                if (
+                    concept is None
+                    or release is None
+                    or concept.institution_id != actor.institution_id
+                    or release.institution_id != actor.institution_id
+                    or concept.invalid_reason is not None
+                    or release.status not in {"active", "imported"}
+                ):
+                    raise AITaskError("unsupported_concept")
+        if request.task_type == "comparative_analysis_interpretation":
+            expected_refs = request.input.get("numeric_refs", [])
+            if output.get("numeric_refs") != expected_refs:
+                raise AITaskError("Interpretação alterou numeric refs determinísticos.")
+            allowed_numbers = {str(item) for item in expected_refs}
+            narrative_numbers = {
+                token
+                for item in output.get("narrative_items", [])
+                for token in re.findall(r"-?\d+(?:\.\d+)?", str(item))
+            }
+            if narrative_numbers - allowed_numbers:
+                raise AITaskError("Interpretação contém número não fornecido pelo backend.")
         if request.task_type == "patient_journey_summary":
             source_event_ids = output.get("source_event_ids", [])
             if not isinstance(source_event_ids, list):

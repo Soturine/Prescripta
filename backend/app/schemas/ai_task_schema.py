@@ -9,14 +9,19 @@ AITaskType = Literal[
     "clinical_decision_explanation",
     "research_question_structuring",
     "protocol_completeness_review",
+    "study_protocol_draft",
+    "concept_set_suggestion",
     "cohort_drafting",
     "analysis_plan_draft",
     "results_explanation",
     "cohort_draft",
-    "study_protocol_draft",
     "evidence_summary",
+    "evidence_extraction",
+    "evidence_synthesis",
     "patient_journey_summary",
     "data_quality_explanation",
+    "comparative_analysis_interpretation",
+    "causal_methods_checklist",
 ]
 AIDataClassification = Literal[
     "public",
@@ -39,8 +44,14 @@ class AIRequestSchema(BaseModel):
     schema_version: str = Field(default="v1", max_length=40)
     preferred_provider: str | None = Field(default=None, max_length=60)
     allowed_providers: list[str] = Field(default_factory=list, max_length=5)
+    allowed_models: list[str] = Field(default_factory=list, max_length=20)
     max_context: int = Field(default=12000, gt=0, le=50000)
+    max_output_tokens: int = Field(default=2000, gt=0, le=8000)
+    cost_budget_usd: float | None = Field(default=None, ge=0, le=100)
     timeout: int = Field(default=30, gt=0, le=120)
+    local_only: bool = False
+    source_grounding_required: bool = False
+    policy_version: str = Field(default="ai-routing-policy-v2", max_length=80)
     purpose: str = Field(min_length=3, max_length=120)
     input: dict
 
@@ -57,6 +68,9 @@ class AIRequestSchema(BaseModel):
                 "data_quality_explanation",
                 "cohort_draft",
                 "study_protocol_draft",
+                "concept_set_suggestion",
+                "comparative_analysis_interpretation",
+                "causal_methods_checklist",
             }
             and not self.study_id
         ):
@@ -67,6 +81,10 @@ class AIRequestSchema(BaseModel):
             raise ValueError("resumo de jornada exige study_id e patient_id")
         if not self.requires_structured_output:
             raise ValueError("o Prescripta aceita somente saída estruturada")
+        if self.local_only and set(self.allowed_providers) - {"fallback", "ollama"}:
+            raise ValueError("local_only aceita somente fallback/Ollama")
+        if self.source_grounding_required and not self.source_ids:
+            raise ValueError("task grounded exige source_ids")
         return self
 
 
