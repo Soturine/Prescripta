@@ -43,7 +43,11 @@ interna usa busca lexical indexada, não um RAG clinicamente validado.
 - workflows institucionais de enfermagem e farmácia, com protocolo/versionamento e transações únicas;
 - estudos e protocolos versionados, concept sets revisados, cohort DSL sem SQL livre e attrition;
 - runs determinísticos aggregate-first, snapshots, hashes, provenance e Data Quality;
-- EvidenceSource/EvidenceLink e AI Task Router proposal-only com revisão humana obrigatória.
+- EvidenceSource/EvidenceLink e AI Task Router proposal-only com revisão humana obrigatória;
+- Comparative RWE sintético com Table 1, SMD, RR/OR, pessoa-tempo e PSM/IPTW experimentais,
+  sempre determinísticos, aggregate-only e sem alegação causal;
+- Research Copilot v2 e literatura com grounding/locator, mais NL→SQL default-off sobre view
+  agregada escopada por instituição, estudo e snapshot.
 - registro governado de terminologias, releases, licenças, checksums, busca suggestion-only e
   mappings versionados com revisão humana independente;
 - adaptador parcial OMOP CDM 5.4 para sete tabelas, exclusivamente sobre dados sintéticos, sem
@@ -62,6 +66,10 @@ interna usa busca lexical indexada, não um RAG clinicamente validado.
 | Research Workspace | Attrition reproduzível |
 | --- | --- |
 | ![Study Workspace Research e RWE sobre dados sintéticos](docs/assets/v0.9.0/research-study-workspace-v0.9.0.png) | ![Population Analytics agregada com Table 1 e attrition](docs/assets/v0.9.0/research-results-v0.9.0.png) |
+
+| Comparative RWE | PSM/IPTW experimentais |
+| --- | --- |
+| ![Table 1 comparativa sobre fixture sintética](docs/assets/v0.9.2/comparative-table-one-v0.9.2.png) | ![Diagnósticos PSM e IPTW sem alegação causal](docs/assets/v0.9.2/psm-iptw-diagnostics-v0.9.2.png) |
 
 A [galeria corrente e seu manifesto SHA-256](docs/assets/current/manifest.json) também incluem checagem estruturada, auditoria e mobile.
 
@@ -143,7 +151,7 @@ O [modelo de ameaça](docs/security/threat-model.md), o
 - [índice da documentação](docs/README.md)
 - [guia do usuário por rota](docs/user-guide/README.md)
 - [arquitetura](docs/architecture/overview.md)
-- [roadmap v0.8.8–v1.0](docs/ROADMAP.md)
+- [roadmap v0.9.2–v1.0](docs/ROADMAP.md)
 - [regras clínicas](docs/clinical-rules/risk-engine.md)
 - [Research & RWE](docs/research/README.md) e [Evidence Intelligence](docs/evidence/README.md)
 - [interoperabilidade](docs/interoperability/architecture.md)

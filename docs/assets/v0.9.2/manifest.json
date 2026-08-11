@@ -1,0 +1,63 @@
+{
+  "version": "0.9.2",
+  "generator": "scripts/capture-v092-research-assets.mjs",
+  "synthetic_fixture": true,
+  "assets": [
+    {
+      "file": "signal-explorer-v0.9.2.png",
+      "bytes": 169659,
+      "width": 1440,
+      "height": 1373,
+      "sha256": "c2ef9a7d394132120bb551133fa7780ed6fe79931fef59c3ed8784ca658cf16c"
+    },
+    {
+      "file": "comparative-table-one-v0.9.2.png",
+      "bytes": 162430,
+      "width": 1440,
+      "height": 1355,
+      "sha256": "3097f0231c8021df01db80e9e3823fba44bc550afbc227b392e38c233a4ea8d9"
+    },
+    {
+      "file": "psm-iptw-diagnostics-v0.9.2.png",
+      "bytes": 156879,
+      "width": 1440,
+      "height": 1323,
+      "sha256": "d6b98e06faf4d9cbf02397c6abaa1967503d2d81c35c6669c25245f31fc2146b"
+    },
+    {
+      "file": "literature-workspace-v0.9.2.png",
+      "bytes": 151297,
+      "width": 1440,
+      "height": 1245,
+      "sha256": "556fa640fb33c1a72136121a08b50f3f643fb0969b1a93ce805264a717e32850"
+    },
+    {
+      "file": "research-copilot-v2-v0.9.2.png",
+      "bytes": 150375,
+      "width": 1440,
+      "height": 1229,
+      "sha256": "6da58a33aa1d3b36de0c22cae69b25e1c85c89577c65b220ea43b78443e227d1"
+    },
+    {
+      "file": "nl-to-sql-default-off-v0.9.2.png",
+      "bytes": 161171,
+      "width": 1440,
+      "height": 1370,
+      "sha256": "57697948498d6077b4c93706b32a61bf22cca0a395324f8c68f94b0a50718697"
+    },
+    {
+      "file": "research-comparative-en-US-v0.9.2.png",
+      "bytes": 157081,
+      "width": 1440,
+      "height": 1342,
+      "sha256": "3cd3152c9065b063ca31c28064501de9bb647d5c776db83dea23b5bc428996d6"
+    },
+    {
+      "file": "research-comparative-mobile-v0.9.2.png",
+      "bytes": 126318,
+      "width": 771,
+      "height": 2110,
+      "sha256": "216d1ebeefa038d61b5cd5a0cff07e66caef5e5915f4888b93a38b9b9123cd03"
+    }
+  ]
+}

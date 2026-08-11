@@ -1,5 +1,7 @@
 # Releases
 
+- [v0.9.2 — Research Copilot v2 & Comparative RWE](v0.9.2.md)
+
 As notas são imutáveis e versionadas. Consulte a versão desejada:
 
 - [v0.8.9](v0.8.9.md)

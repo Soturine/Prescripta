@@ -34,23 +34,21 @@ demonstrativa enquanto não existir validação independente.
 - adapter OMOP para Person, Visit, Condition, Drug Exposure, Measurement, Procedure e Observation;
 - lineage de ETL, matriz de compatibilidade e exports OHDSI-ready somente onde verdadeiros.
 
-## v0.9.2 — AI Research Copilot
+## v0.9.2 — Research Copilot v2, Medication Safety RWE e Comparative Analytics
 
-- roteamento avançado por tarefa;
-- extração de literatura com fonte e página;
-- sugestões de conceitos, protocolo e coorte;
-- explicação de journey e Data Quality, com eval suite e rota local Llama;
-- NL para SQL somente depois de AST, views read-only e budgets maduros.
+- entregue: ponte auditada Medication Safety → draft de estudo e Signal Explorer sintético;
+- entregue: coortes exposed/comparator, Table 1, missingness, SMD, medidas comparativas,
+  pessoa-tempo e incidência com denominadores explícitos;
+- entregue como experimental: PSM/IPTW com diagnósticos, abstention e sem conclusão causal;
+- entregue: Copilot v2 proposal-only, extração/síntese grounded e evals adversariais;
+- entregue como piloto default-off: NL→SQL por AST sobre view agregada e execução humana.
 
-## v0.9.3 — Medication Safety RWE
+## v0.9.3 — Validation & Research Hardening
 
-- Signal Explorer e coortes exposed/comparator;
-- prevalência, incidência, utilização, baseline tables, SMD, RR/OR e intervalos;
-- análise comparativa descritiva;
-- propensity/matching apenas após validação robusta como ferramenta de pesquisa.
-
-Incidência e pessoa-tempo permanecem nesta fase posterior: a v0.9.0 não os estima sem denominadores
-e validação metodológica adequados.
+- validação de referência independente para PSM/IPTW e fixtures estatísticas ampliadas;
+- calibração, sensitivity analyses e diagnósticos adicionais antes de graduar métodos causais;
+- benchmark de performance com volumes sintéticos maiores e jobs assíncronos quando necessários;
+- avaliação humana estruturada do Copilot e corpus de literatura licenciado/curado.
 
 ## v0.9.4 — Interoperability & Operational Hardening
 

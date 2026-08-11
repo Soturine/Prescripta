@@ -12,6 +12,12 @@ Guia para agentes e colaboradores que forem evoluir o Prescripta.
 - `backend/app/services/medication_counseling_service.py`: cache, geração e revisão humana de orientações ao paciente.
 - `backend/app/services/patient_counseling_service.py`: orientações, modo sem histórico e pergunta contextual.
 - `backend/app/services/patient_functional_profile.py`: perfil funcional do paciente.
+- `backend/app/services/comparative_analytics_service.py`: cálculos comparativos determinísticos,
+  PSM/IPTW experimentais e diagnósticos; IA não calcula.
+- `backend/app/services/research_query_service.py`: preview/execução humana NL→SQL default-off,
+  restrito a AST e views agregadas escopadas.
+- `backend/app/services/literature_copilot_service.py`: extração e síntese proposal-only com
+  fonte/locator e isolamento de prompt injection.
 - `backend/app/services/adverse_effect_taxonomy.py`: taxonomia controlada de efeitos adversos.
 - `backend/app/services/emergency_protocol_service.py`: protocolos rápidos demonstrativos; IA só explica e execução sempre audita.
 - `backend/app/reports`: motor de relatórios, EvidenceBundle, PDF simples, exportações JSON/CSV, narrativa controlada por IA e auditoria.

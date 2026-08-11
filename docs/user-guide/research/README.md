@@ -17,12 +17,14 @@ O indicador de prontidão mostra: pergunta, protocolo, coorte, desfecho, qualida
 pacote. Um item verde confirma apenas que a etapa técnica foi concluída; não confere validade clínica,
 ética, regulatória ou epidemiológica.
 
-## Limites
+## v0.9.2
 
-Somente dados sintéticos/demonstrativos são suportados. Não há comparação causal, incidência,
-propensity score, matching, SQL por linguagem natural nem recomendação clínica. Células com N menor
-que 5 são suprimidas nos resultados publicáveis.
+O workspace também oferece comparação descritiva, pessoa-tempo, PSM/IPTW experimentais, literatura,
+Copilot v2 e preview NL→SQL default-off. Tudo permanece sintético, aggregate-only e sem conclusão
+causal ou recomendação clínica. Células com N menor que 5 são suprimidas.
 
 Consulte [estudos](studies.md), [coortes](cohorts.md), [concept sets](concept-sets.md),
 [desfechos](outcomes.md), [qualidade](data-quality.md), [análises e resultados](analysis-results.md) e
-[proveniência](provenance.md).
+[proveniência](provenance.md). Para o fluxo novo, veja [Signal Explorer](signal-explorer.md),
+[comparações](comparisons.md), [PSM](psm.md), [IPTW](iptw.md), [pressupostos](causal-methods.md),
+[literatura](literature-evidence.md), [NL→SQL](nl-to-sql.md) e [Copilot](research-copilot.md).
