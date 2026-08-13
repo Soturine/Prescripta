@@ -12,6 +12,7 @@ from app.schemas.research_v092_schema import (
     IPTWConfig,
     PSMConfig,
     ResearchQueryPreviewRequest,
+    SensitivityAnalysisConfig,
     SyntheticResearchRecord,
 )
 from app.services.comparative_analytics_service import (
@@ -154,6 +155,47 @@ def test_psm_and_iptw_are_deterministic_and_report_diagnostics() -> None:
     assert first["iptw"]["effective_sample_size"] > 2
     assert first["iptw"]["truncation_percentiles"] == (1.0, 99.0)
     assert first["iptw"]["balance"]
+    assert first["psm"]["diagnostic_status"] in {
+        "diagnostics acceptable",
+        "diagnostics concerning",
+    }
+    assert first["iptw"]["diagnostic_status"] in {
+        "diagnostics acceptable",
+        "diagnostics concerning",
+    }
+
+
+def test_bounded_sensitivity_grid_is_deterministic_and_non_causal() -> None:
+    payload = _payload(
+        psm=PSMConfig(enabled=True, covariates=["age", "sex"], seed=17),
+        iptw=IPTWConfig(enabled=True, covariates=["age", "sex"], seed=17),
+        sensitivity=SensitivityAnalysisConfig(
+            enabled=True,
+            psm_calipers=[0.2, 0.3],
+            psm_ratios=[1],
+            iptw_truncations=[None, (1, 99)],
+            iptw_stabilized=[True, False],
+        ),
+        causal_assumptions=_assumptions(),
+    )
+    first = ComparativeAnalyticsEngine().calculate(payload)[0]["adjusted"]["sensitivity"]
+    second = ComparativeAnalyticsEngine().calculate(payload)[0]["adjusted"]["sensitivity"]
+    assert first == second
+    assert first["configuration_count"] == 6
+    assert len(first["rows"]) == 6
+    assert "does not establish causal validity" in first["notice"]
+    assert all("configuration" in row and "status" in row for row in first["rows"])
+
+
+def test_sensitivity_budget_rejects_unbounded_grid() -> None:
+    with pytest.raises(ValidationError, match="grid excede"):
+        SensitivityAnalysisConfig(
+            enabled=True,
+            psm_calipers=[0.1, 0.2, 0.3, 0.4],
+            psm_ratios=[1, 2, 3],
+            iptw_truncations=[None],
+            iptw_stabilized=[True],
+        )
 
 
 def test_propensity_methods_abstain_on_no_overlap_and_reject_nan() -> None:
@@ -225,13 +267,17 @@ def test_query_ast_scopes_allowed_select_and_blocks_adversarial_sql() -> None:
             service._validate_and_scope(_query(sql))
 
 
-def test_query_cost_budget_and_assumption_contract_fail_closed() -> None:
+def test_query_ast_budget_and_assumption_contract_fail_closed() -> None:
     service = ResearchQueryService(None)  # type: ignore[arg-type]
-    with pytest.raises(ResearchQueryPolicyError, match="cost"):
+    with pytest.raises(ResearchQueryPolicyError, match="AST node budget"):
         service._validate_and_scope(
             _query(
-                "SELECT id, status, content_hash FROM research_aggregate_comparisons",
-                cost_budget=1,
+                "SELECT id, status, content_hash, exposed_n, comparator_n, "
+                "exposed_events, comparator_events, executed_at, study_id, "
+                "institution_id, dataset_snapshot_marker, id, status, content_hash, "
+                "exposed_n, comparator_n, exposed_events, comparator_events, executed_at "
+                "FROM research_aggregate_comparisons",
+                max_ast_nodes=20,
             )
         )
     with pytest.raises(ValidationError, match="assumptions"):

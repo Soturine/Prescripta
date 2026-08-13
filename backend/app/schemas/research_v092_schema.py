@@ -103,6 +103,35 @@ class CausalAssumptions(BaseModel):
     ] = Field(default_factory=dict)
 
 
+class SensitivityAnalysisConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    psm_calipers: list[float] = Field(default_factory=lambda: [0.1, 0.2, 0.3], max_length=4)
+    psm_ratios: list[int] = Field(default_factory=lambda: [1, 2], max_length=3)
+    iptw_truncations: list[tuple[float, float] | None] = Field(
+        default_factory=lambda: [None, (1, 99), (2.5, 97.5), (5, 95)],
+        max_length=4,
+    )
+    iptw_stabilized: list[bool] = Field(default_factory=lambda: [True, False], max_length=2)
+
+    @model_validator(mode="after")
+    def bounded_grid(self) -> SensitivityAnalysisConfig:
+        if any(not 0 < value <= 2 for value in self.psm_calipers):
+            raise ValueError("Sensitivity PSM caliper invÃ¡lido.")
+        if any(not 1 <= value <= 5 for value in self.psm_ratios):
+            raise ValueError("Sensitivity PSM ratio invÃ¡lido.")
+        for item in self.iptw_truncations:
+            if item is not None and not 0 <= item[0] < item[1] <= 100:
+                raise ValueError("Sensitivity IPTW truncation invÃ¡lida.")
+        if self.enabled and (
+            len(self.psm_calipers) * len(self.psm_ratios) > 8
+            or len(self.iptw_truncations) * len(self.iptw_stabilized) > 8
+        ):
+            raise ValueError("Sensitivity grid excede o budget.")
+        return self
+
+
 class ComparativeAnalysisRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -122,6 +151,7 @@ class ComparativeAnalysisRequest(BaseModel):
     small_cell_threshold: int = Field(default=5, ge=1, le=20)
     psm: PSMConfig = Field(default_factory=PSMConfig)
     iptw: IPTWConfig = Field(default_factory=IPTWConfig)
+    sensitivity: SensitivityAnalysisConfig = Field(default_factory=SensitivityAnalysisConfig)
     causal_assumptions: CausalAssumptions | None = None
     synthetic_only: Literal[True] = True
 
@@ -249,7 +279,14 @@ class ResearchQueryPreviewRequest(BaseModel):
     proposed_sql: str = Field(min_length=8, max_length=20_000)
     row_limit: int = Field(default=100, ge=1, le=1000)
     timeout_ms: int = Field(default=3000, ge=100, le=10_000)
+    lock_timeout_ms: int = Field(default=500, ge=50, le=5000)
     cost_budget: int = Field(default=10_000, ge=1, le=1_000_000)
+    max_ast_nodes: int = Field(default=200, ge=20, le=500)
+    max_ast_depth: int = Field(default=12, ge=3, le=30)
+    max_total_cost: float = Field(default=5000, gt=0, le=1_000_000)
+    max_plan_rows: int = Field(default=10_000, ge=1, le=1_000_000)
+    max_plan_nodes: int = Field(default=40, ge=1, le=200)
+    max_output_bytes: int = Field(default=200_000, ge=1000, le=1_000_000)
     purpose: str = Field(min_length=3, max_length=120)
 
 

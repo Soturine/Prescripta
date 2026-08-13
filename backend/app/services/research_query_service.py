@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+from contextlib import contextmanager
+from math import ceil
 from typing import Any
 
 from sqlalchemy import text
@@ -14,7 +16,7 @@ from app.services.audit_service import AuditService
 from app.services.canonical_json import canonical_sha256
 from app.services.research_service import ResearchConflict, ResearchNotFound
 
-QUERY_POLICY_VERSION = "research-query-policy-v1"
+QUERY_POLICY_VERSION = "research-query-policy-v2"
 APPROVED_VIEW = "research_aggregate_comparisons"
 ALLOWED_COLUMNS = {
     "id",
@@ -44,6 +46,8 @@ DENIED_NODES = (
     exp.Union,
     exp.Intersect,
     exp.Except,
+    exp.With,
+    exp.Subquery,
 )
 
 
@@ -65,7 +69,10 @@ class ResearchQueryService:
         study = self.db.get(ResearchStudyModel, payload.study_id)
         if study is None or study.institution_id != actor.institution_id:
             raise ResearchNotFound("Estudo não encontrado.")
-        query, interpretation, estimated_cost = self._validate_and_scope(payload)
+        query, interpretation, _ = self._validate_and_scope(payload)
+        plan_summary = self._planner_preview(query, payload, actor)
+        interpretation["planner"] = plan_summary
+        estimated_cost = ceil(float(plan_summary.get("planner_total_cost") or 0))
         enabled = self.enabled()
         policy = {
             "version": QUERY_POLICY_VERSION,
@@ -75,7 +82,12 @@ class ResearchQueryService:
             "snapshot_scope": payload.dataset_snapshot_marker,
             "row_limit": payload.row_limit,
             "timeout_ms": payload.timeout_ms,
-            "cost_budget": payload.cost_budget,
+            "legacy_cost_budget_not_authoritative": payload.cost_budget,
+            "max_total_cost": payload.max_total_cost,
+            "max_plan_rows": payload.max_plan_rows,
+            "max_plan_nodes": payload.max_plan_nodes,
+            "max_output_bytes": payload.max_output_bytes,
+            "lock_timeout_ms": payload.lock_timeout_ms,
             "aggregate_only": True,
             "small_cells": "event fields are NULL when source run was suppressed",
             "human_execution_required": True,
@@ -109,22 +121,21 @@ class ResearchQueryService:
         if preview.executed:
             raise ResearchConflict("Preview já foi executado; gere um novo preview.")
         timeout_ms = int(preview.policy["timeout_ms"])
+        params = {
+            "institution_id": actor.institution_id,
+            "study_id": preview.study_id,
+            "dataset_snapshot_marker": preview.dataset_snapshot_marker,
+        }
         if self.db.bind and self.db.bind.dialect.name == "postgresql":
-            self.db.execute(
-                text("SELECT set_config('statement_timeout', :timeout, true)"),
-                {"timeout": f"{timeout_ms}ms"},
-            )
-        rows = self.db.execute(
-            text(preview.normalized_query),
-            {
-                "institution_id": actor.institution_id,
-                "study_id": preview.study_id,
-                "dataset_snapshot_marker": preview.dataset_snapshot_marker,
-            },
-        ).mappings().all()
+            with self._postgres_read_only(
+                timeout_ms, int(preview.policy["lock_timeout_ms"])
+            ) as connection:
+                rows = connection.execute(text(preview.normalized_query), params).mappings().all()
+        else:
+            rows = self.db.execute(text(preview.normalized_query), params).mappings().all()
         bounded = [dict(row) for row in rows[: int(preview.policy["row_limit"])]]
         serialized_size = len(str(bounded).encode("utf-8"))
-        if serialized_size > 200_000:
+        if serialized_size > int(preview.policy["max_output_bytes"]):
             raise ResearchConflict("Resultado excede o byte limit da policy.")
         preview.result = {
             "rows": bounded,
@@ -168,13 +179,15 @@ class ResearchQueryService:
         functions = {
             function.sql_name().lower()
             for function in statement.find_all(exp.Func)
+            if isinstance(function, (exp.AggFunc, exp.Anonymous))
         }
         if functions - ALLOWED_FUNCTIONS:
             raise ResearchQueryPolicyError("Query contém função não aprovada.")
         node_count = sum(1 for _ in statement.walk())
-        estimated_cost = node_count * payload.row_limit
-        if estimated_cost > payload.cost_budget:
-            raise ResearchQueryPolicyError("Estimated cost excede o budget da policy.")
+        if node_count > payload.max_ast_nodes:
+            raise ResearchQueryPolicyError("AST node budget excedido antes do EXPLAIN.")
+        if self._ast_depth(statement) > payload.max_ast_depth:
+            raise ResearchQueryPolicyError("AST nesting budget excedido antes do EXPLAIN.")
         scope = exp.and_(
             exp.column("institution_id").eq(exp.Placeholder(this="institution_id")),
             exp.column("study_id").eq(exp.Placeholder(this="study_id")),
@@ -197,9 +210,99 @@ class ResearchQueryService:
                 "study_scope_injected": True,
                 "snapshot_scope_injected": True,
                 "read_only": True,
+                "ast_nodes": node_count,
+                "ast_depth": self._ast_depth(statement),
             },
-            estimated_cost,
+            node_count,
         )
+
+    @staticmethod
+    def _ast_depth(node: exp.Expression) -> int:
+        children = list(node.iter_expressions())
+        return (
+            1
+            if not children
+            else 1 + max(ResearchQueryService._ast_depth(item) for item in children)
+        )
+
+    def _planner_preview(
+        self,
+        query: str,
+        payload: ResearchQueryPreviewRequest,
+        actor: UserModel,
+    ) -> dict[str, Any]:
+        if not self.db.bind or self.db.bind.dialect.name != "postgresql":
+            return {
+                "status": "planner_unavailable_non_postgresql",
+                "decision": "AST-only test preview; PostgreSQL is authoritative",
+                "planner_total_cost": None,
+                "planner_rows": None,
+                "planner_width": None,
+                "plan_nodes": 0,
+            }
+        params = {
+            "institution_id": actor.institution_id,
+            "study_id": payload.study_id,
+            "dataset_snapshot_marker": payload.dataset_snapshot_marker,
+        }
+        with self._postgres_read_only(payload.timeout_ms, payload.lock_timeout_ms) as connection:
+            raw = connection.execute(text(f"EXPLAIN (FORMAT JSON) {query}"), params).scalar_one()
+        document = raw if isinstance(raw, list) else __import__("json").loads(raw)
+        root = document[0]["Plan"]
+        flattened: list[dict[str, Any]] = []
+
+        def visit(plan: dict[str, Any]) -> None:
+            flattened.append(
+                {
+                    "node_type": plan.get("Node Type"),
+                    "startup_cost": plan.get("Startup Cost"),
+                    "total_cost": plan.get("Total Cost"),
+                    "plan_rows": plan.get("Plan Rows"),
+                    "plan_width": plan.get("Plan Width"),
+                    "relation_name": plan.get("Relation Name"),
+                }
+            )
+            for child in plan.get("Plans", []):
+                visit(child)
+
+        visit(root)
+        relations = {item["relation_name"] for item in flattened if item["relation_name"]}
+        total_cost = float(root.get("Total Cost", 0))
+        plan_rows = int(root.get("Plan Rows", 0))
+        if relations - {APPROVED_VIEW, "research_comparison_runs"}:
+            raise ResearchQueryPolicyError("Planner acessaria relaÃ§Ã£o inesperada.")
+        if total_cost > payload.max_total_cost:
+            raise ResearchQueryPolicyError("Planner Total Cost excede o budget.")
+        if plan_rows > payload.max_plan_rows:
+            raise ResearchQueryPolicyError("Planner rows excede o budget.")
+        if len(flattened) > payload.max_plan_nodes:
+            raise ResearchQueryPolicyError("Planner node budget excedido.")
+        return {
+            "status": "accepted",
+            "decision": "within_planner_budgets",
+            "planner_total_cost": total_cost,
+            "planner_rows": plan_rows,
+            "planner_width": int(root.get("Plan Width", 0)),
+            "plan_nodes": len(flattened),
+            "nodes": flattened,
+            "cost_unit": "relative PostgreSQL planner units, not milliseconds",
+        }
+
+    @contextmanager
+    def _postgres_read_only(self, timeout_ms: int, lock_timeout_ms: int):
+        if not self.db.bind:
+            raise ResearchQueryPolicyError("PostgreSQL bind ausente.")
+        with self.db.bind.connect() as connection, connection.begin():
+            connection.execute(text("SET TRANSACTION READ ONLY"))
+            connection.execute(
+                text("SELECT set_config('statement_timeout', :value, true)"),
+                {"value": f"{timeout_ms}ms"},
+            )
+            connection.execute(
+                text("SELECT set_config('lock_timeout', :value, true)"),
+                {"value": f"{lock_timeout_ms}ms"},
+            )
+            yield connection
 
     def _audit(
         self,

@@ -107,6 +107,8 @@ class ComparativeAnalyticsEngine:
         if payload.iptw.enabled:
             adjusted["iptw"] = self._iptw(payload.records, payload.iptw)
             diagnostics["warnings"].extend(adjusted["iptw"].get("warnings", []))
+        if payload.sensitivity.enabled:
+            adjusted["sensitivity"] = self._sensitivity(payload)
         results = {
             "table_1": table_one,
             "measures": measures,
@@ -126,6 +128,60 @@ class ComparativeAnalyticsEngine:
             "synthetic_only": True,
         }
         return results, diagnostics, provenance
+
+    def _sensitivity(self, payload: ComparativeAnalysisRequest) -> dict:
+        rows: list[dict[str, Any]] = []
+        if payload.psm.enabled:
+            for caliper in payload.sensitivity.psm_calipers:
+                for ratio in payload.sensitivity.psm_ratios:
+                    result = self._psm(
+                        payload.records,
+                        payload.psm.model_copy(update={"caliper": caliper, "ratio": ratio}),
+                    )
+                    rows.append(
+                        self._stability_row(
+                            "PSM", {"caliper": caliper, "ratio": ratio}, result
+                        )
+                    )
+        if payload.iptw.enabled:
+            for truncation in payload.sensitivity.iptw_truncations:
+                for stabilized in payload.sensitivity.iptw_stabilized:
+                    result = self._iptw(
+                        payload.records,
+                        payload.iptw.model_copy(
+                            update={
+                                "truncation_percentiles": truncation,
+                                "stabilized": stabilized,
+                            }
+                        ),
+                    )
+                    rows.append(
+                        self._stability_row(
+                            "IPTW",
+                            {"truncation": truncation, "stabilized": stabilized},
+                            result,
+                        )
+                    )
+        return {
+            "status": "computed_experimental",
+            "rows": rows,
+            "configuration_count": len(rows),
+            "notice": "Sensitivity across specifications does not establish causal validity.",
+        }
+
+    @staticmethod
+    def _stability_row(method: str, configuration: dict, result: dict) -> dict:
+        return {
+            "method": method,
+            "configuration": configuration,
+            "status": result.get("status"),
+            "estimate": result.get("adjusted_risk_difference"),
+            "confidence_interval": result.get("confidence_interval"),
+            "n_or_ess": result.get("effective_sample_size")
+            or result.get("matched_exposed_n"),
+            "max_abs_smd": result.get("max_abs_smd"),
+            "warnings": result.get("warnings", []),
+        }
 
     def _table_one(
         self,
@@ -413,6 +469,20 @@ class ComparativeAnalyticsEngine:
             )
         outcomes_e = [int(complete[e].outcome) for e, _ in pairs]
         outcomes_c = [int(complete[c].outcome) for _, c in pairs]
+        after_values = [abs(item["smd_after"]) for item in balance if item["smd_after"] is not None]
+        max_abs_smd = max(after_values, default=None)
+        median_abs_smd = float(np.median(after_values)) if after_values else None
+        propensity_distribution = {
+            "exposed": [
+                _round(float(item))
+                for item in np.percentile(ps[treatment == 1], [5, 50, 95])
+            ],
+            "comparator": [
+                _round(float(item))
+                for item in np.percentile(ps[treatment == 0], [5, 50, 95])
+            ],
+            "percentiles": [5, 50, 95],
+        }
         return {
             "status": "computed_experimental",
             "label": "PSM-adjusted research estimate",
@@ -436,6 +506,14 @@ class ComparativeAnalyticsEngine:
             "dropped_missing_n": dropped,
             "caliper_failures": caliper_failures,
             "balance": balance,
+            "max_abs_smd": _round(max_abs_smd),
+            "median_abs_smd": _round(median_abs_smd),
+            "propensity_distribution": propensity_distribution,
+            "diagnostic_status": (
+                "diagnostics acceptable"
+                if max_abs_smd is not None and max_abs_smd <= 0.1
+                else "diagnostics concerning"
+            ),
             "adjusted_risk_difference": _round(fmean(outcomes_e) - fmean(outcomes_c)),
             "warnings": [
                 "Balance improved ≠ no unmeasured confounding.",
@@ -516,6 +594,8 @@ class ComparativeAnalyticsEngine:
         ]
         if float(np.max(weights)) > 10:
             warnings.append("Extreme weight warning: max weight exceeds 10.")
+        after_values = [abs(item["smd_after"]) for item in balance if item["smd_after"] is not None]
+        max_abs_smd = max(after_values, default=None)
         return {
             "status": "computed_experimental",
             "label": "IPTW-adjusted research estimate",
@@ -541,6 +621,12 @@ class ComparativeAnalyticsEngine:
             "dropped_missing_n": dropped,
             "effective_sample_size": _round(ess),
             "balance": balance,
+            "max_abs_smd": _round(max_abs_smd),
+            "diagnostic_status": (
+                "diagnostics acceptable"
+                if max_abs_smd is not None and max_abs_smd <= 0.1 and float(np.max(weights)) <= 10
+                else "diagnostics concerning"
+            ),
             "adjusted_risk": {"exposed": _round(risk_e), "comparator": _round(risk_c)},
             "adjusted_risk_difference": _round(risk_e - risk_c),
             "warnings": warnings,
