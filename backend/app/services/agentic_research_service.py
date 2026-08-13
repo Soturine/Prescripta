@@ -118,8 +118,7 @@ class AgenticResearchService:
             or usage["tool_calls"] > budget["max_tool_calls"]
             or usage["tokens"] > budget["max_tokens"]
             or usage["cost_usd"] > budget["max_cost_usd"]
-            or (datetime.now(UTC) - run.created_at).total_seconds()
-            > budget["max_wall_time_seconds"]
+            or self._elapsed_seconds(run.created_at) > budget["max_wall_time_seconds"]
         ):
             run.usage = usage
             self._stop(run, "abstained", "budget_exceeded")
@@ -209,6 +208,11 @@ class AgenticResearchService:
         run.state = state
         run.stop_reason = reason
         run.updated_at = datetime.now(UTC)
+
+    @staticmethod
+    def _elapsed_seconds(created_at: datetime) -> float:
+        normalized = created_at if created_at.tzinfo else created_at.replace(tzinfo=UTC)
+        return (datetime.now(UTC) - normalized).total_seconds()
 
     def _audit(self, actor: UserModel, run: AgentRunModel, action: str) -> None:
         AuditService(self.db).record_action(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 
 import httpx
 import pytest
@@ -278,3 +279,4 @@ def test_agent_denies_tools_budgets_recursion_and_cross_tenant(
     )
     assert result.state == "abstained"
     assert result.stop_reason == "budget_exceeded"
+    assert service._elapsed_seconds(datetime.now()) >= 0
