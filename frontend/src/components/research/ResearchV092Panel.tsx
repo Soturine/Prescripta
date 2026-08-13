@@ -12,7 +12,11 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
+  advanceResearchAgent,
+  createEvidenceSearchPlan,
+  createResearchAgent,
   executeAITask,
+  executeEvidenceSearchPlan,
   executeComparison,
   exportComparisonPackage,
   fetchComparisons,
@@ -20,6 +24,8 @@ import {
   previewResearchQuery,
 } from "../../services/api";
 import type {
+  EvidenceSearchPlan,
+  ResearchAgentRun,
   ResearchQueryPreview,
   StudyWorkspace,
 } from "../../types/research";
@@ -35,7 +41,14 @@ type Props = {
   canUseAI: boolean;
 };
 
-type Area = "signal" | "comparison" | "methods" | "evidence" | "copilot" | "query";
+type Area =
+  | "signal"
+  | "comparison"
+  | "methods"
+  | "evidence"
+  | "agent"
+  | "copilot"
+  | "query";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -88,6 +101,9 @@ export default function ResearchV092Panel({
     "SELECT id, status, exposed_n, comparator_n FROM research_aggregate_comparisons",
   );
   const [queryPreview, setQueryPreview] = useState<ResearchQueryPreview | null>(null);
+  const [evidenceQuery, setEvidenceQuery] = useState("medication safety synthetic study");
+  const [evidencePlan, setEvidencePlan] = useState<EvidenceSearchPlan | null>(null);
+  const [agentRun, setAgentRun] = useState<ResearchAgentRun | null>(null);
   const [copilotOutput, setCopilotOutput] = useState<Record<string, unknown> | null>(null);
 
   const comparisons = useQuery({
@@ -102,6 +118,7 @@ export default function ResearchV092Panel({
   const methods = asRecord(current?.results.adjusted);
   const psm = asRecord(methods.psm);
   const iptw = asRecord(methods.iptw);
+  const sensitivity = asRecord(methods.sensitivity);
   const tableOne = asRecord(current?.results.table_1);
   const tableRows = asArray(tableOne.rows);
   const runs = workspace.runs;
@@ -134,6 +151,7 @@ export default function ResearchV092Panel({
       { id: "comparison", label: t("research.v092.tabs.comparison") },
       { id: "methods", label: t("research.v092.tabs.methods") },
       { id: "evidence", label: t("research.v092.tabs.evidence") },
+      { id: "agent", label: t("research.v093.tabs.agent") },
       { id: "copilot", label: t("research.v092.tabs.copilot") },
       { id: "query", label: t("research.v092.tabs.query") },
     ],
@@ -182,6 +200,13 @@ export default function ResearchV092Panel({
           seed: 902,
           missing_data_policy: "complete_case",
         },
+        sensitivity: {
+          enabled: true,
+          psm_calipers: [0.1, 0.2],
+          psm_ratios: [1, 2],
+          iptw_truncations: [[1, 99], [5, 95]],
+          iptw_stabilized: [true, false],
+        },
         causal_assumptions: {
           consistency: "needs_review",
           exchangeability: "needs_review",
@@ -214,10 +239,62 @@ export default function ResearchV092Panel({
         proposed_sql: queryText,
         row_limit: 100,
         timeout_ms: 3000,
+        lock_timeout_ms: 500,
         cost_budget: 10000,
+        max_ast_nodes: 200,
+        max_ast_depth: 12,
+        max_total_cost: 5000,
+        max_plan_rows: 10000,
+        max_plan_nodes: 40,
+        max_output_bytes: 200000,
         purpose: "human_reviewed_aggregate_preview",
       }),
     onSuccess: setQueryPreview,
+  });
+  const evidencePlanMutation = useMutation({
+    mutationFn: () =>
+      createEvidenceSearchPlan({
+        study_id: studyId,
+        providers: ["pubmed", "crossref", "openalex"],
+        canonical_query: evidenceQuery,
+        filters: { limit: 20, metadata_only: true },
+      }),
+    onSuccess: setEvidencePlan,
+  });
+  const evidenceExecuteMutation = useMutation({
+    mutationFn: (planId: string) => executeEvidenceSearchPlan(planId),
+    onSuccess: async (plan) => {
+      setEvidencePlan(plan);
+      await queryClient.invalidateQueries({ queryKey: ["evidence-sources"] });
+    },
+  });
+  const agentCreateMutation = useMutation({
+    mutationFn: () =>
+      createResearchAgent({
+        study_id: studyId,
+        template: "evidence_review",
+        goal: "Prepare a source-grounded evidence shortlist for human review",
+        budget: {
+          max_steps: 4,
+          max_wall_time_seconds: 300,
+          max_tool_calls: 4,
+          max_tokens: 4000,
+          max_cost_usd: 1,
+        },
+        data_classification: "public",
+        source_ids: [],
+      }),
+    onSuccess: setAgentRun,
+  });
+  const agentStepMutation = useMutation({
+    mutationFn: (runId: string) =>
+      advanceResearchAgent(runId, {
+        tool: "propose_evidence_shortlist",
+        output: { source_ids: [], note: "No source selected without human review" },
+        token_usage: 0,
+        cost_usd: 0,
+      }),
+    onSuccess: setAgentRun,
   });
   const copilotMutation = useMutation({
     mutationFn: (task: string) =>
@@ -402,9 +479,20 @@ export default function ResearchV092Panel({
       ) : null}
 
       {area === "methods" ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <MethodCard icon={Scale} method="PSM" result={psm} />
-          <MethodCard icon={ShieldCheck} method="IPTW" result={iptw} />
+        <div className="grid gap-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <MethodCard icon={Scale} method="PSM" result={psm} />
+            <MethodCard icon={ShieldCheck} method="IPTW" result={iptw} />
+          </div>
+          <div className="surface-card p-5">
+            <h2 className="font-black">{t("research.v093.sensitivity.title")}</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              {t("research.v093.sensitivity.body")}
+            </p>
+            <pre className="mt-4 max-h-64 overflow-auto rounded-xl bg-slate-950 p-4 text-xs text-slate-100">
+              {JSON.stringify(sensitivity, null, 2)}
+            </pre>
+          </div>
         </div>
       ) : null}
 
@@ -416,6 +504,38 @@ export default function ResearchV092Panel({
             <p className="mt-2 text-sm text-slate-600">
               {t("research.v092.evidence.body")}
             </p>
+            <label className="mt-4 block text-sm font-bold">
+              {t("research.v093.evidence.query")}
+              <input
+                className="field mt-1 w-full"
+                onChange={(event) => setEvidenceQuery(event.target.value)}
+                value={evidenceQuery}
+              />
+            </label>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                className="btn-secondary"
+                disabled={evidencePlanMutation.isPending}
+                onClick={() => evidencePlanMutation.mutate()}
+                type="button"
+              >
+                {t("research.v093.evidence.createPlan")}
+              </button>
+              <button
+                className="btn-primary"
+                disabled={!evidencePlan || evidenceExecuteMutation.isPending}
+                onClick={() => evidencePlan && evidenceExecuteMutation.mutate(evidencePlan.id)}
+                type="button"
+              >
+                {t("research.v093.evidence.execute")}
+              </button>
+            </div>
+            {evidencePlan ? (
+              <p className="mt-3 text-sm">
+                v{evidencePlan.version} · {evidencePlan.status} · {evidencePlan.result_count}{" "}
+                {t("research.v093.evidence.results")}
+              </p>
+            ) : null}
           </div>
           <div className="surface-card p-5">
             <h3 className="font-black">{t("research.v092.evidence.registered")}</h3>
@@ -432,6 +552,50 @@ export default function ResearchV092Panel({
                 <p className="text-sm text-slate-500">{t("research.v092.evidence.empty")}</p>
               ) : null}
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {area === "agent" ? (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="surface-card p-5">
+            <Bot aria-hidden="true" className="h-7 w-7 text-cyan-700" />
+            <h2 className="mt-3 font-black">{t("research.v093.agent.title")}</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              {t("research.v093.agent.body")}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                className="btn-primary"
+                disabled={agentCreateMutation.isPending}
+                onClick={() => agentCreateMutation.mutate()}
+                type="button"
+              >
+                {t("research.v093.agent.create")}
+              </button>
+              <button
+                className="btn-secondary"
+                disabled={!agentRun || agentRun.state !== "queued" || agentStepMutation.isPending}
+                onClick={() => agentRun && agentStepMutation.mutate(agentRun.id)}
+                type="button"
+              >
+                {t("research.v093.agent.checkpoint")}
+              </button>
+            </div>
+          </div>
+          <div className="surface-card p-5">
+            <Badge tone={agentRun?.state === "waiting_human" ? "warning" : "info"}>
+              {agentRun?.state ?? t("research.v093.agent.notStarted")}
+            </Badge>
+            <p className="mt-4 text-xs font-bold uppercase text-slate-500">
+              {t("research.v093.agent.tools")}
+            </p>
+            <p className="mt-2 text-sm">{agentRun?.allowed_tools.join(" · ") ?? "—"}</p>
+            {agentRun ? (
+              <pre className="mt-4 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
+                {JSON.stringify({ budget: agentRun.budgets, usage: agentRun.usage }, null, 2)}
+              </pre>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -510,6 +674,9 @@ export default function ResearchV092Panel({
                 </p>
                 <pre className="mt-3 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
                   {queryPreview.normalized_query}
+                </pre>
+                <pre className="mt-3 overflow-auto rounded-xl bg-slate-100 p-3 text-xs text-slate-800">
+                  {JSON.stringify(asRecord(queryPreview.structured_interpretation.planner), null, 2)}
                 </pre>
               </>
             ) : null}

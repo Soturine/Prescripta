@@ -420,6 +420,27 @@
         "defaultQuestion": "Listar comparison runs agregados aprovados deste estudo"
       }
     },
+    "v093": {
+      "tabs": { "agent": "Agente de evidência" },
+      "sensitivity": {
+        "title": "Sensibilidade e validação causal",
+        "body": "Grades determinísticas mostram estabilidade, overlap e balance. Não eliminam confusão residual nem autorizam linguagem causal."
+      },
+      "evidence": {
+        "query": "Consulta canônica revisável",
+        "createPlan": "Criar plano versionado",
+        "execute": "Buscar metadados",
+        "results": "resultados"
+      },
+      "agent": {
+        "title": "Workflow agente limitado",
+        "body": "O agente usa ferramentas allowlisted, orçamento explícito e para em checkpoint humano. A saída continua somente proposta.",
+        "create": "Criar run limitado",
+        "checkpoint": "Propor e aguardar humano",
+        "notStarted": "Não iniciado",
+        "tools": "Ferramentas permitidas"
+      }
+    },
     "newStudy": "Novo estudo demonstrativo",
     "studyTitle": "Título do estudo",
     "studySlug": "Slug do estudo",

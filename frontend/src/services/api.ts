@@ -98,12 +98,14 @@ import type {
   EvidenceLink,
   EvidenceSource,
   EvidenceExtraction,
+  EvidenceSearchPlan,
   OutcomeDefinition,
   PatientJourney,
   ResearchStudy,
   ResearchStudyPayload,
   ResearchWorkspace,
   ResearchPackage,
+  ResearchAgentRun,
   ResearchQueryPreview,
   StudyProtocolVersion,
   StudyWorkspace,
@@ -1301,6 +1303,35 @@ export async function fetchEvidenceSources() {
 
 export async function createEvidenceSource(payload: Record<string, unknown>) {
   const response = await api.post<EvidenceSource>("/evidence/sources", payload);
+  return response.data;
+}
+
+export async function createEvidenceSearchPlan(payload: Record<string, unknown>) {
+  const response = await api.post<EvidenceSearchPlan>("/evidence/search-plans", payload);
+  return response.data;
+}
+
+export async function executeEvidenceSearchPlan(planId: string) {
+  const response = await api.post<EvidenceSearchPlan>(
+    `/evidence/search-plans/${planId}/execute`,
+    { confirm_metadata_retrieval: true },
+  );
+  return response.data;
+}
+
+export async function createResearchAgent(payload: Record<string, unknown>) {
+  const response = await api.post<ResearchAgentRun>("/research/agents", payload);
+  return response.data;
+}
+
+export async function advanceResearchAgent(
+  runId: string,
+  payload: Record<string, unknown>,
+) {
+  const response = await api.post<ResearchAgentRun>(
+    `/research/agents/${runId}/steps`,
+    payload,
+  );
   return response.data;
 }
 

@@ -420,6 +420,27 @@
         "defaultQuestion": "List approved aggregate comparison runs for this study"
       }
     },
+    "v093": {
+      "tabs": { "agent": "Evidence Agent" },
+      "sensitivity": {
+        "title": "Sensitivity and causal validation",
+        "body": "Deterministic grids show stability, overlap, and balance. They do not remove residual confounding or authorize causal language."
+      },
+      "evidence": {
+        "query": "Reviewable canonical query",
+        "createPlan": "Create versioned plan",
+        "execute": "Retrieve metadata",
+        "results": "results"
+      },
+      "agent": {
+        "title": "Bounded agent workflow",
+        "body": "The agent uses allowlisted tools, an explicit budget, and stops at a human checkpoint. Its output remains proposal-only.",
+        "create": "Create bounded run",
+        "checkpoint": "Propose and await human",
+        "notStarted": "Not started",
+        "tools": "Allowed tools"
+      }
+    },
     "newStudy": "New demo study",
     "studyTitle": "Study title",
     "studySlug": "Study slug",

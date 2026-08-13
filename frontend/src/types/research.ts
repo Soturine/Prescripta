@@ -362,6 +362,33 @@ export type ResearchQueryPreview = {
   created_at: string;
 };
 
+export type EvidenceSearchPlan = {
+  id: string;
+  study_id: string;
+  version: number;
+  providers: string[];
+  canonical_query: string;
+  status: string;
+  result_count: number;
+  identifiers: Array<Record<string, unknown>>;
+  content_hash: string;
+};
+
+export type ResearchAgentRun = {
+  id: string;
+  study_id: string;
+  template: string;
+  template_version: string;
+  state: string;
+  budgets: Record<string, unknown>;
+  usage: Record<string, unknown>;
+  allowed_tools: string[];
+  steps: Array<Record<string, unknown>>;
+  proposal: Record<string, unknown>;
+  human_checkpoint: Record<string, unknown>;
+  stop_reason: string | null;
+};
+
 export type EvidenceExtraction = {
   id: string;
   source_id: string;
