@@ -84,6 +84,8 @@ jobs:
         run: npm run typecheck
       - name: i18n catalog gates
         run: node ../scripts/check_i18n_catalogs.mjs
+      - name: CDP data/code separation tests
+        run: node --test ../scripts/tests/cdp-runtime.test.mjs
       - name: Component tests and coverage gates
         run: npm run test:coverage
       - name: Build

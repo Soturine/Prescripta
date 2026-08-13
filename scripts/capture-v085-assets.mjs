@@ -3,6 +3,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
+import { callFunction } from "./lib/cdp-runtime.mjs";
+
 const root = process.cwd();
 const frontendUrl = "http://127.0.0.1:5176";
 const apiUrl = "http://127.0.0.1:8012/api";
@@ -44,7 +46,7 @@ async function evaluate(cdp, expression) {
 async function waitText(cdp, text, timeout = 15000) {
   const end = Date.now() + timeout;
   while (Date.now() < end) {
-    if (await evaluate(cdp, `document.body.innerText.includes(${JSON.stringify(text)})`)) return;
+    if (await callFunction(cdp, "function (needle) { return document.body.innerText.includes(needle); }", text)) return;
     await wait(350);
   }
   const body = await evaluate(cdp, "JSON.stringify({href:location.href,ready:document.readyState,body:document.body?.innerText,html:document.documentElement?.outerHTML?.slice(0,300)})");
@@ -55,7 +57,7 @@ async function shot(cdp, name) {
   await fs.writeFile(path.join(outDir, name), Buffer.from(result.data, "base64"));
 }
 async function shotSection(cdp, name, heading) {
-  const rect = await evaluate(cdp, `(() => { const needle=${JSON.stringify(heading)}; const h=[...document.querySelectorAll('h2')].find(x=>(x.textContent||'').includes(needle)); if(!h)return null; const r=h.closest('section').getBoundingClientRect(); return {x:Math.max(0,r.x-12),y:Math.max(0,r.y+scrollY-12),width:Math.min(document.documentElement.scrollWidth,r.width+24),height:r.height+24}; })()`);
+  const rect = await callFunction(cdp, "function (needle) { const h=[...document.querySelectorAll('h2')].find(x=>(x.textContent||'').includes(needle)); if(!h)return null; const r=h.closest('section').getBoundingClientRect(); return {x:Math.max(0,r.x-12),y:Math.max(0,r.y+scrollY-12),width:Math.min(document.documentElement.scrollWidth,r.width+24),height:r.height+24}; }", heading);
   if (!rect) throw new Error(`Seção não encontrada: ${heading}`);
   const result = await cdp.send("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: true, clip: { ...rect, scale: 1 } });
   await fs.writeFile(path.join(outDir, name), Buffer.from(result.data, "base64"));
@@ -70,7 +72,7 @@ async function navigate(cdp, route, width = 1440, height = 1000, mobile = false)
   await waitText(cdp, "Prescripta");
 }
 async function scrollText(cdp, text) {
-  await evaluate(cdp, `(() => { const needle=${JSON.stringify(text.toLowerCase())}; const el=[...document.querySelectorAll('h1,h2,h3,p,span')].find(x=>(x.textContent||'').toLowerCase().includes(needle)); if(el) el.scrollIntoView({block:'start'}); return !!el; })()`);
+  await callFunction(cdp, "function (needle) { const el=[...document.querySelectorAll('h1,h2,h3,p,span')].find(x=>(x.textContent||'').toLowerCase().includes(needle)); if(el) el.scrollIntoView({block:'start'}); return !!el; }", text.toLowerCase());
   await wait(500);
 }
 async function makeGif(name, frames) {
@@ -95,18 +97,19 @@ try {
   await new Promise((resolve) => ws.addEventListener("open", resolve, { once: true }));
   const cdp = new Cdp(ws); await cdp.send("Page.enable"); await cdp.send("Runtime.enable");
   await navigate(cdp, "/login");
-  await evaluate(cdp, `fetch('${apiUrl}/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'admin@prescripta.local',password:'Admin@12345'})}).then(r=>r.json()).then(x=>{localStorage.setItem('prescripta_access_token',x.access_token);return true})`);
+  const login = (email, password) => callFunction(cdp, "function (url, email, password) { return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})}).then(r=>r.json()).then(x=>{localStorage.setItem('prescripta_access_token',x.access_token);return true}); }", `${apiUrl}/auth/login`, email, password);
+  await login("admin@prescripta.local", "Admin@12345");
   await cdp.send("Page.navigate", { url: `${frontendUrl}/` });
   await wait(1200);
   await waitText(cdp, "Dashboard");
 
   await shot(cdp, "dashboard-admin-v0.8.5.png");
-  await evaluate(cdp, `fetch('${apiUrl}/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'medico@prescripta.local',password:'Medico@12345'})}).then(r=>r.json()).then(x=>{localStorage.setItem('prescripta_access_token',x.access_token);return true})`);
+  await login("medico@prescripta.local", "Medico@12345");
   await cdp.send("Page.navigate", { url: `${frontendUrl}/` });
   await wait(1200);
   await waitText(cdp, "Dashboard");
   await shot(cdp, "dashboard-clinical-v0.8.5.png");
-  await evaluate(cdp, `fetch('${apiUrl}/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'admin@prescripta.local',password:'Admin@12345'})}).then(r=>r.json()).then(x=>{localStorage.setItem('prescripta_access_token',x.access_token);return true})`);
+  await login("admin@prescripta.local", "Admin@12345");
   await navigate(cdp, "/patients"); await shot(cdp, "patients-v0.8.5.png");
   await navigate(cdp, "/patients/1"); await shot(cdp, "patient-history-v0.8.5.png"); await viewport(cdp, 1440, 620); await scrollText(cdp, "Laudos e documentos"); await shot(cdp, "patient-document-review-v0.8.5.png");
   await navigate(cdp, "/medications"); await shot(cdp, "medications-catalog-v0.8.5.png"); await scrollText(cdp, "Fila de curadoria"); await shot(cdp, "medication-curation-v0.8.5.png");
