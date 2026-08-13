@@ -172,7 +172,7 @@ class ResearchQueryService:
         ):
             raise ResearchQueryPolicyError("Query deve usar somente approved research views.")
         if len(tables) != 1:
-            raise ResearchQueryPolicyError("Joins não são permitidos no piloto v0.9.2.")
+            raise ResearchQueryPolicyError("Joins não são permitidos no piloto v0.9.3.")
         columns = {column.name for column in statement.find_all(exp.Column)}
         if columns - ALLOWED_COLUMNS:
             raise ResearchQueryPolicyError("Query contém coluna não aprovada.")
@@ -270,7 +270,7 @@ class ResearchQueryService:
         total_cost = float(root.get("Total Cost", 0))
         plan_rows = int(root.get("Plan Rows", 0))
         if relations - {APPROVED_VIEW, "research_comparison_runs"}:
-            raise ResearchQueryPolicyError("Planner acessaria relaÃ§Ã£o inesperada.")
+            raise ResearchQueryPolicyError("Planner acessaria relação inesperada.")
         if total_cost > payload.max_total_cost:
             raise ResearchQueryPolicyError("Planner Total Cost excede o budget.")
         if plan_rows > payload.max_plan_rows:

@@ -118,12 +118,12 @@ class SensitivityAnalysisConfig(BaseModel):
     @model_validator(mode="after")
     def bounded_grid(self) -> SensitivityAnalysisConfig:
         if any(not 0 < value <= 2 for value in self.psm_calipers):
-            raise ValueError("Sensitivity PSM caliper invÃ¡lido.")
+            raise ValueError("Sensitivity PSM caliper inválido.")
         if any(not 1 <= value <= 5 for value in self.psm_ratios):
-            raise ValueError("Sensitivity PSM ratio invÃ¡lido.")
+            raise ValueError("Sensitivity PSM ratio inválido.")
         for item in self.iptw_truncations:
             if item is not None and not 0 <= item[0] < item[1] <= 100:
-                raise ValueError("Sensitivity IPTW truncation invÃ¡lida.")
+                raise ValueError("Sensitivity IPTW truncation inválida.")
         if self.enabled and (
             len(self.psm_calipers) * len(self.psm_ratios) > 8
             or len(self.iptw_truncations) * len(self.iptw_stabilized) > 8

@@ -476,7 +476,7 @@ class AITaskRouter:
                     for token in scan_ascii_numbers(str(item))
                 }
             except NumericScanBudgetExceeded as exc:
-                raise AITaskError("InterpretaÃ§Ã£o excedeu o budget numÃ©rico.") from exc
+                raise AITaskError("Interpretação excedeu o budget numérico.") from exc
             if narrative_numbers - allowed_numbers:
                 raise AITaskError("Interpretação contém número não fornecido pelo backend.")
         if request.task_type == "patient_journey_summary":
@@ -546,7 +546,7 @@ class AITaskRouter:
             try:
                 found.update(scan_ascii_numbers(value))
             except NumericScanBudgetExceeded as exc:
-                raise AITaskError("ConteÃºdo excedeu o budget numÃ©rico.") from exc
+                raise AITaskError("Conteúdo excedeu o budget numérico.") from exc
         elif isinstance(value, dict):
             for item in value.values():
                 found |= AITaskRouter._numbers(item)

@@ -60,7 +60,7 @@ class EvidenceAcquisitionService:
     ) -> EvidenceSearchPlanModel:
         study = self.db.get(ResearchStudyModel, payload.study_id)
         if study is None or study.institution_id != actor.institution_id:
-            raise ResearchNotFound("Estudo nÃ£o encontrado.")
+            raise ResearchNotFound("Estudo não encontrado.")
         version = (
             int(
                 self.db.scalar(
@@ -95,9 +95,9 @@ class EvidenceAcquisitionService:
     def execute(self, plan_id: str, actor: UserModel) -> EvidenceSearchPlanModel:
         plan = self.db.get(EvidenceSearchPlanModel, plan_id)
         if plan is None or plan.institution_id != actor.institution_id:
-            raise ResearchNotFound("Evidence Search Plan nÃ£o encontrado.")
+            raise ResearchNotFound("Evidence Search Plan não encontrado.")
         if plan.status == "executed":
-            raise EvidenceAcquisitionError("Plano versionado jÃ¡ executado.")
+            raise EvidenceAcquisitionError("Plano versionado já executado.")
         all_results: list[dict[str, Any]] = []
         provider_states: list[dict[str, Any]] = []
         for provider in plan.providers:
@@ -179,7 +179,7 @@ class EvidenceAcquisitionService:
             if not key:
                 return [], {"status": "api_key_required", "credits_consumed": 0}
             return self._openalex(query, key, filters)
-        raise EvidenceAcquisitionError("Provider nÃ£o autorizado.")
+        raise EvidenceAcquisitionError("Provider não autorizado.")
 
     def _pubmed(self, query: str, email: str, filters: dict) -> tuple[list[dict], dict]:
         common = {"db": "pubmed", "tool": "Prescripta", "email": email}
@@ -312,14 +312,14 @@ class EvidenceAcquisitionService:
             if attempt == 0:
                 self.sleeper(0.25)
         if response is None or response.status_code >= 400:
-            raise EvidenceAcquisitionError("Provider indisponÃ­vel apÃ³s retry bounded.")
+            raise EvidenceAcquisitionError("Provider indisponível após retry bounded.")
         content_type = response.headers.get("content-type", "").lower()
         if "json" not in content_type:
-            raise EvidenceAcquisitionError("Provider retornou content-type nÃ£o permitido.")
+            raise EvidenceAcquisitionError("Provider retornou content-type não permitido.")
         try:
             return json.loads(response.content)
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-            raise EvidenceAcquisitionError("Provider retornou JSON invÃ¡lido.") from exc
+            raise EvidenceAcquisitionError("Provider retornou JSON inválido.") from exc
 
     def _xml_request(
         self,

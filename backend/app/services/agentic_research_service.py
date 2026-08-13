@@ -65,7 +65,7 @@ class AgenticResearchService:
     def create(self, payload: AgentRunCreate, actor: UserModel) -> AgentRunModel:
         study = self.db.get(ResearchStudyModel, payload.study_id)
         if study is None or study.institution_id != actor.institution_id:
-            raise ResearchNotFound("Estudo nÃ£o encontrado.")
+            raise ResearchNotFound("Estudo não encontrado.")
         sources = [self.db.get(EvidenceSourceModel, source_id) for source_id in payload.source_ids]
         if any(
             source is None or source.institution_id != actor.institution_id for source in sources
@@ -102,7 +102,7 @@ class AgenticResearchService:
     def step(self, run_id: str, payload: AgentStepRequest, actor: UserModel) -> AgentRunModel:
         run = self._owned(run_id, actor)
         if run.state in TERMINAL_STATES or run.state == "waiting_human":
-            raise ResearchConflict("Estado do agent run nÃ£o permite novo tool call.")
+            raise ResearchConflict("Estado do agent run não permite novo tool call.")
         if payload.tool in FORBIDDEN_TOOLS or payload.tool not in run.allowed_tools:
             self._stop(run, "abstained", "tool_denied")
             self._audit(actor, run, "agent.tool.denied")
@@ -164,7 +164,7 @@ class AgenticResearchService:
     def review(self, run_id: str, payload: AgentReviewRequest, actor: UserModel) -> AgentRunModel:
         run = self._owned(run_id, actor)
         if run.state != "waiting_human":
-            raise ResearchConflict("Agent run nÃ£o estÃ¡ aguardando revisÃ£o humana.")
+            raise ResearchConflict("Agent run não está aguardando revisão humana.")
         if payload.action == "cancel":
             return self.cancel(run_id, actor)
         state = {
@@ -190,7 +190,7 @@ class AgenticResearchService:
     def cancel(self, run_id: str, actor: UserModel) -> AgentRunModel:
         run = self._owned(run_id, actor)
         if run.state in TERMINAL_STATES:
-            raise ResearchConflict("Agent run jÃ¡ estÃ¡ em estado terminal.")
+            raise ResearchConflict("Agent run já está em estado terminal.")
         run.proposal = {}
         run.cancelled_at = datetime.now(UTC)
         self._stop(run, "cancelled", "human_cancelled")
@@ -200,7 +200,7 @@ class AgenticResearchService:
     def _owned(self, run_id: str, actor: UserModel) -> AgentRunModel:
         run = self.db.get(AgentRunModel, run_id)
         if run is None or run.institution_id != actor.institution_id:
-            raise ResearchNotFound("Agent run nÃ£o encontrado.")
+            raise ResearchNotFound("Agent run não encontrado.")
         return run
 
     @staticmethod
