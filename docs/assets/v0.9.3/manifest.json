@@ -1,0 +1,35 @@
+{
+  "version": "0.9.3",
+  "generator": "scripts/capture-v093-research-assets.mjs",
+  "synthetic_fixture": true,
+  "assets": [
+    {
+      "file": "sensitivity-causal-validation-v0.9.3.png",
+      "bytes": 179373,
+      "width": 1440,
+      "height": 1725,
+      "sha256": "5ec94cc5ba91b1664a1557a5f5932b27934a3baed126f08ba6b50471b152d35f"
+    },
+    {
+      "file": "evidence-search-plan-v0.9.3.png",
+      "bytes": 165156,
+      "width": 1440,
+      "height": 1437,
+      "sha256": "6c6f578072c2819e2750e9a9af4f3863cb0ddffff3a810e598ba83f365b95626"
+    },
+    {
+      "file": "agentic-evidence-checkpoint-v0.9.3.png",
+      "bytes": 169144,
+      "width": 1440,
+      "height": 1485,
+      "sha256": "cf08acded85878daeb8354cfb29efd85130399263ad106e1fa835206f7fe2fcf"
+    },
+    {
+      "file": "nl-to-sql-planner-v0.9.3.png",
+      "bytes": 171889,
+      "width": 1440,
+      "height": 1393,
+      "sha256": "ac7a1f4c266a175f53548563f5141c0cb2aad09ef2e553e316f8bb23da1e7d99"
+    }
+  ]
+}

@@ -43,18 +43,21 @@ demonstrativa enquanto não existir validação independente.
 - entregue: Copilot v2 proposal-only, extração/síntese grounded e evals adversariais;
 - entregue como piloto default-off: NL→SQL por AST sobre view agregada e execução humana.
 
-## v0.9.3 — Validation & Research Hardening
+## v0.9.3 — Advanced Research Methods, Agentic Evidence & Security Hardening
 
-- validação de referência independente para PSM/IPTW e fixtures estatísticas ampliadas;
-- calibração, sensitivity analyses e diagnósticos adicionais antes de graduar métodos causais;
-- benchmark de performance com volumes sintéticos maiores e jobs assíncronos quando necessários;
-- avaliação humana estruturada do Copilot e corpus de literatura licenciado/curado.
+- entregue: referência numérica independente, sensitivity grids e diagnósticos de PSM/IPTW;
+- entregue: planner PostgreSQL autoritativo e transação read-only para NL→SQL default-off;
+- entregue: aquisição de metadados PubMed/Crossref/OpenAlex com rights e provenance;
+- entregue: workflows agentes limitados com allowlist, budgets e checkpoint humano;
+- entregue: hardening CodeQL, CDP e governança de histórico/tags.
 
 ## v0.9.4 — Interoperability & Operational Hardening
 
 - adapters FHIR mais amplos e workflows profissionais expandidos;
 - observabilidade, performance e jobs assíncronos quando necessários;
 - backup/restore, localization e metadata de policy.
+- avaliação humana estruturada do Copilot e corpus licenciado/curado em escala;
+- benchmarks maiores e filas assíncronas somente quando evidência de carga justificar.
 
 ## v0.10.0 — Stabilization
 

@@ -22,3 +22,14 @@ banco, observabilidade, teste de carga e aprovação institucional.
 
 Referências técnicas: [SQLGlot/AST](https://github.com/tobymao/sqlglot) e
 [PostgreSQL `statement_timeout`](https://www.postgresql.org/docs/current/runtime-config-client.html).
+
+## v0.9.3 planner enforcement
+
+The AST gate now has explicit node and depth budgets and rejects CTEs/subqueries as well as DDL,
+DML, set operations and non-approved relations. On PostgreSQL, preview runs plain `EXPLAIN (FORMAT
+JSON)` in a separate read-only transaction. Total Cost, planned rows, node count and unexpected
+relations are policy gates; planner cost is a relative unit, not elapsed milliseconds.
+
+Execution uses a new read-only transaction with local `statement_timeout` and `lock_timeout`.
+PostgreSQL integration tests prove both JSON planner parsing and database-level write rejection;
+SQLite remains useful for AST/unit coverage but is not accepted as evidence for those controls.

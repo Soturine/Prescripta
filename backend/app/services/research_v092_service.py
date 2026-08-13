@@ -344,7 +344,7 @@ class ResearchV092Service:
         file_hashes = {name: canonical_sha256(value) for name, value in files.items()}
         manifest = {
             "schema_version": "prescripta-research-package-v3",
-            "prescripta_version": "0.9.2",
+            "prescripta_version": "0.9.3",
             "study_id": study.id,
             "analysis_run_id": None,
             "comparison_run_id": comparison.id,

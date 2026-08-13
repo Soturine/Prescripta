@@ -56,6 +56,18 @@ API ── policy + autorização por objeto ── PostgreSQL
 | indisponibilidade/DoS | paginação, limites de payload, timeout/retry/circuit breaker compartilhado | quotas por tenant, fila e testes de carga distribuída pendem |
 | segredo/default em produção | startup falha com segredo demo, SQLite, auto-seed, CORS local ou criptografia ausente | deployment precisa fornecer secret manager, TLS e observabilidade |
 
+## v0.9.3 research and acquisition threats
+
+| Threat | v0.9.3 control | Residual risk |
+| --- | --- | --- |
+| catastrophic numeric backtracking | bounded single-pass ASCII scanner, input/token limits and adversarial tests | future grammars require equivalent performance tests |
+| CDP data interpreted as code | variable values use `Runtime.callFunctionOn` arguments; only fixed expressions remain | CDP/browser privileges remain sensitive |
+| evidence SSRF or credential leakage | fixed provider hosts, safe outbound client and credential-host binding | deployment egress proxy remains recommended |
+| malicious/oversized provider response | byte/content-type limits, JSON validation, XML DTD/entity rejection, bounded retry | provider schema drift may degrade one adapter |
+| evidence or tool-output injection | untrusted-data treatment, fixed tools and no authority expansion | marker detection is not a complete classifier |
+| agent runaway/escalation | step/tool/token/cost/wall budgets; no spawn, shell, raw SQL or raw HTTP | provider telemetry still depends on configuration |
+| NL→SQL planner abuse | bounded AST, PostgreSQL JSON-plan budgets and separate read-only transactions | production role also needs least-privilege grants and monitoring |
+
 ## Regras de privacidade
 
 Pseudonimização não é anonimização. Novos eventos não armazenam nome/e-mail; identificadores

@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.3] - 2026-08-13
+
+### Advanced Research Methods, Agentic Evidence & Security Hardening
+
+- bounded linear numeric parsing and CDP argument isolation close the three known CodeQL findings structurally;
+- independent synthetic PSM/IPTW reference fixture, richer overlap/balance diagnostics and deterministic sensitivity grids;
+- PostgreSQL-authoritative NL→SQL planner budgets plus database-enforced read-only execution;
+- versioned PubMed/Crossref/OpenAlex metadata acquisition with safe XML, bounded retry, rights/provenance and review-preserving dedupe;
+- bounded research-agent templates with tool allowlists, budgets, audit, cancellation and mandatory human checkpoints;
+- direct-main and version-tag rulesets, evidence-based stale-branch cleanup and inspection-only Dependabot review.
+
+This release remains synthetic/demo/educational only. It makes no clinical, epidemiological,
+causal, regulatory or production-readiness claim.
+
 ## [0.9.2] - 2026-08-11
 
 ### Research Copilot v2 e Comparative RWE

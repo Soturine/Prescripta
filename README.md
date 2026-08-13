@@ -47,7 +47,11 @@ interna usa busca lexical indexada, não um RAG clinicamente validado.
 - Comparative RWE sintético com Table 1, SMD, RR/OR, pessoa-tempo e PSM/IPTW experimentais,
   sempre determinísticos, aggregate-only e sem alegação causal;
 - Research Copilot v2 e literatura com grounding/locator, mais NL→SQL default-off sobre view
-  agregada escopada por instituição, estudo e snapshot.
+  agregada escopada por instituição, estudo e snapshot;
+- acquisition gateway de metadados PubMed/Crossref/OpenAlex, planos de busca versionados e agentes
+  de pesquisa limitados por ferramentas, orçamento, auditoria e checkpoint humano;
+- sensitivity grids determinísticos e planner PostgreSQL autoritativo, preservando linguagem
+  experimental e sem transformar diagnósticos em alegação causal.
 - registro governado de terminologias, releases, licenças, checksums, busca suggestion-only e
   mappings versionados com revisão humana independente;
 - adaptador parcial OMOP CDM 5.4 para sete tabelas, exclusivamente sobre dados sintéticos, sem
@@ -70,6 +74,10 @@ interna usa busca lexical indexada, não um RAG clinicamente validado.
 | Comparative RWE | PSM/IPTW experimentais |
 | --- | --- |
 | ![Table 1 comparativa sobre fixture sintética](docs/assets/v0.9.2/comparative-table-one-v0.9.2.png) | ![Diagnósticos PSM e IPTW sem alegação causal](docs/assets/v0.9.2/psm-iptw-diagnostics-v0.9.2.png) |
+
+| Sensibilidade e evidência | Agente e planner governados |
+| --- | --- |
+| ![Sensitivity grids determinísticos sem alegação causal](docs/assets/v0.9.3/sensitivity-causal-validation-v0.9.3.png) | ![Agente de evidência aguardando checkpoint humano](docs/assets/v0.9.3/agentic-evidence-checkpoint-v0.9.3.png) |
 
 A [galeria corrente e seu manifesto SHA-256](docs/assets/current/manifest.json) também incluem checagem estruturada, auditoria e mobile.
 
@@ -151,7 +159,7 @@ O [modelo de ameaça](docs/security/threat-model.md), o
 - [índice da documentação](docs/README.md)
 - [guia do usuário por rota](docs/user-guide/README.md)
 - [arquitetura](docs/architecture/overview.md)
-- [roadmap v0.9.2–v1.0](docs/ROADMAP.md)
+- [roadmap v0.9.3–v1.0](docs/ROADMAP.md)
 - [regras clínicas](docs/clinical-rules/risk-engine.md)
 - [Research & RWE](docs/research/README.md) e [Evidence Intelligence](docs/evidence/README.md)
 - [interoperabilidade](docs/interoperability/architecture.md)
