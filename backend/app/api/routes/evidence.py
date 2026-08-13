@@ -14,6 +14,15 @@ from app.schemas.evidence_schema import (
     EvidenceSourceRead,
 )
 from app.schemas.research_v092_schema import EvidenceExtractionCreate, EvidenceExtractionRead
+from app.schemas.research_v093_schema import (
+    EvidenceSearchExecuteRequest,
+    EvidenceSearchPlanCreate,
+    EvidenceSearchPlanRead,
+)
+from app.services.evidence_acquisition_service import (
+    EvidenceAcquisitionError,
+    EvidenceAcquisitionService,
+)
 from app.services.evidence_service import EvidenceError, EvidenceService
 from app.services.literature_copilot_service import LiteratureCopilotService
 
@@ -129,4 +138,33 @@ def synthesize_registered_sources(
     try:
         return LiteratureCopilotService(db).synthesize(source_ids, current_user)
     except EvidenceError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post(
+    "/search-plans",
+    response_model=EvidenceSearchPlanRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_search_plan(
+    payload: EvidenceSearchPlanCreate,
+    db: DbSession,
+    current_user: EvidenceWriter,
+) -> EvidenceSearchPlanRead:
+    try:
+        return EvidenceAcquisitionService(db).create_plan(payload, current_user)
+    except (EvidenceError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/search-plans/{plan_id}/execute", response_model=EvidenceSearchPlanRead)
+def execute_search_plan(
+    plan_id: str,
+    _payload: EvidenceSearchExecuteRequest,
+    db: DbSession,
+    current_user: EvidenceWriter,
+) -> EvidenceSearchPlanRead:
+    try:
+        return EvidenceAcquisitionService(db).execute(plan_id, current_user)
+    except EvidenceAcquisitionError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

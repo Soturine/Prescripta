@@ -28,6 +28,7 @@ from app.api.routes import (
     protocols,
     reports,
     research,
+    research_agents,
     terminology,
     users,
 )
@@ -86,6 +87,7 @@ app.include_router(clinical_protocols.router, prefix=settings.api_prefix)
 app.include_router(pharmacy.router, prefix=settings.api_prefix)
 app.include_router(evidence.router, prefix=settings.api_prefix)
 app.include_router(research.router, prefix=settings.api_prefix)
+app.include_router(research_agents.router, prefix=settings.api_prefix)
 app.include_router(terminology.router, prefix=settings.api_prefix)
 app.include_router(omop.router, prefix=settings.api_prefix)
 app.include_router(data_quality.router, prefix=settings.api_prefix)

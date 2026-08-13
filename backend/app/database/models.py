@@ -2278,6 +2278,82 @@ class ResearchQueryPreviewModel(Base):
     )
 
 
+class EvidenceSearchPlanModel(Base):
+    __tablename__ = "evidence_search_plans"
+    __table_args__ = (UniqueConstraint("institution_id", "study_id", "version"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    study_id: Mapped[str] = mapped_column(
+        ForeignKey("research_studies.id"), nullable=False, index=True
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    providers: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    canonical_query: Mapped[str] = mapped_column(Text, nullable=False)
+    provider_queries: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    filters: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    result_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    identifiers: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    executed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
+class EvidenceAcquisitionRunModel(Base):
+    __tablename__ = "evidence_acquisition_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    plan_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_search_plans.id"), nullable=False, index=True
+    )
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    provider: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    result_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    provider_metadata: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AgentRunModel(Base):
+    __tablename__ = "agent_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    study_id: Mapped[str] = mapped_column(
+        ForeignKey("research_studies.id"), nullable=False, index=True
+    )
+    template: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    template_version: Mapped[str] = mapped_column(String(40), nullable=False)
+    state: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    goal_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    budgets: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    usage: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    allowed_tools: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    steps: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    source_ids: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    proposal: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    human_checkpoint: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    provider: Mapped[str | None] = mapped_column(String(80))
+    model: Mapped[str | None] = mapped_column(String(160))
+    stop_reason: Mapped[str | None] = mapped_column(String(120))
+    created_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 def _block_changes_after_review(target, reviewed_states: set[str], fields: set[str]) -> None:
     state = inspect(target)
     history = state.attrs.status.history

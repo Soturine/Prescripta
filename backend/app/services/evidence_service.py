@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from app.database.models import EvidenceLinkModel, EvidenceSourceModel, UserModel
 from app.schemas.evidence_schema import EvidenceLinkCreate, EvidenceSourceCreate
 from app.services.audit_service import AuditService
-from app.services.canonical_json import json_compatible
 
 
 class EvidenceError(ValueError):
@@ -23,7 +22,7 @@ class EvidenceService:
     ) -> EvidenceSourceModel:
         source = EvidenceSourceModel(
             institution_id=actor.institution_id,
-            **json_compatible(payload.model_dump()),
+            **payload.model_dump(mode="python"),
             review_status="pending_review",
             created_by_user_id=actor.id,
         )
