@@ -6,8 +6,12 @@ import type { StudyWorkspace } from "../../types/research";
 import ResearchV092Panel from "./ResearchV092Panel";
 
 const api = vi.hoisted(() => ({
+  advanceResearchAgent: vi.fn(),
+  createEvidenceSearchPlan: vi.fn(),
+  createResearchAgent: vi.fn(),
   executeAITask: vi.fn(),
   executeComparison: vi.fn(),
+  executeEvidenceSearchPlan: vi.fn(),
   exportComparisonPackage: vi.fn(),
   fetchComparisons: vi.fn(),
   fetchEvidenceSources: vi.fn(),
@@ -101,6 +105,7 @@ beforeEach(() => {
             effective_sample_size: 35.2,
             balance: [{ variable: "age", smd_before: 0.2, smd_after: 0.03 }],
           },
+          sensitivity: { status: "computed", rows: [{ method: "psm", stable: true }] },
         },
       },
       diagnostics: {},
@@ -120,6 +125,32 @@ beforeEach(() => {
   api.exportComparisonPackage.mockResolvedValue({ id: "package-v3" });
   api.executeAITask.mockResolvedValue({
     output_payload: { status: "proposal_only", limitations: ["Synthetic"] },
+  });
+  api.createEvidenceSearchPlan.mockResolvedValue({
+    id: "plan-1",
+    version: 1,
+    status: "draft_needs_review",
+    result_count: 0,
+  });
+  api.executeEvidenceSearchPlan.mockResolvedValue({
+    id: "plan-1",
+    version: 1,
+    status: "executed",
+    result_count: 2,
+  });
+  api.createResearchAgent.mockResolvedValue({
+    id: "agent-1",
+    state: "queued",
+    allowed_tools: ["search_evidence", "propose_evidence_shortlist"],
+    budgets: { max_steps: 4 },
+    usage: { steps: 0 },
+  });
+  api.advanceResearchAgent.mockResolvedValue({
+    id: "agent-1",
+    state: "waiting_human",
+    allowed_tools: ["search_evidence", "propose_evidence_shortlist"],
+    budgets: { max_steps: 4 },
+    usage: { steps: 1 },
   });
 });
 
@@ -174,5 +205,26 @@ describe("Research Copilot v2 and comparative RWE workspace", () => {
     fireEvent.click(screen.getByRole("button", { name: "Estruturação da pergunta" }));
     await waitFor(() => expect(api.executeAITask).toHaveBeenCalled());
     expect(await screen.findByText(/proposal_only/)).toBeVisible();
+  });
+
+  it("versions evidence searches and stops agents at the human checkpoint", async () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("tab", { name: "Literatura" }));
+    fireEvent.change(screen.getByLabelText(/Consulta canônica revisável/), {
+      target: { value: "synthetic evidence query" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Criar plano versionado" }));
+    await waitFor(() => expect(api.createEvidenceSearchPlan).toHaveBeenCalled());
+    expect(await screen.findByText(/draft_needs_review/)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Buscar metadados" }));
+    await waitFor(() => expect(api.executeEvidenceSearchPlan).toHaveBeenCalledWith("plan-1"));
+    expect(await screen.findByText(/executed/)).toBeVisible();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Agente de evidência" }));
+    fireEvent.click(screen.getByRole("button", { name: "Criar run limitado" }));
+    expect(await screen.findByText("queued")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Propor e aguardar humano" }));
+    expect(await screen.findByText("waiting_human")).toBeVisible();
+    expect(api.advanceResearchAgent).toHaveBeenCalledWith("agent-1", expect.any(Object));
   });
 });

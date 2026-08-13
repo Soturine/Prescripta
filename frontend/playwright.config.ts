@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const python = JSON.stringify(process.env.PRESCRIPTA_PYTHON ?? "python");
+
 export default defineConfig({
   testDir: "./e2e",
   timeout: 45_000,
@@ -27,7 +29,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: "python -c \"from pathlib import Path; Path('playwright-v088.db').unlink(missing_ok=True)\" && python -m uvicorn app.main:app --host 127.0.0.1 --port 8013",
+      command: `${python} -c "from pathlib import Path; Path('playwright-v088.db').unlink(missing_ok=True)" && ${python} -m uvicorn app.main:app --host 127.0.0.1 --port 8013`,
       cwd: "../backend",
       url: "http://127.0.0.1:8013/api/health",
       env: {
