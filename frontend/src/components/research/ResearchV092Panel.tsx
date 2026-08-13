@@ -676,7 +676,11 @@ export default function ResearchV092Panel({
                   {queryPreview.normalized_query}
                 </pre>
                 <pre className="mt-3 overflow-auto rounded-xl bg-slate-100 p-3 text-xs text-slate-800">
-                  {JSON.stringify(asRecord(queryPreview.structured_interpretation.planner), null, 2)}
+                  {JSON.stringify(
+                    asRecord(asRecord(queryPreview.structured_interpretation).planner),
+                    null,
+                    2,
+                  )}
                 </pre>
               </>
             ) : null}
