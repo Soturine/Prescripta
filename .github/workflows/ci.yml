@@ -156,7 +156,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install dependencies
-        run: python -m pip install -r requirements-lock.txt
+        run: python -m pip install -r requirements-lock.txt -r requirements-dev.txt
       - name: Migration round trip
         run: alembic upgrade head && alembic downgrade base && alembic upgrade head && alembic check
       - name: PostgreSQL planner and read-only enforcement
