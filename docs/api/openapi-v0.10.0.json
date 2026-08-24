@@ -16495,7 +16495,7 @@
             "type": "object"
           },
           "prescripta_version": {
-            "default": "v0.9.3",
+            "default": "v0.10.0",
             "title": "Prescripta Version",
             "type": "string"
           },
@@ -19329,7 +19329,7 @@
   "info": {
     "description": "API educacional para apoio à prescrição segura com regras determinísticas, fontes rastreáveis, revisão humana e IA explicativa configurável.",
     "title": "Prescripta",
-    "version": "0.9.3"
+    "version": "0.10.0"
   },
   "openapi": "3.1.0",
   "paths": {

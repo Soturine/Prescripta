@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.10.0] - 2026-08-24
+
+### Interoperability, Operations & Stabilization
+
+- aggregate traversal budgets close numeric fail-open paths across nested payloads;
+- Agent Runtime v2 chooses and executes registered tools server-side with object scope,
+  server budgets, idempotency, cancellation and mandatory human review;
+- governed Evidence acquisition adds provider limits, bounded retry, real process TTL cache,
+  concurrency-safe plan versions and review-preserving deduplication;
+- bounded FHIR R4 JSON subset preserves coding and lineage, blocks ambiguous payloads and requires
+  idempotent, tenant-scoped human reconciliation;
+- safe request IDs/logging, bounded metrics, PostgreSQL recovery qualification, benchmark budgets,
+  OpenAPI compatibility policy and build-once release provenance;
+- CodeQL 4.37.7 adopted after inspection; remaining Dependabot majors/groups deferred to v1 freeze.
+
+This release remains synthetic/demo/educational only. It is not clinically, causally, FHIR,
+SMART, regulatory or production validated.
+
 ## [0.9.3] - 2026-08-13
 
 ### Advanced Research Methods, Agentic Evidence & Security Hardening
