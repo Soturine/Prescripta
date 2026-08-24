@@ -88,7 +88,7 @@ export default function Dashboard() {
           <div className="mt-2 divide-y divide-slate-200">
             {actions.slice(1).map((action) => {
               const Icon = action.icon;
-              return <Link className="group flex min-h-16 items-center gap-3 py-3" key={action.to} to={action.to}><Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-ocean" /><span className="min-w-0 flex-1"><span className="block text-sm font-extrabold text-ink">{action.label}</span><span className="block truncate text-xs text-slate-500">{action.description}</span></span><ArrowRight aria-hidden="true" className="h-4 w-4 text-slate-400 group-hover:text-ocean" /></Link>;
+              return <Link className="group flex min-h-16 items-center gap-3 py-3" key={action.to} to={action.to}><Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-ocean" /><span className="min-w-0 flex-1"><span className="block text-sm font-extrabold text-ink">{action.label}</span><span className="block truncate text-xs text-slate-600">{action.description}</span></span><ArrowRight aria-hidden="true" className="h-4 w-4 text-slate-400 group-hover:text-ocean" /></Link>;
             })}
           </div>
         </div>
@@ -106,9 +106,9 @@ export default function Dashboard() {
 
       <section aria-labelledby="operational-context" className="workstation-section">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"><div><p className="eyebrow">{t("dashboard.dataState")}</p><h2 className="mt-1 text-xl font-black text-ink" id="operational-context">{t("dashboard.operationalContext")}</h2><p className="mt-1 text-sm text-slate-600">{t("dashboard.operationalDescription")}</p></div><Badge>{t("common.flows", { count: metrics.length })}</Badge></div>
-        <dl className="mt-5 grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-2 xl:grid-cols-4">
-          {metrics.map((metric) => <Link className="flex min-h-28 flex-col bg-white p-4 hover:bg-cyan-50/40" key={metric.label} to={metric.to}><dt className="flex items-center gap-2 text-xs font-bold text-slate-600"><metric.icon aria-hidden="true" className="h-4 w-4 text-ocean" />{metric.label}</dt><dd className="tabular-number mt-2 text-2xl font-black text-ink">{metric.value}</dd><span className="mt-auto pt-2 text-xs text-slate-500">{metric.detail}</span></Link>)}
-        </dl>
+        <div className="mt-5 grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-2 xl:grid-cols-4">
+          {metrics.map((metric) => <Link className="flex min-h-28 flex-col bg-white p-4 hover:bg-cyan-50/40" key={metric.label} to={metric.to}><span className="flex items-center gap-2 text-xs font-bold text-slate-600"><metric.icon aria-hidden="true" className="h-4 w-4 text-ocean" />{metric.label}</span><span className="tabular-number mt-2 text-2xl font-black text-ink">{metric.value}</span><span className="mt-auto pt-2 text-xs text-slate-600">{metric.detail}</span></Link>)}
+        </div>
       </section>
 
       {can("medication.read") ? (
