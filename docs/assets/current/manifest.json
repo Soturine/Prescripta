@@ -4,10 +4,10 @@
   "assets": [
     {
       "file": "audit.png",
-      "bytes": 114681,
+      "bytes": 114722,
       "width": 1440,
       "height": 1000,
-      "sha256": "a5e3e7cf4edc434cd59ba90e17aaa51ae12bd4ea2f8214b8cd797528c23536f8"
+      "sha256": "7acfe694073fe8b260a4bcb49ba6d2d7ae71d02432bfa2f21ab8c69c4b2cb770"
     },
     {
       "file": "clinical-check.png",
@@ -60,10 +60,10 @@
     },
     {
       "file": "pharmacy.png",
-      "bytes": 105419,
+      "bytes": 105297,
       "width": 1440,
       "height": 1000,
-      "sha256": "3d73510f097afb14db86f3e9fc99db627d4e4f5a249529a9a70b482834bf99fe"
+      "sha256": "e6937818438ba574271e056965f8988474a2f21b0570d27dd23d51fb839a43a0"
     },
     {
       "file": "research-analysis.png",

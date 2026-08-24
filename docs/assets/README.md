@@ -1,51 +1,43 @@
-# Assets
+# Assets de documentação
 
-- `docs/assets/current/`: screenshots/GIF gerados deterministicamente para a vitrine atual, acompanhados de `manifest.json` com SHA-256, dimensões e peso.
-- `docs/assets/v0.9.0/`: duas capturas reais e sintéticas exclusivas do Research & RWE MVP, com manifesto e hashes.
-- `docs/assets/v0.8.2/`: captura da release v0.8.2, incluindo protocolos.
-- `docs/assets/v0.8.1/`: captura da release v0.8.1.
-- Pastas antigas permanecem como histórico visual.
+## Política de diretórios
 
-## Inventário v0.8.2
+- `docs/assets/current/` é a vitrine evergreen do `main`: 10 PNGs, um GIF e `manifest.json`.
+- `docs/assets/vX.Y.Z/` preserva a vitrine histórica da release publicada correspondente.
+- diretórios legados sem manifesto permanecem apenas como registro histórico e não representam o
+  produto atual.
 
-- `dashboard-v0.8.2.png`
-- `patients-list-v0.8.2.png`
-- `patient-details-v0.8.2.png`
-- `medications-catalog-v0.8.2.png`
-- `medication-form-v0.8.2.png`
-- `prescription-check-v0.8.2.png`
-- `patient-guidance-card-v0.8.2.png`
-- `imports-reconciliation-v0.8.2.png`
-- `reports-list-v0.8.2.png`
-- `audit-timeline-v0.8.2.png`
-- `ai-settings-v0.8.2.png`
-- `protocols-list-v0.8.2.png`
-- `protocol-detail-v0.8.2.png`
-- `protocol-run-v0.8.2.png`
-- `sidebar-version-v0.8.2.png`
-- `responsive-view-v0.8.2.png`
-- `prescripta-v0.8.2-main-demo.gif`
-- `prescripta-v0.8.2-protocols-demo.gif`
+O README principal deve usar somente `current/`. Uma captura pós-release nunca deve sobrescrever
+`v1.0.0/` ou outro diretório versionado publicado.
 
-Os assets devem ser capturados a partir da aplicação local atual sempre que uma
-release alterar UI, fluxos ou textos visíveis.
+## Recaptura da vitrine corrente
 
-## Captura corrente
+Pré-requisitos exclusivos da geração visual: dependências backend/frontend, Chromium do Playwright e
+`ffmpeg`. Eles não são necessários para uma pessoa que apenas executa a aplicação pelo Compose.
 
-A vitrine v0.8.9 contém dashboard PT-BR, amostra EN-US, paciente, checagem, decisão, workflow
-farmacêutico, auditoria, mobile, Research Workspace, attrition e GIF de apresentação. O manifesto é
-a fonte exata do inventário e dos hashes.
-
-Na raiz do repositório, com dependências backend/frontend e Chromium do Playwright instalados:
+Na raiz do repositório:
 
 ```powershell
 node scripts/capture-current-assets.mjs
 python scripts/check_assets.py
 ```
 
-O capturador usa banco temporário e seed fictício, aguarda readiness, autentica por cookie HttpOnly,
-recusa erros inesperados do navegador, gera o GIF com `ffmpeg` e só substitui `current/` após concluir
-todas as capturas e o manifesto. A sondagem anônima inicial de `/api/auth/me` com `401` é a única
-exceção específica de console, pois faz parte do bootstrap esperado da tela de login.
+O capturador inicia a aplicação real com banco temporário e seed sintético, aguarda readiness,
+autentica por cookie HttpOnly, captura PT-BR, uma evidência EN-US e navegação móvel, e monta o GIF com
+frames atuais. Ele recusa erros inesperados do navegador; o `401` anônimo inicial de `/api/auth/me`
+é a exceção esperada durante o bootstrap do login.
 
-Créditos e licenças ficam em `docs/assets/credits.md`.
+Como o capturador lê `VERSION`, ele também pode escrever em `docs/assets/v<versão>/`. Se essa versão
+já estiver publicada, preserve ou restaure o diretório histórico e aceite apenas as mudanças em
+`current/`.
+
+## Manifesto e revisão
+
+`current/manifest.json` registra versão, SHA-256, dimensões e tamanho de cada asset. Antes do commit:
+
+1. confirme ausência de loading, modal/toast acidental, clipping, erro ou segredo;
+2. confirme que todos os dados são fictícios e que PT-BR, EN-US e mobile são legíveis;
+3. execute `python scripts/check_assets.py`;
+4. confira no diff que nenhum diretório histórico publicado foi alterado.
+
+Créditos e licenças ficam em [credits.md](credits.md).
