@@ -8,7 +8,9 @@ from app.services.ai_task_router import AITaskError, AITaskRouter
 from app.services.bounded_numeric_scanner import (
     NumericScanBudgetExceeded,
     NumericScanPolicy,
+    NumericTraversalPolicy,
     scan_ascii_numbers,
+    scan_numbers_in_value,
 )
 
 
@@ -44,3 +46,21 @@ def test_router_budget_and_nested_json_are_fail_closed() -> None:
     assert AITaskRouter._numbers(nested) == {"1.25", "0.9", "1.7"}
     with pytest.raises(AITaskError, match="budget num"):
         AITaskRouter._numbers("7" * 65_537)
+
+
+def test_tree_scanner_enforces_aggregate_budgets() -> None:
+    policy = NumericTraversalPolicy(
+        max_chars=6, max_strings=2, max_nodes=8, max_depth=2, max_tokens=2
+    )
+    assert scan_numbers_in_value(["1 a", "2 b"], policy) == {"1", "2"}
+    with pytest.raises(NumericScanBudgetExceeded, match="character_budget"):
+        scan_numbers_in_value(["1234", "5678"], policy)
+    with pytest.raises(NumericScanBudgetExceeded, match="string_budget"):
+        scan_numbers_in_value(["a", "b", "c"], policy)
+    with pytest.raises(NumericScanBudgetExceeded, match="depth_budget"):
+        scan_numbers_in_value([[["1"]]], policy)
+    with pytest.raises(NumericScanBudgetExceeded, match="token_budget"):
+        scan_numbers_in_value(
+            ["1", "2", "3"],
+            NumericTraversalPolicy(max_strings=3, max_tokens=2),
+        )

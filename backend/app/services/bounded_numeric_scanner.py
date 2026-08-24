@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 
 class NumericScanBudgetExceeded(ValueError):
@@ -13,11 +14,23 @@ class NumericScanPolicy:
     max_tokens: int = 2_048
 
 
+@dataclass(frozen=True)
+class NumericTraversalPolicy:
+    """Aggregate limits for a complete JSON-like value, not each leaf."""
+
+    max_chars: int = 65_536
+    max_strings: int = 1_024
+    max_nodes: int = 4_096
+    max_depth: int = 32
+    max_tokens: int = 2_048
+
+
 _ASCII_IDENTIFIER = frozenset(
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 )
 _HEX = frozenset("0123456789abcdefABCDEF")
 _DEFAULT_POLICY = NumericScanPolicy()
+_DEFAULT_TRAVERSAL_POLICY = NumericTraversalPolicy()
 
 
 def _is_uuid_at(value: str, start: int) -> bool:
@@ -36,7 +49,7 @@ def _is_uuid_at(value: str, start: int) -> bool:
     return before_ok and after_ok
 
 
-def scan_ascii_numbers(value: str, policy: NumericScanPolicy = _DEFAULT_POLICY) -> set[str]:
+def _scan_ascii_numbers(value: str, policy: NumericScanPolicy) -> tuple[set[str], int]:
     """Return bounded ASCII numeric tokens in one forward pass.
 
     The grammar is ``[+-]? DIGIT+ ('.' DIGIT+)? ([eE] [+-]? DIGIT+)?``.
@@ -97,4 +110,53 @@ def scan_ascii_numbers(value: str, policy: NumericScanPolicy = _DEFAULT_POLICY) 
                 raise NumericScanBudgetExceeded("numeric_scan_token_budget_exceeded")
         elif index == integer_start:
             index = start + 1
+    return found, token_count
+
+
+def scan_ascii_numbers(value: str, policy: NumericScanPolicy = _DEFAULT_POLICY) -> set[str]:
+    return _scan_ascii_numbers(value, policy)[0]
+
+
+def scan_numbers_in_value(
+    value: Any, policy: NumericTraversalPolicy = _DEFAULT_TRAVERSAL_POLICY
+) -> set[str]:
+    """Scan a JSON-like tree under one shared traversal and token budget."""
+
+    found: set[str] = set()
+    chars = strings = nodes = tokens = 0
+    stack: list[tuple[Any, int]] = [(value, 0)]
+    while stack:
+        item, depth = stack.pop()
+        nodes += 1
+        if nodes > policy.max_nodes:
+            raise NumericScanBudgetExceeded("numeric_scan_node_budget_exceeded")
+        if depth > policy.max_depth:
+            raise NumericScanBudgetExceeded("numeric_scan_depth_budget_exceeded")
+        if isinstance(item, bool) or item is None:
+            continue
+        if isinstance(item, (int, float)):
+            tokens += 1
+            if tokens > policy.max_tokens:
+                raise NumericScanBudgetExceeded("numeric_scan_token_budget_exceeded")
+            found.add(str(item))
+            continue
+        if isinstance(item, str):
+            strings += 1
+            chars += len(item)
+            if strings > policy.max_strings:
+                raise NumericScanBudgetExceeded("numeric_scan_string_budget_exceeded")
+            if chars > policy.max_chars:
+                raise NumericScanBudgetExceeded("numeric_scan_character_budget_exceeded")
+            scanned, count = _scan_ascii_numbers(
+                item,
+                NumericScanPolicy(max_chars=len(item), max_tokens=policy.max_tokens - tokens),
+            )
+            tokens += count
+            found.update(scanned)
+            continue
+        if isinstance(item, dict):
+            stack.extend((child, depth + 1) for child in item.values())
+            continue
+        if isinstance(item, (list, tuple)):
+            stack.extend((child, depth + 1) for child in item)
     return found

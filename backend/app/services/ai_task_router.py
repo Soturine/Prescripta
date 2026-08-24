@@ -23,7 +23,7 @@ from app.services.ai_settings import AISettingsService
 from app.services.audit_service import AuditService
 from app.services.bounded_numeric_scanner import (
     NumericScanBudgetExceeded,
-    scan_ascii_numbers,
+    scan_numbers_in_value,
 )
 from app.services.canonical_json import canonical_sha256, json_compatible
 from app.services.cohort_dsl import CohortDSLValidationError, CohortDSLValidator
@@ -470,11 +470,7 @@ class AITaskRouter:
                 raise AITaskError("Interpretação alterou numeric refs determinísticos.")
             allowed_numbers = {str(item) for item in expected_refs}
             try:
-                narrative_numbers = {
-                    token
-                    for item in output.get("narrative_items", [])
-                    for token in scan_ascii_numbers(str(item))
-                }
+                narrative_numbers = scan_numbers_in_value(output.get("narrative_items", []))
             except NumericScanBudgetExceeded as exc:
                 raise AITaskError("Interpretação excedeu o budget numérico.") from exc
             if narrative_numbers - allowed_numbers:
@@ -537,20 +533,7 @@ class AITaskRouter:
 
     @staticmethod
     def _numbers(value: Any) -> set[str]:
-        found: set[str] = set()
-        if isinstance(value, bool):
-            return found
-        if isinstance(value, (int, float)):
-            found.add(str(value))
-        elif isinstance(value, str):
-            try:
-                found.update(scan_ascii_numbers(value))
-            except NumericScanBudgetExceeded as exc:
-                raise AITaskError("Conteúdo excedeu o budget numérico.") from exc
-        elif isinstance(value, dict):
-            for item in value.values():
-                found |= AITaskRouter._numbers(item)
-        elif isinstance(value, list):
-            for item in value:
-                found |= AITaskRouter._numbers(item)
-        return found
+        try:
+            return scan_numbers_in_value(value)
+        except NumericScanBudgetExceeded as exc:
+            raise AITaskError("Conteúdo excedeu o budget numérico.") from exc
