@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.0.0] - 2026-08-24
+
+### Stable demo workstation
+
+- task-first clinical/research shell, compact navigation and complete mobile “More” access;
+- semantic design tokens, human-readable workflow states and progressive technical details;
+- coherent Research workspace with URL deep links, accessible aggregate charts and tabular fallbacks;
+- human-labelled Pharmacy selection and bounded FHIR/import internals behind technical disclosure;
+- selected local Health Icons with CC0 provenance, hashes and executable SVG sanitization checks;
+- evergreen OpenAPI, qualification and release metadata, plus an exact-SHA release policy;
+- stable current screenshots, versioned v1 archive and reproducible asset manifests.
+
+This stable label describes the repository demo baseline only. Prescripta remains synthetic,
+educational and unvalidated for clinical, causal, regulatory, FHIR-network or production use.
+
 ## [0.10.0] - 2026-08-24
 
 ### Interoperability, Operations & Stabilization

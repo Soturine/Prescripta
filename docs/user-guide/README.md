@@ -1,6 +1,6 @@
 # Guia do usuário
 
-Este guia descreve o Prescripta v0.8.9 por tarefa e rota. A versão canônica é PT-BR; a interface também oferece EN-US. O sistema apoia o trabalho clínico, mas não substitui julgamento profissional, protocolos institucionais, bula validada nem decisão humana.
+Este guia descreve o Prescripta v1.0.0 por tarefa e rota. A versão canônica é PT-BR; a interface também oferece EN-US. O sistema apoia o trabalho clínico, mas não substitui julgamento profissional, protocolos institucionais, bula validada nem decisão humana.
 
 ## Como ler cada página
 

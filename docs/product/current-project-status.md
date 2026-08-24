@@ -1,6 +1,6 @@
 # Estado atual do projeto
 
-O Prescripta v0.8.9 é um portfólio healthtech demonstrativo executável em FastAPI, React/TypeScript e SQLAlchemy. Pode rodar nativamente com SQLite para desenvolvimento ou em uma stack Docker Compose reprodutível com PostgreSQL. Não é produto clínico validado nem pronto para operação hospitalar.
+O Prescripta v1.0.0 é um portfólio healthtech demonstrativo executável em FastAPI, React/TypeScript e SQLAlchemy. Pode rodar nativamente com SQLite para desenvolvimento ou em uma stack Docker Compose reprodutível com PostgreSQL. Não é produto clínico validado nem pronto para operação hospitalar.
 
 ## Capacidades disponíveis
 

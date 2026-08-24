@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Soturine/Prescripta/actions/workflows/ci.yml/badge.svg)](https://github.com/Soturine/Prescripta/actions/workflows/ci.yml)
 [![Security](https://github.com/Soturine/Prescripta/actions/workflows/security.yml/badge.svg)](https://github.com/Soturine/Prescripta/actions/workflows/security.yml)
-[![Release](https://img.shields.io/badge/release-v0.10.0-0891b2)](docs/releases/v0.10.0.md)
+[![Release](https://img.shields.io/badge/release-v1.0.0-0891b2)](docs/releases/v1.0.0.md)
 [![Licença](https://img.shields.io/badge/licença-Apache--2.0-f59e0b)](LICENSE)
 
 O Prescripta é uma plataforma demonstrativa e educacional organizada em três pilares: Medication
@@ -14,7 +14,7 @@ healthtech responsiva, disponível em PT-BR e EN-US.
 > usado em atendimento real. Não substitui avaliação profissional, bula, protocolo, autoridade
 > sanitária ou decisão institucional. Use somente dados fictícios.
 
-![Fluxo demonstrativo atual do Prescripta, com dashboard, paciente, decisão clínica e Research](docs/assets/current/prescripta-overview-v0.8.9.gif)
+![Fluxo demonstrativo atual do Prescripta, com dashboard, paciente, decisão clínica e Research](docs/assets/current/overview.gif)
 
 ## O que é — e o que não é
 
@@ -71,13 +71,13 @@ interna usa busca lexical indexada, não um RAG clinicamente validado.
 
 | Workspace profissional | Paciente autorizado |
 | --- | --- |
-| ![Dashboard profissional organizado pelas capacidades concedidas](docs/assets/current/dashboard-v0.8.9.png) | ![Workspace longitudinal de paciente fictício autorizado](docs/assets/current/patient-workspace-v0.8.9.png) |
+| ![Dashboard profissional organizado pelas capacidades concedidas](docs/assets/current/dashboard.png) | ![Workspace longitudinal de paciente fictício autorizado](docs/assets/current/patient-workspace.png) |
 | Decisão clínica | Revisão farmacêutica |
-| ![Resultado determinístico com cobertura, abstention e auditoria](docs/assets/current/clinical-decision-v0.8.9.png) | ![Workflow farmacêutico demonstrativo](docs/assets/current/pharmacy-review-v0.8.9.png) |
+| ![Resultado determinístico com cobertura, abstention e auditoria](docs/assets/current/clinical-result.png) | ![Workflow farmacêutico demonstrativo](docs/assets/current/pharmacy.png) |
 
-| Research Workspace | Attrition reproduzível |
+| Research Workspace | Análise acessível |
 | --- | --- |
-| ![Study Workspace Research e RWE sobre dados sintéticos](docs/assets/v0.9.0/research-study-workspace-v0.9.0.png) | ![Population Analytics agregada com Table 1 e attrition](docs/assets/v0.9.0/research-results-v0.9.0.png) |
+| ![Study Workspace Research e RWE sobre dados sintéticos](docs/assets/current/research-workspace.png) | ![Comparação e métodos com alternativa tabular](docs/assets/current/research-analysis.png) |
 
 | Comparative RWE | PSM/IPTW experimentais |
 | --- | --- |
@@ -167,7 +167,7 @@ O [modelo de ameaça](docs/security/threat-model.md), o
 - [índice da documentação](docs/README.md)
 - [guia do usuário por rota](docs/user-guide/README.md)
 - [arquitetura](docs/architecture/overview.md)
-- [roadmap v0.9.3–v1.0](docs/ROADMAP.md)
+- [roadmap](docs/ROADMAP.md)
 - [regras clínicas](docs/clinical-rules/risk-engine.md)
 - [Research & RWE](docs/research/README.md) e [Evidence Intelligence](docs/evidence/README.md)
 - [interoperabilidade](docs/interoperability/architecture.md)
