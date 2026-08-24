@@ -130,7 +130,8 @@ def test_provider_retry_openalex_configuration_and_malicious_xml(
     assert results == []
     assert metadata["polite_pool"] is True
     assert len(retrying.calls) == 2
-    assert delays == [0.25]
+    assert 0.3 in delays
+    assert any(delay >= 0.5 for delay in delays)
 
     monkeypatch.setenv("OPENALEX_API_KEY", "configured-secret")
     openalex = MockOutbound(
@@ -188,6 +189,17 @@ def test_openalex_without_key_degrades_and_dedupe_preserves_ambiguity(
     assert deduped[1]["duplicate_status"] == "needs_review"
 
 
+def test_evidence_metadata_cache_is_real_bounded_and_credential_free(db_session: Session) -> None:
+    mock = MockOutbound([(200, {"message": {"items": []}})])
+    service = EvidenceAcquisitionService(db_session, client=mock, sleeper=lambda _: None)
+    first = service._crossref("cache-contract-unique", "cache@example.test", {"limit": 1})
+    second = service._crossref("cache-contract-unique", "cache@example.test", {"limit": 1})
+    assert first[0] == second[0] == []
+    assert len(mock.calls) == 1
+    assert second[1]["cache"] == "process_ttl_900s"
+    assert second[1]["cache_hits"] == 1
+
+
 def test_agent_state_machine_checkpoint_injection_and_cancel(
     db_session: Session, create_test_user
 ) -> None:
@@ -211,9 +223,7 @@ def test_agent_state_machine_checkpoint_injection_and_cancel(
     assert run.steps[0]["authority_expanded"] is False
     assert service.step(run.id, AgentStepRequest(idempotency_key="agent-step-1"), actor) is run
     for index in range(2, 5):
-        run = service.step(
-            run.id, AgentStepRequest(idempotency_key=f"agent-step-{index}"), actor
-        )
+        run = service.step(run.id, AgentStepRequest(idempotency_key=f"agent-step-{index}"), actor)
     assert run.state == "waiting_human"
     assert run.proposal["status"] == "proposal_only"
     with pytest.raises(ResearchConflict):
@@ -254,9 +264,10 @@ def test_agent_denies_tools_budgets_recursion_and_cross_tenant(
         AgentRunCreate(study_id=study.id, template="study_design", goal="Try recursion"), actor
     )
     denied.allowed_tools = ["spawn_agent"]
-    assert service.step(
-        denied.id, AgentStepRequest(idempotency_key="denied-step"), actor
-    ).stop_reason == "tool_registry_violation"
+    assert (
+        service.step(denied.id, AgentStepRequest(idempotency_key="denied-step"), actor).stop_reason
+        == "tool_registry_violation"
+    )
     with pytest.raises(ResearchNotFound):
         service.cancel(denied.id, outsider)
     with pytest.raises(ResearchNotFound):

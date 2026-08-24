@@ -23,11 +23,12 @@ from app.schemas.evidence_schema import EvidenceSourceCreate
 from app.schemas.research_v093_schema import EvidenceSearchPlanCreate
 from app.services.audit_service import AuditService
 from app.services.canonical_json import canonical_sha256
+from app.services.evidence_gateway_governance import CACHE, GOVERNOR, POLICIES
 from app.services.evidence_service import EvidenceError, EvidenceService
 from app.services.outbound_http import SafeOutboundHTTPClient, SafeOutboundHTTPError
 from app.services.research_service import ResearchNotFound
 
-EVIDENCE_GATEWAY_VERSION = "evidence-acquisition-v1"
+EVIDENCE_GATEWAY_VERSION = "evidence-acquisition-v2"
 PROVIDER_HOSTS = {
     "pubmed": "eutils.ncbi.nlm.nih.gov",
     "crossref": "api.crossref.org",
@@ -54,6 +55,7 @@ class EvidenceAcquisitionService:
             max_response_bytes=1_000_000,
         )
         self.sleeper = sleeper
+        self._cache_hits = 0
 
     def create_plan(
         self, payload: EvidenceSearchPlanCreate, actor: UserModel
@@ -61,10 +63,15 @@ class EvidenceAcquisitionService:
         study = self.db.get(ResearchStudyModel, payload.study_id)
         if study is None or study.institution_id != actor.institution_id:
             raise ResearchNotFound("Estudo não encontrado.")
+        self.db.execute(
+            select(ResearchStudyModel.id)
+            .where(ResearchStudyModel.id == payload.study_id)
+            .with_for_update()
+        )
         version = (
             int(
                 self.db.scalar(
-                    select(func.count(EvidenceSearchPlanModel.id)).where(
+                    select(func.max(EvidenceSearchPlanModel.version)).where(
                         EvidenceSearchPlanModel.institution_id == actor.institution_id,
                         EvidenceSearchPlanModel.study_id == payload.study_id,
                     )
@@ -235,6 +242,7 @@ class EvidenceAcquisitionService:
                     url=f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
                     year=str(item.get("pubdate", ""))[:4],
                     authors=[a.get("name", "") for a in item.get("authors", [])],
+                    journal=item.get("fulljournalname", ""),
                 )
             )
         return results, {"requests": 3, "rate_limit_rps": 2, "history_batching": True}
@@ -256,11 +264,17 @@ class EvidenceAcquisitionService:
                 authors=[
                     f"{a.get('family', '')}, {a.get('given', '')}" for a in item.get("author", [])
                 ],
+                journal=((item.get("container-title") or [""])[0]),
                 license_metadata={"links": item.get("license", [])},
             )
             for item in items
         ]
-        return results, {"requests": 1, "polite_pool": True, "cache": "run_scoped"}
+        return results, {
+            "requests": 1,
+            "polite_pool": True,
+            "cache": "process_ttl_900s",
+            "cache_hits": self._cache_hits,
+        }
 
     def _openalex(self, query: str, key: str, filters: dict) -> tuple[list[dict], dict]:
         body = self._json_request(
@@ -279,6 +293,11 @@ class EvidenceAcquisitionService:
                 authors=[
                     a.get("author", {}).get("display_name", "") for a in item.get("authorships", [])
                 ],
+                journal=(
+                    ((item.get("primary_location") or {}).get("source") or {}).get(
+                        "display_name", ""
+                    )
+                ),
                 license_metadata={"open_access": item.get("open_access", {})},
             )
             for item in body.get("results", [])
@@ -297,27 +316,40 @@ class EvidenceAcquisitionService:
         headers: dict[str, str] | None = None,
         credential_hosts: set[str] | None = None,
     ) -> dict:
+        provider = self._provider_for_url(url)
+        cache_key = CACHE.key(provider, url, params)
+        cached = CACHE.get(cache_key)
+        if cached is not None:
+            self._cache_hits += 1
+            return cached
         response = None
-        for attempt in range(2):
-            response = self.client.request(
-                "GET",
-                url,
-                params=params,
-                headers=headers,
-                timeout_seconds=10,
-                credential_hosts=credential_hosts,
-            )
+        policy = POLICIES[provider]
+        for attempt in range(policy.max_retries + 1):
+            semaphore = GOVERNOR.reserve(provider, self.sleeper)
+            try:
+                response = self.client.request(
+                    "GET",
+                    url,
+                    params=params,
+                    headers=headers,
+                    timeout_seconds=10,
+                    credential_hosts=credential_hosts,
+                )
+            finally:
+                semaphore.release()
             if response.status_code not in {429, 500, 502, 503, 504}:
                 break
-            if attempt == 0:
-                self.sleeper(0.25)
+            if attempt < policy.max_retries:
+                self.sleeper(self._retry_delay(response, attempt, policy.retry_after_cap_seconds))
         if response is None or response.status_code >= 400:
             raise EvidenceAcquisitionError("Provider indisponível após retry bounded.")
         content_type = response.headers.get("content-type", "").lower()
         if "json" not in content_type:
             raise EvidenceAcquisitionError("Provider retornou content-type não permitido.")
         try:
-            return json.loads(response.content)
+            parsed = json.loads(response.content)
+            CACHE.put(cache_key, parsed)
+            return parsed
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
             raise EvidenceAcquisitionError("Provider retornou JSON inválido.") from exc
 
@@ -328,19 +360,25 @@ class EvidenceAcquisitionService:
         *,
         credential_hosts: set[str] | None = None,
     ) -> ET.Element:
+        provider = self._provider_for_url(url)
         response = None
-        for attempt in range(2):
-            response = self.client.request(
-                "GET",
-                url,
-                params=params,
-                timeout_seconds=10,
-                credential_hosts=credential_hosts,
-            )
+        policy = POLICIES[provider]
+        for attempt in range(policy.max_retries + 1):
+            semaphore = GOVERNOR.reserve(provider, self.sleeper)
+            try:
+                response = self.client.request(
+                    "GET",
+                    url,
+                    params=params,
+                    timeout_seconds=10,
+                    credential_hosts=credential_hosts,
+                )
+            finally:
+                semaphore.release()
             if response.status_code not in {429, 500, 502, 503, 504}:
                 break
-            if attempt == 0:
-                self.sleeper(0.25)
+            if attempt < policy.max_retries:
+                self.sleeper(self._retry_delay(response, attempt, policy.retry_after_cap_seconds))
         if response is None or response.status_code >= 400:
             raise EvidenceAcquisitionError("Provider unavailable after bounded retry.")
         content_type = response.headers.get("content-type", "").lower()
@@ -355,12 +393,30 @@ class EvidenceAcquisitionService:
             raise EvidenceAcquisitionError("Provider returned invalid XML.") from exc
 
     @staticmethod
+    def _provider_for_url(url: str) -> str:
+        for provider, host in PROVIDER_HOSTS.items():
+            if f"://{host}/" in url:
+                return provider
+        raise EvidenceAcquisitionError("Host sem política de rate limit.")
+
+    @staticmethod
+    def _retry_delay(response: httpx.Response, attempt: int, cap: float) -> float:
+        retry_after = response.headers.get("retry-after", "").strip()
+        try:
+            if retry_after:
+                return min(max(float(retry_after), 0.0), cap)
+        except ValueError:
+            pass
+        return min(0.25 * (2**attempt) + 0.05 * (attempt + 1), cap)
+
+    @staticmethod
     def _normalized(**item: Any) -> dict[str, Any]:
         item.setdefault("doi", None)
         item.setdefault("pmid", None)
         item.setdefault("pmcid", None)
         item.setdefault("openalex_id", None)
         item.setdefault("authors", [])
+        item.setdefault("journal", "")
         item.setdefault("year", "")
         item.setdefault("license_metadata", {})
         item["rights_status"] = "metadata_only"
@@ -388,7 +444,11 @@ class EvidenceAcquisitionService:
                 "heuristic",
                 " ".join(str(item.get("title", "")).casefold().split())
                 + "|"
-                + str(item.get("year", "")),
+                + str(item.get("year", ""))
+                + "|"
+                + str((item.get("authors") or [""])[0]).casefold()
+                + "|"
+                + str(item.get("journal", "")).casefold(),
             )
             if not exact and heuristic in seen:
                 item["duplicate_status"] = "needs_review"
