@@ -44,7 +44,8 @@ export default function Sidebar({ collapsed, mobileOpen, onCollapsedChange, onMo
       <aside
         aria-label={t("shell.navigation")}
         aria-modal={mobileOpen ? "true" : undefined}
-        className={`${mobileOpen ? "translate-x-0" : "-translate-x-full"} fixed inset-y-0 left-0 z-50 flex w-[min(88vw,20rem)] flex-col border-r border-cyan-950/10 bg-[#f7fbfb] text-ink shadow-2xl transition-[width,transform] duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none ${collapsed ? "lg:w-[5.25rem]" : "lg:w-72"}`}
+        className={`${mobileOpen ? "translate-x-0" : "-translate-x-full"} fixed inset-y-0 left-0 z-50 flex w-[min(88vw,20rem)] flex-col border-r border-slate-200 bg-[#f8faf9] text-ink shadow-2xl transition-[width,transform] duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none ${collapsed ? "lg:w-[5.25rem]" : "lg:w-64"}`}
+        role={mobileOpen ? "dialog" : undefined}
       >
         <div className="flex min-h-20 items-center gap-3 border-b border-cyan-950/10 px-4">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-ocean text-white shadow-soft"><HeartPulse aria-hidden="true" className="h-6 w-6" /></div>
@@ -70,8 +71,8 @@ export default function Sidebar({ collapsed, mobileOpen, onCollapsedChange, onMo
                       <NavLink
                         aria-label={collapsed ? label : undefined}
                         className={({ isActive }) => [
-                          "group relative flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-bold outline-hidden transition-colors focus-visible:ring-2 focus-visible:ring-cyan-700",
-                          isActive ? "bg-white text-ocean shadow-xs ring-1 ring-cyan-900/10" : "text-slate-600 hover:bg-white hover:text-ocean",
+                          "group relative flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-bold outline-hidden transition-colors focus-visible:ring-2 focus-visible:ring-cyan-700",
+                          isActive ? "bg-cyan-950 text-white" : "text-slate-600 hover:bg-white hover:text-ocean",
                           collapsed ? "lg:justify-center" : "",
                         ].join(" ")}
                         end={item.to === "/"}
@@ -80,7 +81,7 @@ export default function Sidebar({ collapsed, mobileOpen, onCollapsedChange, onMo
                         title={collapsed ? label : undefined}
                         to={item.to}
                       >
-                        {({ isActive }) => <>{isActive ? <span aria-hidden="true" className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-ocean" /> : null}<Icon aria-hidden="true" className="h-5 w-5 shrink-0" /><span className={collapsed ? "lg:sr-only" : ""}>{label}</span></>}
+                        <Icon aria-hidden="true" className="h-5 w-5 shrink-0" /><span className={collapsed ? "lg:sr-only" : ""}>{label}</span>
                       </NavLink>
                     );
                   })}

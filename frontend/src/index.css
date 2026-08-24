@@ -18,11 +18,26 @@
 }
 
 :root {
-  --color-clinical: #0f6577;
-  --radius-card: 1rem;
-  --radius-control: 0.75rem;
-  --motion-fast: 140ms;
-  --motion-normal: 200ms;
+  --color-text-strong: #102033;
+  --color-text-default: #334155;
+  --color-text-muted: #64748b;
+  --color-surface-canvas: #f3f5f4;
+  --color-surface-raised: #ffffff;
+  --color-surface-muted: #edf2f1;
+  --color-surface-clinical: #e7f3f0;
+  --color-surface-research: #eef0f8;
+  --color-border-subtle: #dce4e2;
+  --color-border-strong: #aebdb9;
+  --color-action-primary: #075f64;
+  --color-action-hover: #064e52;
+  --color-action-subtle: #dcefed;
+  --color-focus: #0891b2;
+  --color-ai-surface: #f2edff;
+  --color-ai-border: #cbbdf3;
+  --radius-card: 0.75rem;
+  --radius-control: 0.5rem;
+  --motion-fast: 120ms;
+  --motion-normal: 180ms;
   color: var(--color-ink);
   background: var(--color-canvas);
   font-family: var(--font-sans);
@@ -39,7 +54,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
-  background: linear-gradient(180deg, #f7fafb 0%, var(--color-canvas) 45%, #f2f7f6 100%);
+  background: var(--color-surface-canvas);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
@@ -49,7 +64,7 @@ body {
 }
 
 :focus-visible {
-  outline: 3px solid #22d3ee;
+  outline: 3px solid var(--color-focus);
   outline-offset: 3px;
 }
 
@@ -98,7 +113,7 @@ dialog::backdrop {
 
 @layer components {
   .field {
-    @apply min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs outline-hidden transition placeholder:text-slate-400 hover:border-slate-400 focus:border-cyan-700 focus:ring-3 focus:ring-cyan-700/15 disabled:bg-slate-100 disabled:text-slate-500;
+    @apply min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-hidden transition placeholder:text-slate-400 hover:border-slate-400 focus:border-cyan-800 focus:ring-3 focus:ring-cyan-800/15 disabled:bg-slate-100 disabled:text-slate-500;
   }
 
   .field[aria-invalid="true"] {
@@ -118,11 +133,11 @@ dialog::backdrop {
   }
 
   .btn-primary {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-ocean px-4 py-2 text-sm font-extrabold text-white shadow-xs outline-hidden transition hover:bg-cyan-800 focus-visible:ring-3 focus-visible:ring-cyan-500/30 active:translate-y-px disabled:bg-slate-300 disabled:text-slate-600 disabled:shadow-none;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-ocean px-4 py-2 text-sm font-extrabold text-white outline-hidden transition hover:bg-cyan-900 focus-visible:ring-3 focus-visible:ring-cyan-600/30 disabled:bg-slate-300 disabled:text-slate-600;
   }
 
   .btn-secondary {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-extrabold text-slate-700 shadow-xs outline-hidden transition hover:border-cyan-700 hover:text-ocean focus-visible:ring-3 focus-visible:ring-cyan-500/25 active:translate-y-px disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-extrabold text-slate-700 outline-hidden transition hover:border-cyan-800 hover:text-ocean focus-visible:ring-3 focus-visible:ring-cyan-600/25 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400;
   }
 
   .btn-danger {
@@ -134,15 +149,15 @@ dialog::backdrop {
   }
 
   .surface-card {
-    @apply rounded-2xl border border-cyan-950/10 bg-white shadow-soft;
+    @apply rounded-xl border border-slate-200 bg-white shadow-xs;
   }
 
   .subtle-panel {
-    @apply rounded-xl border border-slate-200 bg-slate-50/80;
+    @apply rounded-lg border border-slate-200 bg-slate-50/80;
   }
 
   .table-shell {
-    @apply overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-soft;
+    @apply overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs;
   }
 
   .data-table {
@@ -171,14 +186,12 @@ dialog::backdrop {
   }
 
   .clinical-hero {
-    @apply overflow-hidden rounded-[1.75rem] border border-cyan-900/10 shadow-soft;
-    background:
-      linear-gradient(125deg, rgba(255, 255, 255, 0.96), rgba(231, 246, 243, 0.92)),
-      repeating-linear-gradient(90deg, transparent 0 39px, rgba(15, 101, 119, 0.04) 40px);
+    @apply overflow-hidden border-b border-cyan-900/15;
+    background: linear-gradient(90deg, rgba(231, 243, 240, 0.88), rgba(255, 255, 255, 0));
   }
 
   .clinical-metric {
-    @apply relative flex min-h-40 flex-col overflow-hidden rounded-2xl border border-cyan-950/10 bg-white p-5 shadow-soft outline-hidden transition hover:-translate-y-0.5 hover:border-cyan-500/50 hover:shadow-float focus-visible:ring-3 focus-visible:ring-cyan-600/25;
+    @apply relative flex min-h-36 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-5 outline-hidden transition hover:border-cyan-700/50 focus-visible:ring-3 focus-visible:ring-cyan-600/25;
   }
 
   .clinical-metric::after {
@@ -188,6 +201,22 @@ dialog::backdrop {
 
   .clinical-metric__icon {
     @apply flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-900/10 bg-cyan-50 text-ocean;
+  }
+
+  .workstation-section {
+    @apply border-t border-slate-200 pt-6;
+  }
+
+  .eyebrow {
+    @apply text-[0.6875rem] font-black uppercase tracking-[0.16em] text-ocean;
+  }
+
+  .technical-surface {
+    @apply overflow-auto rounded-lg border border-slate-300 bg-slate-950 p-4 font-mono text-xs leading-5 text-slate-100;
+  }
+
+  .tabular-number {
+    font-variant-numeric: tabular-nums;
   }
 }
 

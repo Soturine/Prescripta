@@ -11,7 +11,12 @@
     "close": "Close",
     "expand": "Expand",
     "collapse": "Collapse",
-    "flows": "{{count}} flows"
+    "flows": "{{count}} flows",
+    "technicalDetails": "Technical details",
+    "copy": "Copy",
+    "syntheticData": "Synthetic data",
+    "experimental": "Experimental",
+    "more": "More"
   },
   "locale": {
     "pt-BR": "Português (Brasil)",
@@ -130,7 +135,15 @@
     "metricNoSource": "No external source",
     "metricNoDose": "Dose rule pending",
     "metricNoPolicy": "Policy pending",
-    "metricCounseling": "Counseling summaries"
+    "metricCounseling": "Counseling summaries",
+    "continueWork": "Continue work",
+    "continueDescription": "Resume a clinical or research task with one clear primary action. No decision is made on this screen.",
+    "attentionNow": "Attention now",
+    "attentionDescription": "Items that deserve professional review before moving forward. Counts are demonstrative, not clinical incidence.",
+    "reviewAlerts": "Review trail and alerts",
+    "dataState": "Data state",
+    "operationalContext": "Operational context",
+    "operationalDescription": "Compact references that support work without turning the overview into a KPI dashboard."
   },
   "actions": {
     "checkTitle": "Check prescription",
@@ -181,7 +194,15 @@
     "priority": "Priority",
     "routine": "Routine",
     "urgent": "Urgent",
-    "supports": "Supports"
+    "supports": "Supports",
+    "disabled_by_default": "Disabled by default",
+    "waiting_human": "Waiting for human review",
+    "queued": "Queued",
+    "running": "Running",
+    "not_run": "Not run yet",
+    "not_computed": "Not computed yet",
+    "completed_experimental_synthetic": "Completed with experimental synthetic data",
+    "planned": "Planned"
   },
   "risk": {
     "baixo": "Low",

@@ -1,4 +1,4 @@
-import { ChevronRight, CircleHelp, LogOut, Menu, ShieldCheck, UserRound } from "lucide-react";
+import { ChevronRight, CircleHelp, LogOut, Menu, MoreHorizontal, ShieldCheck, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
@@ -27,8 +27,8 @@ export default function Layout() {
     (item) => item.capability === null || can(item.capability as Capability),
   );
   const mobileRoutes = visibleRoutes
-    .filter((item) => ["/", "/patients", "/prescription-check", "/pharmacy", "/help"].includes(item.to))
-    .slice(0, 4);
+    .filter((item) => ["/", "/patients", "/prescription-check"].includes(item.to))
+    .slice(0, 3);
 
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_PREFERENCE, String(collapsed));
@@ -63,7 +63,7 @@ export default function Layout() {
         onMobileOpenChange={setMobileOpen}
       />
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-30 border-b border-cyan-950/10 bg-white/95 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/97 backdrop-blur-xl">
           <div className="flex min-h-16 items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:px-8">
             <button
               aria-expanded={mobileOpen}
@@ -111,18 +111,19 @@ export default function Layout() {
           </div>
         </header>
 
-        <main className="min-h-[calc(100vh-4rem)] px-4 py-6 pb-24 outline-none sm:px-6 lg:px-8 lg:py-8" id="main-content" tabIndex={-1}>
-          <div className="page-enter mx-auto w-full max-w-[90rem]" key={location.pathname}>
+        <main className="min-h-[calc(100vh-4rem)] px-4 py-6 pb-24 outline-none sm:px-6 lg:px-10 lg:py-8" id="main-content" tabIndex={-1}>
+          <div className="page-enter mx-auto w-full max-w-[86rem]" key={location.pathname}>
             {!online ? <div className="mb-5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950" role="status">{t("shell.offlineWarning")}</div> : null}
             <Outlet />
           </div>
         </main>
 
-        <nav aria-label={t("shell.mobileNavigation")} className="fixed inset-x-0 bottom-0 z-30 grid min-h-16 border-t border-cyan-950/10 bg-white/97 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-20px_rgba(15,23,42,.45)] lg:hidden" style={{ gridTemplateColumns: `repeat(${Math.max(mobileRoutes.length, 1)}, minmax(0, 1fr))` }}>
+        <nav aria-label={t("shell.mobileNavigation")} className="fixed inset-x-0 bottom-0 z-30 grid min-h-16 border-t border-slate-200 bg-white/97 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-20px_rgba(15,23,42,.45)] lg:hidden" style={{ gridTemplateColumns: `repeat(${Math.max(mobileRoutes.length + 1, 1)}, minmax(0, 1fr))` }}>
           {mobileRoutes.map((item) => {
             const Icon = item.icon;
             return <NavLink className={({ isActive }) => `flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[0.6875rem] font-extrabold ${isActive ? "text-ocean" : "text-slate-500"}`} end={item.to === "/"} key={item.to} to={item.to}><Icon aria-hidden="true" className="h-5 w-5" /><span className="max-w-full truncate">{t(item.shortLabelKey ?? item.labelKey)}</span></NavLink>;
           })}
+          <button aria-expanded={mobileOpen} aria-haspopup="dialog" className="flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[0.6875rem] font-extrabold text-slate-500" onClick={() => setMobileOpen(true)} type="button"><MoreHorizontal aria-hidden="true" className="h-5 w-5" /><span>{t("common.more")}</span></button>
         </nav>
       </div>
     </div>

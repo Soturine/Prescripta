@@ -11,7 +11,12 @@
     "close": "Fechar",
     "expand": "Expandir",
     "collapse": "Recolher",
-    "flows": "{{count}} fluxos"
+    "flows": "{{count}} fluxos",
+    "technicalDetails": "Detalhes técnicos",
+    "copy": "Copiar",
+    "syntheticData": "Dados sintéticos",
+    "experimental": "Experimental",
+    "more": "Mais"
   },
   "locale": {
     "pt-BR": "Português (Brasil)",
@@ -130,7 +135,15 @@
     "metricNoSource": "Sem fonte externa",
     "metricNoDose": "Regra de dose pendente",
     "metricNoPolicy": "Política pendente",
-    "metricCounseling": "Resumos para orientação"
+    "metricCounseling": "Resumos para orientação",
+    "continueWork": "Continuar trabalho",
+    "continueDescription": "Retome uma tarefa clínica ou de pesquisa com uma ação principal clara. Nenhuma decisão é tomada nesta tela.",
+    "attentionNow": "Atenção agora",
+    "attentionDescription": "Itens que merecem revisão profissional antes de avançar. As contagens são demonstrativas, não incidência clínica.",
+    "reviewAlerts": "Revisar trilha e alertas",
+    "dataState": "Estado dos dados",
+    "operationalContext": "Contexto operacional",
+    "operationalDescription": "Referências compactas para orientar o trabalho, sem transformar a visão geral em painel de KPIs."
   },
   "actions": {
     "checkTitle": "Checar prescrição",
@@ -181,7 +194,15 @@
     "priority": "Prioritária",
     "routine": "Rotina",
     "urgent": "Urgente",
-    "supports": "Sustenta"
+    "supports": "Sustenta",
+    "disabled_by_default": "Desativado por padrão",
+    "waiting_human": "Aguardando revisão humana",
+    "queued": "Na fila",
+    "running": "Em execução",
+    "not_run": "Ainda não executado",
+    "not_computed": "Ainda não calculado",
+    "completed_experimental_synthetic": "Concluído com dados sintéticos experimentais",
+    "planned": "Planejado"
   },
   "risk": {
     "baixo": "Baixo",
