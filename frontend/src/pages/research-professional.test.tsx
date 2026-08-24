@@ -33,6 +33,8 @@ const apiMocks = vi.hoisted(() => ({
   fetchEvidenceLinks: vi.fn(),
   fetchEvidenceSources: vi.fn(),
   fetchPatientJourney: vi.fn(),
+  fetchPatients: vi.fn(),
+  fetchMedications: vi.fn(),
   fetchPharmacyInterventions: vi.fn(),
   fetchResearchStudies: vi.fn(),
   fetchResearchWorkspace: vi.fn(),
@@ -185,6 +187,8 @@ beforeEach(() => {
   apiMocks.fetchEvidenceSources.mockResolvedValue([{ id: "source-1", institution_id: "demo", source_type: "other", title: "Fonte demo", identifier: "fixture:1", url: null, publisher: null, jurisdiction: "BR-demo", publication_date: null, access_date: null, source_version: "v1", review_status: "pending_review", reviewer_user_id: null, license_metadata: {}, content_hash: null, provenance: {}, created_by_user_id: 1, created_at: timestamp }]);
   apiMocks.fetchEvidenceLinks.mockResolvedValue([{ id: "link-1", institution_id: "demo", source_id: "source-1", target_type: "study", target_id: "study-1", relationship: "supports", locator: "section 1", review_status: "pending_review", created_by_user_id: 1, created_at: timestamp }]);
   apiMocks.fetchPharmacyInterventions.mockResolvedValue([{ id: 7, institution_id: "demo", patient_id: 4, medication_id: 3, pharmacist_user_id: 2, intervention_type: "dose", severity: "moderate", priority: "priority", problem: "Dose requer conferência humana.", recommendation: "Revisar dose com o prescritor.", source_refs: ["source:demo"], dose_snapshot: {}, status: "open", idempotency_key: "demo-key", version: 1, cosignature_required: false, cosigned_by_user_id: null, accepted: null, resolution: null, created_at: timestamp, updated_at: timestamp }]);
+  apiMocks.fetchPatients.mockResolvedValue([{ id: 4, name: "Paciente autorizado" }]);
+  apiMocks.fetchMedications.mockResolvedValue([{ id: 3, brand_name: "Medicamento demo", active_ingredient: "ingrediente demo" }]);
   apiMocks.decidePharmacyIntervention.mockResolvedValue({});
   for (const mock of Object.values(apiMocks)) if (!mock.getMockImplementation()) mock.mockResolvedValue({});
 });
@@ -194,6 +198,7 @@ describe("Research & RWE", () => {
     renderPage(<Research />);
     expect(await screen.findByRole("heading", { name: "Estudo sintético" })).toBeVisible();
     expect(screen.getByText(/exclusivamente sobre dados sintéticos/)).toBeVisible();
+    fireEvent.click(screen.getByRole("tab", { name: "Protocolo" }));
     fireEvent.click(screen.getByRole("button", { name: "Nova versão" }));
     await waitFor(() => expect(apiMocks.createStudyProtocolVersion).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: "Criar outcome demo" }));
@@ -208,7 +213,8 @@ describe("Research & RWE", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Resultados" }));
     expect(await screen.findByText("N = 1")).toBeVisible();
     expect(screen.getByText(/3 → 2/)).toBeVisible();
-    fireEvent.click(screen.getByRole("tab", { name: "Plano de análise" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Análise" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Plano e qualidade" }));
     expect(await screen.findByText("Unidade desconhecida")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Executar checks" }));
     await waitFor(() => expect(apiMocks.runDataQuality).toHaveBeenCalled());
