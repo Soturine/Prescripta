@@ -3,6 +3,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
+import { callFunction } from "./lib/cdp-runtime.mjs";
+
 const root = process.cwd();
 const frontendUrl = process.env.PRESCRIPTA_CAPTURE_FRONTEND_URL ?? "http://127.0.0.1:5175";
 const apiUrl = process.env.PRESCRIPTA_CAPTURE_API_URL ?? "http://127.0.0.1:8011/api";
@@ -100,10 +102,6 @@ async function evaluate(cdp, expression) {
   return result;
 }
 
-function js(value) {
-  return JSON.stringify(value);
-}
-
 let currentLogin = null;
 
 async function ensureLogin(cdp, session) {
@@ -113,21 +111,25 @@ async function ensureLogin(cdp, session) {
   await cdp.send("Page.navigate", { url: `${frontendUrl}/login` });
   await waitForEval(cdp, "document.readyState === 'complete'");
   await evaluate(cdp, "localStorage.clear(); true;");
-  await evaluate(
+  await callFunction(
     cdp,
-    `fetch(${js(`${apiUrl}/auth/login`)}, {
+    `function (loginUrl, email, password, destination) { return fetch(loginUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: ${js(session.email)}, password: ${js(session.password)} })
+      body: JSON.stringify({ email, password })
     }).then((response) => {
       if (!response.ok) throw new Error('login failed ' + response.status);
       return response.json();
     }).then((payload) => {
       localStorage.setItem('prescripta_access_token', payload.access_token);
       localStorage.setItem('prescripta_user', JSON.stringify(payload.user));
-      window.location.href = ${js(`${frontendUrl}/`)};
+      window.location.href = destination;
       return true;
-    })`,
+    }); }`,
+    `${apiUrl}/auth/login`,
+    session.email,
+    session.password,
+    `${frontendUrl}/`,
   );
   await waitForEval(
     cdp,
@@ -164,26 +166,25 @@ async function screenshot(cdp, filename) {
 }
 
 async function scrollToText(cdp, text) {
-  await evaluate(
+  await callFunction(
     cdp,
-    `(() => {
+    `function (text) {
       const normalize = (value) => value.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
-      const needle = normalize(${js(text)});
+      const needle = normalize(text);
       const nodes = [...document.querySelectorAll('h1,h2,h3,p,span,label,button,article,section')];
       const node = nodes.find((item) => normalize(item.textContent || '').includes(needle));
       if (node) node.scrollIntoView({ block: 'start', inline: 'nearest' });
       return Boolean(node);
-    })();`,
+    }`,
+    text,
   );
   await wait(600);
 }
 
 async function fillPrescription(cdp) {
-  await evaluate(
+  await callFunction(
     cdp,
-    `(() => {
-      const patientId = ${Number(data.patient_id)};
-      const medicationId = ${Number(data.medication_id)};
+    `function (patientId, medicationId) {
       const setValue = (el, value) => {
         if (!el) return;
         const proto = el.tagName === 'SELECT' ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
@@ -201,7 +202,9 @@ async function fillPrescription(cdp) {
       const button = document.querySelector('button[type="submit"]');
       button?.click();
       return true;
-    })();`,
+    }`,
+    Number(data.patient_id),
+    Number(data.medication_id),
   );
   await waitForEval(cdp, "document.body.innerText.includes('Resultado')");
   await scrollToText(cdp, "Resultado");
@@ -222,10 +225,9 @@ async function explainPrescription(cdp) {
 }
 
 async function fillProtocol(cdp) {
-  await evaluate(
+  await callFunction(
     cdp,
-    `(() => {
-      const patientId = ${Number(data.patient_id)};
+    `function (patientId) {
       const setSelect = (select, value) => {
         const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
         setter.call(select, String(value));
@@ -249,7 +251,8 @@ async function fillProtocol(cdp) {
       );
       if (boolSelect) setSelect(boolSelect, 'true');
       return true;
-    })();`,
+    }`,
+    Number(data.patient_id),
   );
   await wait(500);
 }
