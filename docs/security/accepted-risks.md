@@ -7,6 +7,13 @@ entrada estreita, versionada e temporária abaixo.
 |---|---|---|---|
 | CVE-2026-14456 | somente `libssl3t64@3.5.6-1~deb13u2` da imagem backend pinada | Debian reporta `fix_deferred`; o defeito atinge o listener OpenSSL QUIC server, que não é exposto nem usado pelo Prescripta. A exceção limita-se ao PURL exato; todo outro finding HIGH/CRITICAL continua bloqueante. Reconsultar a base pinada e remover assim que houver correção. | 2026-09-07 |
 
+Reconsulta independente em 2026-08-24: o advisory oficial do OpenSSL classifica o problema como
+`Low`, restrito ao listener QUIC server em OpenSSL 3.5+, e informa correção futura em 3.5.8. O
+tracker oficial do Debian ainda marca `3.5.6-1~deb13u2` como vulnerável e adiado por severidade menor.
+Portanto, ignorado não significa corrigido; o PURL exato e a expiração continuam obrigatórios.
+Fontes: <https://openssl-library.org/news/secadv/20260813.txt> e
+<https://security-tracker.debian.org/tracker/CVE-2026-14456>.
+
 ## Riscos residuais conhecidos da v0.8.9
 
 | Área | Risco residual | Controle e condição de revisão |
