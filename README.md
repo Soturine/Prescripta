@@ -28,44 +28,21 @@ SMART App Launch ou CDS Hooks. Os adapters de importação são compatibilidade 
 não representam uma integração hospitalar certificada. A base
 interna usa busca lexical indexada, não um RAG clinicamente validado.
 
-## Capacidades
+## Três pilares
 
-- envelope canônico de decisão com `coverage_status`, achados, fontes, dados faltantes e abstention;
-- dose dimensional para massa, frequência, taxa, infusão, procedimento e exposição acumulada;
-- catálogo demonstrativo com princípio ativo, produto, aliases, jurisdição, versão e status de revisão;
-- autorização por instituição, escopo de paciente e trilha de acessos negados;
-- snapshots clínicos imutáveis, hash de JSON canônico e relatórios históricos reprodutíveis;
-- reconciliação granular de importações com consentimento e decisão humana por item;
-- override governado sem reduzir severidade, com justificativa e segundo revisor independente;
-- sessão em cookie HttpOnly, lockout persistente, MFA TOTP opcional e startup seguro fora do modo local;
-- providers de IA opcionais com credenciais criptografadas, allowlist/SSRF, circuit breaker compartilhado
-  e fallback local;
-- PDF/JSON/CSV, paginação, manifesto de truncamento e auditoria pseudonimizada;
-- Alembic, PostgreSQL em CI, testes automatizados, SAST/SCA, secret scan e SBOM de dependências e imagens;
-- workflows institucionais de enfermagem e farmácia, com protocolo/versionamento e transações únicas;
-- estudos e protocolos versionados, concept sets revisados, cohort DSL sem SQL livre e attrition;
-- runs determinísticos aggregate-first, snapshots, hashes, provenance e Data Quality;
-- EvidenceSource/EvidenceLink e AI Task Router proposal-only com revisão humana obrigatória;
-- Comparative RWE sintético com Table 1, SMD, RR/OR, pessoa-tempo e PSM/IPTW experimentais,
-  sempre determinísticos, aggregate-only e sem alegação causal;
-- Research Copilot v2 e literatura com grounding/locator, mais NL→SQL default-off sobre view
-  agregada escopada por instituição, estudo e snapshot;
-- acquisition gateway de metadados PubMed/Crossref/OpenAlex, planos de busca versionados e agentes
-  de pesquisa limitados por ferramentas, orçamento, auditoria e checkpoint humano;
-- sensitivity grids determinísticos e planner PostgreSQL autoritativo, preservando linguagem
-  experimental e sem transformar diagnósticos em alegação causal.
-- Agent Runtime v2 com escolha e execução server-side de tools, budgets medidos pelo servidor,
-  idempotência, cancelamento e checkpoint humano;
-- subset FHIR R4 JSON limitado, idempotente e pendente de reconciliação, com coding, referências e
-  lineage preservados sem fetch externo;
-- request ID, logs sem payload/query, métricas de baixa cardinalidade, readiness e Qualification
-  exata com migration, benchmark e backup→restore PostgreSQL;
-- registro governado de terminologias, releases, licenças, checksums, busca suggestion-only e
-  mappings versionados com revisão humana independente;
-- adaptador parcial OMOP CDM 5.4 para sete tabelas, exclusivamente sobre dados sintéticos, sem
-  alegação de compatibilidade com DQD, Achilles, ATLAS ou estudos em rede;
-- stack Docker Compose com PostgreSQL, migração one-shot, imagens sem root e healthchecks;
-- shell healthtech responsivo, localização PT-BR/EN-US e guia contextual por rota.
+| Pilar | O que demonstrar | Limite autoritativo |
+| --- | --- | --- |
+| **Medication Safety** | Dose dimensional, cobertura, abstention, alertas, protocolos, farmácia e reconciliação por item | Regras determinísticas calculam; o profissional decide |
+| **Evidence Intelligence** | Fontes versionadas, locators, vínculos, recuperação educacional e relatórios auditáveis | Fontes sustentam; IA não cria evidência nem conduta |
+| **Research & RWE** | Estudos sintéticos, coortes, attrition, Data Quality, Table 1, SMD e métodos experimentais | Resultados são aggregate-first, sem inferência causal |
+
+**LLMs propose. Deterministic systems calculate. Humans approve. Sources substantiate.**
+
+Como fundação transversal, a plataforma oferece autorização por capacidade e escopo de paciente,
+cookie HttpOnly, auditoria pseudonimizada, snapshots e hashes canônicos, PT-BR/EN-US, relatórios
+PDF/JSON/CSV e operação reproduzível com Alembic e PostgreSQL. O subset FHIR R4 JSON é delimitado; o
+adapter OMOP CDM 5.4 é parcial; PSM/IPTW são experimentais; NL→SQL permanece default-off; agentes e
+IA são proposal-only, limitados por ferramentas, orçamento, fontes e checkpoint humano.
 
 ## Galeria
 
@@ -79,13 +56,9 @@ interna usa busca lexical indexada, não um RAG clinicamente validado.
 | --- | --- |
 | ![Study Workspace Research e RWE sobre dados sintéticos](docs/assets/current/research-workspace.png) | ![Comparação e métodos com alternativa tabular](docs/assets/current/research-analysis.png) |
 
-| Comparative RWE | PSM/IPTW experimentais |
+| Entrada da checagem | Auditoria e proveniência |
 | --- | --- |
-| ![Table 1 comparativa sobre fixture sintética](docs/assets/v0.9.2/comparative-table-one-v0.9.2.png) | ![Diagnósticos PSM e IPTW sem alegação causal](docs/assets/v0.9.2/psm-iptw-diagnostics-v0.9.2.png) |
-
-| Sensibilidade e evidência | Agente e planner governados |
-| --- | --- |
-| ![Sensitivity grids determinísticos sem alegação causal](docs/assets/v0.9.3/sensitivity-causal-validation-v0.9.3.png) | ![Agente de evidência aguardando checkpoint humano](docs/assets/v0.9.3/agentic-evidence-checkpoint-v0.9.3.png) |
+| ![Checagem clínica estruturada com dados sintéticos](docs/assets/current/clinical-check.png) | ![Auditoria demonstrativa com filtros e detalhes técnicos](docs/assets/current/audit.png) |
 
 A [galeria corrente e seu manifesto SHA-256](docs/assets/current/manifest.json) também incluem checagem estruturada, auditoria e mobile.
 
@@ -100,11 +73,12 @@ docker compose up --build
 ```
 
 Use `docker compose down` para parar preservando o volume. `docker compose down --volumes` também
-remove todos os dados demonstrativos locais. Consulte o [guia Docker](docs/operations/docker.md).
+remove todos os dados demonstrativos locais. Health: `http://localhost:8000/api/health`; OpenAPI:
+`http://localhost:8000/docs`. Consulte o [guia Docker](docs/operations/docker.md).
 
 ## Quick Start B — desenvolvimento nativo
 
-Requer Python 3.12+, Node.js 24+ e npm.
+Requer Python 3.12+, Node.js 22+ e npm 11.18.0. A CI de referência usa Node.js 24.
 
 ```powershell
 python -m venv .venv
@@ -123,6 +97,23 @@ powershell -ExecutionPolicy Bypass -File scripts/dev.ps1
 
 Ou consulte o [guia de setup local](docs/getting-started/local-setup.md). Docker complementa esse
 fluxo; não substitui o ambiente Python/Node útil durante desenvolvimento.
+
+## Primeiro uso e perfis demo
+
+Com o seed local ativo, use somente as contas públicas e sintéticas abaixo. Todas usam dados de
+demonstração; nunca reutilize essas senhas fora do ambiente local.
+
+| Perfil demo | Login | O que explorar |
+| --- | --- | --- |
+| Médico | `medico@prescripta.local` / `Medico@12345` | Pacientes autorizados, medicamentos, checagem e protocolos |
+| Farmácia | `farmacia@prescripta.local` / `Farmacia@12345` | Intervenções farmacêuticas e revisão humana |
+| Pesquisa | `pesquisa@prescripta.local` / `Pesquisa@12345` | Study Workspace, coortes, análise, resultados e proveniência |
+| Auditoria | `auditor@prescripta.local` / `Auditor@12345` | Eventos, filtros, decisões e trilhas de auditoria |
+
+Abra o frontend, entre com o perfil correspondente e siga a [jornada inicial](docs/product/first-run-user-journey.md).
+A navegação muda porque o backend aplica capacidades, organização e escopo do objeto. Para recuperar
+o ambiente local, use o [troubleshooting](docs/setup/troubleshooting.md) ou recrie apenas o banco demo
+com `scripts/reset-demo-db.ps1`.
 
 ## Arquitetura resumida
 

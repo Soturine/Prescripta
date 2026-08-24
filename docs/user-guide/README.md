@@ -22,6 +22,17 @@ Cada página informa objetivo, acesso, pré-requisitos, passos, persistência, a
 - [Auditoria](audit.md), [assistente de IA](ai-assistant.md) e [permissões](permissions-and-access.md)
 - [Idioma](language-and-localization.md) e [glossário](glossary.md)
 
+## Sequência recomendada para a demo
+
+1. inicie por Docker ou pelo setup local e entre com um [perfil demo](../../README.md#primeiro-uso-e-perfis-demo);
+2. use **Visão geral** para reconhecer tarefas e pendências do papel;
+3. abra **Pacientes** e revise o workspace longitudinal sintético;
+4. consulte **Medicamentos** e execute uma **Checagem clínica**;
+5. com perfil autorizado, explore **Farmácia clínica**, reconciliação e **Protocolos**;
+6. consulte relatórios, **Evidências** e o workspace de **Pesquisa e RWE**;
+7. confirme a trilha em **Auditoria**, altere PT-BR/EN-US e encerre a sessão;
+8. quando necessário, recrie o seed local pelo [troubleshooting](../setup/troubleshooting.md).
+
 ## Ambiente demonstrativo
 
 Exemplos e dados de demonstração são sintéticos. Não insira CPF, CNS, telefone, endereço, e-mail ou qualquer identificador real em ambientes não aprovados para dados clínicos.

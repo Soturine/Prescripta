@@ -1,18 +1,69 @@
 # Documentação do Prescripta
 
-- Produto: [visão geral](product/product-overview.md), [tour](product/product-tour.md), [status](product/current-project-status.md) e [limitações](product/known-limitations.md).
-- Guia do usuário: [primeiro acesso e rotas](user-guide/README.md), [permissões](user-guide/permissions-and-access.md) e [glossário](user-guide/glossary.md).
-- Públicos: [leigos](audiences/for-laypeople-and-evaluators.md), [médicos](audiences/for-physicians.md), [enfermagem](audiences/for-nursing.md), [auditores](audiences/for-auditors.md) e [TI](audiences/for-it-and-integrations.md).
-- Clínica: [dose](clinical/dose-intelligence.md), [psicotrópicos](clinical/psychotropic-safety-engine.md) e [policy](clinical/prescribing-policy-engine.md).
-- Workflows profissionais: [enfermagem por protocolo](clinical-workflows/nursing-protocol-prescribing.md) e [farmácia](clinical-workflows/pharmacy-workflow.md).
-- Research/RWE: [visão geral](research/README.md), [comparações](research/comparative-analytics.md), [métodos](research/statistical-methods.md), [PSM](research/propensity-score.md), [IPTW](research/ipw.md) e [Data Quality](research/data-quality.md).
-- Evidências: [foundation](evidence/README.md), [fontes](evidence/source-model.md), [concept sets](evidence/concept-sets.md) e [Literature Copilot](evidence/literature-copilot.md).
-- IA: [Task Router](ai/task-router.md), [provenance](ai/ai-provenance.md), [segurança de analytics em linguagem natural](ai/natural-language-analytics-security-design.md), [registro de prompts](ai/prompt-registry.md) e [workflows](product/ai-in-clinical-workflows.md).
-- Relatórios e auditoria: [EvidenceBundle](reports/report-evidence-bundle.md), [operação](auditing/README.md) e [histórico](audits/README.md).
-- Integrações: [onboarding](integration/institutional-onboarding.md), [contratos](integration/adapter-contracts.md) e [LGPD](integration/security-and-lgpd.md).
-- Frontend: [arquitetura](frontend/architecture.md), [design system](frontend/design-system.md), [arquitetura da informação](frontend/information-architecture.md), [i18n](frontend/internationalization.md), [auditoria heurística](frontend/v0.8.9-ux-heuristic-audit.md), [diferenciação](frontend/v0.8.9-visual-differentiation-audit.md) e [regressão visual](frontend/v0.8.9-visual-regression-report.md).
-- Testes: [CI e release](testing/ci-and-release-gates.md) e [checklist](testing/v0.8.5-end-to-end-checklist.md).
-- Segurança e operação: [autorização](security/authentication-and-roles.md), [modelo de ameaça](security/threat-model.md), [hazard log](security/clinical-safety-hazard-log.md), [install scripts](security/package-install-scripts.md), [Docker](operations/docker.md) e [runbooks](operations/README.md).
-- Benchmark: [fontes externas primárias](benchmark/external-primary-sources.md), sem claim de conformidade.
-- Roadmap: [v0.8.8 até v1.0.0](ROADMAP.md).
-- Releases: [índice e notas versionadas](releases/README.md).
+Documentação evergreen do Prescripta v1.0.0. Guias atuais descrevem o `main`; notas e auditorias
+versionadas preservam a realidade de cada release. O sistema é demonstrativo, sintético e não deve
+ser usado em atendimento real.
+
+## Começar
+
+- [Quick Start](setup/quickstart.md)
+- [Instalação local](getting-started/local-setup.md)
+- [Docker e Compose](operations/docker.md)
+- [Primeiro acesso](user-guide/getting-started.md)
+- [Troubleshooting](setup/troubleshooting.md)
+
+## Usar
+
+- [Guia do usuário por tarefa](user-guide/README.md)
+- [Navegação](user-guide/navigation.md)
+- [Perfis, capacidades e acesso](user-guide/permissions-and-access.md)
+- [Idioma PT-BR/EN-US](user-guide/language-and-localization.md)
+- [Glossário](user-guide/glossary.md)
+- Guias por público: [avaliação](audiences/for-laypeople-and-evaluators.md),
+  [médicos](audiences/for-physicians.md), [enfermagem](audiences/for-nursing.md),
+  [auditoria](audiences/for-auditors.md) e [TI/integrações](audiences/for-it-and-integrations.md)
+
+## Entender o produto
+
+- [Visão geral](product/product-overview.md)
+- [Tour](product/product-tour.md)
+- [Estado atual](product/current-project-status.md)
+- [Limitações conhecidas](product/known-limitations.md)
+- [Roadmap](ROADMAP.md)
+- [Escopo médico e limites](product/medical-scope-and-limitations.md)
+
+## Domínios
+
+- **Medication Safety:** [motor de risco](clinical-rules/risk-engine.md),
+  [dose](clinical/dose-intelligence.md), [farmácia](clinical-workflows/pharmacy-workflow.md) e
+  [protocolos de enfermagem](clinical-workflows/nursing-protocol-prescribing.md)
+- **Evidence Intelligence:** [visão geral](evidence/README.md), [fontes](evidence/source-model.md),
+  [concept sets](evidence/concept-sets.md) e [Literature Copilot](evidence/literature-copilot.md)
+- **Research & RWE:** [visão geral](research/README.md), [análises](research/analysis-and-package.md),
+  [métodos](research/statistical-methods.md) e [guia por tarefa](user-guide/research/README.md)
+- **IA:** [configuração](ai/provider-configuration.md), [Task Router](ai/task-router.md),
+  [provenance](ai/ai-provenance.md) e [workflows governados](ai/agentic-research-workflows.md)
+- **Interoperabilidade:** [arquitetura](interoperability/architecture.md),
+  [FHIR delimitado](interoperability/fhir-mapping.md),
+  [reconciliação](interoperability/clinical-reconciliation.md) e
+  [OMOP parcial](architecture/terminology-and-omop-v091.md)
+
+## Desenvolver
+
+- [Arquitetura](architecture/overview.md) e [transações/migrations](architecture/transaction-boundaries.md)
+- [Frontend](frontend/architecture.md), [design system](frontend/design-system.md),
+  [informação](frontend/information-architecture.md) e [i18n](frontend/internationalization.md)
+- [OpenAPI e política de compatibilidade](api/openapi-policy.json)
+- [Níveis de validação](testing/validation-levels.md) e [CI/release gates](testing/ci-and-release-gates.md)
+- [Assets e captura visual](assets/README.md)
+
+## Operar e auditar
+
+- [Operações e runbooks](operations/README.md)
+- [Backup e restauração](operations/backup-and-restore.md)
+- [Segurança](security/threat-model.md), [papéis](security/authentication-and-roles.md) e
+  [riscos aceitos](security/accepted-risks.md)
+- [Auditoria](auditing/README.md) e [relatórios](reports/README.md)
+- [Releases](releases/README.md) e [auditorias históricas](audits/README.md)
+
+**Regra de autoridade:** LLMs propose. Deterministic systems calculate. Humans approve. Sources substantiate.

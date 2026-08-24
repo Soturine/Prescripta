@@ -11,8 +11,13 @@ powershell -ExecutionPolicy Bypass -File scripts/check-install.ps1
 powershell -ExecutionPolicy Bypass -File scripts/dev.ps1
 ```
 
-O script cria `.venv`, instala dependências do backend, executa `npm install` no
-frontend e sobe backend/frontend em janelas separadas.
+O setup cria `.venv`, instala `backend/requirements.txt` e executa `npm install` no frontend. O
+`dev.ps1` sobe backend e frontend em janelas separadas. Dependências de teste do backend ficam em
+`backend/requirements-dev.txt` e não são instaladas pelo setup básico.
+
+Política suportada no `main`: Python 3.12+, Node.js 22+ e npm 11.18.0. A matriz de CI usa Python 3.12
+e Node.js 24. Para Linux/macOS, Docker é o caminho cross-platform documentado; não há script shell
+equivalente ao fluxo PowerShell nesta rodada.
 
 ## Reset Do Banco Demo
 
@@ -34,6 +39,14 @@ exemplo. Não use dados reais de paciente.
 
 `GET /api/health` retorna nome, versão, ambiente, banco, provider de IA e se
 chamadas externas estão habilitadas. A resposta não inclui segredo.
+
+## URLs locais
+
+- frontend: <http://127.0.0.1:5173>
+- API/health: <http://127.0.0.1:8000/api/health>
+- OpenAPI/Swagger: <http://127.0.0.1:8000/docs>
+
+Essas portas são diferentes das do frontend no Compose, que publica `8080`.
 
 ## Primeiro Fluxo
 
