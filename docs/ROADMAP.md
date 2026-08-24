@@ -62,10 +62,16 @@ demonstrativa enquanto não existir validação independente.
 
 ## v1.0.0 — Stable Demonstrative Platform
 
-- freeze de features e correções pequenas;
-- verificação final de contratos, segurança e reprodutibilidade;
-- três demos sintéticas polidas e documentação final;
-- nenhuma nova frente de produto.
+- entregue: freeze funcional, frontend final, contratos e documentação da plataforma demonstrativa;
+- entregue: CI, Security, Container e Qualification no mesmo SHA, com release provenance e SBOMs;
+- entregue: demos sintéticas, galeria evergreen, PT-BR/EN-US e fluxos acessíveis por perfil;
+- permanece externo: validações clínica, regulatória, epidemiológica, institucional e de conformance.
+
+## Depois da v1.0.0
+
+Não há versão futura prometida neste documento. Próximos passos dependem de feedback, decisão de
+produto e validações independentes. Manutenção de dependências, correções documentais e mitigação de
+riscos aceitos seguem processos separados, sem ampliar claims do produto.
 
 Validação clínica/regulatória, QMS, LGPD institucional, pentest, interoperabilidade oficial e
 implantação produtiva permanecem programas externos ao roadmap de código.

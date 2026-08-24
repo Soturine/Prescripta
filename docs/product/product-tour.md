@@ -11,5 +11,10 @@ necessidade de revisão. O modo técnico expõe regras e fontes aos perfis autor
 Relatórios preservam EvidenceBundle e hash. IA, quando habilitada, apenas compõe ou explica sobre
 fontes fornecidas; falha aciona fallback. Nenhuma tela representa autorização clínica automática.
 
+Em **Pesquisa e RWE**, o perfil de pesquisa navega por Visão geral, Protocolo, Coorte, Análise,
+Resultados, Evidência e Proveniência. O workspace usa fixtures sintéticas, alternativas tabulares e
+linguagem não causal. Em telas estreitas, três ações prioritárias ficam na barra inferior e **Mais**
+abre todos os destinos autorizados.
+
 Consulte as capturas no README, as limitações conhecidas e os guias por audiência antes de avaliar
 um fluxo isoladamente.
