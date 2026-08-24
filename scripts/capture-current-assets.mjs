@@ -12,6 +12,9 @@ const frontendUrl = "http://127.0.0.1:5178";
 const currentDir = path.join(root, "docs", "assets", "current");
 const stageDir = path.join(root, "docs", "assets", `.current-${version}-stage`);
 const backupDir = path.join(root, "docs", "assets", ".current-backup");
+const releaseDir = path.join(root, "docs", "assets", `v${version}`);
+const releaseStageDir = path.join(root, "docs", "assets", `.release-${version}-stage`);
+const releaseBackupDir = path.join(root, "docs", "assets", `.release-${version}-backup`);
 const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), `prescripta-${version}-assets-`));
 const python = process.env.PRESCRIPTA_PYTHON
   ?? (process.platform === "win32"
@@ -23,17 +26,17 @@ const { chromium } = await import(pathToFileURL(playwrightModule).href);
 const children = [];
 
 const names = {
-  overview: `prescripta-overview-v${version}.gif`,
-  dashboard: `dashboard-v${version}.png`,
-  dashboardEnglish: `dashboard-en-US-v${version}.png`,
-  patient: `patient-workspace-v${version}.png`,
-  check: `prescription-check-v${version}.png`,
-  decision: `clinical-decision-v${version}.png`,
-  pharmacy: `pharmacy-review-v${version}.png`,
-  research: `research-workspace-v${version}.png`,
-  attrition: `cohort-attrition-v${version}.png`,
-  audit: `audit-v${version}.png`,
-  mobile: `mobile-v${version}.png`,
+  overview: "overview.gif",
+  dashboard: "dashboard.png",
+  dashboardEnglish: "dashboard-en-US.png",
+  patient: "patient-workspace.png",
+  check: "clinical-check.png",
+  decision: "clinical-result.png",
+  pharmacy: "pharmacy.png",
+  research: "research-workspace.png",
+  analysis: "research-analysis.png",
+  audit: "audit.png",
+  mobile: "mobile-navigation.png",
 };
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -129,11 +132,10 @@ function imageDimensions(buffer, extension) {
   throw new Error(`Formato não suportado no manifesto: ${extension}`);
 }
 
-async function writeManifest() {
-  const files = Object.values(names).sort();
+async function writeManifest(directory, files) {
   const assets = [];
   for (const file of files) {
-    const buffer = await fs.readFile(path.join(stageDir, file));
+    const buffer = await fs.readFile(path.join(directory, file));
     assets.push({
       file,
       bytes: buffer.length,
@@ -141,23 +143,36 @@ async function writeManifest() {
       sha256: crypto.createHash("sha256").update(buffer).digest("hex"),
     });
   }
-  await fs.writeFile(path.join(stageDir, "manifest.json"), `${JSON.stringify({ version, generator: "scripts/capture-current-assets.mjs", assets }, null, 2)}\n`, "utf8");
+  await fs.writeFile(path.join(directory, "manifest.json"), `${JSON.stringify({ version, generator: "scripts/capture-current-assets.mjs", assets }, null, 2)}\n`, "utf8");
 }
 
-async function replaceCurrentAtomically() {
-  await fs.rm(backupDir, { recursive: true, force: true });
+async function replaceDirectoryAtomically(target, stage, backup) {
+  await fs.rm(backup, { recursive: true, force: true });
   try {
-    await fs.rename(currentDir, backupDir);
+    await fs.rename(target, backup);
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
   try {
-    await fs.rename(stageDir, currentDir);
-    await fs.rm(backupDir, { recursive: true, force: true });
+    await fs.rename(stage, target);
+    await fs.rm(backup, { recursive: true, force: true });
   } catch (error) {
-    try { await fs.rename(backupDir, currentDir); } catch { /* preserva o erro original */ }
+    try { await fs.rename(backup, target); } catch { /* preserve the original error */ }
     throw error;
   }
+}
+
+async function stageReleaseArchive() {
+  await fs.rm(releaseStageDir, { recursive: true, force: true });
+  await fs.mkdir(releaseStageDir, { recursive: true });
+  const releaseFiles = [];
+  for (const file of Object.values(names)) {
+    const extension = path.extname(file);
+    const archived = `${path.basename(file, extension)}-v${version}${extension}`;
+    await fs.copyFile(path.join(stageDir, file), path.join(releaseStageDir, archived));
+    releaseFiles.push(archived);
+  }
+  await writeManifest(releaseStageDir, releaseFiles.sort());
 }
 
 await fs.rm(stageDir, { recursive: true, force: true });
@@ -226,10 +241,9 @@ try {
   await page.getByRole("heading", { name: "Pesquisa e RWE" }).waitFor();
   await page.getByRole("heading", { name: /Estudo sintético de segurança medicamentosa/ }).waitFor();
   await screenshot(page, names.research);
-  await page.getByRole("tab", { name: "Runs" }).click();
-  await page.getByText(/^N = \d+$/).waitFor();
-  await page.getByText(/Removidos:/).last().scrollIntoViewIfNeeded();
-  await screenshot(page, names.attrition);
+  await page.getByRole("tab", { name: "Análise" }).click();
+  await page.getByRole("tab", { name: "Comparação e métodos" }).waitFor();
+  await screenshot(page, names.analysis);
 
   await login(page, "auditor@prescripta.local", "Auditor@12345");
   await navigate(page, "/audit");
@@ -249,9 +263,11 @@ try {
   }
   await context.close();
   await makeGif(names.overview, [names.dashboard, names.patient, names.decision, names.research]);
-  await writeManifest();
-  await replaceCurrentAtomically();
-  console.log(`Assets v${version} capturados em docs/assets/current/.`);
+  await writeManifest(stageDir, Object.values(names).sort());
+  await stageReleaseArchive();
+  await replaceDirectoryAtomically(releaseDir, releaseStageDir, releaseBackupDir);
+  await replaceDirectoryAtomically(currentDir, stageDir, backupDir);
+  console.log(`Assets v${version} captured in current/ and v${version}/.`);
 } finally {
   if (browser) await browser.close().catch(() => undefined);
   for (const child of children.reverse()) child.kill();
@@ -262,5 +278,6 @@ try {
     wait(3_000),
   ]);
   await fs.rm(stageDir, { recursive: true, force: true });
+  await fs.rm(releaseStageDir, { recursive: true, force: true });
   await fs.rm(tempDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 }

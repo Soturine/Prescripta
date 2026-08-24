@@ -14,17 +14,17 @@ VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 ASSETS_ROOT = ROOT / "docs" / "assets"
 MAX_BYTES = {".png": 2_000_000, ".gif": 5_000_000}
 CURRENT_STEMS = {
-    "prescripta-overview",
+    "overview",
     "dashboard",
     "dashboard-en-US",
     "patient-workspace",
-    "prescription-check",
-    "clinical-decision",
-    "pharmacy-review",
+    "clinical-check",
+    "clinical-result",
+    "pharmacy",
     "research-workspace",
-    "cohort-attrition",
+    "research-analysis",
     "audit",
-    "mobile",
+    "mobile-navigation",
 }
 
 
@@ -116,10 +116,7 @@ current_manifest = json.loads(
     (ASSETS_ROOT / "current" / "manifest.json").read_text(encoding="utf-8")
 )
 current_version = str(current_manifest.get("version", ""))
-current_required = {
-    f"{stem}-v{current_version}{'.gif' if stem == 'prescripta-overview' else '.png'}"
-    for stem in CURRENT_STEMS
-}
+current_required = {f"{stem}{'.gif' if stem == 'overview' else '.png'}" for stem in CURRENT_STEMS}
 errors, _, current_count = validate_gallery(
     ASSETS_ROOT / "current",
     expected_version=None,

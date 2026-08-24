@@ -3,77 +3,77 @@
   "generator": "scripts/capture-current-assets.mjs",
   "assets": [
     {
-      "file": "audit.png",
+      "file": "audit-v1.0.0.png",
       "bytes": 115216,
       "width": 1440,
       "height": 1000,
       "sha256": "b4b1ac75fd43d4d53e1c54be3e6c0fdfa8873f4986b35ac0373e2ecb3eeca6da"
     },
     {
-      "file": "clinical-check.png",
+      "file": "clinical-check-v1.0.0.png",
       "bytes": 106670,
       "width": 1440,
       "height": 1000,
       "sha256": "d8ae7e41fd12436ca360e9abc360e56cec10cbd5cdd24820d3a45d9d730c4f63"
     },
     {
-      "file": "clinical-result.png",
+      "file": "clinical-result-v1.0.0.png",
       "bytes": 104721,
       "width": 1440,
       "height": 1000,
       "sha256": "1f224bca24290568dee1c6eb7e7da3072f54d891a0d6db6878e23f16fcdb6bab"
     },
     {
-      "file": "dashboard-en-US.png",
+      "file": "dashboard-en-US-v1.0.0.png",
       "bytes": 104633,
       "width": 1440,
       "height": 1000,
       "sha256": "7fdab49d8809e6f09d6527db2be7c6b9155d8d33dd74967bba3759c6bd352670"
     },
     {
-      "file": "dashboard.png",
+      "file": "dashboard-v1.0.0.png",
       "bytes": 106246,
       "width": 1440,
       "height": 1000,
       "sha256": "1a71840cb83a30db7c0667952dc2451b26cca20659de63e48aa9aeca87438098"
     },
     {
-      "file": "mobile-navigation.png",
+      "file": "mobile-navigation-v1.0.0.png",
       "bytes": 42525,
       "width": 390,
       "height": 844,
       "sha256": "fcba9db94a9fed521dcd197ff5c177d7223599d48ce370180ce18aed97009d48"
     },
     {
-      "file": "overview.gif",
+      "file": "overview-v1.0.0.gif",
       "bytes": 296295,
       "width": 960,
       "height": 667,
       "sha256": "0bd633cb08a8d36c16ff0d60cc82a4bc43582895feb7b300c250ec7d62d7bceb"
     },
     {
-      "file": "patient-workspace.png",
+      "file": "patient-workspace-v1.0.0.png",
       "bytes": 92244,
       "width": 1440,
       "height": 1000,
       "sha256": "31fab84261834533ca24617451f1e20c9b28f0f8c1256dcf670282ea218a653d"
     },
     {
-      "file": "pharmacy.png",
+      "file": "pharmacy-v1.0.0.png",
       "bytes": 105265,
       "width": 1440,
       "height": 1000,
       "sha256": "5c3007981821d86bc7dbaacaedc8a5b9ed0bb2c93a6d48a1aa5ea0bcb57ce913"
     },
     {
-      "file": "research-analysis.png",
+      "file": "research-analysis-v1.0.0.png",
       "bytes": 121342,
       "width": 1440,
       "height": 1000,
       "sha256": "1bac0edf3e85f7236b0f717ed29ba47bc6fea46ce31e2ec115fc1e60ebbcbe42"
     },
     {
-      "file": "research-workspace.png",
+      "file": "research-workspace-v1.0.0.png",
       "bytes": 136918,
       "width": 1440,
       "height": 1000,
