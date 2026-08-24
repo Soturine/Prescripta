@@ -24,7 +24,8 @@ test.describe("Research, RWE e workflows profissionais", () => {
     await expect(page.getByText(/^N = \d+$/)).toBeVisible();
     await expect(page.getByText(/Removidos:/).first()).toBeVisible();
 
-    await page.getByRole("tab", { name: "Plano de análise" }).click();
+    await page.getByRole("tab", { name: "Análise" }).click();
+    await page.getByRole("tab", { name: "Plano e qualidade" }).click();
     await expect(page.getByRole("heading", { name: "Qualidade dos dados" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Plano de análise" })).toBeVisible();
 
