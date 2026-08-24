@@ -8,6 +8,6 @@ describe("ClinicalPictogram", () => {
     const { container } = render(<ClinicalPictogram kind="medicines" />);
     const icon = container.firstElementChild;
     expect(icon).toHaveAttribute("aria-hidden", "true");
-    expect(icon).toHaveStyle({ maskRepeat: "no-repeat" });
+    expect(icon?.getAttribute("src")).toMatch(/^data:image\/svg\+xml/);
   });
 });
