@@ -45,3 +45,10 @@ pelo Git. Não promova uma cópia SQLite a ambiente não local.
 Hash divergente, restauração parcial ou migration ausente é incidente: preserve logs minimizados,
 isole o artefato, não sobrescreva o último backup conhecido e siga o
 [plano de resposta](incident-response.md).
+
+## Exercício automatizado v0.10.0
+
+`scripts/postgres-backup-restore.sh` usa diretório temporário, dump custom, checksum antes do restore,
+`--exit-on-error` e contagem de prova sintética. `Qualification` executa migration
+v0.9.3→v0.10.0, restaura em base vazia e publica apenas o JSON de evidência; dump e URLs nunca viram
+artifact. Isso comprova o exercício do RC, não define RPO/RTO de uma instituição real.

@@ -51,27 +51,21 @@ demonstrativa enquanto não existir validação independente.
 - entregue: workflows agentes limitados com allowlist, budgets e checkpoint humano;
 - entregue: hardening CodeQL, CDP e governança de histórico/tags.
 
-## v0.9.4 — Interoperability & Operational Hardening
+## v0.10.0 — Interoperability, Operations & Stabilization
 
-- adapters FHIR mais amplos e workflows profissionais expandidos;
-- observabilidade, performance e jobs assíncronos quando necessários;
-- backup/restore, localization e metadata de policy.
-- avaliação humana estruturada do Copilot e corpus licenciado/curado em escala;
-- benchmarks maiores e filas assíncronas somente quando evidência de carga justificar.
-
-## v0.10.0 — Stabilization
-
-- estabilidade de API/schema e garantias de migration;
-- CI de reprodutibilidade, benchmarks e deprecações;
-- remediação de security review/pentest;
-- acessibilidade, performance e limpeza documental.
+- entregue: Agent Runtime v2 server-authoritative e autorização capability + object scope;
+- entregue: subset FHIR R4 JSON delimitado, lineage FHIR/CSV/OMOP e reconciliação humana;
+- entregue: observabilidade segura, benchmarks limitados e decisão de não adotar fila assíncrona;
+- entregue: migration v0.9.3→v0.10.0, backup→restore PostgreSQL e Qualification exact-SHA;
+- entregue: snapshot OpenAPI canônico, policy explícita de quebras e release build-once;
+- permanece externo: validação FHIR oficial, DQD/Achilles/ATLAS, pentest e validação clínica.
 
 ## v1.0.0 — Stable Demonstrative Platform
 
-- três pilares maduros;
-- contratos estáveis, provenance e governança de IA maduros;
-- demos de pesquisa reproduzíveis;
-- nenhuma grande feature incompleta.
+- freeze de features e correções pequenas;
+- verificação final de contratos, segurança e reprodutibilidade;
+- três demos sintéticas polidas e documentação final;
+- nenhuma nova frente de produto.
 
 Validação clínica/regulatória, QMS, LGPD institucional, pentest, interoperabilidade oficial e
 implantação produtiva permanecem programas externos ao roadmap de código.

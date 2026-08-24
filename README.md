@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/Soturine/Prescripta/actions/workflows/ci.yml/badge.svg)](https://github.com/Soturine/Prescripta/actions/workflows/ci.yml)
 [![Security](https://github.com/Soturine/Prescripta/actions/workflows/security.yml/badge.svg)](https://github.com/Soturine/Prescripta/actions/workflows/security.yml)
+[![Release](https://img.shields.io/badge/release-v0.10.0-0891b2)](docs/releases/v0.10.0.md)
 [![Licença](https://img.shields.io/badge/licença-Apache--2.0-f59e0b)](LICENSE)
 
 O Prescripta é uma plataforma demonstrativa e educacional organizada em três pilares: Medication
@@ -22,8 +23,9 @@ a vigência das fontes e a precedência entre achados. O backend é a fonte de a
 IA opcional apenas explica snapshots já calculados ou extrai conteúdo recuperado, sempre com fallback
 determinístico e revisão humana.
 
-O projeto não implementa FHIR completo, SMART App Launch ou CDS Hooks. Os adapters de importação são
-compatibilidade parcial e demonstrativa; não representam uma integração hospitalar certificada. A base
+O projeto implementa somente um subset delimitado de FHIR R4 JSON; não implementa FHIR completo,
+SMART App Launch ou CDS Hooks. Os adapters de importação são compatibilidade parcial e demonstrativa;
+não representam uma integração hospitalar certificada. A base
 interna usa busca lexical indexada, não um RAG clinicamente validado.
 
 ## Capacidades
@@ -52,6 +54,12 @@ interna usa busca lexical indexada, não um RAG clinicamente validado.
   de pesquisa limitados por ferramentas, orçamento, auditoria e checkpoint humano;
 - sensitivity grids determinísticos e planner PostgreSQL autoritativo, preservando linguagem
   experimental e sem transformar diagnósticos em alegação causal.
+- Agent Runtime v2 com escolha e execução server-side de tools, budgets medidos pelo servidor,
+  idempotência, cancelamento e checkpoint humano;
+- subset FHIR R4 JSON limitado, idempotente e pendente de reconciliação, com coding, referências e
+  lineage preservados sem fetch externo;
+- request ID, logs sem payload/query, métricas de baixa cardinalidade, readiness e Qualification
+  exata com migration, benchmark e backup→restore PostgreSQL;
 - registro governado de terminologias, releases, licenças, checksums, busca suggestion-only e
   mappings versionados com revisão humana independente;
 - adaptador parcial OMOP CDM 5.4 para sete tabelas, exclusivamente sobre dados sintéticos, sem
