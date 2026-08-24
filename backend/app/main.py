@@ -37,6 +37,7 @@ from app.api.routes import (
 )
 from app.core.auth import require_capabilities
 from app.core.config import settings, validate_runtime_settings
+from app.core.observability import SafeObservabilityMiddleware, metrics_snapshot
 from app.core.version import APP_VERSION
 from app.database.models import UserModel
 from app.database.seed import seed_demo_data
@@ -75,6 +76,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SafeObservabilityMiddleware)
 
 app.include_router(auth.router, prefix=settings.api_prefix)
 app.include_router(access.router, prefix=settings.api_prefix)
@@ -106,6 +108,15 @@ app.include_router(settings_routes.router, prefix=settings.api_prefix)
 @app.get(f"{settings.api_prefix}/health", tags=["health"])
 def health() -> dict[str, object]:
     return {"status": "ok"}
+
+
+@app.get(f"{settings.api_prefix}/metrics", tags=["health"])
+def metrics(
+    _current_user: Annotated[
+        UserModel, Depends(require_capabilities(Capability.SYSTEM_HEALTH_VIEW))
+    ],
+) -> dict[str, object]:
+    return metrics_snapshot()
 
 
 @app.get(f"{settings.api_prefix}/readiness", tags=["health"])
