@@ -29,6 +29,7 @@ import type {
   ResearchQueryPreview,
   StudyWorkspace,
 } from "../../types/research";
+import { formatStatus } from "../../utils/formatters";
 import Badge from "../ui/Badge";
 import StatusPanel from "../ui/StatusPanel";
 import Tabs from "../ui/Tabs";
@@ -522,7 +523,7 @@ export default function ResearchV092Panel({
             </div>
             {evidencePlan ? (
               <p className="mt-3 text-sm">
-                v{evidencePlan.version} · {evidencePlan.status} · {evidencePlan.result_count}{" "}
+                v{evidencePlan.version} · {formatStatus(evidencePlan.status)} · {evidencePlan.result_count}{" "}
                 {t("research.v093.evidence.results")}
               </p>
             ) : null}
@@ -534,7 +535,7 @@ export default function ResearchV092Panel({
                 <div className="rounded-xl border border-slate-200 p-3" key={source.id}>
                   <strong className="text-sm">{source.title}</strong>
                   <p className="mt-1 text-xs text-slate-500">
-                    {source.identifier} · {source.review_status}
+                    {source.identifier} · {formatStatus(source.review_status)}
                   </p>
                 </div>
               ))}
@@ -575,7 +576,7 @@ export default function ResearchV092Panel({
           </div>
           <div className="surface-card p-5">
             <Badge tone={agentRun?.state === "waiting_human" ? "warning" : "info"}>
-              {agentRun?.state ?? t("research.v093.agent.notStarted")}
+              {agentRun?.state ? formatStatus(agentRun.state) : t("research.v093.agent.notStarted")}
             </Badge>
             <p className="mt-4 text-xs font-bold uppercase text-slate-500">
               {t("research.v093.agent.tools")}
@@ -654,7 +655,7 @@ export default function ResearchV092Panel({
           </div>
           <div className="surface-card p-5">
             <Badge tone={queryPreview?.enabled ? "success" : "warning"}>
-              {queryPreview?.status ?? t("research.v092.query.defaultOff")}
+              {queryPreview?.status ? formatStatus(queryPreview.status) : t("research.v092.query.defaultOff")}
             </Badge>
             <p className="mt-3 text-sm">{t("research.v092.query.policy")}</p>
             {queryPreview ? (
@@ -704,7 +705,9 @@ function MethodCard({
             <h2 className="font-black">{method}</h2>
           </div>
         </div>
-        <Badge tone={status.includes("computed") ? "success" : "warning"}>{status}</Badge>
+        <Badge tone={status.includes("computed") ? "success" : "warning"}>
+          {formatStatus(status)}
+        </Badge>
       </div>
       {ess !== null ? (
         <p className="mt-4 text-sm font-bold">ESS: {ess.toFixed(2)}</p>

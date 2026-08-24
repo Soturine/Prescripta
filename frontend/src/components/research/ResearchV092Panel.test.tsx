@@ -182,7 +182,7 @@ describe("Research Copilot v2 and comparative RWE workspace", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Preview NL→SQL" }));
     fireEvent.click(screen.getByRole("button", { name: "Validar e visualizar" }));
     await waitFor(() => expect(api.previewResearchQuery).toHaveBeenCalled());
-    expect(await screen.findByText("disabled_by_default")).toBeVisible();
+    expect(await screen.findByText("Desativado por padrão")).toBeVisible();
     expect(screen.getByText(/:institution_id/)).toBeVisible();
     expect(screen.queryByRole("button", { name: /executar/i })).not.toBeInTheDocument();
   });
@@ -224,7 +224,7 @@ describe("Research Copilot v2 and comparative RWE workspace", () => {
     fireEvent.click(screen.getByRole("button", { name: "Criar run limitado" }));
     expect(await screen.findByText("queued")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Propor e aguardar humano" }));
-    expect(await screen.findByText("waiting_human")).toBeVisible();
+    expect(await screen.findByText("Aguardando revisão humana")).toBeVisible();
     expect(api.advanceResearchAgent).toHaveBeenCalledWith("agent-1", expect.any(Object));
   });
 });
