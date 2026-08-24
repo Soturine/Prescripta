@@ -22,6 +22,7 @@ import PopulationAnalytics from "../components/research/PopulationAnalytics";
 import ResearchV092Panel from "../components/research/ResearchV092Panel";
 import TerminologyOmopPanel from "../components/research/TerminologyOmopPanel";
 import Badge from "../components/ui/Badge";
+import ClinicalPictogram from "../components/ui/ClinicalPictogram";
 import DemoContext from "../components/ui/DemoContext";
 import StatusPanel from "../components/ui/StatusPanel";
 import Tabs from "../components/ui/Tabs";
@@ -396,7 +397,7 @@ export default function Research() {
         description={t("research.description")}
         title={t("research.title")}
       />
-      <DemoContext experimental />
+      <div className="flex items-center gap-3 text-ocean"><ClinicalPictogram kind="research" /><DemoContext experimental /></div>
       <StatusPanel title={t("research.useLimit")} tone="warning">
         {workspaceQuery.data.synthetic_demo_notice} {t("research.useLimitBody")}
       </StatusPanel>

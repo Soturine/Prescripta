@@ -8,6 +8,7 @@ import MedicationForm from "../components/MedicationForm";
 import PageHeader from "../components/PageHeader";
 import SourceBadge from "../components/SourceBadge";
 import Badge from "../components/ui/Badge";
+import ClinicalPictogram from "../components/ui/ClinicalPictogram";
 import StatusPanel from "../components/ui/StatusPanel";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -191,6 +192,7 @@ export default function Medications() {
         description="Catálogo demonstrativo com princípio ativo, aliases, evidência, políticas de dose e status de validação explícito."
         title="Medicamentos e evidências"
       />
+      <div className="inline-flex items-center gap-2 text-sm font-bold text-ocean"><ClinicalPictogram kind="medicines" />Catálogo clínico governado</div>
 
       <StatusPanel title="Status da evidência permanece visível" tone="info">
         Itens demo, pendentes ou curados não são apresentados como validados. Fontes brasileiras têm prioridade contextual e toda estruturação assistida exige revisão humana.

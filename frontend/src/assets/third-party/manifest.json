@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "retrieved_at": "2026-08-24",
+  "assets": [
+    {
+      "path": "health-icons/medicines.svg",
+      "upstream_path": "public/icons/svg/outline/medications/medicines.svg",
+      "source": "https://github.com/resolvetosavelives/healthicons",
+      "source_commit": "36887b268d2cb61f8d91622ad459bdf07910c2b0",
+      "license": "CC0-1.0",
+      "sha256": "37253f8c44375b95077dc8d23a497f01edfd02a7f5eb27c21a8772cd4848841e",
+      "purpose": "Medication catalog identification"
+    },
+    {
+      "path": "health-icons/research.svg",
+      "upstream_path": "public/icons/svg/outline/symbols/integrated-data_and_research.svg",
+      "source": "https://github.com/resolvetosavelives/healthicons",
+      "source_commit": "36887b268d2cb61f8d91622ad459bdf07910c2b0",
+      "license": "CC0-1.0",
+      "sha256": "73fd5fa7d057feb8f687cf811d8e8d481b765b83a5b78884fd2e846e1e6a5f99",
+      "purpose": "Research workspace identification"
+    }
+  ]
+}
