@@ -32,10 +32,8 @@ jobs:
         run: python scripts/check_assets.py
       - name: Version consistency
         run: python scripts/check_version_consistency.py
-      - name: Canonical OpenAPI snapshot and reviewed compatibility policy
+      - name: Reviewed OpenAPI compatibility policy
         run: |
-          python scripts/generate_openapi_snapshot.py --output .tmp-openapi.json
-          cmp .tmp-openapi.json docs/api/openapi-v0.10.0.json
           python scripts/check_openapi_compatibility.py \
             docs/api/openapi-v0.9.3.json docs/api/openapi-v0.10.0.json \
             --allowlist docs/api/openapi-breaking-allowlist-v0.10.0.json
@@ -61,6 +59,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: python -m pip install --upgrade pip && python -m pip install -r requirements-dev.txt && python -m pip check
+      - name: Canonical OpenAPI snapshot
+        run: |
+          python ../scripts/generate_openapi_snapshot.py --output .tmp-openapi.json
+          python -c "import json; from pathlib import Path; assert json.loads(Path('.tmp-openapi.json').read_text(encoding='utf-8')) == json.loads(Path('../docs/api/openapi-v0.10.0.json').read_text(encoding='utf-8')), 'committed OpenAPI snapshot is stale'"
       - name: Lint
         run: python -m ruff check .
       - name: Test
