@@ -215,14 +215,14 @@ describe("Research Copilot v2 and comparative RWE workspace", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Criar plano versionado" }));
     await waitFor(() => expect(api.createEvidenceSearchPlan).toHaveBeenCalled());
-    expect(await screen.findByText(/draft_needs_review/)).toBeVisible();
+    expect(await screen.findByText(/Rascunho aguardando revisão/)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Buscar metadados" }));
     await waitFor(() => expect(api.executeEvidenceSearchPlan).toHaveBeenCalledWith("plan-1"));
-    expect(await screen.findByText(/executed/)).toBeVisible();
+    expect(await screen.findByText(/Executado/)).toBeVisible();
 
     fireEvent.click(screen.getByRole("tab", { name: "Agente de evidência" }));
     fireEvent.click(screen.getByRole("button", { name: "Criar run limitado" }));
-    expect(await screen.findByText("queued")).toBeVisible();
+    expect(await screen.findByText("Na fila")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Propor e aguardar humano" }));
     expect(await screen.findByText("Aguardando revisão humana")).toBeVisible();
     expect(api.advanceResearchAgent).toHaveBeenCalledWith("agent-1", expect.any(Object));

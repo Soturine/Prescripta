@@ -22,8 +22,10 @@ import PopulationAnalytics from "../components/research/PopulationAnalytics";
 import ResearchV092Panel from "../components/research/ResearchV092Panel";
 import TerminologyOmopPanel from "../components/research/TerminologyOmopPanel";
 import Badge from "../components/ui/Badge";
+import DemoContext from "../components/ui/DemoContext";
 import StatusPanel from "../components/ui/StatusPanel";
 import Tabs from "../components/ui/Tabs";
+import TechnicalDetails from "../components/ui/TechnicalDetails";
 import { useAuth } from "../context/AuthContext";
 import {
   acknowledgeDataQualityFinding,
@@ -90,8 +92,14 @@ export default function Research() {
   const { can, user } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedStudyId, setSelectedStudyId] = useState("");
-  const [tab, setTab] = useState("design");
+  const [selectedStudyId, setSelectedStudyId] = useState(() => searchParams.get("study") ?? "");
+  const allowedAreas = ["overview", "protocol", "cohort", "analysis", "results", "evidence", "provenance"];
+  const requestedArea = searchParams.get("area");
+  const [tab, setTab] = useState(
+    requestedArea && allowedAreas.includes(requestedArea) ? requestedArea : "overview",
+  );
+  const [analysisArea, setAnalysisArea] = useState("comparison");
+  const [provenanceArea, setProvenanceArea] = useState("terminology");
   const [showCreateStudy, setShowCreateStudy] = useState(false);
   const [studyForm, setStudyForm] = useState(emptyStudy);
   const [protocol, setProtocol] = useState(defaultProtocol);
@@ -144,6 +152,20 @@ export default function Research() {
     }
   }, [selectedStudyId, studiesQuery.data]);
 
+  function selectStudy(id: string) {
+    setSelectedStudyId(id);
+    const next = new URLSearchParams(searchParams);
+    next.set("study", id);
+    setSearchParams(next, { replace: true });
+  }
+
+  function selectArea(area: string) {
+    setTab(area);
+    const next = new URLSearchParams(searchParams);
+    next.set("area", area);
+    setSearchParams(next, { replace: true });
+  }
+
   async function refresh() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["research-workspace"] }),
@@ -180,7 +202,11 @@ export default function Research() {
         ],
         synthetic_only: true,
       }),
-    onSuccess: () => setSearchParams({}, { replace: true }),
+    onSuccess: () => {
+      const next = new URLSearchParams(searchParams);
+      ["finding", "medication", "outcome"].forEach((key) => next.delete(key));
+      setSearchParams(next, { replace: true });
+    },
   });
 
   const studyWorkspace = studyQuery.data;
@@ -200,14 +226,13 @@ export default function Research() {
     .filter((item) => item.id);
   const tabs = useMemo(
     () => [
-      { id: "design", label: t("research.tabs.design") },
+      { id: "overview", label: t("research.tabs.overview") },
+      { id: "protocol", label: t("research.tabs.protocol") },
       { id: "cohort", label: t("research.tabs.cohort") },
       { id: "analysis", label: t("research.tabs.analysis") },
-      { id: "comparative", label: t("research.tabs.comparative") },
       { id: "results", label: t("research.tabs.results") },
       { id: "evidence", label: t("research.tabs.evidence") },
-      { id: "terminology", label: t("research.tabs.terminology") },
-      { id: "omop", label: t("research.tabs.omop") },
+      { id: "provenance", label: t("research.tabs.provenance") },
     ],
     [t],
   );
@@ -371,6 +396,7 @@ export default function Research() {
         description={t("research.description")}
         title={t("research.title")}
       />
+      <DemoContext experimental />
       <StatusPanel title={t("research.useLimit")} tone="warning">
         {workspaceQuery.data.synthetic_demo_notice} {t("research.useLimitBody")}
       </StatusPanel>
@@ -401,7 +427,7 @@ export default function Research() {
                 aria-current={study.id === selectedStudyId ? "page" : undefined}
                 className={`rounded-xl border p-3 text-left ${study.id === selectedStudyId ? "border-cyan-400 bg-cyan-50" : "border-slate-200"}`}
                 key={study.id}
-                onClick={() => setSelectedStudyId(study.id)}
+                onClick={() => selectStudy(study.id)}
                 type="button"
               >
                 <span className="block text-sm font-black">{study.title}</span>
@@ -436,13 +462,15 @@ export default function Research() {
               <div className="surface-card p-3 sm:p-4">
                 <Tabs
                   label={t("research.studyAreas")}
-                  onChange={setTab}
+                  onChange={selectArea}
                   options={tabs}
                   value={tab}
                 />
               </div>
 
-              {tab === "design" ? (
+              {tab === "overview" ? <StudyOverview workspace={studyWorkspace} /> : null}
+
+              {tab === "protocol" ? (
                 <DesignPanel
                   canReview={can("research.study.review")}
                   canWrite={can("research.study.write")}
@@ -515,14 +543,11 @@ export default function Research() {
                         value={cohort}
                       />
                     </div>
-                    <details className="mt-4">
-                      <summary className="cursor-pointer text-sm font-bold text-ocean">
-                        {t("research.advancedJson")}
-                      </summary>
+                    <TechnicalDetails label={t("research.advancedJson")} copyValue={JSON.stringify(cohort, null, 2)}>
                       <pre className="mt-2 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
                         {JSON.stringify(cohort, null, 2)}
                       </pre>
-                    </details>
+                    </TechnicalDetails>
                   </div>
                   <div className="surface-card p-5">
                     <h3 className="font-black">
@@ -577,18 +602,21 @@ export default function Research() {
                 </section>
               ) : null}
 
-              {tab === "comparative" ? (
-                <ResearchV092Panel
-                  canExecute={can("research.analysis.execute")}
-                  canExport={can("research.package.export")}
-                  canUseAI={can("research.ai.use")}
-                  studyId={selectedStudyId}
-                  workspace={studyWorkspace}
-                />
-              ) : null}
-
               {tab === "analysis" ? (
-                <AnalysisPanel
+                <section className="grid gap-4">
+                  <div className="surface-card p-3">
+                    <Tabs label={t("research.analysisAreas")} onChange={setAnalysisArea} options={[
+                      { id: "comparison", label: t("research.analysisTabs.comparison") },
+                      { id: "quality", label: t("research.analysisTabs.quality") },
+                    ]} value={analysisArea} />
+                  </div>
+                  {analysisArea === "comparison" ? <ResearchV092Panel
+                    canExecute={can("research.analysis.execute")}
+                    canExport={can("research.package.export")}
+                    canUseAI={can("research.ai.use")}
+                    studyId={selectedStudyId}
+                    workspace={studyWorkspace}
+                  /> : <AnalysisPanel
                   canAcknowledge={can("data_quality.acknowledge")}
                   canExecute={can("research.analysis.execute")}
                   canReview={can("research.study.review")}
@@ -621,8 +649,9 @@ export default function Research() {
                         )
                       : undefined
                   }
-                  workspace={studyWorkspace}
-                />
+                    workspace={studyWorkspace}
+                  />}
+                </section>
               ) : null}
 
               {tab === "results" ? (
@@ -692,16 +721,24 @@ export default function Research() {
                 </section>
               ) : null}
 
-              {tab === "terminology" || tab === "omop" ? (
-                <TerminologyOmopPanel
-                  area={tab}
+              {tab === "provenance" ? (
+                <section className="grid gap-4">
+                  <div className="surface-card p-3">
+                    <Tabs label={t("research.provenanceAreas")} onChange={setProvenanceArea} options={[
+                      { id: "terminology", label: t("research.tabs.terminology") },
+                      { id: "omop", label: t("research.tabs.omop") },
+                    ]} value={provenanceArea} />
+                  </div>
+                  <TerminologyOmopPanel
+                  area={provenanceArea as "terminology" | "omop"}
                   canExportOmop={can("omop.export")}
                   canPreviewOmop={can("omop.preview")}
                   canReadTerminology={can("terminology.read")}
                   canReviewMappings={can("terminology.mapping.review")}
                   cohortRunId={currentRun?.id}
-                  studyId={selectedStudyId}
-                />
+                    studyId={selectedStudyId}
+                  />
+                </section>
               ) : null}
 
               {tab === "evidence" ? (
@@ -774,6 +811,49 @@ function StudyHeader({ workspace }: { workspace: StudyWorkspace }) {
           </li>
         ))}
       </ol>
+    </section>
+  );
+}
+
+function StudyOverview({ workspace }: { workspace: StudyWorkspace }) {
+  const { t } = useTranslation();
+  const protocol = workspace.protocol_versions[0];
+  const run = workspace.runs[0];
+  const items = [
+    [t("research.overview.question"), workspace.study.research_question],
+    [t("research.overview.objective"), workspace.study.objective],
+    [t("research.overview.design"), humanizeTechnicalValue(workspace.study.design)],
+    [t("research.overview.exposure"), String(protocol?.exposure.description ?? "—")],
+    [t("research.overview.comparator"), String(protocol?.comparator.description ?? "—")],
+    [t("research.overview.outcome"), String(protocol?.outcome.description ?? "—")],
+  ];
+  return (
+    <section className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,.65fr)]">
+      <div className="surface-card p-5">
+        <p className="eyebrow">{t("research.overview.title")}</p>
+        <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+          {items.map(([label, value]) => (
+            <div className="border-l-2 border-cyan-700 pl-3" key={label}>
+              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</dt>
+              <dd className="mt-1 text-sm font-semibold text-ink">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <div className="surface-card p-5">
+        <h3 className="font-black">{t("research.overview.execution")}</h3>
+        <dl className="mt-4 grid gap-3 text-sm">
+          <div><dt className="text-slate-500">{t("research.overview.snapshot")}</dt><dd className="font-bold">{run?.data_snapshot_marker ?? "—"}</dd></div>
+          <div><dt className="text-slate-500">{t("research.overview.protocol")}</dt><dd className="font-bold">{protocol ? `v${protocol.version} · ${formatStatus(protocol.status)}` : "—"}</dd></div>
+          <div><dt className="text-slate-500">{t("research.overview.quality")}</dt><dd className="font-bold">{workspace.data_quality.status ? formatStatus(String(workspace.data_quality.status)) : t("research.overview.notAvailable")}</dd></div>
+          <div><dt className="text-slate-500">{t("research.overview.lastRun")}</dt><dd className="font-bold">{run ? formatDateTime(run.executed_at) : t("research.overview.notRun")}</dd></div>
+        </dl>
+        <div className="mt-4">
+          <TechnicalDetails copyValue={workspace.study.id}>
+            <code className="break-all text-xs">study_id: {workspace.study.id}<br />run_id: {run?.id ?? "—"}</code>
+          </TechnicalDetails>
+        </div>
+      </div>
     </section>
   );
 }
@@ -902,15 +982,12 @@ function DesignPanel({
           }))}
           onReview={reviewOutcome}
         />
-        <details className="surface-card p-4">
-          <summary className="cursor-pointer font-bold text-ocean">
-            {t("research.technicalDetails")}
-          </summary>
+        <TechnicalDetails label={t("research.technicalDetails")}>
           <p className="mt-3 text-xs text-slate-600">
             {t("research.conceptSets")}:{" "}
             {workspace.concept_set_version_ids.length}
           </p>
-        </details>
+        </TechnicalDetails>
       </div>
     </section>
   );

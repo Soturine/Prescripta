@@ -202,7 +202,9 @@
     "not_run": "Not run yet",
     "not_computed": "Not computed yet",
     "completed_experimental_synthetic": "Completed with experimental synthetic data",
-    "planned": "Planned"
+    "planned": "Planned",
+    "draft_needs_review": "Draft awaiting review",
+    "executed": "Executed"
   },
   "risk": {
     "baixo": "Low",
@@ -316,6 +318,8 @@
     "workspaceErrorBody": "Try again without performing duplicate actions.",
     "studyAreas": "Study areas",
     "tabs": {
+      "overview": "Overview",
+      "protocol": "Protocol",
       "design": "Design",
       "cohort": "Cohort",
       "analysis": "Analysis Plan",
@@ -323,7 +327,27 @@
       "results": "Results",
       "evidence": "Evidence",
       "terminology": "Terminologies",
-      "omop": "Partial OMOP"
+      "omop": "Partial OMOP",
+      "provenance": "Provenance"
+    },
+    "analysisAreas": "Analysis areas",
+    "analysisTabs": { "comparison": "Comparison and methods", "quality": "Plan and quality" },
+    "provenanceAreas": "Provenance areas",
+    "overview": {
+      "title": "Study summary",
+      "question": "Question",
+      "objective": "Objective",
+      "design": "Design",
+      "exposure": "Exposure",
+      "comparator": "Comparator",
+      "outcome": "Outcome",
+      "execution": "Execution and quality",
+      "snapshot": "Data snapshot",
+      "protocol": "Current protocol",
+      "quality": "Data quality",
+      "lastRun": "Latest run",
+      "notAvailable": "Not assessed yet",
+      "notRun": "Not run yet"
     },
     "terminology": {
       "title": "Governed terminology registry",
@@ -627,6 +651,9 @@
       "medianAge": "Median age",
       "missingAge": "Missing data (age)",
       "categorical": "Categorical distribution",
+      "chartDescription": "Aggregate distribution; equivalent values are available in the table.",
+      "chartFallback": "Tabular alternative for categorical distribution",
+      "category": "Category",
       "suppressed": "Suppressed",
       "smallCell": "small cell suppressed",
       "noCategories": "No publishable categories.",

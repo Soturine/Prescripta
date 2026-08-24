@@ -1,8 +1,9 @@
-import { BarChart3, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import AttritionFlow from "./AttritionFlow";
 import type { AnalysisRun, CohortRun } from "../../types/research";
+import ChartFrame from "../ui/ChartFrame";
 
 type NumericSummary = {
   n?: number;
@@ -78,11 +79,12 @@ export default function PopulationAnalytics({
 
       <section className="grid gap-4 xl:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 p-4">
-          <h3 className="flex items-center gap-2 font-black">
-            <BarChart3 aria-hidden="true" className="h-5 w-5 text-ocean" />
-            {t("research.analytics.categorical")}
-          </h3>
-          <div className="mt-4 grid gap-3">
+          <ChartFrame
+            description={t("research.analytics.chartDescription")}
+            fallback={<table className="w-full text-left text-sm"><caption className="sr-only">{t("research.analytics.chartFallback")}</caption><thead><tr><th className="p-2">{t("research.analytics.category")}</th><th className="p-2">N</th><th className="p-2">%</th></tr></thead><tbody>{categories.map((item) => <tr className="border-t" key={`${item.value}-fallback`}><th className="p-2" scope="row">{item.value}</th><td className="p-2">{item.suppressed ? t("research.analytics.suppressed") : item.n}</td><td className="p-2">{item.suppressed ? "—" : item.percent}</td></tr>)}</tbody></table>}
+            title={t("research.analytics.categorical")}
+          >
+          <div className="grid gap-3">
             {categories.map((item) => {
               const width = Math.max(2, Number(item.percent ?? 0));
               return (
@@ -95,11 +97,7 @@ export default function PopulationAnalytics({
                         : `${item.n} (${item.percent}%)`}
                     </strong>
                   </div>
-                  <div
-                    aria-label={`${item.value}: ${item.suppressed ? t("research.analytics.smallCell") : `${item.percent}%`}`}
-                    className="mt-1 h-3 rounded-full bg-slate-100"
-                    role="img"
-                  >
+                  <div className="mt-1 h-3 rounded-full bg-slate-100">
                     <div
                       className="h-full rounded-full bg-ocean"
                       style={{ width: `${width}%` }}
@@ -114,6 +112,7 @@ export default function PopulationAnalytics({
               </p>
             ) : null}
           </div>
+          </ChartFrame>
         </div>
 
         <div className="rounded-2xl border border-slate-200 p-4">

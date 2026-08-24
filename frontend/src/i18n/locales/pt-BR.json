@@ -202,7 +202,9 @@
     "not_run": "Ainda não executado",
     "not_computed": "Ainda não calculado",
     "completed_experimental_synthetic": "Concluído com dados sintéticos experimentais",
-    "planned": "Planejado"
+    "planned": "Planejado",
+    "draft_needs_review": "Rascunho aguardando revisão",
+    "executed": "Executado"
   },
   "risk": {
     "baixo": "Baixo",
@@ -316,6 +318,8 @@
     "workspaceErrorBody": "Tente novamente sem executar ações duplicadas.",
     "studyAreas": "Áreas do estudo",
     "tabs": {
+      "overview": "Visão geral",
+      "protocol": "Protocolo",
       "design": "Desenho",
       "cohort": "Coorte",
       "analysis": "Plano de análise",
@@ -323,7 +327,27 @@
       "results": "Resultados",
       "evidence": "Evidências",
       "terminology": "Terminologias",
-      "omop": "OMOP parcial"
+      "omop": "OMOP parcial",
+      "provenance": "Proveniência"
+    },
+    "analysisAreas": "Áreas de análise",
+    "analysisTabs": { "comparison": "Comparação e métodos", "quality": "Plano e qualidade" },
+    "provenanceAreas": "Áreas de proveniência",
+    "overview": {
+      "title": "Resumo do estudo",
+      "question": "Pergunta",
+      "objective": "Objetivo",
+      "design": "Desenho",
+      "exposure": "Exposição",
+      "comparator": "Comparador",
+      "outcome": "Desfecho",
+      "execution": "Execução e qualidade",
+      "snapshot": "Snapshot de dados",
+      "protocol": "Protocolo atual",
+      "quality": "Qualidade dos dados",
+      "lastRun": "Última execução",
+      "notAvailable": "Ainda não avaliada",
+      "notRun": "Ainda não executado"
     },
     "terminology": {
       "title": "Registro terminológico governado",
@@ -627,6 +651,9 @@
       "medianAge": "Idade mediana",
       "missingAge": "Dados ausentes (idade)",
       "categorical": "Distribuição categórica",
+      "chartDescription": "Distribuição agregada; os valores equivalentes estão disponíveis na tabela.",
+      "chartFallback": "Alternativa tabular da distribuição categórica",
+      "category": "Categoria",
       "suppressed": "Suprimido",
       "smallCell": "célula pequena suprimida",
       "noCategories": "Sem categorias publicáveis.",
