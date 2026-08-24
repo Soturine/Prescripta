@@ -1,0 +1,18 @@
+{
+  "policy": "Only reviewed security and idempotency changes may break the v0.9.3 candidate contract.",
+  "allowed_breaks": [
+    "new_required_field:AgentStepRequest.idempotency_key",
+    "new_required_field:FhirBundleImportRequest.idempotency_key",
+    "removed_field:AgentRunCreate.budget",
+    "removed_field:AgentStepRequest.cost_usd",
+    "removed_field:AgentStepRequest.output",
+    "removed_field:AgentStepRequest.token_usage",
+    "removed_field:AgentStepRequest.tool",
+    "removed_schema:AgentBudget"
+  ],
+  "rationale": {
+    "AgentStepRequest": "Removes caller authority over tools, outputs, token usage and cost.",
+    "FhirBundleImportRequest": "Requires replay-safe import identity.",
+    "AgentRunCreate": "Moves all runtime budgets to server policy."
+  }
+}

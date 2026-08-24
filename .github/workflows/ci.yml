@@ -32,6 +32,13 @@ jobs:
         run: python scripts/check_assets.py
       - name: Version consistency
         run: python scripts/check_version_consistency.py
+      - name: Canonical OpenAPI snapshot and reviewed compatibility policy
+        run: |
+          python scripts/generate_openapi_snapshot.py --output .tmp-openapi.json
+          cmp .tmp-openapi.json docs/api/openapi-v0.10.0.json
+          python scripts/check_openapi_compatibility.py \
+            docs/api/openapi-v0.9.3.json docs/api/openapi-v0.10.0.json \
+            --allowlist docs/api/openapi-breaking-allowlist-v0.10.0.json
       - name: Commit whitespace consistency
         run: git show --check --oneline --format= HEAD
 
