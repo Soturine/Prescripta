@@ -4,12 +4,6 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch:
-    inputs:
-      target_tag:
-        description: Existing release tag to recover without moving it
-        required: false
-        type: string
 
 permissions:
   actions: read
@@ -25,7 +19,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          ref: ${{ inputs.target_tag || github.ref }}
+          ref: ${{ github.ref }}
       - name: Require successful final-SHA gates and reuse their artifacts
         env:
           GH_TOKEN: ${{ github.token }}
@@ -36,22 +30,27 @@ jobs:
             -f head_sha="${TARGET_SHA}" -f status=success -f per_page=100)"
           gate_run() {
             jq --arg name "$1" --arg sha "${TARGET_SHA}" \
-              '[.workflow_runs[] | select(.name == $name and .head_sha == $sha and (.event == "push" or ($name == "Container" and .event == "workflow_dispatch")) and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' \
+              '[.workflow_runs[] | select(.name == $name and .head_sha == $sha and (.event == "push" or (($name == "Container" or $name == "Qualification") and .event == "workflow_dispatch")) and .conclusion == "success")] | sort_by(.created_at) | last | .id // empty' \
               <<<"${runs}"
           }
           ci_run="$(gate_run CI)"
           security_run="$(gate_run Security)"
           container_run="$(gate_run Container)"
-          test -n "${ci_run}" && test -n "${security_run}" && test -n "${container_run}"
-          mkdir dependency-artifacts container-artifacts
+          qualification_run="$(gate_run Qualification)"
+          test -n "${ci_run}" && test -n "${security_run}" && test -n "${container_run}" && test -n "${qualification_run}"
+          mkdir dependency-artifacts container-artifacts qualification-artifacts
           gh run download "${security_run}" --repo "${REPOSITORY}" \
             --name cyclonedx-sboms --dir dependency-artifacts
           gh run download "${container_run}" --repo "${REPOSITORY}" \
             --name container-security-reports --dir container-artifacts
+          gh run download "${qualification_run}" --repo "${REPOSITORY}" \
+            --name "qualification-evidence-${TARGET_SHA}" --dir qualification-artifacts
           cp dependency-artifacts/sbom-backend.json sbom-backend.json
           cp dependency-artifacts/sbom-frontend.json sbom-frontend.json
           cp container-artifacts/sbom-image-backend.json sbom-image-backend.json
           cp container-artifacts/sbom-image-frontend.json sbom-image-frontend.json
+          cp qualification-artifacts/benchmark-evidence.json benchmark-evidence.json
+          cp qualification-artifacts/recovery-evidence.json recovery-evidence.json
           for sbom in sbom-*.json; do
             test -s "${sbom}"
             jq --exit-status '.bomFormat == "CycloneDX" and (.components | type == "array")' \
@@ -59,12 +58,11 @@ jobs:
           done
           jq -n --arg sha "${TARGET_SHA}" --argjson ci "${ci_run}" \
             --argjson security "${security_run}" --argjson container "${container_run}" \
-            '{sha: $sha, build_once: true, gates: {CI: $ci, Security: $security, Container: $container}}' \
+            --argjson qualification "${qualification_run}" \
+            '{sha: $sha, build_once: true, verify_once: true, gates: {CI: $ci, Security: $security, Container: $container, Qualification: $qualification}}' \
             > release-evidence.json
-      - name: Normalize reproducible CycloneDX identity
-        run: python scripts/stamp_cyclonedx_serial.py frontend/package-lock.json sbom-frontend.json
       - name: Generate release asset checksums
-        run: sha256sum sbom-*.json > SHA256SUMS.txt
+        run: sha256sum sbom-*.json benchmark-evidence.json recovery-evidence.json release-evidence.json > SHA256SUMS.txt
       - name: Attest backend dependency manifest with its SBOM
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.0.0
         with:
@@ -80,30 +78,37 @@ jobs:
         with:
           subject-path: |
             sbom-*.json
+            benchmark-evidence.json
+            recovery-evidence.json
+            release-evidence.json
             SHA256SUMS.txt
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-sboms
           path: |
             sbom-*.json
+            benchmark-evidence.json
+            recovery-evidence.json
+            release-evidence.json
             SHA256SUMS.txt
           retention-days: 30
       - name: Create draft release and attach SBOM assets
-        if: startsWith(github.ref, 'refs/tags/') || inputs.target_tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          TARGET_TAG: ${{ inputs.target_tag }}
         run: |
-          tag="${TARGET_TAG:-${GITHUB_REF_NAME}}"
+          tag="${GITHUB_REF_NAME}"
           test "${tag}" = "v$(cat VERSION)"
           if ! gh release view "${tag}" >/dev/null 2>&1; then
             gh release create "${tag}" --draft --verify-tag \
               --title "Prescripta ${tag} — Advanced Research Methods, Agentic Evidence & Security Hardening" \
               --notes-file "docs/releases/${tag}.md"
           fi
-          gh release upload "${tag}" sbom-*.json SHA256SUMS.txt --clobber
+          gh release edit "${tag}" \
+            --title "Prescripta ${tag} - Interoperability, Operations & Stabilization"
+          gh release upload "${tag}" sbom-*.json benchmark-evidence.json recovery-evidence.json release-evidence.json SHA256SUMS.txt --clobber
           assets="$(gh release view "${tag}" --json assets --jq '.assets[].name')"
           for expected in sbom-backend.json sbom-frontend.json \
-            sbom-image-backend.json sbom-image-frontend.json SHA256SUMS.txt; do
+            sbom-image-backend.json sbom-image-frontend.json benchmark-evidence.json \
+            recovery-evidence.json release-evidence.json SHA256SUMS.txt; do
             grep --fixed-strings --line-regexp "${expected}" <<<"${assets}"
           done

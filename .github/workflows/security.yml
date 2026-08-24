@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   codeql:
     permissions:
@@ -59,6 +63,8 @@ jobs:
           cyclonedx-py requirements backend/requirements-lock.txt -o sbom-backend.json
           cd frontend
           npm exec --yes --allow-scripts=libxmljs2@0.37.0 --package=@cyclonedx/cyclonedx-npm@6.0.0 -- cyclonedx-npm --omit optional --output-reproducible --validate --output-file ../sbom-frontend.json package.json
+      - name: Stamp reproducible CycloneDX identity at the producer
+        run: python scripts/stamp_cyclonedx_serial.py frontend/package-lock.json sbom-frontend.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cyclonedx-sboms
