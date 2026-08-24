@@ -4,6 +4,7 @@ import csv
 from io import StringIO
 
 from app.integrations.mapping.internal_mapper import InternalMapper
+from app.services.canonical_json import canonical_sha256
 
 
 class CsvImporter:
@@ -15,7 +16,7 @@ class CsvImporter:
     def import_text(self, text: str) -> list[dict]:
         records: list[dict] = []
         reader = csv.DictReader(StringIO(text))
-        for row in reader:
+        for row_index, row in enumerate(reader, start=2):
             record_type = (row.get("record_type") or row.get("type") or "").strip().lower()
             value = row.get("value") or row.get("name") or row.get("medication") or ""
             if not value:
@@ -37,7 +38,16 @@ class CsvImporter:
                 {
                     "record_type": mapped_type,
                     "source_payload": row,
-                    "mapped_payload": mapped,
+                    "mapped_payload": mapped
+                    | {
+                        "_lineage": {
+                            "source_format": "bounded_csv_subset",
+                            "adapter_version": "csv-import-v2",
+                            "row": row_index,
+                            "source_hash": canonical_sha256(row),
+                            "human_reconciliation_required": True,
+                        }
+                    },
                     "confidence": float(mapped.get("confidence", 0.4)),
                 }
             )

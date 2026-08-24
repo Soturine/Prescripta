@@ -349,19 +349,25 @@ def test_additional_fhir_review_scenario_is_accepted_for_human_review(
             "purpose": "teste fhir",
             "authorized_by": "Paciente Demo",
             "source_system": "fhir_v071",
+            "idempotency_key": "fhir-v071-review-1",
             "patient_id": None,
             "bundle": {
                 "resourceType": "Bundle",
+                "type": "collection",
                 "entry": [
                     {
                         "resource": {
                             "resourceType": "AllergyIntolerance",
+                            "id": "allergy-1",
+                            "status": "active",
                             "code": {"text": "dipirona"},
                         }
                     },
                     {
                         "resource": {
                             "resourceType": "Observation",
+                            "id": "observation-1",
+                            "status": "final",
                             "code": {"text": "creatinina"},
                             "valueString": "externo pendente",
                         }

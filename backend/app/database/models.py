@@ -435,8 +435,12 @@ class PatientFunctionalProfileModel(Base):
 
 class ClinicalImportBatchModel(Base):
     __tablename__ = "clinical_import_batches"
+    __table_args__ = (
+        UniqueConstraint("institution_id", "source_type", "idempotency_key"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    institution_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     source_system: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     source_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     imported_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
@@ -450,6 +454,8 @@ class ClinicalImportBatchModel(Base):
     )
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     errors: Mapped[list[str]] = mapped_column(JSON, default=list)
+    idempotency_key: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    source_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class ClinicalSourceRecordModel(Base):

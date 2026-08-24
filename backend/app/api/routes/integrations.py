@@ -25,6 +25,7 @@ from app.schemas.integration_schema import (
     ImportReviewRequest,
     ReconciliationDecisionRequest,
 )
+from app.services.canonical_json import canonical_sha256
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 DbSession = Annotated[Session, Depends(get_db)]
@@ -48,7 +49,12 @@ def import_fhir_bundle(
     db: DbSession,
     current_user: ImportManager,
 ) -> ClinicalImportBatchRead:
-    records = FhirBundleImporter().import_bundle(payload.bundle)
+    try:
+        records = FhirBundleImporter().import_bundle(payload.bundle)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
     batch = _create_import_batch(
         db,
         source_system=payload.source_system,
@@ -59,6 +65,8 @@ def import_fhir_bundle(
         consent_confirmed=payload.consent_confirmed,
         authorized_by=payload.authorized_by,
         purpose=payload.purpose,
+        idempotency_key=payload.idempotency_key,
+        source_hash=canonical_sha256(payload.bundle),
     )
     return _batch_response(db, batch)
 
@@ -106,18 +114,20 @@ def import_csv_payload(
 
 
 @router.get("/imports", response_model=list[ClinicalImportBatchRead])
-def list_imports(db: DbSession, _current_user: ImportReader) -> list[ClinicalImportBatchRead]:
+def list_imports(db: DbSession, current_user: ImportReader) -> list[ClinicalImportBatchRead]:
     service = IntegrationService(db)
-    return [_batch_response(db, batch) for batch in service.list_batches()]
+    return [
+        _batch_response(db, batch) for batch in service.list_batches(current_user.institution_id)
+    ]
 
 
 @router.get("/imports/{batch_id}", response_model=ClinicalImportBatchRead)
 def get_import(
     batch_id: int,
     db: DbSession,
-    _current_user: ImportReader,
+    current_user: ImportReader,
 ) -> ClinicalImportBatchRead:
-    batch = _get_batch_or_404(db, batch_id)
+    batch = _get_batch_or_404(db, batch_id, current_user)
     return _batch_response(db, batch)
 
 
@@ -128,7 +138,7 @@ def accept_import(
     current_user: ImportManager,
 ) -> ClinicalImportBatchRead:
     service = IntegrationService(db)
-    batch = _get_batch_or_404(db, batch_id)
+    batch = _get_batch_or_404(db, batch_id, current_user)
     updated = service.accept_batch(batch, current_user)
     return _batch_response(db, updated)
 
@@ -141,7 +151,7 @@ def reject_import(
     current_user: ImportManager,
 ) -> ClinicalImportBatchRead:
     service = IntegrationService(db)
-    batch = _get_batch_or_404(db, batch_id)
+    batch = _get_batch_or_404(db, batch_id, current_user)
     updated = service.reject_batch(batch, current_user, reason=payload.reason)
     return _batch_response(db, updated)
 
@@ -150,9 +160,9 @@ def reject_import(
 def get_import_reconciliation(
     batch_id: int,
     db: DbSession,
-    _current_user: ImportReader,
+    current_user: ImportReader,
 ) -> ClinicalReconciliationRead:
-    batch = _get_batch_or_404(db, batch_id)
+    batch = _get_batch_or_404(db, batch_id, current_user)
     return ClinicalReconciliationService(db).build(batch)
 
 
@@ -167,7 +177,7 @@ def accept_reconciliation_item(
     db: DbSession,
     current_user: ImportManager,
 ) -> ClinicalReconciliationItemRead:
-    batch = _get_batch_or_404(db, batch_id)
+    batch = _get_batch_or_404(db, batch_id, current_user)
     try:
         return ClinicalReconciliationService(db).accept_item(
             batch,
@@ -190,7 +200,7 @@ def reject_reconciliation_item(
     db: DbSession,
     current_user: ImportManager,
 ) -> ClinicalReconciliationItemRead:
-    batch = _get_batch_or_404(db, batch_id)
+    batch = _get_batch_or_404(db, batch_id, current_user)
     try:
         return ClinicalReconciliationService(db).reject_item(
             batch,
@@ -211,12 +221,14 @@ def accept_reconciliation_items_without_conflict(
     db: DbSession,
     current_user: ImportManager,
 ) -> ClinicalReconciliationRead:
-    batch = _get_batch_or_404(db, batch_id)
+    batch = _get_batch_or_404(db, batch_id, current_user)
     return ClinicalReconciliationService(db).accept_all_without_conflict(batch, current_user)
 
 
-def _get_batch_or_404(db: Session, batch_id: int) -> ClinicalImportBatchModel:
-    batch = IntegrationService(db).get_batch(batch_id)
+def _get_batch_or_404(
+    db: Session, batch_id: int, current_user: UserModel
+) -> ClinicalImportBatchModel:
+    batch = IntegrationService(db).get_batch(batch_id, current_user.institution_id)
     if batch is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

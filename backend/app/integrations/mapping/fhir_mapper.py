@@ -16,6 +16,23 @@ def _coding_text(resource: dict) -> str:
     return ""
 
 
+def _source_codings(resource: dict) -> list[dict]:
+    code = resource.get("code") or resource.get("medicationCodeableConcept") or {}
+    if not isinstance(code, dict):
+        return []
+    return [
+        {
+            "system": item.get("system"),
+            "version": item.get("version"),
+            "code": item.get("code"),
+            "display": item.get("display"),
+            "user_selected": item.get("userSelected"),
+        }
+        for item in code.get("coding") or []
+        if isinstance(item, dict)
+    ]
+
+
 class FhirMappingService:
     def __init__(self) -> None:
         self.terminology = TerminologyMapper()
@@ -28,14 +45,16 @@ class FhirMappingService:
             text = _coding_text(resource)
             return {
                 "record_type": "allergy",
-                "mapped_payload": self.terminology.allergy(text),
+                "mapped_payload": self.terminology.allergy(text)
+                | {"source_codings": _source_codings(resource)},
                 "confidence": 0.75,
             }
         if resource_type == "Condition":
             text = _coding_text(resource)
             return {
                 "record_type": "condition",
-                "mapped_payload": self.terminology.condition(text),
+                "mapped_payload": self.terminology.condition(text)
+                | {"source_codings": _source_codings(resource)},
                 "confidence": 0.75,
             }
         if resource_type in {"MedicationStatement", "MedicationRequest"}:
@@ -44,7 +63,8 @@ class FhirMappingService:
                 "record_type": "medication_request"
                 if resource_type == "MedicationRequest"
                 else "current_medication",
-                "mapped_payload": self.terminology.medication(text),
+                "mapped_payload": self.terminology.medication(text)
+                | {"source_codings": _source_codings(resource)},
                 "confidence": 0.75,
             }
         if resource_type == "Observation":
@@ -54,6 +74,7 @@ class FhirMappingService:
                     "code": _coding_text(resource),
                     "value": resource.get("valueQuantity") or resource.get("valueString"),
                     "status": resource.get("status"),
+                    "source_codings": _source_codings(resource),
                 },
                 "confidence": 0.65,
             }

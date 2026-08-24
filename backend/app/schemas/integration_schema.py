@@ -14,6 +14,7 @@ class ImportConsentPayload(BaseModel):
 
 
 class FhirBundleImportRequest(ImportConsentPayload):
+    idempotency_key: str = Field(min_length=8, max_length=160)
     bundle: dict
 
 

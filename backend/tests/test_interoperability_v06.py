@@ -72,12 +72,15 @@ def test_fhir_and_csv_imports_create_pending_batches(
             "purpose": "teste",
             "authorized_by": "Paciente Demo",
             "source_system": "fhir_demo",
+            "idempotency_key": "fhir-demo-import-1",
             "bundle": {
                 "resourceType": "Bundle",
+                "type": "collection",
                 "entry": [
                     {
                         "resource": {
                             "resourceType": "Patient",
+                            "id": "patient-1",
                             "name": [{"given": ["Ana"], "family": "FHIR"}],
                             "birthDate": "1990-01-01",
                         }
@@ -85,6 +88,8 @@ def test_fhir_and_csv_imports_create_pending_batches(
                     {
                         "resource": {
                             "resourceType": "MedicationStatement",
+                            "id": "medication-1",
+                            "status": "active",
                             "medicationCodeableConcept": {"text": "metamizol"},
                         }
                     },
@@ -108,6 +113,10 @@ def test_fhir_and_csv_imports_create_pending_batches(
     assert fhir.json()["status"] == "pending_review"
     assert csv_response.status_code == 200
     assert csv_response.json()["records"]
+    assert (
+        csv_response.json()["records"][0]["mapped_payload"]["_lineage"]["source_format"]
+        == "bounded_csv_subset"
+    )
 
 
 def test_auditor_can_view_but_cannot_accept_import(
