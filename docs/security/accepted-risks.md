@@ -1,6 +1,11 @@
 # Riscos temporariamente aceitos
 
-Não há exceção high/critical ativa para dependências na v0.8.9. Os gates de Python, npm e imagens falham diante de vulnerabilidade HIGH/CRITICAL sem exceção estreita aprovada.
+Os gates de Python, npm e imagens falham diante de vulnerabilidade HIGH/CRITICAL, exceto pela
+entrada estreita, versionada e temporária abaixo.
+
+| ID | Componente e escopo | Justificativa e compensação | Expira |
+|---|---|---|---|
+| CVE-2026-14456 | somente `libssl3t64@3.5.6-1~deb13u2` da imagem backend pinada | Debian reporta `fix_deferred`; o defeito atinge o listener OpenSSL QUIC server, que não é exposto nem usado pelo Prescripta. A exceção limita-se ao PURL exato; todo outro finding HIGH/CRITICAL continua bloqueante. Reconsultar a base pinada e remover assim que houver correção. | 2026-09-07 |
 
 ## Riscos residuais conhecidos da v0.8.9
 

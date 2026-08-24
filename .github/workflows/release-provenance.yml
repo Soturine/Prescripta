@@ -51,18 +51,22 @@ jobs:
           cp container-artifacts/sbom-image-frontend.json sbom-image-frontend.json
           cp qualification-artifacts/benchmark-evidence.json benchmark-evidence.json
           cp qualification-artifacts/recovery-evidence.json recovery-evidence.json
+          cp .trivyignore.yaml trivy-exceptions.yaml
           for sbom in sbom-*.json; do
             test -s "${sbom}"
             jq --exit-status '.bomFormat == "CycloneDX" and (.components | type == "array")' \
               "${sbom}" >/dev/null
           done
+          backend_findings="$(jq '[.Results[]?.Vulnerabilities[]?] | length' container-artifacts/trivy-backend.json)"
+          frontend_findings="$(jq '[.Results[]?.Vulnerabilities[]?] | length' container-artifacts/trivy-frontend.json)"
           jq -n --arg sha "${TARGET_SHA}" --argjson ci "${ci_run}" \
             --argjson security "${security_run}" --argjson container "${container_run}" \
-            --argjson qualification "${qualification_run}" \
-            '{sha: $sha, build_once: true, verify_once: true, gates: {CI: $ci, Security: $security, Container: $container, Qualification: $qualification}}' \
+            --argjson qualification "${qualification_run}" --argjson backend_findings "${backend_findings}" \
+            --argjson frontend_findings "${frontend_findings}" \
+            '{sha: $sha, build_once: true, verify_once: true, gates: {CI: $ci, Security: $security, Container: $container, Qualification: $qualification}, trivy: {backend_high_critical: $backend_findings, frontend_high_critical: $frontend_findings, governed_exceptions: ["CVE-2026-14456"], exception_policy_asset: "trivy-exceptions.yaml"}}' \
             > release-evidence.json
       - name: Generate release asset checksums
-        run: sha256sum sbom-*.json benchmark-evidence.json recovery-evidence.json release-evidence.json > SHA256SUMS.txt
+        run: sha256sum sbom-*.json benchmark-evidence.json recovery-evidence.json release-evidence.json trivy-exceptions.yaml > SHA256SUMS.txt
       - name: Attest backend dependency manifest with its SBOM
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.0.0
         with:
@@ -81,6 +85,7 @@ jobs:
             benchmark-evidence.json
             recovery-evidence.json
             release-evidence.json
+            trivy-exceptions.yaml
             SHA256SUMS.txt
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -90,6 +95,7 @@ jobs:
             benchmark-evidence.json
             recovery-evidence.json
             release-evidence.json
+            trivy-exceptions.yaml
             SHA256SUMS.txt
           retention-days: 30
       - name: Create draft release and attach SBOM assets
@@ -105,10 +111,10 @@ jobs:
           fi
           gh release edit "${tag}" \
             --title "Prescripta ${tag} - Interoperability, Operations & Stabilization"
-          gh release upload "${tag}" sbom-*.json benchmark-evidence.json recovery-evidence.json release-evidence.json SHA256SUMS.txt --clobber
+          gh release upload "${tag}" sbom-*.json benchmark-evidence.json recovery-evidence.json release-evidence.json trivy-exceptions.yaml SHA256SUMS.txt --clobber
           assets="$(gh release view "${tag}" --json assets --jq '.assets[].name')"
           for expected in sbom-backend.json sbom-frontend.json \
             sbom-image-backend.json sbom-image-frontend.json benchmark-evidence.json \
-            recovery-evidence.json release-evidence.json SHA256SUMS.txt; do
+            recovery-evidence.json release-evidence.json trivy-exceptions.yaml SHA256SUMS.txt; do
             grep --fixed-strings --line-regexp "${expected}" <<<"${assets}"
           done

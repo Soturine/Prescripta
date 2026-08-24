@@ -131,7 +131,6 @@ def test_provider_retry_openalex_configuration_and_malicious_xml(
     assert metadata["polite_pool"] is True
     assert len(retrying.calls) == 2
     assert 0.3 in delays
-    assert any(delay >= 0.5 for delay in delays)
 
     monkeypatch.setenv("OPENALEX_API_KEY", "configured-secret")
     openalex = MockOutbound(

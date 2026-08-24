@@ -61,7 +61,13 @@ jobs:
         env:
           PRESCRIPTA_BACKUP_SOURCE_URL: postgresql://prescripta:qualification@localhost:5432/prescripta_source
           PRESCRIPTA_RESTORE_TARGET_URL: postgresql://prescripta:qualification@localhost:5432/prescripta_restore
-        run: bash scripts/postgres-backup-restore.sh | tee recovery-evidence.json
+        run: |
+          docker run --rm --network host \
+            --env PRESCRIPTA_BACKUP_SOURCE_URL \
+            --env PRESCRIPTA_RESTORE_TARGET_URL \
+            --volume "$PWD/scripts/postgres-backup-restore.sh:/usr/local/bin/postgres-backup-restore.sh:ro" \
+            postgres:17.10-bookworm@sha256:9b18b78397054fce88a9552e9d5a3ad5bb7fd258c5b3cc1c5028e46373d6ea8f \
+            bash /usr/local/bin/postgres-backup-restore.sh | tee recovery-evidence.json
       - name: Bounded synthetic benchmarks
         run: python scripts/benchmark_v010.py | tee benchmark-evidence.json
       - name: Focused fault and interoperability qualification
