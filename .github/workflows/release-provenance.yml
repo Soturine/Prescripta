@@ -104,13 +104,13 @@ jobs:
         run: |
           tag="${GITHUB_REF_NAME}"
           test "${tag}" = "v$(cat VERSION)"
+          title="Prescripta ${tag}"
           if ! gh release view "${tag}" >/dev/null 2>&1; then
             gh release create "${tag}" --draft --verify-tag \
-              --title "Prescripta ${tag} — Advanced Research Methods, Agentic Evidence & Security Hardening" \
+              --title "${title}" \
               --notes-file "docs/releases/${tag}.md"
           fi
-          gh release edit "${tag}" \
-            --title "Prescripta ${tag} - Interoperability, Operations & Stabilization"
+          gh release edit "${tag}" --title "${title}"
           gh release upload "${tag}" sbom-*.json benchmark-evidence.json recovery-evidence.json release-evidence.json trivy-exceptions.yaml SHA256SUMS.txt --clobber
           assets="$(gh release view "${tag}" --json assets --jq '.assets[].name')"
           for expected in sbom-backend.json sbom-frontend.json \

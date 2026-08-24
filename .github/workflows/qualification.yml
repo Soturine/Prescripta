@@ -42,12 +42,13 @@ jobs:
           python-version: "3.12"
       - name: Install qualification dependencies
         run: python -m pip install -r backend/requirements-dev.txt
-      - name: Prove v0.9.3 to v0.10.0 migration
+      - name: Prove previous stable schema to current head
         working-directory: backend
         env:
           PRESCRIPTA_DATABASE_URL: postgresql+psycopg://prescripta:qualification@localhost:5432/prescripta_source
         run: |
-          alembic upgrade f3a91c7d2b40
+          baseline_revision="$(python -c 'import json; print(json.load(open("../docs/release-policy.json"))["alembic_baseline_revision"])')"
+          alembic upgrade "${baseline_revision}"
           alembic upgrade head
           alembic current
           alembic check
@@ -69,7 +70,9 @@ jobs:
             postgres:17.10-bookworm@sha256:9b18b78397054fce88a9552e9d5a3ad5bb7fd258c5b3cc1c5028e46373d6ea8f \
             bash /usr/local/bin/postgres-backup-restore.sh | tee recovery-evidence.json
       - name: Bounded synthetic benchmarks
-        run: python scripts/benchmark_v010.py | tee benchmark-evidence.json
+        run: |
+          benchmark_script="$(python -c 'import json; print(json.load(open("docs/release-policy.json"))["benchmark_script"])')"
+          python "${benchmark_script}" | tee benchmark-evidence.json
       - name: Focused fault and interoperability qualification
         run: >-
           python -m pytest

@@ -34,10 +34,19 @@ def changes(baseline: dict, candidate: dict) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("baseline", type=Path)
-    parser.add_argument("candidate", type=Path)
+    parser.add_argument("baseline", type=Path, nargs="?")
+    parser.add_argument("candidate", type=Path, nargs="?")
     parser.add_argument("--allowlist", type=Path)
+    parser.add_argument("--config", type=Path)
     args = parser.parse_args()
+    if args.config:
+        policy = json.loads(args.config.read_text(encoding="utf-8"))
+        policy_root = args.config.parent
+        args.baseline = policy_root / policy["baseline"]
+        args.candidate = policy_root / policy["candidate"]
+        args.allowlist = policy_root / policy["allowlist"]
+    if not args.baseline or not args.candidate:
+        parser.error("provide baseline and candidate, or --config")
     baseline = json.loads(args.baseline.read_text(encoding="utf-8"))
     candidate = json.loads(args.candidate.read_text(encoding="utf-8"))
     detected = changes(baseline, candidate)

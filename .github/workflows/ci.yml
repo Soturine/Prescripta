@@ -33,10 +33,9 @@ jobs:
       - name: Version consistency
         run: python scripts/check_version_consistency.py
       - name: Reviewed OpenAPI compatibility policy
-        run: |
-          python scripts/check_openapi_compatibility.py \
-            docs/api/openapi-v0.9.3.json docs/api/openapi-v0.10.0.json \
-            --allowlist docs/api/openapi-breaking-allowlist-v0.10.0.json
+        run: python scripts/check_openapi_compatibility.py --config docs/api/openapi-policy.json
+      - name: Governed frontend assets
+        run: node scripts/check_frontend_assets.mjs
       - name: Commit whitespace consistency
         run: git show --check --oneline --format= HEAD
 
@@ -62,7 +61,7 @@ jobs:
       - name: Canonical OpenAPI snapshot
         run: |
           python ../scripts/generate_openapi_snapshot.py --output .tmp-openapi.json
-          python -c "import json; from pathlib import Path; assert json.loads(Path('.tmp-openapi.json').read_text(encoding='utf-8')) == json.loads(Path('../docs/api/openapi-v0.10.0.json').read_text(encoding='utf-8')), 'committed OpenAPI snapshot is stale'"
+          python -c "import json; from pathlib import Path; policy=json.loads(Path('../docs/api/openapi-policy.json').read_text(encoding='utf-8')); assert json.loads(Path('.tmp-openapi.json').read_text(encoding='utf-8')) == json.loads((Path('../docs/api') / policy['candidate']).read_text(encoding='utf-8')), 'committed OpenAPI snapshot is stale'"
       - name: Lint
         run: python -m ruff check .
       - name: Test

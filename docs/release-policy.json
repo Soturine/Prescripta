@@ -1,0 +1,6 @@
+{
+  "previous_stable_version": "0.10.0",
+  "target_version": "1.0.0",
+  "alembic_baseline_revision": "a10f0c0d1000",
+  "benchmark_script": "scripts/benchmark_v010.py"
+}

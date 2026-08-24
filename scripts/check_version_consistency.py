@@ -21,8 +21,8 @@ def expect(label: str, actual: object, expected: object) -> None:
         errors.append(f"{label}: esperado {expected!r}, encontrado {actual!r}")
 
 
-if not re.fullmatch(r"0\.\d+\.\d+", VERSION):
-    errors.append(f"VERSION deve usar a linha 0.x.y: {VERSION!r}")
+if not re.fullmatch(r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", VERSION):
+    errors.append(f"VERSION deve usar SemVer x.y.z: {VERSION!r}")
 
 with (ROOT / "backend/pyproject.toml").open("rb") as stream:
     expect("backend/pyproject.toml", tomllib.load(stream)["project"]["version"], VERSION)

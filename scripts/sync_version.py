@@ -21,7 +21,7 @@ def replace(path: str, pattern: str, replacement: str, *, count: int = 0) -> Non
 
 
 def main() -> None:
-    if not re.fullmatch(r"0\.\d+\.\d+", VERSION):
+    if not re.fullmatch(r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", VERSION):
         raise SystemExit(f"VERSION inválida: {VERSION!r}")
     replace("backend/pyproject.toml", r'^(version\s*=\s*)"[^"]+"', rf'\1"{VERSION}"', count=1)
     replace("frontend/package.json", r'^(\s*"version"\s*:\s*)"[^"]+"', rf'\1"{VERSION}"', count=1)
