@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 
 import LoadingState from "../components/LoadingState";
 import RiskBadge from "../components/RiskBadge";
+import TechnicalDetails from "../components/ui/TechnicalDetails";
 import { useAuth } from "../context/AuthContext";
 import {
   acceptClinicalImport,
@@ -597,9 +598,13 @@ function ImportDetail({
                 confiança {Math.round(record.confidence * 100)}%
               </span>
             </div>
-            <pre className="mt-3 max-h-52 overflow-auto rounded-lg bg-white p-3 text-xs text-slate-700">
-              {JSON.stringify(record.mapped_payload, null, 2)}
-            </pre>
+            <div className="mt-3">
+              <TechnicalDetails label="Payload mapeado" copyValue={JSON.stringify(record.mapped_payload, null, 2)}>
+                <pre className="max-h-52 overflow-auto rounded-lg bg-white p-3 text-xs text-slate-700">
+                  {JSON.stringify(record.mapped_payload, null, 2)}
+                </pre>
+              </TechnicalDetails>
+            </div>
           </article>
         ))}
       </div>
