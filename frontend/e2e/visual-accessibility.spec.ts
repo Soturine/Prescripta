@@ -51,7 +51,7 @@ test("locale EN-US preserva acesso e passa axe no dashboard", async ({ page }, t
 test("drawer e reflow funcionam em mobile e tablet @responsive", async ({ page }, testInfo) => {
   test.skip(!["mobile-chromium", "tablet-chromium"].includes(testInfo.project.name));
   await login(page, "medico");
-  await page.getByRole("button", { name: "Abrir navegação" }).click();
+  await page.getByRole("button", { name: "Mais" }).click();
   await expect(page.getByRole("navigation", { name: "Navegação principal" }).getByRole("link", { name: "Pacientes", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.locator("body")).toHaveCSS("overflow-y", "auto");
