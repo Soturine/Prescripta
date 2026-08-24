@@ -1,23 +1,28 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
 from app.database.models import AgentRunModel, EvidenceSourceModel, ResearchStudyModel, UserModel
-from app.schemas.research_v093_schema import (
-    AgentReviewRequest,
-    AgentRunCreate,
-    AgentStepRequest,
-)
+from app.domain.user import Capability
+from app.schemas.research_v093_schema import AgentReviewRequest, AgentRunCreate, AgentStepRequest
 from app.services.audit_service import AuditService
 from app.services.canonical_json import canonical_sha256
 from app.services.research_service import ResearchConflict, ResearchNotFound
 
-AGENT_POLICY_VERSION = "bounded-research-agent-v1"
+AGENT_POLICY_VERSION = "bounded-research-agent-v2"
+SERVER_BUDGET = {
+    "max_steps": 4,
+    "max_wall_time_seconds": 300,
+    "max_tool_calls": 4,
+    "max_tokens": 4_000,
+    "max_cost_usd": 1.0,
+}
 TEMPLATES = {
     "evidence_review": {
-        "version": "1",
+        "version": "2",
         "tools": [
             "search_evidence",
             "fetch_evidence_metadata",
@@ -27,7 +32,7 @@ TEMPLATES = {
         "checkpoint_after": "propose_evidence_shortlist",
     },
     "study_design": {
-        "version": "1",
+        "version": "2",
         "tools": [
             "lookup_terminology",
             "propose_concept_set",
@@ -36,17 +41,6 @@ TEMPLATES = {
         ],
         "checkpoint_after": "propose_analysis_plan",
     },
-}
-FORBIDDEN_TOOLS = {
-    "shell",
-    "filesystem",
-    "raw_http",
-    "browser",
-    "raw_sql",
-    "db_mutation",
-    "spawn_agent",
-    "execute_research_query",
-    "approve_protocol",
 }
 TERMINAL_STATES = {"completed", "rejected", "failed", "abstained", "cancelled"}
 INJECTION_MARKERS = (
@@ -63,9 +57,7 @@ class AgenticResearchService:
         self.db = db
 
     def create(self, payload: AgentRunCreate, actor: UserModel) -> AgentRunModel:
-        study = self.db.get(ResearchStudyModel, payload.study_id)
-        if study is None or study.institution_id != actor.institution_id:
-            raise ResearchNotFound("Estudo não encontrado.")
+        self._study_in_scope(payload.study_id, actor)
         sources = [self.db.get(EvidenceSourceModel, source_id) for source_id in payload.source_ids]
         if any(
             source is None or source.institution_id != actor.institution_id for source in sources
@@ -79,11 +71,12 @@ class AgenticResearchService:
             template_version=template["version"],
             state="queued",
             goal_hash=canonical_sha256(payload.goal),
-            budgets=payload.budget.model_dump()
+            budgets=SERVER_BUDGET
             | {
                 "data_classification": payload.data_classification,
                 "source_allowlist": payload.source_ids,
                 "provider_policy": "existing_ai_task_router_only",
+                "budget_authority": "server",
             },
             usage={"steps": 0, "tool_calls": 0, "tokens": 0, "cost_usd": 0.0},
             allowed_tools=template["tools"],
@@ -103,41 +96,53 @@ class AgenticResearchService:
         run = self._owned(run_id, actor)
         if run.state in TERMINAL_STATES or run.state == "waiting_human":
             raise ResearchConflict("Estado do agent run não permite novo tool call.")
-        if payload.tool in FORBIDDEN_TOOLS or payload.tool not in run.allowed_tools:
-            self._stop(run, "abstained", "tool_denied")
+        if any(step.get("idempotency_key") == payload.idempotency_key for step in run.steps):
+            return run
+        tool_index = len(run.steps)
+        if tool_index >= len(run.allowed_tools):
+            self._stop(run, "abstained", "workflow_exhausted")
+            return run
+        tool = run.allowed_tools[tool_index]
+        if tool not in TEMPLATES[run.template]["tools"]:
+            self._stop(run, "abstained", "tool_registry_violation")
             self._audit(actor, run, "agent.tool.denied")
             return run
+
+        output = self._execute_registered_tool(run, tool)
+        measured_tokens = len(str(output).split())
         usage = dict(run.usage)
         usage["steps"] += 1
         usage["tool_calls"] += 1
-        usage["tokens"] += payload.token_usage
-        usage["cost_usd"] = round(float(usage["cost_usd"]) + payload.cost_usd, 6)
+        usage["tokens"] += measured_tokens
         budget = run.budgets
         if (
             usage["steps"] > budget["max_steps"]
             or usage["tool_calls"] > budget["max_tool_calls"]
             or usage["tokens"] > budget["max_tokens"]
-            or usage["cost_usd"] > budget["max_cost_usd"]
             or self._elapsed_seconds(run.created_at) > budget["max_wall_time_seconds"]
         ):
             run.usage = usage
             self._stop(run, "abstained", "budget_exceeded")
             self._audit(actor, run, "agent.budget.exceeded")
             return run
-        rendered = str(payload.output).casefold()
-        injection_detected = any(marker in rendered for marker in INJECTION_MARKERS)
+
         steps = list(run.steps)
         steps.append(
             {
                 "index": len(steps) + 1,
-                "tool": payload.tool,
-                "tool_version": "1",
-                "input_hash": canonical_sha256({"run": run.id, "tool": payload.tool}),
-                "output_hash": canonical_sha256(payload.output),
+                "tool": tool,
+                "tool_version": "2",
+                "input_hash": canonical_sha256({"run": run.id, "tool": tool}),
+                "output_hash": canonical_sha256(output),
+                "idempotency_key": payload.idempotency_key,
+                "measured_tokens": measured_tokens,
                 "source_ids": run.source_ids,
                 "status": "completed",
-                "prompt_injection_detected": injection_detected,
+                "prompt_injection_detected": any(
+                    marker in str(output).casefold() for marker in INJECTION_MARKERS
+                ),
                 "authority_expanded": False,
+                "executed_by": "server_tool_registry",
                 "created_at": datetime.now(UTC).isoformat(),
             }
         )
@@ -145,13 +150,13 @@ class AgenticResearchService:
         run.usage = usage
         run.state = "running"
         run.updated_at = datetime.now(UTC)
-        if payload.tool == TEMPLATES[run.template]["checkpoint_after"]:
+        if tool == TEMPLATES[run.template]["checkpoint_after"]:
             run.state = "waiting_human"
             run.proposal = {
                 "status": "proposal_only",
-                "content_hash": canonical_sha256(payload.output),
+                "content_hash": canonical_sha256(output),
                 "source_ids": run.source_ids,
-                "payload": payload.output,
+                "payload": output,
             }
             run.human_checkpoint = {
                 "status": "waiting",
@@ -201,7 +206,40 @@ class AgenticResearchService:
         run = self.db.get(AgentRunModel, run_id)
         if run is None or run.institution_id != actor.institution_id:
             raise ResearchNotFound("Agent run não encontrado.")
+        self._study_in_scope(run.study_id, actor)
         return run
+
+    def _study_in_scope(self, study_id: str, actor: UserModel) -> ResearchStudyModel:
+        study = self.db.get(ResearchStudyModel, study_id)
+        elevated = Capability.ACCESS_MANAGE.value in set(actor.capabilities or [])
+        if (
+            study is None
+            or study.institution_id != actor.institution_id
+            or (study.owner_user_id != actor.id and not elevated)
+        ):
+            raise ResearchNotFound("Estudo não encontrado.")
+        return study
+
+    def _execute_registered_tool(self, run: AgentRunModel, tool: str) -> dict:
+        sources = [self.db.get(EvidenceSourceModel, source_id) for source_id in run.source_ids]
+        source_refs = [source.id for source in sources if source is not None]
+        handlers: dict[str, Callable[[], dict]] = {
+            "search_evidence": lambda: {"candidate_source_ids": source_refs},
+            "fetch_evidence_metadata": lambda: {"source_ids": source_refs, "metadata_only": True},
+            "get_evidence_source": lambda: {"source_ids": source_refs, "content_loaded": False},
+            "propose_evidence_shortlist": lambda: {
+                "source_ids": source_refs,
+                "recommendation_status": "human_review_required",
+            },
+            "lookup_terminology": lambda: {"status": "proposal_only", "matches": []},
+            "propose_concept_set": lambda: {"status": "proposal_only", "concepts": []},
+            "validate_cohort_dsl": lambda: {"status": "not_executed", "valid": None},
+            "propose_analysis_plan": lambda: {"status": "proposal_only", "study_id": run.study_id},
+        }
+        handler = handlers.get(tool)
+        if handler is None:
+            raise ResearchConflict("Tool fora do registry server-side.")
+        return handler()
 
     @staticmethod
     def _stop(run: AgentRunModel, state: str, reason: str) -> None:
@@ -228,5 +266,6 @@ class AgenticResearchService:
                 "allowed_tools": run.allowed_tools,
                 "recursive_spawning": False,
                 "raw_goal_persisted": False,
+                "caller_supplied_tool_output_usage": False,
             },
         )

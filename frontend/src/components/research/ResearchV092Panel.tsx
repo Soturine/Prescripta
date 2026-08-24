@@ -274,13 +274,6 @@ export default function ResearchV092Panel({
         study_id: studyId,
         template: "evidence_review",
         goal: "Prepare a source-grounded evidence shortlist for human review",
-        budget: {
-          max_steps: 4,
-          max_wall_time_seconds: 300,
-          max_tool_calls: 4,
-          max_tokens: 4000,
-          max_cost_usd: 1,
-        },
         data_classification: "public",
         source_ids: [],
       }),
@@ -289,10 +282,7 @@ export default function ResearchV092Panel({
   const agentStepMutation = useMutation({
     mutationFn: (runId: string) =>
       advanceResearchAgent(runId, {
-        tool: "propose_evidence_shortlist",
-        output: { source_ids: [], note: "No source selected without human review" },
-        token_usage: 0,
-        cost_usd: 0,
+        idempotency_key: `${runId}-next-${agentRun?.steps?.length ?? 0}`,
       }),
     onSuccess: setAgentRun,
   });

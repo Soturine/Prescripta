@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_any_capability
+from app.core.auth import require_capabilities
 from app.database.models import UserModel
 from app.database.session import get_db
 from app.domain.user import Capability
@@ -21,8 +21,8 @@ DbSession = Annotated[Session, Depends(get_db)]
 AgentUser = Annotated[
     UserModel,
     Depends(
-        require_any_capability(
-            Capability.RESEARCH_AI_USE,
+        require_capabilities(
+            Capability.RESEARCH_AGENT_USE,
             Capability.RESEARCH_STUDY_WRITE,
         )
     ),

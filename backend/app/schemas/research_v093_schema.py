@@ -51,23 +51,12 @@ class EvidenceSearchExecuteRequest(BaseModel):
     confirm_metadata_retrieval: Literal[True]
 
 
-class AgentBudget(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    max_steps: int = Field(default=4, ge=1, le=6)
-    max_wall_time_seconds: int = Field(default=300, ge=10, le=1800)
-    max_tool_calls: int = Field(default=4, ge=1, le=8)
-    max_tokens: int = Field(default=4000, ge=100, le=20_000)
-    max_cost_usd: float = Field(default=1.0, ge=0, le=20)
-
-
 class AgentRunCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     study_id: str = Field(min_length=36, max_length=36)
     template: Literal["evidence_review", "study_design"]
     goal: str = Field(min_length=4, max_length=1000)
-    budget: AgentBudget = Field(default_factory=AgentBudget)
     data_classification: Literal["public", "synthetic"] = "public"
     source_ids: list[str] = Field(default_factory=list, max_length=30)
 
@@ -75,10 +64,7 @@ class AgentRunCreate(BaseModel):
 class AgentStepRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    tool: str = Field(min_length=3, max_length=80)
-    output: dict = Field(default_factory=dict)
-    token_usage: int = Field(default=0, ge=0, le=20_000)
-    cost_usd: float = Field(default=0, ge=0, le=20)
+    idempotency_key: str = Field(min_length=8, max_length=160)
 
 
 class AgentReviewRequest(BaseModel):

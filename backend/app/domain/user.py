@@ -59,6 +59,7 @@ class Capability(StrEnum):
     RESEARCH_PATIENT_JOURNEY_READ = "research.patient_journey.read"
     RESEARCH_PACKAGE_EXPORT = "research.package.export"
     RESEARCH_AI_USE = "research.ai.use"
+    RESEARCH_AGENT_USE = "research.agent.use"
     TERMINOLOGY_READ = "terminology.read"
     TERMINOLOGY_MANAGE = "terminology.manage"
     TERMINOLOGY_MAPPING_PROPOSE = "terminology.mapping.propose"
@@ -127,6 +128,7 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.RESEARCH_PATIENT_JOURNEY_READ,
         Capability.RESEARCH_PACKAGE_EXPORT,
         Capability.RESEARCH_AI_USE,
+        Capability.RESEARCH_AGENT_USE,
         Capability.TERMINOLOGY_READ,
         Capability.TERMINOLOGY_MANAGE,
         Capability.TERMINOLOGY_MAPPING_PROPOSE,
@@ -229,6 +231,7 @@ PROFESSION_CAPABILITY_TEMPLATES: dict[Profession, tuple[Capability, ...]] = {
         Capability.RESEARCH_PATIENT_JOURNEY_READ,
         Capability.RESEARCH_PACKAGE_EXPORT,
         Capability.RESEARCH_AI_USE,
+        Capability.RESEARCH_AGENT_USE,
         Capability.TERMINOLOGY_READ,
         Capability.TERMINOLOGY_MAPPING_PROPOSE,
         Capability.TERMINOLOGY_MAPPING_REVIEW,
