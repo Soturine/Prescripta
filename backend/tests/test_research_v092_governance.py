@@ -376,15 +376,20 @@ def test_query_execution_requires_explicit_enablement_and_returns_aggregates_onl
     comparison = ResearchV092Service(db_session).execute_comparison(
         study.id, fixture["payload"], actor
     )
-    db_session.execute(
-        text(
-            "CREATE VIEW research_aggregate_comparisons AS "
-            "SELECT id, study_id, institution_id, dataset_snapshot_marker, status, "
-            "exposed_n, comparator_n, "
-            "exposed_events, comparator_events, content_hash, executed_at "
-            "FROM research_comparison_runs"
+    # Em PostgreSQL o executor usa conexão própria READ ONLY (como em produção): só enxerga dados
+    # confirmados, então a comparação precisa estar persistida como estaria após a requisição.
+    db_session.commit()
+    # Em SQLite emula a migração; no harness PostgreSQL a view já vem do conftest (NEW-05).
+    if db_session.get_bind().dialect.name != "postgresql":
+        db_session.execute(
+            text(
+                "CREATE VIEW research_aggregate_comparisons AS "
+                "SELECT id, study_id, institution_id, dataset_snapshot_marker, status, "
+                "exposed_n, comparator_n, "
+                "exposed_events, comparator_events, content_hash, executed_at "
+                "FROM research_comparison_runs"
+            )
         )
-    )
     try:
         monkeypatch.setenv("PRESCRIPTA_RESEARCH_QUERY_ASSISTANT_ENABLED", "true")
         service = ResearchQueryService(db_session)

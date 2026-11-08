@@ -44,10 +44,33 @@ def override_get_db() -> Generator[Session, None, None]:
 app.dependency_overrides[get_db] = override_get_db
 
 
+# Views criadas por migração Alembic (não por `create_all`). No modo PostgreSQL o harness as recria
+# para não haver falso vermelho/verde por schema incompleto (NEW-05). Mantido igual à migração
+# e8f3a921c4d0; a paridade é verificada por test_postgres_harness_parity.py.
+MIGRATION_VIEWS = {
+    "research_aggregate_comparisons": (
+        "CREATE VIEW research_aggregate_comparisons AS "
+        "SELECT id, study_id, institution_id, dataset_snapshot_marker, status, "
+        "exposed_n, comparator_n, "
+        "exposed_events, comparator_events, content_hash, executed_at "
+        "FROM research_comparison_runs"
+    ),
+}
+
+
 @pytest.fixture(autouse=True)
 def reset_database() -> Generator[None, None, None]:
+    postgres = engine.dialect.name == "postgresql"
+    if postgres:
+        with engine.begin() as connection:
+            for name in MIGRATION_VIEWS:
+                connection.exec_driver_sql(f"DROP VIEW IF EXISTS {name}")
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
+    if postgres:
+        with engine.begin() as connection:
+            for ddl in MIGRATION_VIEWS.values():
+                connection.exec_driver_sql(ddl)
     yield
 
 
