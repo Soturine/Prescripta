@@ -13,6 +13,7 @@ Prescripta continua sendo uma demonstração sintética e educacional; nada aqui
 - [AUDIT_FINDING_CROSSWALK.md](AUDIT_FINDING_CROSSWALK.md) — mapeamento dos IDs da auditoria original para este registro.
 - [EXTERNAL_BENCHMARK_DECISIONS.md](EXTERNAL_BENCHMARK_DECISIONS.md) — Tasy, alertas Anvisa, CDS Hooks e decisões de posicionamento.
 - [DOGFOOD_MATRIX.md](DOGFOOD_MATRIX.md) — estado real do dogfood e log agent-led.
+- [EXECUTION_HANDOFF.md](EXECUTION_HANDOFF.md) — estado de retomada.
 - [OPEN_BLOCKERS.md](OPEN_BLOCKERS.md) — ações bloqueadas por permissão e o que as destrava.
 - [DUPLICATION_DEAD_CODE_AND_LEGACY.md](DUPLICATION_DEAD_CODE_AND_LEGACY.md) — candidatos a código morto/duplicado e decisão.
 
@@ -30,7 +31,8 @@ final) são acrescentados conforme cada checkpoint é concluído; ausência sign
 | CP-E | PRE-08 código morto; sondas NL→SQL | backend e Vitest 92/92 verdes; tsc e lint ok | [`3c20cde`](https://github.com/Soturine/Prescripta/commit/3c20cde) | origin/main | CI/Security/Container verdes (`42503672390`, `42503672389`, `42503672335`) | PRE-07 DEFERRED |
 | CP-F | NEW-11 alternativas, NEW-12 CDS, ADR 010/011, crosswalk | backend 322 passed / 3 skipped; Vitest 94; E2E 19/2 incl. visual; controles negativos | [`1c92ee8`](https://github.com/Soturine/Prescripta/commit/1c92ee8) | origin/main | CI/Security/Container verdes | política de idade pendente de revisão clínica |
 | CP-G | NEW-13–17: exibição de dose, concentração, sessão multi-aba, testes de negação; benchmark Tasy/Anvisa; dogfood matrix | backend 345 passed / 3 skipped; Vitest 98; E2E 19/2; controles negativos | [`f016896`](https://github.com/Soturine/Prescripta/commit/f016896) | origin/main | CI `42506699421`, Security `42506699408`, Container `42506699388`: verdes | dogfood BLOCKED |
-| CP-H | PRE-04 concorrência real em PG; NEW-05 harness PG completo; CI PG ampliado | SQLite 346/5 skipped; PostgreSQL suíte inteira 348/0/3; simulação do step de CI 28/28 | (preenchido após o push) | origin/main | (preenchido após o push) | — |
+| CP-H | PRE-04 concorrência real em PG; NEW-05 harness PG completo; CI PG ampliado | SQLite 346/5 skipped; PostgreSQL suíte inteira 348/0/3; simulação do step de CI 28/28 | [`4bd77bb`](https://github.com/Soturine/Prescripta/commit/4bd77bb) | origin/main | CI `42508296009` (incl. novo step PG), Security `42508296098`, Container `42508295956`: verdes | — |
+| CP-I | NEW-18 índice, NEW-19 evidência de release, handoff | SQLite 350/5; Alembic round trip PG; EXPLAIN | (ver git log) | origin/main | (próximo push) | — |
 
 ## Bloqueios
 
