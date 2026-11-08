@@ -101,6 +101,8 @@ class ClinicalDecisionEnvelope:
             raise ValueError("Decisão favorável não pode conter severidade crítica.")
         if favorable and any(finding.hard_block for finding in self.findings):
             raise ValueError("Decisão favorável não pode conter hard block.")
+        if favorable and self.findings:
+            raise ValueError("Decisão favorável não pode conter achados clínicos.")
         if favorable and not self.coverage.sufficient:
             raise ValueError("Decisão favorável exige cobertura suficiente.")
         if favorable and self.human_review_required:

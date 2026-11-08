@@ -1,3 +1,4 @@
+from dataclasses import replace
 from types import SimpleNamespace
 
 import pytest
@@ -13,7 +14,10 @@ from app.domain.clinical_decision import (
 from app.domain.medication import Medication
 from app.domain.patient import Patient
 from app.domain.prescription import PrescriptionInput
-from app.services.clinical_decision_orchestrator import ClinicalDecisionOrchestrator
+from app.services.clinical_decision_orchestrator import (
+    DOSE_BLOCKING_STATUSES,
+    ClinicalDecisionOrchestrator,
+)
 
 
 def patient(*, current_medications: list[str] | None = None) -> Patient:
@@ -163,6 +167,81 @@ def test_dose_above_maximum_blocks_aggregate_decision() -> None:
 
     assert result.envelope.decision_status == DecisionStatus.BLOCKED
     assert any(finding.code == "MAX_DAILY_DOSE_EXCEEDED" for finding in result.envelope.findings)
+
+
+def test_non_blocking_finding_under_full_coverage_still_requires_review() -> None:
+    """Dogfood (mutação manual, 2026-11): retirar `findings` da condição de revisão sobrevivia à
+    suíte inteira; nenhum teste tinha achado não crítico com cobertura completa. Idoso com dose
+    normal: só o fator de idade (não bloqueante) deve impedir a decisão favorável."""
+    result = evaluate(patient=replace(patient(), age=70))
+
+    assert result.envelope.coverage.status == CoverageStatus.COVERED
+    assert [f.code for f in result.envelope.findings if f.hard_block] == []
+    assert result.envelope.highest_severity != RiskLevel.CRITICAL
+    assert result.envelope.decision_status == DecisionStatus.REVIEW_REQUIRED
+    assert result.envelope.legacy_status == PrescriptionStatus.ATTENTION
+    assert result.envelope.human_review_required is True
+
+
+def test_envelope_rejects_favorable_decision_with_findings() -> None:
+    moderate = ClinicalFinding(
+        code="MODERATE_TEST",
+        title="Moderado",
+        description="Teste",
+        severity=RiskLevel.MODERATE,
+        module="test",
+        recommendation="Revisar",
+    )
+
+    with pytest.raises(ValueError, match="achados clínicos"):
+        ClinicalDecisionEnvelope(
+            decision_status=DecisionStatus.EVALUATED_NO_ISSUE,
+            legacy_status=PrescriptionStatus.RELEASED,
+            highest_severity=RiskLevel.MODERATE,
+            coverage=ClinicalCoverage(status=CoverageStatus.COVERED, evaluated=["test"]),
+            findings=[moderate],
+            required_actions=[],
+            missing_data=[],
+            rule_versions=[],
+            source_snapshot=[],
+            override_policy={},
+            human_review_required=False,
+            correlation_id="test",
+            recommendation="Nenhum problema",
+        )
+
+
+@pytest.mark.parametrize("dose_status", sorted(DOSE_BLOCKING_STATUSES))
+def test_dose_intelligence_block_alone_blocks_aggregate_decision(dose_status: str) -> None:
+    """Dogfood (mutação manual, 2026-11): o teste acima também é bloqueado pelo RiskEngine
+    (MAX_DAILY_DOSE_EXCEEDED), então remover todo caminho de bloqueio da Dose Intelligence
+    sobrevivia à suíte inteira. Aqui a dose é normal para o RiskEngine (100 mg < 1000 mg) e só a
+    Dose Intelligence acusa o máximo (por procedimento, cumulativo ou diário)."""
+    orchestrator = ClinicalDecisionOrchestrator()
+    real_dose_service = orchestrator.dose_service
+
+    class ExceededDose:
+        def evaluate(self, *args: object) -> SimpleNamespace:
+            payload = real_dose_service.evaluate(*args).to_dict()
+            payload["status"] = dose_status
+            payload["alerts"] = [{"code": dose_status.upper(), "severity": "alto"}]
+            return SimpleNamespace(to_dict=lambda: payload)
+
+    orchestrator.dose_service = ExceededDose()
+    result = orchestrator.evaluate(
+        patient=patient(),
+        medication=medication(),
+        prescription=prescription(),
+        user=user(),
+        missing_context=[],
+        rag_evidence=[],
+    )
+
+    assert not any(f.module == "risk_engine" for f in result.envelope.findings)
+    assert result.envelope.decision_status == DecisionStatus.BLOCKED
+    assert result.envelope.legacy_status == PrescriptionStatus.BLOCKED
+    blocking = [f for f in result.envelope.findings if f.module == "dose_intelligence"]
+    assert [(f.code, f.hard_block) for f in blocking] == [(dose_status.upper(), True)]
 
 
 def test_envelope_rejects_favorable_critical_contradiction() -> None:

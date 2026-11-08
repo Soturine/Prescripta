@@ -74,3 +74,20 @@ dependentes de dose são puladas e a dose vira dado ausente (decisão `insuffici
 declara `review_status=candidate_for_human_review` e `dose_assessment=not_evaluated_for_alternative`.
 Ordem transparente: mesmo grupo alternativo > mesma ação terapêutica > relacionamento cadastrado,
 desempate por nome e id; no máximo quatro candidatos, buscados no catálogo inteiro.
+
+## ADR 012 — O orquestrador é a única autoridade de decisão
+
+Contexto: `RiskEngine.evaluate` devolve `status`, `recommendation` e `human_review_required` além de
+alertas e nível de risco. Na auditoria 2026-11 (NEW-25) a busca de consumidores mostrou que nenhuma
+rota, relatório ou auditoria usa esses campos: o único chamador é o `ClinicalDecisionOrchestrator`,
+que lê alertas, resumo de dose, compatibilidade e grafo, e monta o próprio `PrescriptionResult` a
+partir de `DecisionStatus` (cobertura, dose, psicotrópicos e política incluídos). Um mutante que
+liberava risco HIGH no `RiskEngine` sobrevivia à suíte inteira.
+
+Decisão: o status do `RiskEngine` é um sinal interno (usado por `_compatibility` e pelos testes do
+módulo), não uma decisão. Toda decisão exibida, persistida ou auditada vem do orquestrador. O
+contrato do `RiskEngine` fica como está nesta versão e o mapeamento nível → status é fixado por teste,
+para não divergir em silêncio.
+
+Consequências: código novo não deve ler `RiskEngine.evaluate(...).status`; remover esses campos fica
+para uma mudança de contrato com nota de atualização. Revisitar se surgir um segundo consumidor.

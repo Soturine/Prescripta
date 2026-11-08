@@ -79,3 +79,7 @@ def test_invalid_route_generates_high_alert() -> None:
 
     assert result.risk_level == RiskLevel.HIGH
     assert any(alert.code == "INVALID_ROUTE" for alert in result.alerts)
+    # NEW-25: o status do RiskEngine não é a decisão (ADR 012), mas não pode divergir em silêncio;
+    # o mutante "HIGH → liberado" sobrevivia à suíte inteira.
+    assert result.status == PrescriptionStatus.ATTENTION
+    assert result.human_review_required is True
