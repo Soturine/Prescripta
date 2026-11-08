@@ -74,6 +74,7 @@ def cds_prescription_check(
         user=current_user,
         missing_context=missing_context,
         rag_evidence=[],
+        unevaluated_inputs=["observations"] if payload.observations else [],
     )
     observations_received = len(payload.observations)
     observations_evaluation = CDSObservationsEvaluation(

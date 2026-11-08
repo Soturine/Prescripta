@@ -6,7 +6,12 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
-from app.database.models import AuditEventModel, CDSIdempotencyModel, MedicationModel
+from app.database.models import (
+    AuditEventModel,
+    CDSIdempotencyModel,
+    MedicationModel,
+    UserModel,
+)
 from app.domain.user import UserRole
 from app.services.clinical_decision_orchestrator import ClinicalDecisionOrchestrator
 
@@ -174,3 +179,56 @@ def test_idempotency_race_replays_or_conflicts_without_orphan_audit(
         assert loser.json()["detail"]["code"] == "idempotency_key_reused"
     # O perdedor não deixa auditoria órfã de uma avaliação cuja resposta não foi entregue.
     assert _cds_audits(db_session) == 1
+
+
+def _validated_medication(db_session) -> MedicationModel:
+    record = MedicationModel(
+        brand_name="Validada Demo",
+        active_ingredient="validadina",
+        therapeutic_class="teste",
+        max_daily_dose_mg=1000,
+        allowed_routes=["oral"],
+        contraindications=[],
+        validation_status="validated",
+        knowledge_source="Fonte sintética validada para teste",
+        dose_rule_validation_status="validated",
+        dose_source_refs=["dose:test:v1"],
+        policy_validation_status="validated",
+        policy_source_refs=["policy:test:v1"],
+        policy_version="policy:test:v1",
+    )
+    db_session.add(record)
+    db_session.commit()
+    return record
+
+
+def test_unevaluated_observations_never_yield_no_issue(
+    client: TestClient, create_test_user, auth_headers, db_session
+) -> None:
+    """PRE-03b: observações recebidas e não avaliadas impedem `evaluated_no_issue`."""
+    headers = _headers(create_test_user, auth_headers, "cds-verified@example.test")
+    prescriber = db_session.scalar(
+        select(UserModel).where(UserModel.email == "cds-verified@example.test")
+    )
+    prescriber.credential_verification_status = "verified"
+    prescriber.specialty_code = "medicina_geral"
+    db_session.commit()
+    _validated_medication(db_session)
+    body = _body(active_ingredient="validadina")
+
+    clean = client.post(CDS_URL, headers=headers, json=body)
+    assert clean.status_code == 200
+    # Controle positivo: com cobertura completa e sem observações, a decisão pode ser favorável.
+    assert clean.json()["decision"]["decision_status"] == "evaluated_no_issue"
+
+    with_obs = client.post(
+        CDS_URL,
+        headers=headers,
+        json=body | {"observations": [{"code": "potassium", "value": 7.1, "unit": "mmol/L"}]},
+    )
+    decision = with_obs.json()["decision"]
+    assert decision["decision_status"] != "evaluated_no_issue"
+    assert decision["human_review_required"] is True
+    assert any(
+        item.get("module") == "observations" for item in decision["coverage"]["not_evaluated"]
+    )
