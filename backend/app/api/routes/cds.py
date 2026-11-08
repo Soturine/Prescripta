@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.auth import require_capabilities
@@ -17,13 +18,17 @@ from app.domain.user import Capability
 from app.schemas.cds_schema import (
     CDSCard,
     CDSMedicationRequest,
+    CDSObservationsEvaluation,
     CDSPrescriptionCheckRequest,
     CDSPrescriptionCheckResponse,
 )
 from app.schemas.prescription_schema import AlertRead
 from app.services.audit_service import AuditService
 from app.services.canonical_json import canonical_sha256
-from app.services.clinical_decision_orchestrator import ClinicalDecisionOrchestrator
+from app.services.clinical_decision_orchestrator import (
+    ClinicalDecisionEvaluation,
+    ClinicalDecisionOrchestrator,
+)
 from app.services.normalizer import normalize_text
 
 router = APIRouter(prefix="/cds", tags=["cds"])
@@ -54,22 +59,9 @@ def cds_prescription_check(
     effective_key = (idempotency_key or f"auto-{request_hash}").strip()
     if not effective_key or len(effective_key) > 160:
         raise HTTPException(status_code=422, detail="Idempotency-Key inválida.")
-    previous = db.scalar(
-        select(CDSIdempotencyModel).where(
-            CDSIdempotencyModel.user_id == current_user.id,
-            CDSIdempotencyModel.idempotency_key == effective_key,
-        )
-    )
+    previous = _find_idempotent_response(db, current_user.id, effective_key)
     if previous is not None:
-        if previous.request_hash != request_hash:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail={
-                    "code": "idempotency_key_reused",
-                    "message": "A chave já foi usada com outro conteúdo.",
-                },
-            )
-        return CDSPrescriptionCheckResponse.model_validate(previous.response_payload)
+        return _replay_or_conflict(previous, request_hash)
 
     medication_record = _resolve_canonical_medication(db, payload.medication_request)
     patient, missing_context = _patient_from_payload(payload)
@@ -83,8 +75,54 @@ def cds_prescription_check(
         missing_context=missing_context,
         rag_evidence=[],
     )
+    observations_received = len(payload.observations)
+    observations_evaluation = CDSObservationsEvaluation(
+        status="not_evaluated" if observations_received else "none_received",
+        received_count=observations_received,
+        evaluated_count=0,
+        reason=(
+            "O motor demonstrativo não interpreta observações/exames; elas não influenciaram "
+            "a decisão."
+            if observations_received
+            else None
+        ),
+    )
+    # Auditoria e registro idempotente formam uma única unidade: se outra requisição concorrente
+    # gravar a mesma chave primeiro, o savepoint desfaz ambos e a resposta vencedora é reproduzida
+    # (ou 409, se o conteúdo divergir), em vez de 500 com auditoria órfã já confirmada.
+    savepoint = db.begin_nested()
+    try:
+        response = _evaluate_audit_and_store(
+            db,
+            current_user=current_user,
+            effective_key=effective_key,
+            request_hash=request_hash,
+            medication=medication,
+            evaluation=evaluation,
+            observations_evaluation=observations_evaluation,
+        )
+        savepoint.commit()
+    except IntegrityError:
+        savepoint.rollback()
+        winner = _find_idempotent_response(db, current_user.id, effective_key)
+        if winner is None:
+            raise
+        return _replay_or_conflict(winner, request_hash)
+    return response
+
+
+def _evaluate_audit_and_store(
+    db: Session,
+    *,
+    current_user: UserModel,
+    effective_key: str,
+    request_hash: str,
+    medication: Medication,
+    evaluation: ClinicalDecisionEvaluation,
+    observations_evaluation: CDSObservationsEvaluation,
+) -> CDSPrescriptionCheckResponse:
     result = evaluation.legacy_result
-    audit = AuditService(db).record_action(
+    audit = AuditService(db, auto_commit=False).record_action(
         user=current_user,
         action="cds.prescription_check",
         resource_type="cds",
@@ -96,7 +134,8 @@ def cds_prescription_check(
             "idempotency_key": effective_key,
             "medication_id": medication.id,
             "alerts_count": len(result.alerts),
-            "observations_count": len(payload.observations),
+            "observations_count": observations_evaluation.received_count,
+            "observations_evaluated": observations_evaluation.evaluated_count,
             "clinical_data_persisted": False,
             "coverage_status": evaluation.envelope.coverage.status.value,
             "source": "external_cds_canonical_lookup",
@@ -128,6 +167,21 @@ def cds_prescription_check(
                 },
             )
         )
+    if observations_evaluation.status == "not_evaluated":
+        cards.append(
+            CDSCard(
+                summary="Observações recebidas não foram avaliadas",
+                indicator="warning",
+                detail=(
+                    "As observações enviadas não são interpretadas por este CDS demonstrativo. "
+                    "Ausência de alerta relacionado a exames não indica segurança."
+                ),
+                source={
+                    "observations_received": observations_evaluation.received_count,
+                    "observations_evaluated": observations_evaluation.evaluated_count,
+                },
+            )
+        )
     response = CDSPrescriptionCheckResponse(
         decision=evaluation.envelope.to_dict(),
         coverage_status=evaluation.envelope.coverage.status.value,
@@ -141,6 +195,7 @@ def cds_prescription_check(
             "CDS demonstrativo. Identidade e regras do medicamento são resolvidas no servidor; "
             "persist=false não salva dados clínicos do paciente."
         ),
+        observations_evaluation=observations_evaluation,
     )
     db.add(
         CDSIdempotencyModel(
@@ -152,6 +207,31 @@ def cds_prescription_check(
     )
     db.flush()
     return response
+
+
+def _find_idempotent_response(
+    db: Session, user_id: int, idempotency_key: str
+) -> CDSIdempotencyModel | None:
+    return db.scalar(
+        select(CDSIdempotencyModel).where(
+            CDSIdempotencyModel.user_id == user_id,
+            CDSIdempotencyModel.idempotency_key == idempotency_key,
+        )
+    )
+
+
+def _replay_or_conflict(
+    previous: CDSIdempotencyModel, request_hash: str
+) -> CDSPrescriptionCheckResponse:
+    if previous.request_hash != request_hash:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "idempotency_key_reused",
+                "message": "A chave já foi usada com outro conteúdo.",
+            },
+        )
+    return CDSPrescriptionCheckResponse.model_validate(previous.response_payload)
 
 
 def _resolve_canonical_medication(
@@ -187,16 +267,30 @@ def _resolve_canonical_medication(
             candidates.append(medication)
     if not candidates:
         raise _unknown_medication()
-    ingredient_ids = {item.active_ingredient_id or item.id for item in candidates}
-    if len(ingredient_ids) > 1:
+    if len(candidates) > 1:
+        # PRE-02: apresentações do mesmo princípio ativo podem ter concentração, forma, via e
+        # limites de dose distintos. Nunca escolher uma arbitrariamente (antes: menor ID).
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
                 "code": "ambiguous_medication",
-                "message": "A terminologia resolve para mais de um medicamento.",
+                "message": (
+                    "A terminologia resolve para mais de um cadastro; informe medication_id "
+                    "da apresentação desejada."
+                ),
+                "candidates": [
+                    {
+                        "medication_id": item.id,
+                        "brand_name": item.brand_name,
+                        "active_ingredient": item.active_ingredient,
+                        "concentration": item.concentration,
+                        "pharmaceutical_form": item.pharmaceutical_form,
+                    }
+                    for item in sorted(candidates, key=lambda item: item.id)
+                ],
             },
         )
-    return sorted(candidates, key=lambda item: item.id)[0]
+    return candidates[0]
 
 
 def _unknown_medication() -> HTTPException:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.prescription_schema import (
@@ -63,8 +65,17 @@ class CDSPrescriptionCheckRequest(BaseModel):
     allergies: list[str] | None = None
     conditions: list[str] | None = None
     current_medications: list[str] | None = None
-    observations: list[dict] = Field(default_factory=list)
+    # Aceitas por compatibilidade, mas nunca interpretadas pelo motor (PRE-03): a resposta declara
+    # `observations_evaluation.status = not_evaluated` e emite card de aviso.
+    observations: list[dict] = Field(default_factory=list, max_length=100)
     persist: bool = False
+
+
+class CDSObservationsEvaluation(BaseModel):
+    status: Literal["none_received", "not_evaluated"]
+    received_count: int = Field(ge=0)
+    evaluated_count: int = Field(default=0, ge=0)
+    reason: str | None = None
 
 
 class CDSCard(BaseModel):
@@ -84,3 +95,6 @@ class CDSPrescriptionCheckResponse(BaseModel):
     audit_id: str
     idempotency_key: str
     educational_notice: str
+    observations_evaluation: CDSObservationsEvaluation = Field(
+        default_factory=lambda: CDSObservationsEvaluation(status="none_received", received_count=0)
+    )

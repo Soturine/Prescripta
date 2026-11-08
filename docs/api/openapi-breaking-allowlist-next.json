@@ -1,0 +1,4 @@
+{
+  "policy": "Only explicitly reviewed breaking changes between the previous stable and current candidate contracts are allowed. openapi-next.json is the unreleased working snapshot; rename it on the next release.",
+  "allowed_breaks": []
+}
