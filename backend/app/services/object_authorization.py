@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from sqlalchemy import and_, exists, false, or_, select
 from sqlalchemy.orm import Session
 
+from app.database.json_ops import json_array_contains
 from app.database.models import (
     AuditEventModel,
     BreakGlassAccessModel,
@@ -93,7 +94,7 @@ class ObjectAuthorizationService:
             CareTeamMembershipModel.user_id == user.id,
             CareTeamMembershipModel.institution_id == user.institution_id,
             CareTeamMembershipModel.purpose == purpose,
-            CareTeamMembershipModel.capabilities.contains(capability),
+            json_array_contains(CareTeamMembershipModel.capabilities, capability),
             CareTeamMembershipModel.revoked_at.is_(None),
             CareTeamMembershipModel.starts_at <= now,
             or_(
@@ -105,7 +106,7 @@ class ObjectAuthorizationService:
             CareEpisodeAssignmentModel.user_id == user.id,
             CareEpisodeAssignmentModel.institution_id == user.institution_id,
             CareEpisodeAssignmentModel.purpose == purpose,
-            CareEpisodeAssignmentModel.capabilities.contains(capability),
+            json_array_contains(CareEpisodeAssignmentModel.capabilities, capability),
             CareEpisodeAssignmentModel.revoked_at.is_(None),
             CareEpisodeAssignmentModel.starts_at <= now,
             or_(

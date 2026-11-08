@@ -1,3 +1,4 @@
+import os
 from collections.abc import Callable, Generator
 
 import pytest
@@ -13,10 +14,17 @@ from app.domain.user import ROLE_PROFESSION, Capability, UserRole, capability_va
 from app.main import app
 from app.repositories.user_repository import UserRepository
 
-engine = create_engine(
-    "sqlite://",
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
+# Opt-in: PRESCRIPTA_TEST_DATABASE_URL=postgresql+psycopg://... roda a suíte inteira em um banco
+# PostgreSQL descartável (as tabelas são recriadas a cada teste). Padrão: SQLite em memória.
+_TEST_DATABASE_URL = os.getenv("PRESCRIPTA_TEST_DATABASE_URL", "sqlite://")
+engine = (
+    create_engine(
+        _TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    if _TEST_DATABASE_URL.startswith("sqlite")
+    else create_engine(_TEST_DATABASE_URL)
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

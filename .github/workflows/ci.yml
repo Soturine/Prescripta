@@ -173,6 +173,8 @@ jobs:
         run: alembic upgrade head && alembic downgrade base && alembic upgrade head && alembic check
       - name: PostgreSQL planner and read-only enforcement
         run: python -m pytest tests/test_research_query_postgresql_v093.py -q
+      - name: PostgreSQL object-scope JSON membership parity
+        run: python -m pytest tests/test_object_scope_json_membership.py -q
 
   smoke:
     needs: [repository-quality, backend, frontend, frontend-visual, postgres]
