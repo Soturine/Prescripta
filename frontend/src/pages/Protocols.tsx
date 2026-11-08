@@ -43,8 +43,10 @@ import type {
 type FieldValues = Record<string, string>;
 
 export default function Protocols() {
-  const { canAny } = useAuth();
+  const { can, canAny } = useAuth();
   const canRun = canAny("prescription.check", "nursing.protocol_prescribe");
+  // Auditoria e safety leem protocolos sem ler pacientes; pedir a lista gerava 403 a cada visita.
+  const canReadPatients = can("patient.read");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [category, setCategory] = useState("todos");
   const [search, setSearch] = useState("");
@@ -61,6 +63,7 @@ export default function Protocols() {
   const { data: patients = [] } = useQuery({
     queryKey: ["patients"],
     queryFn: fetchPatients,
+    enabled: canReadPatients,
   });
 
   const selectedProtocol = protocols.find((protocol) => protocol.id === selectedId) ?? protocols[0];
@@ -217,7 +220,7 @@ export default function Protocols() {
           </div>
         </aside>
 
-        <main className="grid gap-4">
+        <div className="grid gap-4">
           <ProtocolHeader protocol={selectedProtocol} />
 
           <section className="grid gap-4 lg:grid-cols-[1fr_360px]">
@@ -302,7 +305,7 @@ export default function Protocols() {
               </pre>
             </section>
           ) : null}
-        </main>
+        </div>
       </section>
     </div>
   );

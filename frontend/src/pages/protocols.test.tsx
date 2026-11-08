@@ -83,7 +83,7 @@ function renderPage() {
 }
 
 beforeEach(() => {
-  authMock.mockReturnValue({ canAny: () => true });
+  authMock.mockReturnValue({ can: () => true, canAny: () => true });
   apiMocks.fetchProtocols.mockResolvedValue([protocol, { ...protocol, id: "dor-demo", title: "Dor torácica", category: "Cardiologia", severity_level: "attention" }]);
   apiMocks.fetchPatients.mockResolvedValue([{ id: 7, name: "Paciente Demo", age: 36, weight_kg: 70 }]);
   apiMocks.fetchProtocolEvidence.mockResolvedValue([{ evidence_ref: "ev-1", source_name: "Fonte BR demonstrativa", source_url: null, source_version: "2026.1", summary: "Evidência fictícia revisada", validation_status: "validated" }]);
@@ -135,11 +135,14 @@ describe("protocolos rápidos", () => {
     expect(apiMocks.explainProtocol).toHaveBeenCalledWith(protocol.id, expect.objectContaining({ question: "Explique a fonte", run_id: null }));
     unmount();
 
-    authMock.mockReturnValue({ canAny: () => false });
+    // Perfil de consulta sem `patient.read` (auditoria, safety): não pede pacientes, que dariam 403.
+    apiMocks.fetchPatients.mockClear();
+    authMock.mockReturnValue({ can: () => false, canAny: () => false });
     renderPage();
     expect(await screen.findByText(/pode consultar protocolos/)).toBeVisible();
     expect(screen.getByRole("button", { name: "Executar fluxo" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Explicar protocolo" })).toBeDisabled();
+    expect(apiMocks.fetchPatients).not.toHaveBeenCalled();
   });
 
   it("não inventa protocolo quando o catálogo está vazio", async () => {

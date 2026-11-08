@@ -443,7 +443,7 @@ export default function Research() {
           </div>
         </aside>
 
-        <main className="min-w-0 grid gap-4">
+        <div className="min-w-0 grid gap-4">
           {!selectedStudyId ? (
             <StatusPanel title={t("research.selectStudyTitle")} tone="info">
               {t("research.selectStudyBody")}
@@ -758,7 +758,7 @@ export default function Research() {
               ) : null}
             </>
           )}
-        </main>
+        </div>
       </section>
 
       {showCreateStudy ? (

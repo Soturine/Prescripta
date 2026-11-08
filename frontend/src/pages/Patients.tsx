@@ -148,7 +148,7 @@ export default function Patients() {
           </div>
 
           <nav aria-label="Paginação de pacientes" className="mt-4 flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold text-slate-500">{t("patients.page", { page: currentPage, pages: totalPages })}</p>
+            <p className="text-xs font-semibold text-slate-600">{t("patients.page", { page: currentPage, pages: totalPages })}</p>
             <div className="flex gap-2">
               <button aria-label={t("patients.previousPage")} className="icon-button" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} type="button"><ChevronLeft aria-hidden="true" className="h-4 w-4" /></button>
               <button aria-label={t("patients.nextPage")} className="icon-button" disabled={currentPage === totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))} type="button"><ChevronRight aria-hidden="true" className="h-4 w-4" /></button>
