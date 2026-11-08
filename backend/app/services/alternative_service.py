@@ -49,7 +49,8 @@ class AlternativeService:
         group = normalize_text(medication.alternative_group or medication.therapeutic_class)
         action = normalize_text(medication.therapeutic_action or "")
         candidates = []
-        for record in self.repository.list():
+        # Catálogo inteiro: list() pagina em 50 e descartava alternativas silenciosamente (NEW-04).
+        for record in self.repository.iter_all():
             if record.id == current_id:
                 continue
             record_group = normalize_text(record.alternative_group or record.therapeutic_class)

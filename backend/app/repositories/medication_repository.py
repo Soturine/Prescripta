@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -18,6 +20,11 @@ class MedicationRepository:
             .limit(limit)
         )
         return list(self.db.scalars(statement))
+
+    def iter_all(self) -> Iterator[MedicationModel]:
+        """Percorre o catálogo inteiro em lotes; para varreduras que não podem ser paginadas."""
+        statement = select(MedicationModel).order_by(MedicationModel.brand_name)
+        yield from self.db.scalars(statement.execution_options(yield_per=200))
 
     def get(self, medication_id: int) -> MedicationModel | None:
         return self.db.get(MedicationModel, medication_id)
