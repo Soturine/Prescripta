@@ -58,4 +58,60 @@ describe("sessão e capacidades", () => {
     await waitFor(() => expect(screen.getByText("anônimo")).toBeVisible());
     expect(logoutSession).toHaveBeenCalled();
   });
+
+  it("fetchMe lento do carregamento não derruba um login feito depois (R1)", async () => {
+    let rejectInitial: (reason: unknown) => void = () => undefined;
+    vi.mocked(fetchMe).mockReturnValue(
+      new Promise<User>((_, reject) => {
+        rejectInitial = reject;
+      }),
+    );
+    vi.mocked(logoutSession).mockClear().mockResolvedValue(undefined as never);
+    vi.mocked(loginRequest).mockResolvedValue({ user: doctor } as Awaited<ReturnType<typeof loginRequest>>);
+    render(<AuthProvider><Harness /></AuthProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    expect(await screen.findByText("Médica Demo")).toBeVisible();
+
+    await act(async () => rejectInitial(new Error("401 antigo")));
+    expect(screen.getByText("Médica Demo")).toBeVisible();
+    expect(logoutSession).not.toHaveBeenCalled();
+  });
+
+  it("login espera o logout em voo terminar (R2)", async () => {
+    vi.mocked(fetchMe).mockResolvedValue(doctor);
+    const order: string[] = [];
+    let finishLogout: () => void = () => undefined;
+    vi.mocked(logoutSession).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishLogout = () => {
+            order.push("logout-done");
+            resolve();
+          };
+        }) as never,
+    );
+    vi.mocked(loginRequest).mockImplementation(async () => {
+      order.push("login-sent");
+      return { user: doctor } as Awaited<ReturnType<typeof loginRequest>>;
+    });
+    render(<AuthProvider><Harness /></AuthProvider>);
+    expect(await screen.findByText("Médica Demo")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Sair" }));
+    fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    await act(async () => finishLogout());
+    expect(await screen.findByText("Médica Demo")).toBeVisible();
+    expect(order).toEqual(["logout-done", "login-sent"]);
+  });
+
+  it("logout em outra aba limpa esta aba sem chamar o servidor de novo", async () => {
+    vi.mocked(fetchMe).mockResolvedValue(doctor);
+    vi.mocked(logoutSession).mockClear();
+    render(<AuthProvider><Harness /></AuthProvider>);
+    expect(await screen.findByText("Médica Demo")).toBeVisible();
+    const otherTab = new BroadcastChannel("prescripta-auth");
+    otherTab.postMessage("logout");
+    await waitFor(() => expect(screen.getByText("anônimo")).toBeVisible());
+    expect(logoutSession).not.toHaveBeenCalled();
+    otherTab.close();
+  });
 });
