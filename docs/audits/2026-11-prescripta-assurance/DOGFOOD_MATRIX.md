@@ -15,7 +15,7 @@ Versões: Derivanta Framework `218761d`; Derivanta Engine 0.1.0 (`17fa564` → c
 
 | Alvo | Agente + Framework | Derivanta Engine (CLI) | Assertiva (CLI) |
 |---|---|---|---|
-| Prescripta | **EXECUTED** (AUDIT.md, ADAPTIVE_TEST_ASSURANCE, mutação manual) | **EXECUTED**: `inspect --maintainability` em `83d4bec`, `6508221`, `14f9be1` (original e corrigido); `compare 6508221→14f9be1`; `evaluate` com `--framework` e `--repository` | **EXECUTED**: estático; `--execute` raiz (FAIL de coleta), backend (BLOCKED), frontend (Vitest PASS 98/98, Playwright BLOCKED); evidência importada (JUnit + coverage); controle negativo de CI de outra revisão; reexecução com a correção |
+| Prescripta | **EXECUTED** (AUDIT.md, ADAPTIVE_TEST_ASSURANCE, mutação manual) | **EXECUTED**: `inspect --maintainability` em `83d4bec`, `6508221`, `14f9be1` (original e corrigido); `compare 6508221→14f9be1`; `evaluate` com `--framework` e `--repository` | **EXECUTED**: estático; `--execute` raiz (FAIL de coleta), backend (BLOCKED), frontend (Vitest PASS 98/98, Playwright BLOCKED); evidência importada (JUnit + coverage); controle negativo de CI de outra revisão; reexecução com a correção; **com `pytest.ini` na raiz (`45e80d5`): execução nativa do backend `ENGINE_EXECUTED` PASS, 368 passed / 0 errors / 5 skipped, linhas 89,1 %, ramos 67,1 %** (run `e6e0bad61f71427f`, com `PYTEST_ADDOPTS=--basetemp` declarado no manifesto) |
 | Derivanta Engine | lido (AGENTS, regras 1–8) | **EXECUTED** em si mesma (`inspect --maintainability`, gate: lint, format, mypy, conformance 20/20, suíte 944/4) | **EXECUTED**: estático (run `01fa0870329d4b2d`); `--execute` 1º run caiu na limpeza do temporário (AS-07), 2º run `d89a95c89e5d4c23`: 225 erros atribuídos à pasta temporária do sandbox (infraestrutura), cobertura de ramos 69,9 %, artefato FAIL por falso positivo de extra opcional (AS-08) |
 | Assertiva | lido (CONTRIBUTING, CHANGELOG) | **EXECUTED** (`inspect --maintainability`, 256 candidatos) | suíte própria executada (ver TOOL_FEEDBACK AS-06) |
 | Derivanta Framework | **EXECUTED** (workflow AUDIT aplicado; feedback em [DERIVANTA_FRAMEWORK_FEEDBACK.md](dogfood/DERIVANTA_FRAMEWORK_FEEDBACK.md)) | pin verificado pelo `evaluate --framework` (EXECUTED/PASSED `218761dbd7ce`) | não aplicável (sem suíte executável no checkout) |
@@ -31,14 +31,15 @@ Versões: Derivanta Framework `218761d`; Derivanta Engine 0.1.0 (`17fa564` → c
 | Engine `evaluate` | C4 "validado" sem evidência | verdadeiro positivo | nenhuma alegação de validação clínica |
 | Engine `evaluate` | não acusou que C1 cita CI de `6508221` com HEAD observado `14f9be1` | **falso negativo** (ENG-04); a Assertiva acusou | evidência por SHA reforçada no handoff |
 | Assertiva estático | WEAK_ORACLE, ERROR_STATUS_ONLY, STATE_AFTER_REJECTION_NOT_EVIDENCED | sinais E3 corretos; os 3 testes fortalecidos antes (NEW-17) não aparecem | confirma NEW-17; hipótese AS-01 antiga resolvida (já detectado) |
-| Assertiva `--execute` raiz | FAIL: `backend/tests` não coletado | ambiental: monorepo com config pytest em `backend/`; antes da correção o relatório não dizia a causa (AS-02) | nenhum; causa reproduzida (`No module named 'app'`) |
+| Assertiva `--execute` raiz | FAIL: `backend/tests` não coletado | verdadeiro para o projeto: o monorepo só rodava a partir de `backend/`; antes da correção o relatório não dizia a causa (AS-02) | `pytest.ini` na raiz com caminhos relativos (`45e80d5`): coleta e execução nativas passaram (373 invocações) |
+| Assertiva `--execute` raiz, após `pytest.ini` | 6 erros `PermissionError` atribuídos ao **produto** | falso positivo de origem (AS-09): o erro nasce no próprio pytest, no `.venv` dentro do projeto, ao criar `tmp_path` na pasta temporária negada pelo sandbox; com `--basetemp` fora da cópia: 0 erros | nenhum |
 | Assertiva `--execute` backend | BLOCKED: `VERSION` não encontrado | **verdadeiro**: backend não é autocontido (NEW-22) | registrado |
 | Assertiva importado | 368 casos PASS, rotulados "não executados pela Assertiva" | correto | — |
 | Assertiva `--ci-run` | CI de `6508221` com HEAD `14f9be1` → `OTHER_REVISION` + `CI_RUN_FOR_ANOTHER_REVISION` | controle negativo **aprovado** | — |
 | Agente: mutação manual | 6 mutantes no `risk_engine`, 5 no orquestrador; sobreviventes reexecutados contra a suíte inteira; compostos "todos os caminhos" | ver [dogfood/MUTATION_CONTROL.md](dogfood/MUTATION_CONTROL.md) | NEW-23, NEW-24 corrigidos com testes que falham antes; NEW-25 aberto |
 
-Mutação nativa da Assertiva (`--mutate`) ficou **BLOCKED**: exige `--execute` com coleta funcional
-(AS-03) e Cosmic Ray instalado no projeto. O controle de mutação foi feito manualmente pelo agente em
+Mutação nativa da Assertiva (`--mutate`) segue **BLOCKED**: a coleta nativa agora funciona, mas o
+Cosmic Ray não está instalado no ambiente do projeto e instalá-lo está fora dos comandos autorizados. O controle de mutação foi feito manualmente pelo agente em
 worktree descartável, declarado como tal.
 
 ## Log agent-led (Framework)

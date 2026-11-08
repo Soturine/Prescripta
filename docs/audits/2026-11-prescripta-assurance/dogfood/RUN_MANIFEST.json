@@ -19,7 +19,8 @@
    "version": "0.10.1",
    "sha_before": "2618d95caa662e27de443b099d39dcd912a1b875",
    "sha_after": "9885ddec05a12da4c3592c407a0d6da9dbf40bca",
-   "remote": "branch fix/dogfood-prescripta-collect-cause (no PR, not merged)"
+   "remote": "branch fix/dogfood-prescripta-collect-cause (no PR, not merged)",
+   "second_fix": "3d24a90 on branch fix/artifact-cleanup-keeps-report (no PR, not merged), CI 42533818337 green"
   }
  },
  "runs": [
@@ -282,6 +283,39 @@
    }
   },
   {
+   "id": "AS-193559352c894a2e",
+   "tool": "assertiva @3d24a90 (AS-07 fix branch)",
+   "target": "Prescripta 45e80d5 (root pytest.ini)",
+   "command": "assertiva audit <PRESCRIPTA> --execute --python <PRESCRIPTA-VENV> --output json --report-dir <EVIDENCE>",
+   "exit": 0,
+   "invoked": true,
+   "collected": true,
+   "executed": true,
+   "passed": "373 invocations: 362 passed, 6 errors (PermissionError creating tmp_path in the sandbox temp dir, classified origin PRODUCT: AS-09), 5 skipped; lines 88.9%, branches 67.1%",
+   "result": "FINDINGS; ENVIRONMENT_NOT_PREPARED: postgresql BLOCKED (needs user consent)",
+   "files": {
+    "assertiva-exec-rootcfg/audit.json": "3f91ae7ae3a917233f66012f05643ea4c24f90ca6c44e7e14dee8950edfd708b",
+    "assertiva-exec-rootcfg/audit.html": "e4245cd91cf202dc40beaafe582f991b9d324422f1ec2f206fab2b18ef0ccda9"
+   }
+  },
+  {
+   "id": "AS-e6e0bad61f71427f",
+   "tool": "assertiva @3d24a90 (AS-07 fix branch)",
+   "target": "Prescripta 45e80d5 (root pytest.ini)",
+   "command": "PYTEST_ADDOPTS=--basetemp=<SCRATCH>/pt-assertiva-basetemp assertiva audit <PRESCRIPTA> --execute --python <PRESCRIPTA-VENV> --output json --report-dir <EVIDENCE>",
+   "environment_note": "PYTEST_ADDOPTS set by the agent to avoid the sandbox-denied default temp dir; the report does not record it (AS-10)",
+   "exit": 0,
+   "invoked": true,
+   "collected": true,
+   "executed": true,
+   "passed": "pytest-native PASS exit 0, ENGINE_EXECUTED: 373 invocations, 368 passed, 0 failed, 0 errors, 5 skipped; lines 89.1%, branches 67.1%",
+   "result": "FINDINGS (static oracle signals; postgresql not provisioned)",
+   "files": {
+    "assertiva-exec-rootcfg-basetemp/audit.json": "6f43ac72e9ae6c9549c8a22466b26f96b524935779ff5b856835c444637c6df2",
+    "assertiva-exec-rootcfg-basetemp/audit.html": "3e6271f3db532d0afa1a52d10db743ed11ff38a83568e960fd162c456adfee68"
+   }
+  },
+  {
    "id": "MUT-RISK",
    "tool": "agent script mutation_control.py",
    "target": "Prescripta 14f9be1 (disposable worktree)",
@@ -348,6 +382,14 @@
   "assertiva-exec-frontend/audit.ctrf.json": "4a9004447f534eb35c3111dcae9f808f7baf03f0c417b36e65e3b9fdd8809061",
   "assertiva-exec-frontend/audit.html": "9af7a545737fbcde2aebedd8d0e66b88d874e0f65c85dd1a497bb4d80e0d1cd7",
   "assertiva-exec-frontend/audit.json": "d43cbfb358be2986f8882fe9ee65387b902f944506061f06e38e46afed8b3bca",
+  "assertiva-exec-rootcfg/audit.html": "e4245cd91cf202dc40beaafe582f991b9d324422f1ec2f206fab2b18ef0ccda9",
+  "assertiva-exec-rootcfg/audit.json": "3f91ae7ae3a917233f66012f05643ea4c24f90ca6c44e7e14dee8950edfd708b",
+  "assertiva-exec-rootcfg-basetemp/audit.html": "3e6271f3db532d0afa1a52d10db743ed11ff38a83568e960fd162c456adfee68",
+  "assertiva-exec-rootcfg-basetemp/audit.json": "6f43ac72e9ae6c9549c8a22466b26f96b524935779ff5b856835c444637c6df2",
+  "assertiva-exec-rootcfg-basetemp.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "assertiva-exec-rootcfg-basetemp.stdout.json": "d66fa3f73aa3ea65758244c04d59c47beab3ae8093cb22cf2d263e43aaa32b18",
+  "assertiva-exec-rootcfg.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "assertiva-exec-rootcfg.stdout.json": "26b5180de5ce7405c96d8a36333b6a90aa00ebbb04c8c3e955a5ff9747d45150",
   "assertiva-imported/audit.html": "fd1c451fd21d2a67a6881f761b8e04a9c8b98deeb12ce01008e8809768aac54a",
   "assertiva-imported/audit.json": "31251ffb1b72b2c3e46e54d3d144f8a631ca105328f147dbb7ddf95999be7c5f",
   "assertiva-imported.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -368,6 +410,8 @@
   "assertiva_rerun_patched.txt": "ad0315db4ea910941e961599b7ffca64e76276072f388208b7dbf8ac9e219147",
   "assertiva_rerun_with_coverage.txt": "38b108c2defa6ba3cda7a43066f7c136dff1ea32834af4589b1ef41bc9b25a9d",
   "ci_run_42510416703.json": "54e088f2c90ab73146ec3427f0e5deb22f881db9197d17b734e428684ba5113f",
+  "e2e_full_2.json": "43536f94c677c8b9008a7f706a87965c5f22200be0e230c2624bc545e47a7908",
+  "e2e_full_2.txt": "5d18f36ca5837015a9c56e5cd27bceeec97f0f6dd2d30573b6ac0c4767c03020",
   "engine_base_83d4bec.json": "6993f27b4f1a8955d326c8b5e4a6e36a9bac0303b28722e05aabdee9618660a1",
   "engine_compare_6508221_14f9be1.json": "961c102c5027e69e4c8980841c6832a9c6f441df6b7e375a3a5858290f4eb4d2",
   "engine_conformance_3958b84.json": "94fcc388b6a3f3ce75e789b3361343763b74d8d970e0f9c4426a42ca4cb8a617",
@@ -383,6 +427,10 @@
   "engine_patched_head_14f9be1.json": "fe7a7078665f40a930c607b449e00026533486fd476e2dba793b626a2708a5f6",
   "engine_request_prescripta.json": "678de9d04b28418fddb282732ca27b52708fb55d5e01a982376345da92014e6a",
   "engine_suite_d413e53.txt": "83795b9d1b7de958436364f1c50789ee5d8e5ebda30272d5f3746548b3d414c5",
+  "final_pg.txt": "0d3d00b50e4604bdac9c8353d6db36e7256313d8e97a72dff609be22cbf00a5a",
+  "final_pg.xml": "9f886813df64c3ebd0373ad130e87f7f793627ef7fae9d918989e2c7e7269073",
+  "final_sqlite.txt": "1d23977baca3040751e3675c7e6f76987a22b5579e5ea0fed2b8ab7a1bbfb7e9",
+  "final_sqlite.xml": "7acda194238583af36c11ecdc25c786e6653d64f776d2ab8ced72276dcc51720",
   "import_coverage_14f9be1.json": "f370997d0e4f85d3b49526fcec168fb7a119481dbc79bf8c98ba2416382765e8",
   "import_junit_14f9be1.xml": "393b6ab59e02bd9c880465323bf4017e1c4562671115f35b8d11d2297e580ff3",
   "import_run_14f9be1.log": "ff877fda520a57975606073d5e08677c9cce678f94782da0f2a2b1e4409d9acf",
@@ -396,6 +444,8 @@
   "mutation_control_survivors_full.log": "0d577aa914090db91fc2aa30ac7090e4f40112fffdbd6b382d3377e94849f1c4",
   "mutation_control_survivors_full_14f9be1.json": "5c0774bfc7a755651ccb0250a3fd1d6d79f78721dc17999be69a98d4ae7ac9d8",
   "mutation_pairs.py": "e177a44495e216e005e30bfd362db74aa7ec12b36ab5636a0cad67ce4a108ac9",
+  "prescripta_pg_full_wip.txt": "4cb6a584f14d4f0dd386df2082af354e56d8b80cb1620889892ef6b2bbf103d8",
+  "prescripta_pg_full_wip.xml": "b73530c54f5b46afcada072f0c171b3b4e64dcd0ba63664065ac8250690c31e9",
   "prescripta_sqlite_cpk.txt": "bcaaaecdfbbbec3c69b24e42c44461ccda74ce09efbaf9e3804fe7d73bfafcc8",
   "unref_triage.tsv": "2ce8130f8ee4ddd564a7446bb0187824ea6c75aea923bf2cc0681f5bb5adc67b"
  }
