@@ -35,19 +35,6 @@ class DoseDimension(StrEnum):
     UNSUPPORTED = "unsupported"
 
 
-MASS_TO_MG: dict[str, Decimal] = {
-    "g": Decimal("1000"),
-    "mg": Decimal("1"),
-    "mcg": Decimal("0.001"),
-    "ng": Decimal("0.000001"),
-}
-VOLUME_TO_ML: dict[str, Decimal] = {
-    "l": Decimal("1000"),
-    "ml": Decimal("1"),
-    "ul": Decimal("0.001"),
-}
-
-
 def decimal_value(value: Decimal | int | float | str | None) -> Decimal | None:
     if value is None:
         return None

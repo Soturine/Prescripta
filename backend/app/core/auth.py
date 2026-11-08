@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.security import decode_access_token
 from app.database.models import UserModel
 from app.database.session import get_db
-from app.domain.user import Capability, UserRole
+from app.domain.user import Capability
 from app.repositories.user_repository import UserRepository
 from app.services.session_revocation import SessionRevocationService
 
@@ -63,18 +63,6 @@ def get_current_user(
 
 
 CurrentUser = Annotated[UserModel, Depends(get_current_user)]
-
-
-def require_roles(*allowed_roles: UserRole) -> Callable[[CurrentUser], UserModel]:
-    def dependency(current_user: CurrentUser) -> UserModel:
-        if current_user.role not in {role.value for role in allowed_roles}:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Perfil sem permissao para esta acao.",
-            )
-        return current_user
-
-    return dependency
 
 
 def require_capabilities(

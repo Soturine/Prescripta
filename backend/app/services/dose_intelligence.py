@@ -16,6 +16,20 @@ from app.domain.dose_units import (
     remove_body_basis,
 )
 
+# Única definição das bases que escalam a dose por massa corporal. Antes havia duas cópias
+# literais neste módulo (escolha do peso e validação da unidade "/kg"); editar só uma faria a dose
+# e sua validação divergirem em silêncio (achado da duplicação apontada pelo Derivanta Engine).
+WEIGHT_BASED_DOSE_BASES = frozenset(
+    {
+        "actual_weight",
+        "real_weight",
+        "weight",
+        "ideal_weight",
+        "adjusted_weight",
+        "lean_body_mass",
+    }
+)
+
 
 @dataclass(frozen=True)
 class NormalizedUsualDoseRange:
@@ -74,14 +88,7 @@ class DoseIntelligenceService:
         )
         inputs.update(body_inputs)
         missing.extend(body_missing)
-        basis_weight = scalar if basis in {
-            "actual_weight",
-            "real_weight",
-            "weight",
-            "ideal_weight",
-            "adjusted_weight",
-            "lean_body_mass",
-        } else weight
+        basis_weight = scalar if basis in WEIGHT_BASED_DOSE_BASES else weight
 
         per_basis = self._decimal(
             self._get(rule, "dose_per_basis", self._get(rule, "dose_mg_per_kg"))
@@ -534,15 +541,7 @@ class DoseIntelligenceService:
         inputs: dict[str, Any] = {}
         scalar = Decimal("1")
         formula = "dose fixa"
-        weight_bases = {
-            "actual_weight",
-            "real_weight",
-            "weight",
-            "ideal_weight",
-            "adjusted_weight",
-            "lean_body_mass",
-        }
-        if basis in weight_bases and "/kg" not in unit:
+        if basis in WEIGHT_BASED_DOSE_BASES and "/kg" not in unit:
             missing.append("unidade por kg")
         if basis in {"bsa", "body_surface_area"} and "/m2" not in unit:
             missing.append("unidade por superfície corporal")
