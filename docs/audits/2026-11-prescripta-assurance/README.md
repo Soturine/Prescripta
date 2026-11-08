@@ -10,6 +10,7 @@ Prescripta continua sendo uma demonstração sintética e educacional; nada aqui
 
 - [FINDINGS_REGISTER.md](FINDINGS_REGISTER.md) — registro mestre de achados, estado e evidência.
 - [DEPENDABOT_PR_TRIAGE.md](DEPENDABOT_PR_TRIAGE.md) — decisão por PR do Dependabot e configuração.
+- [DUPLICATION_DEAD_CODE_AND_LEGACY.md](DUPLICATION_DEAD_CODE_AND_LEGACY.md) — candidatos a código morto/duplicado e decisão.
 
 Os demais documentos previstos (cobertura, arquitetura, segurança, Dependabot, UX, dogfood, relatório
 final) são acrescentados conforme cada checkpoint é concluído; ausência significa "ainda não feito".
