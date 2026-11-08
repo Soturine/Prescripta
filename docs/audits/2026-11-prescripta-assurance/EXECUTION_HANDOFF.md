@@ -7,10 +7,16 @@ Atualizado em 2026-11-08. Autocontido: retomar daqui sem refazer checkpoints pub
 - Repositório: `Soturine/Prescripta`, branch `main`, push direto permitido (ruleset só bloqueia
   deleção e non-fast-forward). Autor local: `Soturine <souzaramos2001@gmail.com>`; sem co-autor de IA.
 - Baseline da auditoria: `83d4beca06743fce30c242b71bc8425973083b38` (v1.0.0 + docs).
-- Checkpoints publicados: A `e1f82e7`, B `54614c0`, C `5144d4e`, D `5315c4c`, E `3c20cde`,
-  F `1c92ee8`, G `f016896`, H `4bd77bb` (CI/Security/Container verdes de B a G; H ver README).
-- Ferramentas (checkouts irmãos, sem alterações): `Derivanta@218761d`,
-  `Derivanta-Engine@17fa564`, `Assertiva@2618d95`.
+- Checkpoints publicados: A–J (ver README) e preparação da candidata `6508221`; CP-K (dogfood real,
+  mutação, acessibilidade por perfil) ver README.
+- Ferramentas (checkouts irmãos): `Derivanta@218761d` (sem alteração); `Derivanta-Engine` em
+  `d413e53` (`origin/main`, correção ENG-01); `Assertiva` em `2618d95` no `main` e correção AS-02 na
+  branch `fix/dogfood-prescripta-collect-cause` (`9885dde`, sem PR nem merge).
+- Venvs das ferramentas: `../Derivanta-Engine/.venv`, `../Assertiva/.venv` (o venv da Assertiva não
+  tem o extra de desenvolvimento completo; `coverage` foi instalado à parte). Regras de permissão em
+  `.claude/settings.local.json` (ignorado pelo Git).
+- Evidência bruta do dogfood: fora do repositório, em `../Prescripta-audit-evidence/2026-11-08/`
+  (hashes em `dogfood/RUN_MANIFEST.json`).
 
 ## Ambiente local
 
@@ -37,16 +43,15 @@ texto:    powershell -File scripts/check-text-quality.ps1
 
 ## Bloqueios (ver OPEN_BLOCKERS.md)
 
-Instalação/execução de Derivanta Engine e Assertiva; merge/rebase de PRs Dependabot; habilitar
-Dependabot alerts. Nunca contornar.
+Merge das PRs Dependabot (classificador); Dependabot alerts (admin); `assertiva --mutate` e Playwright
+via Assertiva. Nunca contornar.
 
 ## Próximos passos
 
-1. Release: decidir SemVer (mudança de sessão exige novo login; contrato CDS aditivo; nova migração
-   `b11a2c3d4e50`) → atualizar `VERSION`, `CHANGELOG`, `docs/releases/`, `docs/release-policy.json`
-   (sem mexer no baseline Alembic), rodar Qualification no SHA final, tag anotada, workflow de
-   provenance, publicar draft só se autorizado. Com dogfood BLOCKED, preferir pré-release.
-2. Revisão visual real em navegador (jornadas por perfil, mobile, EN-US) com capturas.
-3. PRE-11: confrontar claims de release/README com runs reais.
-4. Plano/índice de `json_array_contains` em PostgreSQL; supressão de células pequenas no Research.
-5. Reconsultar PRs Dependabot (#68–#70 e majors).
+1. Release (só depois do dogfood e da auditoria): qualificar o SHA final (CI, Security, Container,
+   Qualification), conferir SBOM, checksums, provenance e exceções vigentes (zlib vence em
+   2026-11-22), tag anotada e GitHub Release. Até lá a v1.1.0 é candidata não publicada.
+2. AS-03 (diretório de trabalho por runner na Assertiva) destrava `--execute` e `--mutate` no backend.
+3. NEW-21 (cadastro de MFA), NEW-22 (backend fora da raiz), 28 candidatos sem referência.
+4. Leitor de tela real e zoom 200/400 %; perfis em mobile/EN-US.
+5. Reconsultar PRs Dependabot (#68–#70 e majors) e Security agendado.

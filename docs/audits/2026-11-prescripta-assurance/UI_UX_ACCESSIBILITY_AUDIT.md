@@ -16,6 +16,23 @@ de farmácia/enfermagem/pesquisa/admin, contraste medido fora do axe.
 | NEW-14 | `formatDose` arredondava doses pequenas na tela | valor exibido ≠ calculado | sem arredondamento nem separador de milhar | `formatters.test.ts` |
 | NEW-16 | Corridas de sessão (login após carregamento lento, logout/login rápidos, multi-aba) | perda de sessão / dados visíveis após logout em outra aba | época de sessão, logout aguardado, `BroadcastChannel` | `AuthContext.test.tsx` |
 
+## Rodada por perfil (CP-K)
+
+Spec `frontend/e2e/profile-accessibility.spec.ts`: cada um dos 8 perfis demo (admin, médico,
+enfermagem, auditoria, farmácia, psicologia, safety, pesquisa) entra e percorre as páginas do próprio
+menu em Chromium desktop 1440×1000, PT-BR: 59 visitas de página. Em cada uma, axe completo, exatamente
+um `h1`, um landmark `main` e nenhuma resposta 403 da API. Bloqueiam: violações serious/critical e as
+regras estruturais `heading-order`, `landmark-no-duplicate-main`, `landmark-main-is-top-level`.
+
+Encontrado e corrigido: NEW-27 (dois `main`), NEW-28 (contraste e ordem de cabeçalhos), NEW-29 (403 em
+`/protocols` para auditoria e safety). Depois: 0 violações bloqueantes, 0 respostas 403, E2E completo
+27 passed / 2 skipped.
+
+Limites desta rodada: só desktop e PT-BR por perfil (mobile, tablet, EN-US e reduced motion seguem
+cobertos apenas para o médico); páginas de detalhe (paciente, relatório) só onde o fluxo existente já
+passa; **nenhum leitor de tela real** (NVDA, JAWS, VoiceOver) foi usado: axe e estrutura de landmarks
+são pré-condição, não prova de usabilidade com tecnologia assistiva. Zoom 200/400 % não executado.
+
 Oportunidades registradas e não implementadas: diferenciar visualmente "severidade do achado" e
 "nível agregado" no cabeçalho do resultado (ADR 010) — DEFER; auditoria com leitor de tela —
 pendente.

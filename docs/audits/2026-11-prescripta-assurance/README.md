@@ -13,6 +13,10 @@ Prescripta continua sendo uma demonstração sintética e educacional; nada aqui
 - [AUDIT_FINDING_CROSSWALK.md](AUDIT_FINDING_CROSSWALK.md) — mapeamento dos IDs da auditoria original para este registro.
 - [EXTERNAL_BENCHMARK_DECISIONS.md](EXTERNAL_BENCHMARK_DECISIONS.md) — Tasy, alertas Anvisa, CDS Hooks e decisões de posicionamento.
 - [DOGFOOD_MATRIX.md](DOGFOOD_MATRIX.md) — estado real do dogfood e log agent-led.
+- [dogfood/](dogfood/) — [RUN_MANIFEST.json](dogfood/RUN_MANIFEST.json) (comandos, versões, SHAs,
+  exit codes, hashes dos relatórios originais), [MUTATION_CONTROL.md](dogfood/MUTATION_CONTROL.md),
+  [TOOL_FEEDBACK.md](dogfood/TOOL_FEEDBACK.md) e
+  [DERIVANTA_FRAMEWORK_FEEDBACK.md](dogfood/DERIVANTA_FRAMEWORK_FEEDBACK.md).
 - [EXECUTION_HANDOFF.md](EXECUTION_HANDOFF.md) — estado de retomada.
 - [UI_UX_ACCESSIBILITY_AUDIT.md](UI_UX_ACCESSIBILITY_AUDIT.md) — revisão de UI/UX desta rodada e limites.
 - [OPEN_BLOCKERS.md](OPEN_BLOCKERS.md) — ações bloqueadas por permissão e o que as destrava.
@@ -35,8 +39,9 @@ final) são acrescentados conforme cada checkpoint é concluído; ausência sign
 | CP-H | PRE-04 concorrência real em PG; NEW-05 harness PG completo; CI PG ampliado | SQLite 346/5 skipped; PostgreSQL suíte inteira 348/0/3; simulação do step de CI 28/28 | [`4bd77bb`](https://github.com/Soturine/Prescripta/commit/4bd77bb) | origin/main | CI `42508296009` (incl. novo step PG), Security `42508296098`, Container `42508295956`: verdes | — |
 | CP-I | NEW-18 índice, NEW-19 evidência de release, handoff | SQLite 350/5; Alembic round trip PG; EXPLAIN | [`5ae81d9`](https://github.com/Soturine/Prescripta/commit/5ae81d9) | origin/main | CI `42508809961`, Security `42508809873`, Container `42508810071`: verdes | — |
 | CP-J | NEW-20 alternativas absurdas (achado em navegador real); revisão UI/UX | backend 351/5; Vitest 98; E2E 19/2; i18n 877 | [`0d23f1e`](https://github.com/Soturine/Prescripta/commit/0d23f1e) | origin/main | CI `42509403848`, Security `42509403923`, Container `42509403958`: verdes | leitor de tela e demais perfis não revisados |
+| CP-K | Dogfood real (Engine, Assertiva, Framework), mutação agent-led (NEW-23/24/25, ADR 012), acessibilidade por perfil (NEW-27/28/29), MFA (NEW-21), código morto confirmado pelo Engine | Árvore final: SQLite 368 passed / 5 skipped (exit 0); PostgreSQL 17 370 passed / 3 skipped (exit 0, JUnit 373); Vitest 98/98; E2E 27 passed / 2 skipped; gates de repositório verdes; Gitleaks 0 | `75b19ea`, `14f9be1`, `129dd29`, `a18e081` + docs | origin/main | ver abaixo após o push | AS-03 bloqueia execução nativa do backend pela Assertiva; leitor de tela real não testado |
 
 ## Bloqueios
 
-- Instalar/executar Derivanta Engine e Assertiva a partir dos checkouts foi negado pelo classificador
-  de permissões do ambiente. Dogfood real: BLOCKED até autorização explícita.
+Ver [OPEN_BLOCKERS.md](OPEN_BLOCKERS.md). O bloqueio de instalação das ferramentas foi resolvido em
+2026-11-08 por regra de permissão escolhida pelo usuário; o dogfood foi executado.

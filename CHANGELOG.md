@@ -47,6 +47,18 @@
   governed Trivy exceptions from `.trivyignore.yaml` and refuses expired ones;
 - tests: the backend suite runs fully on PostgreSQL through an opt-in harness, and CI runs real
   concurrent idempotency requests on PostgreSQL.
+- decision blocks pinned by tests found through agent-led mutation (NEW-23, NEW-24): a maximum
+  detected only by Dose Intelligence (per procedure, cumulative or daily) blocks the aggregate
+  decision; a non-critical finding under full coverage requires review; `ClinicalDecisionEnvelope`
+  rejects a favorable decision that carries any finding (fail closed, like its other invariants).
+- dead code confirmed by Derivanta Engine and removed (`core/constants.py`, `MASS_TO_MG`,
+  `VOLUME_TO_ML`, `require_roles`); weight-based dose bases have a single definition. TOTP
+  verification is covered by RFC 6238 vectors; MFA enrollment is documented as missing.
+- accessibility by profile: every demo profile walks its own menu under axe in a real browser;
+  fixed a nested second `main` on protocols and research, text contrast below 4.5:1 on patients and
+  the dashboard, the empty-state heading level, and a patient-list request that answered 403 to
+  auditing and safety profiles on the protocols page. ADR 012: the orchestrator is the only decision
+  authority; `RiskEngine` status is an internal signal.
 
 ## [1.0.0] - 2026-08-24
 

@@ -1,41 +1,54 @@
 # Dogfood Derivanta / Engine / Assertiva — matriz e log agent-led
 
-Checkouts em 2026-11-08 (iguais a `origin/main`, sem alterações locais):
-`Derivanta@218761d`, `Derivanta-Engine@17fa564`, `Assertiva@2618d95` (v0.10.1).
+Execução real em 2026-11-08, feita pelo agente com as CLIs instaladas em venv próprio de cada
+checkout (autorização por regra de permissão local adicionada a pedido do usuário). Cada linha abaixo
+tem comando, versão, SHA e exit code em [dogfood/RUN_MANIFEST.json](dogfood/RUN_MANIFEST.json); os
+relatórios originais (HTML/JSON) ficam fora do repositório público, por conterem caminhos locais, com
+SHA-256 de cada arquivo no manifesto.
+
+Versões: Derivanta Framework `218761d`; Derivanta Engine 0.1.0 (`17fa564` → correção `3958b84` +
+`d413e53`, publicada em `main`, CI `42529300375` verde, incluindo Linux); Assertiva 0.10.1
+(`2618d95` → correção `76f2370` + `9885dde`, branch `fix/dogfood-prescripta-collect-cause`, CI
+`42529304020` verde; **sem PR, sem merge e sem release**: CI verde da branch não equivale a entrega).
 
 ## Estado por célula
 
-| Alvo | Agente + Framework | Derivanta Engine (CLI) | Assertiva (CLI) | Evidência independente |
-|---|---|---|---|---|
-| Prescripta | **EXECUTED** (ver log abaixo) | **BLOCKED** | **BLOCKED** | pytest SQLite/PG, Vitest, Playwright, Alembic PG, Trivy, Gitleaks, pip-audit, npm audit, CI por SHA |
-| Assertiva | NOT_EXECUTED | BLOCKED | BLOCKED | — |
-| Derivanta Engine | NOT_EXECUTED | BLOCKED | BLOCKED | — |
-| Derivanta Framework | **EXECUTED (leitura e aplicação de owners)** | BLOCKED | BLOCKED | — |
+| Alvo | Agente + Framework | Derivanta Engine (CLI) | Assertiva (CLI) |
+|---|---|---|---|
+| Prescripta | **EXECUTED** (AUDIT.md, ADAPTIVE_TEST_ASSURANCE, mutação manual) | **EXECUTED**: `inspect --maintainability` em `83d4bec`, `6508221`, `14f9be1` (original e corrigido); `compare 6508221→14f9be1`; `evaluate` com `--framework` e `--repository` | **EXECUTED**: estático; `--execute` raiz (FAIL de coleta), backend (BLOCKED), frontend (Vitest PASS 98/98, Playwright BLOCKED); evidência importada (JUnit + coverage); controle negativo de CI de outra revisão; reexecução com a correção |
+| Derivanta Engine | lido (AGENTS, regras 1–8) | **EXECUTED** em si mesma (`inspect --maintainability`, gate: lint, format, mypy, conformance 20/20, suíte 944/4) | **EXECUTED**: estático (run `01fa0870329d4b2d`); `--execute` 1º run caiu na limpeza do temporário (AS-07), 2º run `d89a95c89e5d4c23`: 225 erros atribuídos à pasta temporária do sandbox (infraestrutura), cobertura de ramos 69,9 %, artefato FAIL por falso positivo de extra opcional (AS-08) |
+| Assertiva | lido (CONTRIBUTING, CHANGELOG) | **EXECUTED** (`inspect --maintainability`, 256 candidatos) | suíte própria executada (ver TOOL_FEEDBACK AS-06) |
+| Derivanta Framework | **EXECUTED** (workflow AUDIT aplicado; feedback em [DERIVANTA_FRAMEWORK_FEEDBACK.md](dogfood/DERIVANTA_FRAMEWORK_FEEDBACK.md)) | pin verificado pelo `evaluate --framework` (EXECUTED/PASSED `218761dbd7ce`) | não aplicável (sem suíte executável no checkout) |
 
-Nenhum output de ferramenta existe neste repositório e nenhum foi simulado. `RUN_MANIFEST.json`,
-reports HTML/JSON da Assertiva e `DERIVANTA_ENGINE_*.json` **não foram criados** porque nenhuma
-execução ocorreu. Ver [OPEN_BLOCKERS.md](OPEN_BLOCKERS.md).
+## O que cada ferramenta encontrou no Prescripta e o que o agente decidiu
 
-## Log agent-led (o que o agente fez com o Framework)
+| Origem | Achado da ferramenta | Classificação do agente | Efeito no Prescripta |
+|---|---|---|---|
+| Engine `inspect` | 182 definições sem referência em `6508221` | 142 falsos positivos (rotas FastAPI, listeners SQLAlchemy, `@compiles`, registrados pelo decorador); 40 sem referência textual confirmada pelo agente | 11 definições removidas em `14f9be1` (8 de `core/constants.py`, `MASS_TO_MG`, `VOLUME_TO_ML`, `require_roles`); `encrypt_mfa_secret` saiu da lista só porque os testes novos o referenciam; 28 restantes classificados um a um em [DUPLICATION_DEAD_CODE_AND_LEGACY.md](DUPLICATION_DEAD_CODE_AND_LEGACY.md) |
+| Engine `inspect` (corrigido) | 170 → 28 candidatos no mesmo escopo | os 28 não têm referência textual (confirmado pelo agente), o que **não** prova código morto: há API de integração, modelo de tabela e itens UNKNOWN; nenhum candidato verdadeiro perdido pela correção | correção da ferramenta (ENG-01) |
+| Engine, conhecido de antemão | não acusou `calculate_daily_dose` (só usado em teste) nem `knowledge/normalizer.py` (módulo só de re-export) | **falsos negativos** por contrato (ENG-02, ENG-03) | removidos por decisão do agente |
+| Engine `compare` | `6508221→14f9be1`: NEW 0, PERSISTING 331, ABSENT 14 | correto; 1 ABSENT (`encrypt_mfa_secret`) só porque os testes novos passaram a referenciá-lo | — |
+| Engine `evaluate` | C4 "validado" sem evidência | verdadeiro positivo | nenhuma alegação de validação clínica |
+| Engine `evaluate` | não acusou que C1 cita CI de `6508221` com HEAD observado `14f9be1` | **falso negativo** (ENG-04); a Assertiva acusou | evidência por SHA reforçada no handoff |
+| Assertiva estático | WEAK_ORACLE, ERROR_STATUS_ONLY, STATE_AFTER_REJECTION_NOT_EVIDENCED | sinais E3 corretos; os 3 testes fortalecidos antes (NEW-17) não aparecem | confirma NEW-17; hipótese AS-01 antiga resolvida (já detectado) |
+| Assertiva `--execute` raiz | FAIL: `backend/tests` não coletado | ambiental: monorepo com config pytest em `backend/`; antes da correção o relatório não dizia a causa (AS-02) | nenhum; causa reproduzida (`No module named 'app'`) |
+| Assertiva `--execute` backend | BLOCKED: `VERSION` não encontrado | **verdadeiro**: backend não é autocontido (NEW-22) | registrado |
+| Assertiva importado | 368 casos PASS, rotulados "não executados pela Assertiva" | correto | — |
+| Assertiva `--ci-run` | CI de `6508221` com HEAD `14f9be1` → `OTHER_REVISION` + `CI_RUN_FOR_ANOTHER_REVISION` | controle negativo **aprovado** | — |
+| Agente: mutação manual | 6 mutantes no `risk_engine`, 5 no orquestrador; sobreviventes reexecutados contra a suíte inteira; compostos "todos os caminhos" | ver [dogfood/MUTATION_CONTROL.md](dogfood/MUTATION_CONTROL.md) | NEW-23, NEW-24 corrigidos com testes que falham antes; NEW-25 aberto |
 
-Owners efetivamente lidos e usados: `Derivanta/skill/SKILL.md`, `skill/workflows/AUDIT.md`,
-`skill/workflows/CONTEXT_IMPACT_AND_TEST_EVIDENCE.md`; da Assertiva, `references/TEST_QUALITY.md`
-(como lente metodológica, não como execução da ferramenta).
+Mutação nativa da Assertiva (`--mutate`) ficou **BLOCKED**: exige `--execute` com coleta funcional
+(AS-03) e Cosmic Ray instalado no projeto. O controle de mutação foi feito manualmente pelo agente em
+worktree descartável, declarado como tal.
+
+## Log agent-led (Framework)
 
 | Orientação aplicada | Decisão concreta e efeito verificável |
 |---|---|
-| AUDIT §13: caminho de desafio materialmente distinto para achados de alto impacto | Todo achado corrigido tem controle negativo: o teste é rodado contra o código do HEAD anterior e precisa falhar (PRE-01, 02, 03, 04, 05, 06, 09, NEW-04, 06, 10–16). |
-| CONTEXT/TEST: "coletor configurado que falhou → BLOCKED, nunca PASS" | O smoke de containers falhou localmente por porta 8080 ocupada (NVIDIA Broadcast); classificado como ambiental, reexecutado em porta alternativa antes de qualquer conclusão. |
-| SKILL: "não inferir ausência de inspeção incompleta"; achados semânticos sem ferramenta | PRE-06 em PostgreSQL (500), NEW-11 (alternativas com dose de outra droga), NEW-12, NEW-15 e as corridas de sessão R1/R2 foram achados por raciocínio sobre ordem de requisições e dialetos, não por ferramenta. |
-| TEST_QUALITY: oráculos fracos (só status), testes sem asserção, tautologias | Sonda AST do agente: 275 testes, 0 tautologias, 0 exceções engolidas, 2 sem asserção (legítimos: "aceita sem erro"), 15 só com status. Fortalecidos os que negam **escrita** (efeito parcial) e os de sessão (corpo do erro). |
+| AUDIT §13: desafio materialmente distinto para achado de alto impacto | Sobreviventes de mutação não viraram achado direto: reexecução contra a suíte inteira e, depois, mutantes compostos que removem todos os caminhos de um bloqueio. Isso separou guardas redundantes (O1, O3: equivalentes) de lacunas reais (P1, O5). |
+| AUDIT §15: proposta ≠ implementado ≠ verificado | NEW-25 fica PROPOSED; ENG-02..06 e AS-03..06 ficam como propostas, sem alteração nas ferramentas. |
+| ADAPTIVE_TEST_ASSURANCE: descobertos ≠ executados ≠ sustentam a alegação | Evidência importada rotulada como importada; runs da Assertiva com runtime `dirty=True` declarados. |
+| Framework feedback depois do alvo | Feedback ao Framework escrito depois do registro de achados, sem envio upstream. |
+| CONTEXT/TEST: "coletor que falhou → BLOCKED, nunca PASS" | Playwright BLOCKED e backend BLOCKED não foram contados como verde; o E2E segue evidenciado pelo CI e pela execução local direta. |
 
-Diferença honesta: a sonda AST e as lentes acima **não** equivalem à Assertiva (que também executa a
-suíte, importa cobertura, mede mutação e classifica fidelidade). Nenhuma descoberta acima é atribuída
-às ferramentas.
-
-## Feedback para as ferramentas (proposto, não aplicado)
-
-| tool_gap_id | Ferramenta | Observação | Estado |
-|---|---|---|---|
-| FW-01 | Derivanta Framework | A orientação sobre "coletor que falhou" não menciona conflito de porta no host como causa comum de falso negativo em smokes locais. Candidato a exemplo no owner, não regra nova. | PROPOSED (sem evidência de ferramenta) |
-| AS-01 | Assertiva | Hipótese a testar quando houver execução: o padrão "teste de negação de escrita que só verifica 403" merece sinal próprio (efeito parcial não verificado). | PROPOSED — requer execução para saber se já é detectado |
+Feedback detalhado às ferramentas: [dogfood/TOOL_FEEDBACK.md](dogfood/TOOL_FEEDBACK.md).

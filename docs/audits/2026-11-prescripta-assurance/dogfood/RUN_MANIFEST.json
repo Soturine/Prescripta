@@ -1,0 +1,402 @@
+{
+ "manifest_version": 1,
+ "date": "2026-11-08",
+ "purpose": "Agent-led dogfood of Derivanta Framework, Derivanta Engine and Assertiva on Prescripta",
+ "storage": "originals kept privately outside the public repository (they contain local absolute paths); placeholders <PRESCRIPTA>, <ENGINE>, <ASSERTIVA>, <DERIVANTA>, <EVIDENCE>, <SCRATCH>, <WT>, <PY> replace local roots",
+ "hash_semantics": "SHA-256 lets anyone holding a copy verify it is the original; it does not by itself give independent access to the content",
+ "exit_semantics": "Assertiva exit 0 means a report was produced (status FINDINGS); test execution facts are in invoked/collected/executed/passed",
+ "tools": {
+  "derivanta_framework": {
+   "sha": "218761dbd7ce78809ace0ae2c03ee23adf9b406b"
+  },
+  "derivanta_engine": {
+   "version": "0.1.0",
+   "sha_before": "17fa564",
+   "sha_after": "d413e538f0ba1e82c6528815cf5c7409e6e8eb26",
+   "remote": "origin/main"
+  },
+  "assertiva": {
+   "version": "0.10.1",
+   "sha_before": "2618d95caa662e27de443b099d39dcd912a1b875",
+   "sha_after": "9885ddec05a12da4c3592c407a0d6da9dbf40bca",
+   "remote": "branch fix/dogfood-prescripta-collect-cause (no PR, not merged)"
+  }
+ },
+ "runs": [
+  {
+   "id": "ENG-INSPECT-6508221",
+   "tool": "derivanta-engine 0.1.0 @17fa564",
+   "target": "Prescripta 6508221",
+   "command": "derivanta-engine inspect <PRESCRIPTA> --maintainability --format json",
+   "exit": null,
+   "exit_note": "CLI exit code not preserved (run before the session context reset); outcome taken from the report itself",
+   "result": "345 INFO candidates (182 unreferenced)",
+   "files": {
+    "engine_head_6508221.json": "bf017182794953f48aa4bf48ed6083007fdbd268b547ebbcc5d603b2787cae5c"
+   }
+  },
+  {
+   "id": "ENG-INSPECT-83d4bec",
+   "tool": "derivanta-engine 0.1.0 @17fa564",
+   "target": "Prescripta 83d4bec (worktree)",
+   "command": "derivanta-engine inspect <WT-BASE> --maintainability --format json",
+   "exit": null,
+   "exit_note": "CLI exit code not preserved (run before the session context reset); outcome taken from the report itself",
+   "result": "338 candidates",
+   "files": {
+    "engine_base_83d4bec.json": "6993f27b4f1a8955d326c8b5e4a6e36a9bac0303b28722e05aabdee9618660a1"
+   }
+  },
+  {
+   "id": "ENG-INSPECT-14f9be1",
+   "tool": "derivanta-engine 0.1.0 @17fa564",
+   "target": "Prescripta 14f9be1",
+   "command": "derivanta-engine inspect <PRESCRIPTA> --maintainability --format json",
+   "exit": null,
+   "exit_note": "CLI exit code not preserved (run before the session context reset); outcome taken from the report itself",
+   "result": "170 unreferenced",
+   "files": {
+    "engine_head_14f9be1.json": "ddb0be36b4d3b6424bc056251c6461e01b6528a842de7b305ddbd7d454d9cdc1"
+   }
+  },
+  {
+   "id": "ENG-INSPECT-14f9be1-PATCHED",
+   "tool": "derivanta-engine (patched, became 3958b84)",
+   "target": "Prescripta 14f9be1",
+   "command": "derivanta-engine inspect <PRESCRIPTA> --maintainability --format json",
+   "exit": null,
+   "exit_note": "CLI exit code not preserved (run before the session context reset); outcome taken from the report itself",
+   "result": "28 unreferenced",
+   "files": {
+    "engine_patched_head_14f9be1.json": "fe7a7078665f40a930c607b449e00026533486fd476e2dba793b626a2708a5f6",
+    "unref_triage.tsv": "2ce8130f8ee4ddd564a7446bb0187824ea6c75aea923bf2cc0681f5bb5adc67b"
+   }
+  },
+  {
+   "id": "ENG-COMPARE",
+   "tool": "derivanta-engine 0.1.0 @17fa564",
+   "target": "6508221 -> 14f9be1",
+   "command": "derivanta-engine compare <BASE.json> <HEAD.json> --format json",
+   "exit": null,
+   "exit_note": "CLI exit code not preserved (run before the session context reset); outcome taken from the report itself",
+   "result": "COMPARABLE; NEW 0, PERSISTING 331, ABSENT 14",
+   "files": {
+    "engine_compare_6508221_14f9be1.json": "961c102c5027e69e4c8980841c6832a9c6f441df6b7e375a3a5858290f4eb4d2"
+   }
+  },
+  {
+   "id": "ENG-EVALUATE",
+   "tool": "derivanta-engine 0.1.0 @3958b84",
+   "target": "Prescripta 14f9be1 + request",
+   "command": "derivanta-engine evaluate -i engine_request_prescripta.json --framework <DERIVANTA> --repository <PRESCRIPTA> --exclude node_modules --exclude .venv --exclude dist --format json",
+   "exit": 0,
+   "result": "NEEDS_REVIEW; risk HIGH; 5 findings (C4 validated without evidence); revision mismatch of C1 not reported (ENG-04)",
+   "files": {
+    "engine_request_prescripta.json": "678de9d04b28418fddb282732ca27b52708fb55d5e01a982376345da92014e6a",
+    "engine_evaluate_14f9be1.json": "5e4fe1573b88275cb8349e21218851a0aa913d563c08bc8be783654360248c22",
+    "engine_evaluate_14f9be1.txt": "6554a3931e46c76c951a604169bd6b447c932db245024f1557b45f4af6b2a8a8"
+   }
+  },
+  {
+   "id": "ENG-INSPECT-ASSERTIVA",
+   "tool": "derivanta-engine @3958b84",
+   "target": "Assertiva 2618d95 (+ uncommitted fix)",
+   "command": "derivanta-engine inspect <ASSERTIVA> --maintainability --exclude .venv --exclude node_modules --format json",
+   "exit": 0,
+   "result": "256 findings (159 complexity, 94 duplication, 1 unreferenced, 1 no-op, 1 tracked-excluded)",
+   "files": {
+    "engine_inspect_Assertiva.json": "a781a78b551c5d78e3310e747c69aecb4b1b054ec8a498e4488574fd370c07ba"
+   }
+  },
+  {
+   "id": "ENG-INSPECT-SELF",
+   "tool": "derivanta-engine @3958b84",
+   "target": "Derivanta-Engine 3958b84",
+   "command": "derivanta-engine inspect <ENGINE> --maintainability --exclude .venv --exclude node_modules --format json",
+   "exit": 0,
+   "result": "24 findings (12 complexity, 12 duplication)",
+   "files": {
+    "engine_inspect_Derivanta-Engine.json": "a649386de4960d39d5f271a678a7856c250f70b2fd63ea4642f64ccadebdccf9"
+   }
+  },
+  {
+   "id": "ENG-GATE-d413e53",
+   "tool": "Engine own gate",
+   "target": "Derivanta-Engine d413e53",
+   "command": "ruff check; ruff format --check; mypy; tools/run_conformance.py; pytest -q -rs --basetemp <SCRATCH>",
+   "exit": 0,
+   "result": "lint 0, format 0 (after d413e53), mypy 0, conformance 20/20, 944 passed / 4 skipped",
+   "files": {
+    "engine_conformance_3958b84.json": "94fcc388b6a3f3ce75e789b3361343763b74d8d970e0f9c4426a42ca4cb8a617",
+    "engine_suite_d413e53.txt": "83795b9d1b7de958436364f1c50789ee5d8e5ebda30272d5f3746548b3d414c5"
+   }
+  },
+  {
+   "id": "AS-cd3d5d6e733e41b2",
+   "tool": "assertiva 0.10.1 @2618d95",
+   "target": "Prescripta 6508221",
+   "command": "assertiva audit <PRESCRIPTA> --output json --report-dir <EVIDENCE>",
+   "exit": null,
+   "exit_note": "CLI exit code not preserved (run before the session context reset); outcome taken from the report itself",
+   "invoked": true,
+   "collected": "static only",
+   "executed": false,
+   "result": "FINDINGS (static E3 signals)",
+   "files": {
+    "assertiva-static-cd3d5d6e/audit.json": "3464066b5431571806801288d7f2f4e5378616152d6b09e80dc79ea168b542a3",
+    "assertiva-static-cd3d5d6e/audit.html": "2dd7a7227e109ddca041f48378c6f52856ced97f0079fef660b95f45154e895b"
+   }
+  },
+  {
+   "id": "AS-16748d2153094daf",
+   "tool": "assertiva 0.10.1 @2618d95",
+   "target": "Prescripta 14f9be1 (root)",
+   "command": "assertiva audit <PRESCRIPTA> --execute --python <PRESCRIPTA-VENV> --output json --report-dir <EVIDENCE>",
+   "exit": null,
+   "exit_note": "CLI exit code not preserved (run before the session context reset); outcome taken from the report itself",
+   "invoked": true,
+   "collected": false,
+   "executed": false,
+   "result": "pytest-native FAIL exit 2: backend/tests collection error (cause not in report)",
+   "files": {
+    "assertiva-exec/audit.json": "d19b03bd0533b22c073ffa8f9373351abca0b5e6f37fe49f6d31310e24bc2dd8",
+    "assertiva-exec/audit.html": "8ac2051b7b4f2d4681bf4e15237db6012a6c76919b80d45b3af158423543f104"
+   }
+  },
+  {
+   "id": "AS-2126988ac4c446c8",
+   "tool": "assertiva 0.10.1 @2618d95",
+   "target": "Prescripta 14f9be1 (backend/)",
+   "command": "assertiva audit <PRESCRIPTA>/backend --execute --python <PRESCRIPTA-VENV> ...",
+   "exit": null,
+   "exit_note": "CLI exit code not preserved (run before the session context reset); outcome taken from the report itself",
+   "invoked": true,
+   "collected": false,
+   "executed": false,
+   "result": "pytest-native BLOCKED exit 4: VERSION not found outside the monorepo root (NEW-22)",
+   "files": {
+    "assertiva-exec-backend/audit.json": "3947b782ad8b1e6670d98d0c64dadd6340863401ded35dec498ccbd9003a1e31",
+    "assertiva-exec-backend/audit.html": "c5f654137f412256289731358ad2b57011069863cf3cb4b6498d06be7d246ea0"
+   }
+  },
+  {
+   "id": "AS-25dbd3f2ce3b432e",
+   "tool": "assertiva 0.10.1 @2618d95",
+   "target": "Prescripta 14f9be1 (frontend/)",
+   "command": "assertiva audit <PRESCRIPTA>/frontend --execute ...",
+   "exit": null,
+   "exit_note": "CLI exit code not preserved (run before the session context reset); outcome taken from the report itself",
+   "invoked": true,
+   "collected": true,
+   "executed": true,
+   "passed": "vitest 98/98 PASS; playwright BLOCKED (spawn cmd.exe ENOENT)",
+   "result": "FINDINGS",
+   "files": {
+    "assertiva-exec-frontend/audit.json": "d43cbfb358be2986f8882fe9ee65387b902f944506061f06e38e46afed8b3bca",
+    "assertiva-exec-frontend/audit.html": "9af7a545737fbcde2aebedd8d0e66b88d874e0f65c85dd1a497bb4d80e0d1cd7"
+   }
+  },
+  {
+   "id": "AS-3b942881ac954fef",
+   "tool": "assertiva 0.10.1 @2618d95 dirty",
+   "target": "Prescripta 14f9be1 + imported results",
+   "command": "assertiva audit <PRESCRIPTA> --junit-xml import_junit_14f9be1.xml --coverage-report import_coverage_14f9be1.json --output json --report-dir <EVIDENCE>",
+   "exit": 0,
+   "invoked": true,
+   "collected": "imported",
+   "executed": "by the agent, not by Assertiva (363 passed / 5 skipped, exit 0)",
+   "result": "368 cases PASS labelled as not executed by Assertiva",
+   "files": {
+    "assertiva-imported/audit.json": "31251ffb1b72b2c3e46e54d3d144f8a631ca105328f147dbb7ddf95999be7c5f",
+    "assertiva-imported/audit.html": "fd1c451fd21d2a67a6881f761b8e04a9c8b98deeb12ce01008e8809768aac54a",
+    "import_junit_14f9be1.xml": "393b6ab59e02bd9c880465323bf4017e1c4562671115f35b8d11d2297e580ff3",
+    "import_coverage_14f9be1.json": "f370997d0e4f85d3b49526fcec168fb7a119481dbc79bf8c98ba2416382765e8",
+    "import_run_14f9be1.log": "ff877fda520a57975606073d5e08677c9cce678f94782da0f2a2b1e4409d9acf"
+   }
+  },
+  {
+   "id": "AS-b7787b5503f14599",
+   "tool": "assertiva 0.10.1 @2618d95 dirty",
+   "target": "Prescripta 14f9be1 + CI run of 6508221 (negative control)",
+   "command": "assertiva audit <PRESCRIPTA> --ci-run ci_run_42510416703.json --output json --report-dir <EVIDENCE>",
+   "exit": 0,
+   "result": "OTHER_REVISION + CI_RUN_FOR_ANOTHER_REVISION (control passed)",
+   "files": {
+    "assertiva-ci-mismatch/audit.json": "539aefb31d8511ea5458c3d435afe514433a87ded70a80ecf53bd2ab79f3405f",
+    "ci_run_42510416703.json": "54e088f2c90ab73146ec3427f0e5deb22f881db9197d17b734e428684ba5113f"
+   }
+  },
+  {
+   "id": "AS-d1b8259bd8944dea",
+   "tool": "assertiva @9885dde (fix)",
+   "target": "Prescripta 14f9be1 (root)",
+   "command": "assertiva audit <PRESCRIPTA> --execute --python <PRESCRIPTA-VENV> --output json --report-dir <EVIDENCE>",
+   "exit": 0,
+   "invoked": true,
+   "collected": false,
+   "executed": false,
+   "result": "same FAIL; limitation now states 'backend/tests: ModuleNotFoundError: No module named app' (AS-02 before/after)",
+   "files": {
+    "assertiva-exec-after-fix/audit.json": "a5e209b361b8710750450e96a1e71865a59de0f060bc4720b00c71ef0cb4363a",
+    "assertiva-exec-after-fix/audit.html": "f61a67670c9947ee444e7991538839cf4c4ed1140668ec0f8be9890cfa8a699d"
+   }
+  },
+  {
+   "id": "AS-01fa0870329d4b2d",
+   "tool": "assertiva 0.10.1 @2618d95 dirty",
+   "target": "Derivanta-Engine 3958b84",
+   "command": "assertiva audit <ENGINE> --output json --report-dir <EVIDENCE>",
+   "exit": 0,
+   "collected": "static only",
+   "executed": false,
+   "result": "FINDINGS (4 static signals)",
+   "files": {
+    "assertiva-on-engine-static/audit.json": "1a06b45ec4a639e93c5fae819a9dfbded369dab7a66da8429256ebbaf5003847"
+   }
+  },
+  {
+   "id": "AS-ENGINE-EXEC-1",
+   "tool": "assertiva @9885dde",
+   "target": "Derivanta-Engine d413e53",
+   "command": "assertiva audit <ENGINE> --execute --python <ENGINE-VENV> --output json --report-dir <EVIDENCE>",
+   "exit": 1,
+   "result": "crash: PermissionError WinError 5 removing temporary venv python.exe in python_package._qualify_into; no report (AS-07)",
+   "files": {
+    "assertiva-on-engine-exec.stderr.txt": "1e321f390d7a0f40faff7a8705cbc7eee4a6c628a3edf73b69c5db6fa0c345fe"
+   }
+  },
+  {
+   "id": "AS-d89a95c89e5d4c23",
+   "tool": "assertiva @9885dde",
+   "target": "Derivanta-Engine d413e53",
+   "command": "same as AS-ENGINE-EXEC-1",
+   "exit": 0,
+   "invoked": true,
+   "collected": true,
+   "executed": true,
+   "passed": "716 passed, 225 errors (PermissionError on the machine temp dir, origin INFRASTRUCTURE), 7 skipped; branch coverage 69.9%; artifact FAIL (optional extra mcp, AS-08)",
+   "result": "FINDINGS",
+   "files": {
+    "assertiva-on-engine-exec-2/audit.json": "8ce454a247471f814240cf82b650dd5b47ddeb3306a26a17bc2a0e56a72a5f22",
+    "assertiva-on-engine-exec-2/audit.html": "8b2aac24316d736bce3e5929da876946f2a3de2e2491e6968adfd643fee2f055"
+   }
+  },
+  {
+   "id": "MUT-RISK",
+   "tool": "agent script mutation_control.py",
+   "target": "Prescripta 14f9be1 (disposable worktree)",
+   "command": "python mutation_control.py <WT> <PY> <OUT> risk",
+   "exit": 0,
+   "result": "6 mutants: 4 killed, 2 survived (focused 30 tests)",
+   "files": {
+    "mutation_control.py": "6560f47e0bdde68a35cfc5906d7759fad1e7beda4bf0bfc243d37c9bea6f057b",
+    "mutation_control_risk_engine_14f9be1.json": "948439a2cf1a0d2ead308dea97edc95f9fac51523dd18f48eb9193b70748637f",
+    "mutation_control.log": "b5688cd9fcb6ea0475b4c9edcb39748b7a5025ae5049a41825b37814421d4851"
+   }
+  },
+  {
+   "id": "MUT-ORCH",
+   "tool": "agent script mutation_control.py",
+   "target": "Prescripta 14f9be1 (disposable worktree)",
+   "command": "python mutation_control.py <WT> <PY> <OUT> orch",
+   "exit": 0,
+   "result": "5 mutants: 1 killed, 4 survived (focused)",
+   "files": {
+    "mutation_control_orchestrator_14f9be1.json": "f19eab2e5272fb350653533b740a697cf4420d3d4237dad03df37a0eeea7f845",
+    "mutation_control_orch.log": "cddb72ec52a885cd2b0ed7ec0c626e5dd28372557ded477c3b0f896bd33e5f41"
+   }
+  },
+  {
+   "id": "MUT-SURVIVORS-FULL",
+   "tool": "agent script mutation_control.py",
+   "target": "Prescripta 14f9be1, whole suite",
+   "command": "python mutation_control.py <WT> <PY> <OUT> survivors-full",
+   "exit": 0,
+   "result": "M6 killed; M5, O1, O2, O3, O5 survived 363 tests",
+   "files": {
+    "mutation_control_survivors_full_14f9be1.json": "5c0774bfc7a755651ccb0250a3fd1d6d79f78721dc17999be69a98d4ae7ac9d8",
+    "mutation_control_survivors_full.log": "0d577aa914090db91fc2aa30ac7090e4f40112fffdbd6b382d3377e94849f1c4"
+   }
+  },
+  {
+   "id": "MUT-COMPOSITES",
+   "tool": "agent script mutation_pairs.py",
+   "target": "Prescripta 14f9be1, whole suite",
+   "command": "python mutation_pairs.py <WT> <PY> <OUT>",
+   "exit": 0,
+   "result": "P2 killed, P3 killed, P1 survived (NEW-23)",
+   "files": {
+    "mutation_pairs.py": "e177a44495e216e005e30bfd362db74aa7ec12b36ab5636a0cad67ce4a108ac9",
+    "mutation_composites_14f9be1.json": "2456911fa5d4ee0e684fc32b7e828dc21900bd9e51688e4310305236ef82a47c",
+    "mutation_composites.log": "0e55a9742454d4a0d62645eb6e3064400cd218b48587d8e99e83a9d5264e8c69"
+   }
+  }
+ ],
+ "all_files_sha256": {
+  "assertiva-ci-mismatch/audit.html": "dfafa75b63dcc902d0cf825e1011429e93afdea4389051fc8cdc9263cd2e4626",
+  "assertiva-ci-mismatch/audit.json": "539aefb31d8511ea5458c3d435afe514433a87ded70a80ecf53bd2ab79f3405f",
+  "assertiva-ci-mismatch.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "assertiva-ci-mismatch.stdout.json": "2ef50bbfd4b805b41f4e9c4141944525a080c6af515af27a2ef1cfbd25f264f4",
+  "assertiva-exec/audit.html": "8ac2051b7b4f2d4681bf4e15237db6012a6c76919b80d45b3af158423543f104",
+  "assertiva-exec/audit.json": "d19b03bd0533b22c073ffa8f9373351abca0b5e6f37fe49f6d31310e24bc2dd8",
+  "assertiva-exec-after-fix/audit.html": "f61a67670c9947ee444e7991538839cf4c4ed1140668ec0f8be9890cfa8a699d",
+  "assertiva-exec-after-fix/audit.json": "a5e209b361b8710750450e96a1e71865a59de0f060bc4720b00c71ef0cb4363a",
+  "assertiva-exec-after-fix.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "assertiva-exec-after-fix.stdout.json": "ccdc533cfae9ea995d9aa7ec5d20042b66a803a517ae82eff76c8fd17bbdc0e7",
+  "assertiva-exec-backend/audit.html": "c5f654137f412256289731358ad2b57011069863cf3cb4b6498d06be7d246ea0",
+  "assertiva-exec-backend/audit.json": "3947b782ad8b1e6670d98d0c64dadd6340863401ded35dec498ccbd9003a1e31",
+  "assertiva-exec-frontend/audit.ctrf.json": "4a9004447f534eb35c3111dcae9f808f7baf03f0c417b36e65e3b9fdd8809061",
+  "assertiva-exec-frontend/audit.html": "9af7a545737fbcde2aebedd8d0e66b88d874e0f65c85dd1a497bb4d80e0d1cd7",
+  "assertiva-exec-frontend/audit.json": "d43cbfb358be2986f8882fe9ee65387b902f944506061f06e38e46afed8b3bca",
+  "assertiva-imported/audit.html": "fd1c451fd21d2a67a6881f761b8e04a9c8b98deeb12ce01008e8809768aac54a",
+  "assertiva-imported/audit.json": "31251ffb1b72b2c3e46e54d3d144f8a631ca105328f147dbb7ddf95999be7c5f",
+  "assertiva-imported.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "assertiva-imported.stdout.json": "5b31029fd4a8c4aecda93ea001ffcdaad4ed0044bcd5f3c072d33492a339d5b6",
+  "assertiva-on-engine-exec-2/audit.html": "8b2aac24316d736bce3e5929da876946f2a3de2e2491e6968adfd643fee2f055",
+  "assertiva-on-engine-exec-2/audit.json": "8ce454a247471f814240cf82b650dd5b47ddeb3306a26a17bc2a0e56a72a5f22",
+  "assertiva-on-engine-exec-2.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "assertiva-on-engine-exec-2.stdout.json": "793b5536c363b4ba99efcc4b9c955c33b34cfeed6a91ba092e613591fb7cfe46",
+  "assertiva-on-engine-exec.stderr.txt": "1e321f390d7a0f40faff7a8705cbc7eee4a6c628a3edf73b69c5db6fa0c345fe",
+  "assertiva-on-engine-exec.stdout.json": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "assertiva-on-engine-static/audit.html": "0916e86cace860f622c89cc595d9d1910722a9ad9584109fb6c3d85122d9b0a9",
+  "assertiva-on-engine-static/audit.json": "1a06b45ec4a639e93c5fae819a9dfbded369dab7a66da8429256ebbaf5003847",
+  "assertiva-on-engine-static.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "assertiva-on-engine-static.stdout.json": "b60e96841f8e1216160b181295d24267e030b3ef2b7228942ee4a03a1fbef0db",
+  "assertiva-static-cd3d5d6e/audit.html": "2dd7a7227e109ddca041f48378c6f52856ced97f0079fef660b95f45154e895b",
+  "assertiva-static-cd3d5d6e/audit.json": "3464066b5431571806801288d7f2f4e5378616152d6b09e80dc79ea168b542a3",
+  "assertiva_rerun_baseline.txt": "f924cfc64dea0198b461eb4066c121e91d43bac8657014b34de39bc94c71b84e",
+  "assertiva_rerun_patched.txt": "ad0315db4ea910941e961599b7ffca64e76276072f388208b7dbf8ac9e219147",
+  "assertiva_rerun_with_coverage.txt": "38b108c2defa6ba3cda7a43066f7c136dff1ea32834af4589b1ef41bc9b25a9d",
+  "ci_run_42510416703.json": "54e088f2c90ab73146ec3427f0e5deb22f881db9197d17b734e428684ba5113f",
+  "engine_base_83d4bec.json": "6993f27b4f1a8955d326c8b5e4a6e36a9bac0303b28722e05aabdee9618660a1",
+  "engine_compare_6508221_14f9be1.json": "961c102c5027e69e4c8980841c6832a9c6f441df6b7e375a3a5858290f4eb4d2",
+  "engine_conformance_3958b84.json": "94fcc388b6a3f3ce75e789b3361343763b74d8d970e0f9c4426a42ca4cb8a617",
+  "engine_evaluate.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "engine_evaluate_14f9be1.json": "5e4fe1573b88275cb8349e21218851a0aa913d563c08bc8be783654360248c22",
+  "engine_evaluate_14f9be1.txt": "6554a3931e46c76c951a604169bd6b447c932db245024f1557b45f4af6b2a8a8",
+  "engine_head_14f9be1.json": "ddb0be36b4d3b6424bc056251c6461e01b6528a842de7b305ddbd7d454d9cdc1",
+  "engine_head_6508221.json": "bf017182794953f48aa4bf48ed6083007fdbd268b547ebbcc5d603b2787cae5c",
+  "engine_inspect_Assertiva.json": "a781a78b551c5d78e3310e747c69aecb4b1b054ec8a498e4488574fd370c07ba",
+  "engine_inspect_Assertiva.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "engine_inspect_Derivanta-Engine.json": "a649386de4960d39d5f271a678a7856c250f70b2fd63ea4642f64ccadebdccf9",
+  "engine_inspect_Derivanta-Engine.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "engine_patched_head_14f9be1.json": "fe7a7078665f40a930c607b449e00026533486fd476e2dba793b626a2708a5f6",
+  "engine_request_prescripta.json": "678de9d04b28418fddb282732ca27b52708fb55d5e01a982376345da92014e6a",
+  "engine_suite_d413e53.txt": "83795b9d1b7de958436364f1c50789ee5d8e5ebda30272d5f3746548b3d414c5",
+  "import_coverage_14f9be1.json": "f370997d0e4f85d3b49526fcec168fb7a119481dbc79bf8c98ba2416382765e8",
+  "import_junit_14f9be1.xml": "393b6ab59e02bd9c880465323bf4017e1c4562671115f35b8d11d2297e580ff3",
+  "import_run_14f9be1.log": "ff877fda520a57975606073d5e08677c9cce678f94782da0f2a2b1e4409d9acf",
+  "mutation_composites.log": "0e55a9742454d4a0d62645eb6e3064400cd218b48587d8e99e83a9d5264e8c69",
+  "mutation_composites_14f9be1.json": "2456911fa5d4ee0e684fc32b7e828dc21900bd9e51688e4310305236ef82a47c",
+  "mutation_control.log": "b5688cd9fcb6ea0475b4c9edcb39748b7a5025ae5049a41825b37814421d4851",
+  "mutation_control.py": "6560f47e0bdde68a35cfc5906d7759fad1e7beda4bf0bfc243d37c9bea6f057b",
+  "mutation_control_orch.log": "cddb72ec52a885cd2b0ed7ec0c626e5dd28372557ded477c3b0f896bd33e5f41",
+  "mutation_control_orchestrator_14f9be1.json": "f19eab2e5272fb350653533b740a697cf4420d3d4237dad03df37a0eeea7f845",
+  "mutation_control_risk_engine_14f9be1.json": "948439a2cf1a0d2ead308dea97edc95f9fac51523dd18f48eb9193b70748637f",
+  "mutation_control_survivors_full.log": "0d577aa914090db91fc2aa30ac7090e4f40112fffdbd6b382d3377e94849f1c4",
+  "mutation_control_survivors_full_14f9be1.json": "5c0774bfc7a755651ccb0250a3fd1d6d79f78721dc17999be69a98d4ae7ac9d8",
+  "mutation_pairs.py": "e177a44495e216e005e30bfd362db74aa7ec12b36ab5636a0cad67ce4a108ac9",
+  "prescripta_sqlite_cpk.txt": "bcaaaecdfbbbec3c69b24e42c44461ccda74ce09efbaf9e3804fe7d73bfafcc8",
+  "unref_triage.tsv": "2ce8130f8ee4ddd564a7446bb0187824ea6c75aea923bf2cc0681f5bb5adc67b"
+ }
+}
