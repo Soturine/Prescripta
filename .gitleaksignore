@@ -1,1 +1,7 @@
 2395a34becf5accc1c65cb6bed48daeb6d2b8396:backend/tests/test_transaction_boundaries_v088.py:generic-api-key:111
+# 2026-11-08 assurance audit (PRE-10): valores sintéticos de Idempotency-Key em testes/doc, revisados
+# manualmente; não autenticam nenhum sistema. Expostos apenas pela varredura agendada de histórico
+# completo (push/PR varrem só o intervalo novo). Supressão por fingerprint exato, nunca por regra.
+ce40bf0c61ca01f7716d6f71529eb64a2e35e8ad:backend/tests/test_fhir_interoperability_v010.py:generic-api-key:109
+503bca016c7de76d2c7bbbfad417da1c470878b1:backend/tests/test_quality_ratchet_v089.py:generic-api-key:290
+5d77aca8ac5f96376092b897649b73248e1dcead:docs/audits/v0.8.8-final-quality-and-release-report.md:generic-api-key:66

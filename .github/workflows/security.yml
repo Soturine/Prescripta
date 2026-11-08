@@ -79,3 +79,8 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          # A action exige o token para varrer pull requests (sem ele o job falha antes de varrer).
+          # Comentários desligados: o job permanece com `contents: read`, sem escrita em PRs.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
