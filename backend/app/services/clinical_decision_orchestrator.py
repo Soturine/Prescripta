@@ -21,7 +21,7 @@ from app.domain.prescription import PrescriptionInput, PrescriptionResult
 from app.services.dose_intelligence import DoseIntelligenceService
 from app.services.prescribing_policy import PrescribingPolicyService
 from app.services.psychotropic_safety import PsychotropicSafetyService
-from app.services.risk_engine import RiskEngine
+from app.services.risk_engine import AGE_RISK_CODE, RiskEngine, compose_risk_level
 
 RISK_ORDER = {
     RiskLevel.LOW: 0,
@@ -388,9 +388,11 @@ class ClinicalDecisionOrchestrator:
         raise ValueError("Recomendação favorável exige cobertura suficiente.")
 
     def _highest_severity(self, findings: list[ClinicalFinding]) -> RiskLevel:
-        if not findings:
-            return RiskLevel.LOW
-        return max((finding.severity for finding in findings), key=RISK_ORDER.__getitem__)
+        elderly = any(
+            finding.module == "risk_engine" and finding.code == AGE_RISK_CODE
+            for finding in findings
+        )
+        return compose_risk_level((finding.severity for finding in findings), elderly=elderly)
 
     def _legacy_status(self, status: DecisionStatus) -> PrescriptionStatus:
         if status == DecisionStatus.BLOCKED:

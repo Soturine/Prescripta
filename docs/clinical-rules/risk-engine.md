@@ -66,7 +66,13 @@ O motor de risco fica em `backend/app/services/risk_engine.py`.
 - Limite por condição clínica: alerta quando o paciente possui condição com limite específico.
 - Interação medicamentosa demonstrativa: alerta alto ou crítico.
 - Cinco ou mais medicamentos contínuos: alerta moderado.
-- Idade maior ou igual a 65 anos: aumenta risco em um nível.
+- Idade maior ou igual a 65 anos: aumenta o risco agregado em um nível, com teto `alto`. A
+  elevação por idade, isolada, não gera bloqueio; `critico`/`bloqueado` exige achado crítico
+  próprio. A mesma função (`compose_risk_level`) é usada pelo motor base, pelo orquestrador
+  (checagem e CDS) e pelas alternativas, e é monotônica: acrescentar um achado nunca reduz o
+  nível. Até a v1.0.0 o orquestrador descartava essa elevação e o motor base podia baixar de
+  `critico` para `alto` ao acrescentar a cautela em idoso (PRE-01). O teto é decisão de
+  engenharia pendente de revisão clínica.
 - Cautela em idosos: alerta quando o medicamento possui esse marcador.
 - Condição renal, hepática, cardíaca ou gastrointestinal relacionada à cautela do medicamento: alerta alto ou moderado.
 - Reação adversa prévia relacionada ao medicamento, classe ou efeito: alerta alto.

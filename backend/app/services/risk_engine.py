@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from decimal import Decimal
 
 from app.domain.alert import Alert, PrescriptionStatus, RiskLevel
@@ -21,15 +22,24 @@ RISK_ORDER = [
 ]
 
 
-def _max_risk(alerts: list[Alert]) -> RiskLevel:
-    if not alerts:
-        return RiskLevel.LOW
-    return max((alert.severity for alert in alerts), key=lambda level: RISK_ORDER.index(level))
+AGE_RISK_CODE = "AGE_RISK"
+# Idade >= 65 eleva o risco agregado em um nível (docs/clinical-rules/risk-engine.md). A elevação
+# por idade, isolada, tem teto ALTO: idade não é ajustável na prescrição, então não deve gerar
+# bloqueio (CRITICAL/BLOCKED) sem um achado crítico próprio. Decisão pendente de revisão clínica.
+AGE_ELEVATION_CEILING = RiskLevel.HIGH
 
 
-def _increase_risk(level: RiskLevel) -> RiskLevel:
-    index = min(RISK_ORDER.index(level) + 1, len(RISK_ORDER) - 1)
-    return RISK_ORDER[index]
+def compose_risk_level(severities: Iterable[RiskLevel], *, elderly: bool) -> RiskLevel:
+    """Composição única e monotônica do risco agregado.
+
+    Usada pelo RiskEngine e pelo orquestrador para que o mesmo paciente receba o mesmo nível em
+    todos os caminhos. Acrescentar um achado nunca reduz o resultado.
+    """
+    base = max(severities, key=RISK_ORDER.index, default=RiskLevel.LOW)
+    if not elderly:
+        return base
+    elevated_index = min(RISK_ORDER.index(base) + 1, RISK_ORDER.index(AGE_ELEVATION_CEILING))
+    return RISK_ORDER[max(RISK_ORDER.index(base), elevated_index)]
 
 
 def _status_for_risk(level: RiskLevel) -> PrescriptionStatus:
@@ -73,18 +83,20 @@ class RiskEngine:
         alerts.extend(self._check_adverse_history(patient, medication))
         alerts.extend(self._check_profile_completeness(patient))
 
-        risk_level = _max_risk(alerts)
-        if self._is_elderly(patient):
+        elderly = self._is_elderly(patient)
+        if elderly:
             alerts.append(
                 Alert(
-                    code="AGE_RISK",
+                    code=AGE_RISK_CODE,
                     title="Fator de risco por idade",
-                    description="Paciente com idade igual ou superior a 65 anos.",
+                    description=(
+                        "Paciente com idade igual ou superior a 65 anos; o risco agregado é "
+                        "elevado em um nível (até alto)."
+                    ),
                     severity=RiskLevel.LOW,
                     recommendation="Aplicar revisão cuidadosa da prescrição.",
                 )
             )
-            risk_level = _increase_risk(risk_level)
             if medication.elderly_caution:
                 alerts.append(
                     Alert(
@@ -95,8 +107,8 @@ class RiskEngine:
                         recommendation="Revisar dose, duração e monitoramento antes de prosseguir.",
                     )
                 )
-                risk_level = _max_risk(alerts)
 
+        risk_level = compose_risk_level((alert.severity for alert in alerts), elderly=elderly)
         status = _status_for_risk(risk_level)
         dose_summary = self._dose_summary(patient, medication, prescription)
         compatibility = self._compatibility(patient, medication, alerts, status)
