@@ -67,11 +67,26 @@ class ClinicalDecisionOrchestrator:
         rag_evidence: list[dict[str, Any]] | None = None,
         missing_context: list[str] | None = None,
         correlation_id: str | None = None,
+        include_dose: bool = True,
+        unevaluated_inputs: list[str] | None = None,
     ) -> ClinicalDecisionEvaluation:
-        base = self.risk_engine.evaluate(patient, medication, prescription)
-        dose = self.dose_service.evaluate(
-            self._dose_rule(medication), patient, prescription
-        ).to_dict()
+        """`include_dose=False`: triagem sem dose aplicável (alternativas). A dose vira dado
+        ausente, então a decisão nunca é `evaluated_no_issue`."""
+        base = self.risk_engine.evaluate(
+            patient, medication, prescription, include_dose_checks=include_dose
+        )
+        if include_dose:
+            dose = self.dose_service.evaluate(
+                self._dose_rule(medication), patient, prescription
+            ).to_dict()
+        else:
+            dose = {
+                "status": "not_evaluated",
+                "alerts": [],
+                "missing_data": ["dose específica deste medicamento (não avaliada)"],
+                "validation_status": medication.dose_rule_validation_status,
+                "source_refs": list(medication.dose_source_refs or []),
+            }
         psychotropic = [
             signal.to_dict()
             for signal in self.psychotropic_service.evaluate(
@@ -90,7 +105,13 @@ class ClinicalDecisionOrchestrator:
             missing=missing,
             rag_evidence=rag_evidence or [],
         )
-        decision_status = self._decision_status(findings, dose, policy, coverage, missing)
+        for module in unevaluated_inputs or []:
+            # Dado recebido mas não interpretado pelas regras (ex.: observações no CDS): fica
+            # visível na cobertura e impede conclusão favorável (PRE-03b / NEW-12).
+            coverage.not_evaluated.append({"module": module, "reason": "recebido e não avaliado"})
+        decision_status = self._decision_status(
+            findings, dose, policy, coverage, missing, unevaluated=bool(unevaluated_inputs)
+        )
         highest_severity = self._highest_severity(findings)
         legacy_status = self._legacy_status(decision_status)
         required_actions = self._required_actions(findings, coverage, missing)
@@ -327,6 +348,8 @@ class ClinicalDecisionOrchestrator:
         policy: dict[str, Any],
         coverage: ClinicalCoverage,
         missing: list[str],
+        *,
+        unevaluated: bool = False,
     ) -> DecisionStatus:
         if (
             any(
@@ -347,7 +370,7 @@ class ClinicalDecisionOrchestrator:
             CoverageStatus.TERMINOLOGY_UNRESOLVED,
         }:
             return DecisionStatus.INSUFFICIENT_COVERAGE
-        if findings or coverage.status != CoverageStatus.COVERED:
+        if findings or unevaluated or coverage.status != CoverageStatus.COVERED:
             return DecisionStatus.REVIEW_REQUIRED
         return DecisionStatus.EVALUATED_NO_ISSUE
 

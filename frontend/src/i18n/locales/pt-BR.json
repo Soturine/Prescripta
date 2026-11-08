@@ -960,5 +960,28 @@
     "refluxo_importante": "Refluxo importante",
     "doenca_inflamatoria_intestinal": "Doença inflamatória intestinal",
     "historico_gastrointestinal_a_revisar": "Histórico gastrointestinal a revisar"
-  }
+  },
+    "alternatives": {
+      "title": "Alternativas para avaliação profissional",
+      "notice": "Candidatos para revisão humana, triados pelas mesmas regras da checagem. Não são recomendação nem substituição automática, e a dose de cada alternativa não foi avaliada.",
+      "columns": {
+        "medication": "Medicamento",
+        "similarity": "Semelhança",
+        "screening": "Triagem",
+        "risk": "Nível agregado",
+        "dose": "Dose"
+      },
+      "similarity": {
+        "alternative_group": "Mesmo grupo alternativo (demonstrativo)",
+        "therapeutic_action": "Ação terapêutica semelhante",
+        "related": "Relacionamento cadastrado"
+      },
+      "review": {
+        "candidate_for_human_review": "Candidato para revisão"
+      },
+      "dose": {
+        "not_evaluated_for_alternative": "Não avaliada"
+      },
+      "unknown": "Não informado"
+    }
 }

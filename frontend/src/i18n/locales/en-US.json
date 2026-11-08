@@ -960,5 +960,28 @@
     "refluxo_importante": "Significant reflux",
     "doenca_inflamatoria_intestinal": "Inflammatory bowel disease",
     "historico_gastrointestinal_a_revisar": "Gastrointestinal history requires review"
-  }
+  },
+    "alternatives": {
+      "title": "Alternatives for professional review",
+      "notice": "Candidates for human review, screened by the same rules as the check. They are not a recommendation or an automatic substitution, and the dose of each alternative was not evaluated.",
+      "columns": {
+        "medication": "Medication",
+        "similarity": "Similarity",
+        "screening": "Screening",
+        "risk": "Aggregate level",
+        "dose": "Dose"
+      },
+      "similarity": {
+        "alternative_group": "Same alternative group (demo)",
+        "therapeutic_action": "Similar therapeutic action",
+        "related": "Registered relationship"
+      },
+      "review": {
+        "candidate_for_human_review": "Candidate for review"
+      },
+      "dose": {
+        "not_evaluated_for_alternative": "Not evaluated"
+      },
+      "unknown": "Not provided"
+    }
 }

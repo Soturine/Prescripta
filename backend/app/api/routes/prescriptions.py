@@ -134,6 +134,9 @@ def check_prescription(
         medication,
         prescription,
         should_include=should_include_alternatives,
+        user=current_user,
+        functional_profile=functional_profile,
+        missing_context=list(patient_knowledge_bundle.get("missing_data") or []),
     )
     patient_counseling = PatientCounselingService(db).build_for_prescription(
         patient_record,

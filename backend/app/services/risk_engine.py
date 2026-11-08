@@ -64,18 +64,27 @@ class RiskEngine:
         patient: Patient,
         medication: Medication,
         prescription: PrescriptionInput,
+        *,
+        include_dose_checks: bool = True,
     ) -> PrescriptionResult:
+        """`include_dose_checks=False` é o modo de triagem de alternativas: a dose informada
+        pertence a outro medicamento, então checagens dependentes de dose não se aplicam."""
         alerts: list[Alert] = []
         alerts.extend(check_allergies(patient, medication))
-        alerts.extend(check_max_daily_dose(medication, prescription))
-        alerts.extend(check_weight_based_dose(patient, medication, prescription))
+        if include_dose_checks:
+            alerts.extend(check_max_daily_dose(medication, prescription))
+            alerts.extend(check_weight_based_dose(patient, medication, prescription))
         alerts.extend(check_interactions(medication, patient.current_medications))
         alerts.extend(self._check_polypharmacy(patient))
         alerts.extend(self._check_contraindications(patient, medication))
         alerts.extend(self._check_route(medication, prescription))
-        alerts.extend(self._check_duration_and_cumulative_dose(medication, prescription))
+        if include_dose_checks:
+            alerts.extend(self._check_duration_and_cumulative_dose(medication, prescription))
         alerts.extend(self._check_exposure_and_monitoring(medication, prescription))
-        alerts.extend(self._check_condition_specific_limits(patient, medication, prescription))
+        if include_dose_checks:
+            alerts.extend(
+                self._check_condition_specific_limits(patient, medication, prescription)
+            )
         alerts.extend(self._check_patient_medication_context(patient, medication))
         alerts.extend(self._check_pharmacokinetic_profile(patient, medication))
         alerts.extend(self._check_neuropsychiatric_context(patient, medication))
@@ -110,7 +119,11 @@ class RiskEngine:
 
         risk_level = compose_risk_level((alert.severity for alert in alerts), elderly=elderly)
         status = _status_for_risk(risk_level)
-        dose_summary = self._dose_summary(patient, medication, prescription)
+        dose_summary = (
+            self._dose_summary(patient, medication, prescription)
+            if include_dose_checks
+            else {"status": "not_evaluated"}
+        )
         compatibility = self._compatibility(patient, medication, alerts, status)
         graph = build_clinical_context_graph(
             patient,
