@@ -11,6 +11,9 @@ Prescripta continua sendo uma demonstração sintética e educacional; nada aqui
 - [FINDINGS_REGISTER.md](FINDINGS_REGISTER.md) — registro mestre de achados, estado e evidência.
 - [DEPENDABOT_PR_TRIAGE.md](DEPENDABOT_PR_TRIAGE.md) — decisão por PR do Dependabot e configuração.
 - [AUDIT_FINDING_CROSSWALK.md](AUDIT_FINDING_CROSSWALK.md) — mapeamento dos IDs da auditoria original para este registro.
+- [EXTERNAL_BENCHMARK_DECISIONS.md](EXTERNAL_BENCHMARK_DECISIONS.md) — Tasy, alertas Anvisa, CDS Hooks e decisões de posicionamento.
+- [DOGFOOD_MATRIX.md](DOGFOOD_MATRIX.md) — estado real do dogfood e log agent-led.
+- [OPEN_BLOCKERS.md](OPEN_BLOCKERS.md) — ações bloqueadas por permissão e o que as destrava.
 - [DUPLICATION_DEAD_CODE_AND_LEGACY.md](DUPLICATION_DEAD_CODE_AND_LEGACY.md) — candidatos a código morto/duplicado e decisão.
 
 Os demais documentos previstos (cobertura, arquitetura, segurança, Dependabot, UX, dogfood, relatório
@@ -25,7 +28,8 @@ final) são acrescentados conforme cada checkpoint é concluído; ausência sign
 | CP-C | PRE-05 revogação de sessão | backend 303 passed / 3 skipped; sessão 5/5 (4 falham sem o fix); Alembic round trip + check PG 17; E2E sessão 5/5; OpenAPI compat ok | [`5144d4e`](https://github.com/Soturine/Prescripta/commit/5144d4e) | origin/main | CI [`42502610730`](https://github.com/Soturine/Prescripta/actions/runs/42502610730), Security [`42502610718`](https://github.com/Soturine/Prescripta/actions/runs/42502610718), Container [`42502610711`](https://github.com/Soturine/Prescripta/actions/runs/42502610711): todos verdes | sem revogação global; CSRF continua via SameSite Lax |
 | CP-D | NEW-04, NEW-06, NEW-10 (config) | backend 318 passed / 3 skipped; controles negativos dos três; literal/alternativas/sessão em PG 7/7 | [`5315c4c`](https://github.com/Soturine/Prescripta/commit/5315c4c) | origin/main | CI [`42503272737`](https://github.com/Soturine/Prescripta/actions/runs/42503272737), Security [`42503272821`](https://github.com/Soturine/Prescripta/actions/runs/42503272821), Container [`42503272686`](https://github.com/Soturine/Prescripta/actions/runs/42503272686): todos verdes | — |
 | CP-E | PRE-08 código morto; sondas NL→SQL | backend e Vitest 92/92 verdes; tsc e lint ok | [`3c20cde`](https://github.com/Soturine/Prescripta/commit/3c20cde) | origin/main | CI/Security/Container verdes (`42503672390`, `42503672389`, `42503672335`) | PRE-07 DEFERRED |
-| CP-F | NEW-11 alternativas, NEW-12 CDS, ADR 010/011, crosswalk | backend 322 passed / 3 skipped; Vitest 94; E2E 19/2 incl. visual; controles negativos | (preenchido após o push) | origin/main | (preenchido após o push) | política de idade pendente de revisão clínica |
+| CP-F | NEW-11 alternativas, NEW-12 CDS, ADR 010/011, crosswalk | backend 322 passed / 3 skipped; Vitest 94; E2E 19/2 incl. visual; controles negativos | [`1c92ee8`](https://github.com/Soturine/Prescripta/commit/1c92ee8) | origin/main | CI/Security/Container verdes | política de idade pendente de revisão clínica |
+| CP-G | NEW-13–17: exibição de dose, concentração, sessão multi-aba, testes de negação; benchmark Tasy/Anvisa; dogfood matrix | backend 345 passed / 3 skipped; Vitest 98; E2E 19/2; controles negativos | (preenchido após o push) | origin/main | (preenchido após o push) | dogfood BLOCKED |
 
 ## Bloqueios
 

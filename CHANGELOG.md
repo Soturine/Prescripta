@@ -35,6 +35,11 @@
   transparent similarity ranking, localized card (ADR 011);
 - CDS: observations received but not evaluated now block `evaluated_no_issue` and appear in
   `coverage.not_evaluated`; ADR 010 documents the age-composition policy as pending clinical review.
+- dose display: alert texts no longer use scientific notation (`1.2E+3 mg`) and the frontend no
+  longer rounds small doses (`0.0005 → 0.001`); a concentration × volume dose declares the missing
+  concentration ceiling as not evaluated (scenarios derived from public Anvisa alerts 4612/4614/5063);
+- session: no logout of a fresh login by a stale page-load request, login waits for an in-flight
+  logout, and logout propagates across tabs without sharing any token.
 
 ## [1.0.0] - 2026-08-24
 
