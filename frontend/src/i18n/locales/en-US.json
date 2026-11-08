@@ -973,6 +973,7 @@
       },
       "similarity": {
         "alternative_group": "Same alternative group (demo)",
+        "therapeutic_class": "Same registered therapeutic class",
         "therapeutic_action": "Similar therapeutic action",
         "related": "Registered relationship"
       },

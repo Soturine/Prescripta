@@ -973,6 +973,7 @@
       },
       "similarity": {
         "alternative_group": "Mesmo grupo alternativo (demonstrativo)",
+        "therapeutic_class": "Mesma classe terapêutica cadastrada",
         "therapeutic_action": "Ação terapêutica semelhante",
         "related": "Relacionamento cadastrado"
       },

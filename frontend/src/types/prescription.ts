@@ -148,7 +148,7 @@ export type AlternativeMedication = {
   active_ingredient: string;
   therapeutic_class: string;
   similarity_reason: string;
-  similarity_kind?: "alternative_group" | "therapeutic_action" | "related";
+  similarity_kind?: "alternative_group" | "therapeutic_class" | "therapeutic_action" | "related";
   status: PrescriptionStatus;
   review_status?: "candidate_for_human_review";
   decision_status?: string;

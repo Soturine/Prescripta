@@ -12,7 +12,15 @@ from app.services.normalizer import normalize_text
 
 MAX_OPTIONS = 4
 # Ordem transparente de similaridade demonstrativa; empate desfeito por nome e id.
-SIMILARITY_RANK = {"alternative_group": 0, "therapeutic_action": 1, "related": 2}
+SIMILARITY_RANK = {
+    "alternative_group": 0,
+    "therapeutic_class": 1,
+    "therapeutic_action": 2,
+    "related": 3,
+}
+# Classes-marcador do seed/importação não descrevem farmacologia: dois fármacos "pendentes de
+# revisão" não são semelhantes por isso (NEW-20: amoxicilina sugerida para um analgésico).
+PLACEHOLDER_THERAPEUTIC_CLASSES = frozenset({normalize_text("demo pendente de revisão")})
 REVIEW_STATUS = "candidate_for_human_review"
 DOSE_NOT_EVALUATED = "not_evaluated_for_alternative"
 
@@ -93,7 +101,8 @@ class AlternativeService:
 
     def _ranked_candidates(self, medication: Medication) -> list[tuple[Any, str]]:
         current_id = medication.id
-        group = normalize_text(medication.alternative_group or medication.therapeutic_class)
+        group = normalize_text(medication.alternative_group or "")
+        therapeutic_class = self._usable_class(medication.therapeutic_class)
         action = normalize_text(medication.therapeutic_action or "")
         related = {normalize_text(item) for item in (medication.related_medications or [])}
         ranked: list[tuple[int, str, int, Any, str]] = []
@@ -101,9 +110,12 @@ class AlternativeService:
         for record in self.repository.iter_all():
             if record.id == current_id:
                 continue
-            record_group = normalize_text(record.alternative_group or record.therapeutic_class)
-            if group and record_group == group:
+            if group and normalize_text(record.alternative_group or "") == group:
                 kind = "alternative_group"
+            elif therapeutic_class and self._usable_class(record.therapeutic_class) == (
+                therapeutic_class
+            ):
+                kind = "therapeutic_class"
             elif action and normalize_text(record.therapeutic_action or "") == action:
                 kind = "therapeutic_action"
             elif normalize_text(record.active_ingredient) in related:
@@ -116,9 +128,15 @@ class AlternativeService:
         ranked.sort(key=lambda item: item[:3])
         return [(item[3], item[4]) for item in ranked]
 
+    @staticmethod
+    def _usable_class(value: str | None) -> str:
+        normalized = normalize_text(value or "")
+        return "" if normalized in PLACEHOLDER_THERAPEUTIC_CLASSES else normalized
+
     def _similarity_reason(self, kind: str) -> str:
         return {
             "alternative_group": "Mesmo grupo alternativo demonstrativo.",
+            "therapeutic_class": "Mesma classe terapêutica cadastrada.",
             "therapeutic_action": "Ação/finalidade terapêutica semelhante.",
             "related": "Relacionamento demonstrativo cadastrado.",
         }[kind]

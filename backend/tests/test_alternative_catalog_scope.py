@@ -24,7 +24,7 @@ def _record(brand: str, group: str, **extra: object) -> MedicationModel:
     values: dict[str, object] = {
         "brand_name": brand,
         "active_ingredient": brand.lower(),
-        "therapeutic_class": "classe sintética",
+        "therapeutic_class": f"classe própria de {brand}",
         "alternative_group": group,
         "max_daily_dose_mg": 1000,
         "allowed_routes": ["oral"],
@@ -130,3 +130,24 @@ def test_ranking_is_by_similarity_then_name(db_session) -> None:
         "therapeutic_action",
         "related",
     ]
+
+
+def test_placeholder_class_is_not_similarity(db_session) -> None:
+    """NEW-20: classe-marcador do seed agrupava antibiótico, anestésico e antidepressivo."""
+    placeholder = "demo pendente de revisão"
+    original = _record("Analgesico Demo", "", therapeutic_class=placeholder)
+    original.alternative_group = None
+    unrelated = _record("Amoxicilina Demo", "", therapeutic_class=placeholder)
+    unrelated.alternative_group = None
+    same_class = _record("Analgesico Irmao", "", therapeutic_class="classe analgésica sintética")
+    same_class.alternative_group = None
+    db_session.add_all([original, unrelated, same_class])
+    db_session.commit()
+
+    assert _options(db_session, original, 10) == []
+
+    original.therapeutic_class = "classe analgésica sintética"
+    db_session.commit()
+    [option] = _options(db_session, original, 10)
+    assert option["name"] == "Analgesico Irmao"
+    assert option["similarity_kind"] == "therapeutic_class"
