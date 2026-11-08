@@ -1,16 +1,22 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import CurrentUser
+from app.core.auth import BearerToken, CurrentUser
 from app.core.config import settings
-from app.core.security import create_access_token, verify_password, verify_totp
+from app.core.security import (
+    create_access_token,
+    decode_access_token,
+    verify_password,
+    verify_totp,
+)
 from app.database.session import get_db
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth_schema import LoginRequest, TokenResponse
 from app.schemas.user_schema import UserRead
 from app.services.auth_throttle import LoginThrottle
+from app.services.session_revocation import SessionRevocationService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 DbSession = Annotated[Session, Depends(get_db)]
@@ -67,7 +73,23 @@ def login(payload: LoginRequest, db: DbSession, response: Response) -> TokenResp
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(response: Response) -> Response:
+def logout(
+    response: Response,
+    db: DbSession,
+    credentials: BearerToken,
+    session_cookie: Annotated[str | None, Cookie(alias="prescripta_session")] = None,
+) -> Response:
+    # Revoga no servidor cada token apresentado (cookie e/ou Bearer) até o próprio `exp`;
+    # apagar o cookie sozinho deixava o JWT copiado válido. Token ausente/inválido: idempotente.
+    revocation = SessionRevocationService(db)
+    for token in {
+        session_cookie,
+        credentials.credentials if credentials is not None else None,
+    } - {None}:
+        try:
+            revocation.revoke(decode_access_token(token))
+        except ValueError:
+            continue
     response.delete_cookie("prescripta_session", path="/", httponly=True, samesite="lax")
     response.status_code = status.HTTP_204_NO_CONTENT
     return response

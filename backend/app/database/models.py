@@ -691,6 +691,21 @@ class UserModel(Base):
     )
 
 
+class RevokedAccessTokenModel(Base):
+    """Tokens encerrados por logout antes do `exp`. Linhas vencidas são descartáveis."""
+
+    __tablename__ = "revoked_access_tokens"
+
+    jti: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+    revoked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+
 class PatientAccessGrantModel(Base):
     __tablename__ = "patient_access_grants"
     __table_args__ = (UniqueConstraint("patient_id", "user_id", "permission"),)

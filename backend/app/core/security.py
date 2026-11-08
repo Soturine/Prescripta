@@ -5,6 +5,7 @@ import struct
 import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from uuid import uuid4
 
 import jwt
 from cryptography.fernet import Fernet
@@ -28,13 +29,25 @@ def create_access_token(subject: str, expires_delta: timedelta | None = None) ->
     expires_at = datetime.now(UTC) + (
         expires_delta or timedelta(minutes=settings.access_token_expire_minutes)
     )
-    payload: dict[str, Any] = {"sub": subject, "exp": expires_at}
+    payload: dict[str, Any] = {
+        "sub": subject,
+        "exp": expires_at,
+        "iat": datetime.now(UTC),
+        # Identificador da sessão: permite revogar este token no logout (PRE-05).
+        "jti": uuid4().hex,
+    }
     return jwt.encode(payload, settings.secret_key, algorithm=settings.jwt_algorithm)
 
 
 def decode_access_token(token: str) -> dict[str, Any]:
     try:
-        return jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
+        return jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[settings.jwt_algorithm],
+            # Tokens sem jti (emitidos antes da revogação) não podem ser revogados: falha fechada.
+            options={"require": ["exp", "sub", "jti"]},
+        )
     except InvalidTokenError as exc:
         raise ValueError("Token invalido.") from exc
 

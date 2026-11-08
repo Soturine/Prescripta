@@ -30,7 +30,7 @@ API ── policy + autorização por objeto ── PostgreSQL
 
 | Ameaça | Controle atual | Risco residual/ação |
 | --- | --- | --- |
-| roubo ou replay de sessão | cookie HttpOnly, SameSite Lax, expiração JWT, logout | falta revogação central de JWT e CSRF token explícito para topologias cross-site |
+| roubo ou replay de sessão | cookie HttpOnly, SameSite Lax, expiração JWT, logout com revogação server-side por `jti` | falta revogação global por usuário e CSRF token explícito para topologias cross-site |
 | brute force/credential stuffing | lockout persistente por identificador hasheado, MFA TOTP opcional, auditoria | rate limit distribuído de borda ainda recomendado |
 | BOLA/BFLA e tenant escape | capacidade global + instituição + relação/purpose por paciente; lista filtrada; grants/care team/episode/break-glass; testes same-tenant e cross-tenant | revisão endpoint a endpoint e política ABAC institucional continuam necessárias |
 | mass assignment/adulteração de decisão | schemas `extra=forbid`, regras resolvidas no servidor, explicação por `audit_id` | novos endpoints precisam repetir o padrão |

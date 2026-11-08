@@ -10,6 +10,7 @@ from app.database.models import UserModel
 from app.database.session import get_db
 from app.domain.user import Capability, UserRole
 from app.repositories.user_repository import UserRepository
+from app.services.session_revocation import SessionRevocationService
 
 bearer_scheme = HTTPBearer(auto_error=False)
 DbSession = Annotated[Session, Depends(get_db)]
@@ -38,6 +39,12 @@ def get_current_user(
             detail="Token invalido.",
             headers={"WWW-Authenticate": "Bearer"},
         ) from None
+    if SessionRevocationService(db).is_revoked(str(payload["jti"])):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Sessão encerrada.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     user = UserRepository(db).get(user_id)
     if user is None:

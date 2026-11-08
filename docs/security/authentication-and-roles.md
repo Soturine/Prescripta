@@ -4,8 +4,17 @@
 
 `POST /api/auth/login` valida Argon2, contenção persistente de tentativas e MFA TOTP quando habilitado.
 O browser recebe `prescripta_session` HttpOnly, SameSite Lax e com `Secure` fora do modo local.
-`GET /api/auth/me` restaura a sessão; `POST /api/auth/logout` remove o cookie. Senha, token, segredo MFA
-e API key nunca entram em auditoria ou payload de leitura.
+`GET /api/auth/me` restaura a sessão. Senha, token, segredo MFA e API key nunca entram em auditoria
+ou payload de leitura.
+
+Cada access token carrega `jti`. `POST /api/auth/logout` remove o cookie **e** revoga no servidor os
+tokens apresentados (cookie e/ou `Authorization: Bearer`) até o próprio `exp`, em
+`revoked_access_tokens`; linhas vencidas são podadas a cada logout. A revogação é por sessão: outros
+dispositivos do mesmo usuário continuam válidos. Tokens sem `jti` (emitidos antes da v1.1) são
+rejeitados, exigindo novo login. O `access_token` no JSON do login existe para clientes de API
+(ex.: CDS); o frontend usa apenas o cookie. Desativar o usuário bloqueia a próxima requisição
+(`is_active` é verificado a cada chamada). Ainda não há revogação global ("sair de todos os
+dispositivos") nem rotação automática após troca de senha.
 
 ## Profissão, papel e capacidades
 
