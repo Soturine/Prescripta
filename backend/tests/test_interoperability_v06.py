@@ -143,9 +143,12 @@ def test_auditor_can_view_but_cannot_accept_import(
         f"/api/integrations/imports/{created.json()['id']}/accept",
         headers=auditor_headers,
     )
+    after = client.get("/api/integrations/imports", headers=auditor_headers)
 
     assert listed.status_code == 200
     assert accepted.status_code == 403
+    # Negação de escrita não pode ter efeito parcial: o lote permanece idêntico.
+    assert after.json() == listed.json()
 
 
 def test_cds_prescription_check_persist_false_does_not_create_patient(

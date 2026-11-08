@@ -363,5 +363,12 @@ def test_auditor_can_view_reconciliation_but_cannot_decide(
         json={"justification": None},
     )
 
+    after = client.get(
+        f"/api/integrations/imports/{batch_id}/reconciliation",
+        headers=auditor_headers,
+    )
+
     assert viewed.status_code == 200
     assert decided.status_code == 403
+    # Negação de decisão não pode ter efeito parcial: itens e decisões inalterados.
+    assert after.json()["items"] == viewed.json()["items"]

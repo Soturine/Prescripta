@@ -35,6 +35,7 @@ def test_bearer_token_is_rejected_after_logout(client: TestClient, create_test_u
 
     replay = client.get("/api/auth/me", headers=_bearer(token))
     assert replay.status_code == 401
+    assert replay.json()["detail"] == "Sessão encerrada."
 
 
 def test_cookie_session_is_revoked_and_other_sessions_survive(
@@ -63,7 +64,9 @@ def test_token_without_jti_is_rejected(client: TestClient, create_test_user) -> 
         algorithm=settings.jwt_algorithm,
     )
     client.cookies.clear()
-    assert client.get("/api/auth/me", headers=_bearer(legacy)).status_code == 401
+    rejected = client.get("/api/auth/me", headers=_bearer(legacy))
+    assert rejected.status_code == 401
+    assert rejected.json()["detail"] == "Token invalido."
 
 
 def test_logout_without_or_with_invalid_token_is_idempotent(client: TestClient) -> None:
