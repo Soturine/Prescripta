@@ -57,13 +57,16 @@ jobs:
             jq --exit-status '.bomFormat == "CycloneDX" and (.components | type == "array")' \
               "${sbom}" >/dev/null
           done
+          # Exceções derivadas do arquivo real; falha se alguma estiver vencida ou sem prazo.
+          governed_exceptions="$(python3 scripts/trivy_governed_exceptions.py .trivyignore.yaml)"
           backend_findings="$(jq '[.Results[]?.Vulnerabilities[]?] | length' container-artifacts/trivy-backend.json)"
           frontend_findings="$(jq '[.Results[]?.Vulnerabilities[]?] | length' container-artifacts/trivy-frontend.json)"
           jq -n --arg sha "${TARGET_SHA}" --argjson ci "${ci_run}" \
             --argjson security "${security_run}" --argjson container "${container_run}" \
             --argjson qualification "${qualification_run}" --argjson backend_findings "${backend_findings}" \
             --argjson frontend_findings "${frontend_findings}" \
-            '{sha: $sha, build_once: true, verify_once: true, gates: {CI: $ci, Security: $security, Container: $container, Qualification: $qualification}, trivy: {backend_high_critical: $backend_findings, frontend_high_critical: $frontend_findings, governed_exceptions: ["CVE-2026-14456"], exception_policy_asset: "trivy-exceptions.yaml"}}' \
+            --argjson governed_exceptions "${governed_exceptions}" \
+            '{sha: $sha, build_once: true, verify_once: true, gates: {CI: $ci, Security: $security, Container: $container, Qualification: $qualification}, trivy: {backend_high_critical: $backend_findings, frontend_high_critical: $frontend_findings, governed_exceptions: $governed_exceptions, exception_policy_asset: "trivy-exceptions.yaml"}}' \
             > release-evidence.json
       - name: Generate release asset checksums
         run: sha256sum sbom-*.json benchmark-evidence.json recovery-evidence.json release-evidence.json trivy-exceptions.yaml > SHA256SUMS.txt
