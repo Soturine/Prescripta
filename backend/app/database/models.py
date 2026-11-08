@@ -25,7 +25,9 @@ class PatientModel(Base):
     __tablename__ = "patients"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    institution_id: Mapped[str] = mapped_column(String(100), default="demo", nullable=False)
+    institution_id: Mapped[str] = mapped_column(
+        String(100), default="demo", nullable=False, index=True
+    )
     created_by_user_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id"), nullable=True, index=True
     )
