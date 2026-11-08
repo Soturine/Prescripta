@@ -1,5 +1,5 @@
 {
   "baseline": "openapi-v1.0.0.json",
-  "candidate": "openapi-next.json",
-  "allowlist": "openapi-breaking-allowlist-next.json"
+  "candidate": "openapi-v1.1.0.json",
+  "allowlist": "openapi-breaking-allowlist-v1.1.0.json"
 }

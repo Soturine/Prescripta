@@ -1,0 +1,83 @@
+{
+  "version": "1.1.0",
+  "generator": "scripts/capture-current-assets.mjs",
+  "assets": [
+    {
+      "file": "audit-v1.1.0.png",
+      "bytes": 113838,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "c3ac06755e3350747366a6cf25a91d49e57e199a0c9f4f00d9d8d38708fc91cb"
+    },
+    {
+      "file": "clinical-check-v1.1.0.png",
+      "bytes": 106603,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "b34cf2982d0994269a6ad059bef4078f086529c9bb75e33b37802b126b92c0e9"
+    },
+    {
+      "file": "clinical-result-v1.1.0.png",
+      "bytes": 104667,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "0f04b4dc8efc3b994e4ab188e1553d2771e7254213112718c47151b548b03c27"
+    },
+    {
+      "file": "dashboard-en-US-v1.1.0.png",
+      "bytes": 104602,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "c4930dbc91e08de09dd246df4023418e1bcc3f025cf9da723902c49721f113d9"
+    },
+    {
+      "file": "dashboard-v1.1.0.png",
+      "bytes": 106212,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "dfe2fa6d5f8f171d63b6d4323d5973274f88aed04c250c397397761bec02d8be"
+    },
+    {
+      "file": "mobile-navigation-v1.1.0.png",
+      "bytes": 42517,
+      "width": 390,
+      "height": 844,
+      "sha256": "e4f195bb61fd297edcb1c64703113fed4e59957ccf30532bec26870b1ddafe18"
+    },
+    {
+      "file": "overview-v1.1.0.gif",
+      "bytes": 296911,
+      "width": 960,
+      "height": 667,
+      "sha256": "ca327ef52eefe4b9a76295033256eb5fab3550624164373f823d5f233c413c5c"
+    },
+    {
+      "file": "patient-workspace-v1.1.0.png",
+      "bytes": 92187,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "f3bd146bbf8681708d960b3a3f57700f2584041fc4418b307d6a5757cdc15bec"
+    },
+    {
+      "file": "pharmacy-v1.1.0.png",
+      "bytes": 104892,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "e03241f84bc7af2efc6d2ca421191c589179e0b6c52f37462b8cf1d0ac3f8a6e"
+    },
+    {
+      "file": "research-analysis-v1.1.0.png",
+      "bytes": 121306,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "bd14ab45f709528b83175a0c5b57a40be187890da9116656f6308fa96d4d7acb"
+    },
+    {
+      "file": "research-workspace-v1.1.0.png",
+      "bytes": 136849,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "152100cf20498864c52c7f4bf77165077a94dbe2481de44a854b14a083132ddd"
+    }
+  ]
+}

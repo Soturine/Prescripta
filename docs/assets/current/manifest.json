@@ -1,83 +1,83 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "generator": "scripts/capture-current-assets.mjs",
   "assets": [
     {
       "file": "audit.png",
-      "bytes": 114722,
+      "bytes": 113838,
       "width": 1440,
       "height": 1000,
-      "sha256": "7acfe694073fe8b260a4bcb49ba6d2d7ae71d02432bfa2f21ab8c69c4b2cb770"
+      "sha256": "c3ac06755e3350747366a6cf25a91d49e57e199a0c9f4f00d9d8d38708fc91cb"
     },
     {
       "file": "clinical-check.png",
-      "bytes": 106670,
+      "bytes": 106603,
       "width": 1440,
       "height": 1000,
-      "sha256": "d8ae7e41fd12436ca360e9abc360e56cec10cbd5cdd24820d3a45d9d730c4f63"
+      "sha256": "b34cf2982d0994269a6ad059bef4078f086529c9bb75e33b37802b126b92c0e9"
     },
     {
       "file": "clinical-result.png",
-      "bytes": 104721,
-      "width": 1440,
-      "height": 1000,
-      "sha256": "1f224bca24290568dee1c6eb7e7da3072f54d891a0d6db6878e23f16fcdb6bab"
-    },
-    {
-      "file": "dashboard-en-US.png",
       "bytes": 104667,
       "width": 1440,
       "height": 1000,
-      "sha256": "f7a60388ad0ab83432e459fe7682bcc4eb0ab219bd5d25d03879d292b5dc2e65"
+      "sha256": "0f04b4dc8efc3b994e4ab188e1553d2771e7254213112718c47151b548b03c27"
+    },
+    {
+      "file": "dashboard-en-US.png",
+      "bytes": 104602,
+      "width": 1440,
+      "height": 1000,
+      "sha256": "c4930dbc91e08de09dd246df4023418e1bcc3f025cf9da723902c49721f113d9"
     },
     {
       "file": "dashboard.png",
-      "bytes": 106279,
+      "bytes": 106212,
       "width": 1440,
       "height": 1000,
-      "sha256": "febce3cf817569225dcddc495037ebb1a30167c875f8db4eb3a93b1e3a51d6a9"
+      "sha256": "dfe2fa6d5f8f171d63b6d4323d5973274f88aed04c250c397397761bec02d8be"
     },
     {
       "file": "mobile-navigation.png",
-      "bytes": 42599,
+      "bytes": 42517,
       "width": 390,
       "height": 844,
-      "sha256": "3ed299bf508907eee09a5078ba543bd8ea56bc5ab6b019b964b03ccc654bf309"
+      "sha256": "e4f195bb61fd297edcb1c64703113fed4e59957ccf30532bec26870b1ddafe18"
     },
     {
       "file": "overview.gif",
-      "bytes": 296742,
+      "bytes": 296911,
       "width": 960,
       "height": 667,
-      "sha256": "68e2e8e04cc2c82fc5a8b927cb82b0d182c07ad0a33da13b9f322093e6faa1f7"
+      "sha256": "ca327ef52eefe4b9a76295033256eb5fab3550624164373f823d5f233c413c5c"
     },
     {
       "file": "patient-workspace.png",
-      "bytes": 92244,
+      "bytes": 92187,
       "width": 1440,
       "height": 1000,
-      "sha256": "31fab84261834533ca24617451f1e20c9b28f0f8c1256dcf670282ea218a653d"
+      "sha256": "f3bd146bbf8681708d960b3a3f57700f2584041fc4418b307d6a5757cdc15bec"
     },
     {
       "file": "pharmacy.png",
-      "bytes": 105297,
+      "bytes": 104892,
       "width": 1440,
       "height": 1000,
-      "sha256": "e6937818438ba574271e056965f8988474a2f21b0570d27dd23d51fb839a43a0"
+      "sha256": "e03241f84bc7af2efc6d2ca421191c589179e0b6c52f37462b8cf1d0ac3f8a6e"
     },
     {
       "file": "research-analysis.png",
-      "bytes": 121342,
+      "bytes": 121306,
       "width": 1440,
       "height": 1000,
-      "sha256": "1bac0edf3e85f7236b0f717ed29ba47bc6fea46ce31e2ec115fc1e60ebbcbe42"
+      "sha256": "bd14ab45f709528b83175a0c5b57a40be187890da9116656f6308fa96d4d7acb"
     },
     {
       "file": "research-workspace.png",
-      "bytes": 136918,
+      "bytes": 136849,
       "width": 1440,
       "height": 1000,
-      "sha256": "12c1a22c68adba24d4a5a6a875d7b620458df3519131be1fc472eec5b72154be"
+      "sha256": "152100cf20498864c52c7f4bf77165077a94dbe2481de44a854b14a083132ddd"
     }
   ]
 }

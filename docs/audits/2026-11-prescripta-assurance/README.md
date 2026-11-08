@@ -34,7 +34,7 @@ final) são acrescentados conforme cada checkpoint é concluído; ausência sign
 | CP-G | NEW-13–17: exibição de dose, concentração, sessão multi-aba, testes de negação; benchmark Tasy/Anvisa; dogfood matrix | backend 345 passed / 3 skipped; Vitest 98; E2E 19/2; controles negativos | [`f016896`](https://github.com/Soturine/Prescripta/commit/f016896) | origin/main | CI `42506699421`, Security `42506699408`, Container `42506699388`: verdes | dogfood BLOCKED |
 | CP-H | PRE-04 concorrência real em PG; NEW-05 harness PG completo; CI PG ampliado | SQLite 346/5 skipped; PostgreSQL suíte inteira 348/0/3; simulação do step de CI 28/28 | [`4bd77bb`](https://github.com/Soturine/Prescripta/commit/4bd77bb) | origin/main | CI `42508296009` (incl. novo step PG), Security `42508296098`, Container `42508295956`: verdes | — |
 | CP-I | NEW-18 índice, NEW-19 evidência de release, handoff | SQLite 350/5; Alembic round trip PG; EXPLAIN | [`5ae81d9`](https://github.com/Soturine/Prescripta/commit/5ae81d9) | origin/main | CI `42508809961`, Security `42508809873`, Container `42508810071`: verdes | — |
-| CP-J | NEW-20 alternativas absurdas (achado em navegador real); revisão UI/UX | backend 351/5; Vitest 98; E2E 19/2; i18n 877 | (ver git log) | origin/main | (próximo push) | leitor de tela e demais perfis não revisados |
+| CP-J | NEW-20 alternativas absurdas (achado em navegador real); revisão UI/UX | backend 351/5; Vitest 98; E2E 19/2; i18n 877 | [`0d23f1e`](https://github.com/Soturine/Prescripta/commit/0d23f1e) | origin/main | CI `42509403848`, Security `42509403923`, Container `42509403958`: verdes | leitor de tela e demais perfis não revisados |
 
 ## Bloqueios
 

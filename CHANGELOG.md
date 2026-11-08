@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [1.1.0] - 2026-11-08
 
 ### Assurance audit 2026-11 (see `docs/audits/2026-11-prescripta-assurance/`)
 
@@ -13,7 +13,7 @@
   observations are explicitly reported as `not_evaluated`; concurrent idempotency conflicts
   replay or return 409 without orphan audit rows (PRE-02/03/04); access docs generated from the
   capability templates and tested (PRE-09);
-- OpenAPI: v1.0.0 snapshot frozen as baseline, `openapi-next.json` added as working candidate
+- OpenAPI: v1.0.0 snapshot frozen as baseline, `openapi-v1.1.0.json` is the new candidate (frozen at release)
   (additive optional field `observations_evaluation`);
 - security gates: exact Gitleaks fingerprints for three synthetic idempotency values, PR secret
   scan given the token it now requires, and the CI PostgreSQL job runs the scope-parity test;

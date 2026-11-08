@@ -1,0 +1,4 @@
+{
+  "policy": "Only explicitly reviewed breaking changes between the previous stable and current candidate contracts are allowed.",
+  "allowed_breaks": []
+}

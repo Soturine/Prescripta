@@ -1,6 +1,6 @@
 # Documentação do Prescripta
 
-Documentação evergreen do Prescripta v1.0.0. Guias atuais descrevem o `main`; notas e auditorias
+Documentação evergreen do Prescripta v1.1.0. Guias atuais descrevem o `main`; notas e auditorias
 versionadas preservam a realidade de cada release. O sistema é demonstrativo, sintético e não deve
 ser usado em atendimento real.
 
