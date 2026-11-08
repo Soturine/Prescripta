@@ -40,6 +40,13 @@
   concentration ceiling as not evaluated (scenarios derived from public Anvisa alerts 4612/4614/5063);
 - session: no logout of a fresh login by a stale page-load request, login waits for an in-flight
   logout, and logout propagates across tabs without sharing any token.
+- alternatives: a placeholder therapeutic class no longer counts as similarity (an analgesic was
+  being offered an antibiotic, a local anesthetic and an antidepressant); class matches are labelled
+  as such;
+- database: index on `patients.institution_id` (migration `c12b3d4e5f60`); release evidence derives
+  governed Trivy exceptions from `.trivyignore.yaml` and refuses expired ones;
+- tests: the backend suite runs fully on PostgreSQL through an opt-in harness, and CI runs real
+  concurrent idempotency requests on PostgreSQL.
 
 ## [1.0.0] - 2026-08-24
 

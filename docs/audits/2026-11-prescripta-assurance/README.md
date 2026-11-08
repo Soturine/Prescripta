@@ -14,6 +14,7 @@ Prescripta continua sendo uma demonstração sintética e educacional; nada aqui
 - [EXTERNAL_BENCHMARK_DECISIONS.md](EXTERNAL_BENCHMARK_DECISIONS.md) — Tasy, alertas Anvisa, CDS Hooks e decisões de posicionamento.
 - [DOGFOOD_MATRIX.md](DOGFOOD_MATRIX.md) — estado real do dogfood e log agent-led.
 - [EXECUTION_HANDOFF.md](EXECUTION_HANDOFF.md) — estado de retomada.
+- [UI_UX_ACCESSIBILITY_AUDIT.md](UI_UX_ACCESSIBILITY_AUDIT.md) — revisão de UI/UX desta rodada e limites.
 - [OPEN_BLOCKERS.md](OPEN_BLOCKERS.md) — ações bloqueadas por permissão e o que as destrava.
 - [DUPLICATION_DEAD_CODE_AND_LEGACY.md](DUPLICATION_DEAD_CODE_AND_LEGACY.md) — candidatos a código morto/duplicado e decisão.
 
@@ -32,7 +33,8 @@ final) são acrescentados conforme cada checkpoint é concluído; ausência sign
 | CP-F | NEW-11 alternativas, NEW-12 CDS, ADR 010/011, crosswalk | backend 322 passed / 3 skipped; Vitest 94; E2E 19/2 incl. visual; controles negativos | [`1c92ee8`](https://github.com/Soturine/Prescripta/commit/1c92ee8) | origin/main | CI/Security/Container verdes | política de idade pendente de revisão clínica |
 | CP-G | NEW-13–17: exibição de dose, concentração, sessão multi-aba, testes de negação; benchmark Tasy/Anvisa; dogfood matrix | backend 345 passed / 3 skipped; Vitest 98; E2E 19/2; controles negativos | [`f016896`](https://github.com/Soturine/Prescripta/commit/f016896) | origin/main | CI `42506699421`, Security `42506699408`, Container `42506699388`: verdes | dogfood BLOCKED |
 | CP-H | PRE-04 concorrência real em PG; NEW-05 harness PG completo; CI PG ampliado | SQLite 346/5 skipped; PostgreSQL suíte inteira 348/0/3; simulação do step de CI 28/28 | [`4bd77bb`](https://github.com/Soturine/Prescripta/commit/4bd77bb) | origin/main | CI `42508296009` (incl. novo step PG), Security `42508296098`, Container `42508295956`: verdes | — |
-| CP-I | NEW-18 índice, NEW-19 evidência de release, handoff | SQLite 350/5; Alembic round trip PG; EXPLAIN | (ver git log) | origin/main | (próximo push) | — |
+| CP-I | NEW-18 índice, NEW-19 evidência de release, handoff | SQLite 350/5; Alembic round trip PG; EXPLAIN | [`5ae81d9`](https://github.com/Soturine/Prescripta/commit/5ae81d9) | origin/main | CI `42508809961`, Security `42508809873`, Container `42508810071`: verdes | — |
+| CP-J | NEW-20 alternativas absurdas (achado em navegador real); revisão UI/UX | backend 351/5; Vitest 98; E2E 19/2; i18n 877 | (ver git log) | origin/main | (próximo push) | leitor de tela e demais perfis não revisados |
 
 ## Bloqueios
 
