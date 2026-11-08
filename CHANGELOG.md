@@ -30,6 +30,11 @@
   shorter than 32 bytes and the placeholders published in the repository;
 - alternatives scan the whole catalog instead of the first 50 entries; audit search treats `%`
   and `_` literally.
+- alternatives: screened by the same orchestrator without inheriting the original drug's dose,
+  never shown as `liberado`, explicitly `candidate_for_human_review` with dose not evaluated,
+  transparent similarity ranking, localized card (ADR 011);
+- CDS: observations received but not evaluated now block `evaluated_no_issue` and appear in
+  `coverage.not_evaluated`; ADR 010 documents the age-composition policy as pending clinical review.
 
 ## [1.0.0] - 2026-08-24
 
