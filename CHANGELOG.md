@@ -16,7 +16,13 @@
 - OpenAPI: v1.0.0 snapshot frozen as baseline, `openapi-next.json` added as working candidate
   (additive optional field `observations_evaluation`);
 - security gates: exact Gitleaks fingerprints for three synthetic idempotency values, PR secret
-  scan given the token it now requires, and the CI PostgreSQL job runs the scope-parity test.
+  scan given the token it now requires, and the CI PostgreSQL job runs the scope-parity test;
+- dependencies: Dependabot #67 (backend lock: pip-audit 24 → 0), #65 plus non-breaking
+  `npm audit fix` (npm high 6 → 0) and #66 (SHA-verified actions) integrated; majors #37, #39–#42
+  deferred or blocked with reasons in the audit triage;
+- images: expired CVE-2026-14456 exception removed after moving the distroless runtime to a
+  digest with the Debian fix; nginx runtime 1.30.4 → 1.30.6 (34 HIGH/CRITICAL → 0); narrow
+  14-day zlib exception; weekly scheduled Container scan; separate Dependabot security groups.
 
 ## [1.0.0] - 2026-08-24
 

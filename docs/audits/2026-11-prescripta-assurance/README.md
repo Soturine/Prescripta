@@ -9,6 +9,7 @@ Prescripta continua sendo uma demonstração sintética e educacional; nada aqui
 ## Documentos
 
 - [FINDINGS_REGISTER.md](FINDINGS_REGISTER.md) — registro mestre de achados, estado e evidência.
+- [DEPENDABOT_PR_TRIAGE.md](DEPENDABOT_PR_TRIAGE.md) — decisão por PR do Dependabot e configuração.
 
 Os demais documentos previstos (cobertura, arquitetura, segurança, Dependabot, UX, dogfood, relatório
 final) são acrescentados conforme cada checkpoint é concluído; ausência significa "ainda não feito".
@@ -17,7 +18,8 @@ final) são acrescentados conforme cada checkpoint é concluído; ausência sign
 
 | CP / slice | Escopo | Testes e resultados | SHA | Remote | Runs CI | Risco residual |
 |---|---|---|---|---|---|---|
-| CP-A | PRE-01, 02, 03, 04, 06, 09; Gitleaks; OpenAPI next | SQLite 298 passed / 3 skipped; PostgreSQL 17: scope 2/2, CDS+idade 22/22; ruff ok; OpenAPI compat ok; Gitleaks histórico 0 | (preenchido após o push) | origin/main | (preenchido após o push) | pip-audit, npm audit e Trivy ainda falham (CP-B) |
+| CP-A | PRE-01, 02, 03, 04, 06, 09; Gitleaks; OpenAPI next | SQLite 298 passed / 3 skipped; PostgreSQL 17: scope 2/2, CDS+idade 22/22; ruff ok; OpenAPI compat ok; Gitleaks histórico 0 | [`e1f82e7`](https://github.com/Soturine/Prescripta/commit/e1f82e7bc9b8818648f262453c94319bf84e3279) | origin/main | CI [`42499758271`](https://github.com/Soturine/Prescripta/actions/runs/42499758271): repository-quality, backend ubuntu, frontend, frontend-visual, **postgres** ✓; backend Windows ✗ (NEW-07). Security [`42499758248`](https://github.com/Soturine/Prescripta/actions/runs/42499758248): secret-scan ✓ (antes ✗), CodeQL ✓, dependency ✗ (pré-existente). Container [`42499758273`](https://github.com/Soturine/Prescripta/actions/runs/42499758273) ✗ (pré-existente, PRE-10c) | dependências e imagens tratadas no CP-B |
+| CP-B | PRE-10a/c, NEW-03/07/08; PRs #65, #66, #67; Dependabot config | backend 298 passed (lock novo); pip-audit 0; npm 0 high; Vitest 92/92 + cobertura; E2E 19 passed/2 skipped incl. visual+axe; smoke de containers OK; Trivy backend/frontend 0 | (preenchido após o push) | origin/main | (preenchido após o push) | zlib aceito até 2026-11-22; #37/#39–#42 adiadas |
 
 ## Bloqueios
 
