@@ -14,7 +14,15 @@ updates:
       - dependencies
       - python
     groups:
+      # Correções de segurança chegam separadas do lote de versões: um pacote incompatível no
+      # lote (ex.: snapshot OpenAPI após FastAPI) não pode segurar um patch de segurança.
+      # Efetivo quando Dependabot alerts/security updates estiverem habilitados no repositório.
+      backend-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
       backend-compatible:
+        applies-to: version-updates
         patterns:
           - "*"
         update-types:
@@ -34,7 +42,15 @@ updates:
       - dependencies
       - javascript
     groups:
+      # Correções de segurança chegam separadas do lote de versões: um pacote incompatível no
+      # lote (ex.: snapshot OpenAPI após FastAPI) não pode segurar um patch de segurança.
+      # Efetivo quando Dependabot alerts/security updates estiverem habilitados no repositório.
+      frontend-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
       frontend-compatible:
+        applies-to: version-updates
         patterns:
           - "*"
         update-types:

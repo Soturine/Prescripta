@@ -3,11 +3,20 @@
 Os gates de Python, npm e imagens falham diante de vulnerabilidade HIGH/CRITICAL, exceto pela
 entrada estreita, versionada e temporária abaixo.
 
-| ID | Componente e escopo | Justificativa e compensação | Expira |
-|---|---|---|---|
-| CVE-2026-14456 | somente `libssl3t64@3.5.6-1~deb13u2` da imagem backend pinada | Debian reporta `fix_deferred`; o defeito atinge o listener OpenSSL QUIC server, que não é exposto nem usado pelo Prescripta. A exceção limita-se ao PURL exato; todo outro finding HIGH/CRITICAL continua bloqueante. Reconsultar a base pinada e remover assim que houver correção. | 2026-09-07 |
+| ID | Componente e escopo | Justificativa e compensação | Owner | Expira |
+|---|---|---|---|---|
+| CVE-2026-85091, CVE-2026-76844 | somente `zlib1g@1:1.3.dfsg+really1.3.1-1+b1` da base `gcr.io/distroless/cc-debian13:nonroot@sha256:08476c24…` (PURL exato em `.trivyignore.yaml`) | Debian corrigiu em `+deb13u1` (DSA-6613-1), mas o digest distroless mais recente consultado em 2026-11-08 ainda traz `+b1`. Ambos os defeitos estão na API `gz*` (`gzwrite`/`gzprintf`); CPython usa a API de stream (`deflate`/`inflate`) e `gzip` é Python puro, então o caminho não é alcançado pelo backend. Compensação: varredura semanal do Container (nova) faz a exceção expirar e falhar o gate. Remover ao trocar o digest. | mantenedor do repositório | 2026-11-22 |
 
-Reconsulta independente em 2026-08-24: o advisory oficial do OpenSSL classifica o problema como
+### Encerrado: CVE-2026-14456 (OpenSSL QUIC listener)
+
+Encerrado em 2026-11-08. A exceção havia **expirado em 2026-09-07** sem revisão, e o gate do Container
+falhava desde então. Debian publicou a correção (`openssl 3.5.7-1~deb13u2`, DSA-6465-1); a base
+runtime foi movida para o digest `sha256:08476c244888…`, que contém `libssl3t64 3.5.7-1~deb13u3`, e
+a exceção foi removida. Verificação local: Trivy HIGH/CRITICAL sem a exceção → 0 achados de OpenSSL.
+A base frontend foi movida de `nginx:1.30.4-alpine` (34 HIGH/CRITICAL corrigíveis, incluindo
+OpenSSL, curl, expat e brotli) para `nginx:1.30.6-alpine` (0).
+
+Histórico — reconsulta independente em 2026-08-24: o advisory oficial do OpenSSL classifica o problema como
 `Low`, restrito ao listener QUIC server em OpenSSL 3.5+, e informa correção futura em 3.5.8. O
 tracker oficial do Debian ainda marca `3.5.6-1~deb13u2` como vulnerável e adiado por severidade menor.
 Portanto, ignorado não significa corrigido; o PURL exato e a expiração continuam obrigatórios.
