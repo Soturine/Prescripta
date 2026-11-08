@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from app.domain.alert import Alert, RiskLevel
-from app.domain.dose_units import convert_value
+from app.domain.dose_units import convert_value, format_clinical_decimal
 from app.domain.medication import Medication
 from app.domain.patient import Patient
 from app.domain.prescription import PrescriptionInput
@@ -35,9 +35,9 @@ def check_max_daily_dose(medication: Medication, prescription: PrescriptionInput
             code="MAX_DAILY_DOSE_EXCEEDED",
             title="Dose diária acima do limite",
             description=(
-                f"Dose diária calculada: {converted.normalize()} "
+                f"Dose diária calculada: {format_clinical_decimal(converted)} "
                 f"{medication.max_daily_dose_unit}. Limite cadastrado: "
-                f"{maximum.normalize()} {medication.max_daily_dose_unit}."
+                f"{format_clinical_decimal(maximum)} {medication.max_daily_dose_unit}."
             ),
             severity=RiskLevel.CRITICAL,
             recommendation="Bloquear a prescrição e recalcular dose/frequência.",
@@ -66,8 +66,8 @@ def check_weight_based_dose(
             code="WEIGHT_BASED_DOSE_EXCEEDED",
             title="Dose por peso acima do limite cadastrado",
             description=(
-                f"Dose diaria calculada: {daily_decimal.normalize()} mg. "
-                f"Limite por peso demonstrativo: {weight_limit.normalize()} mg/dia "
+                f"Dose diaria calculada: {format_clinical_decimal(daily_decimal)} mg. "
+                f"Limite por peso demonstrativo: {format_clinical_decimal(weight_limit)} mg/dia "
                 f"({medication.dose_mg_per_kg:g} mg/kg x {patient.weight_kg:g} kg)."
             ),
             severity=RiskLevel.HIGH,

@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from decimal import Decimal
 
 from app.domain.alert import Alert, PrescriptionStatus, RiskLevel
-from app.domain.dose_units import convert_value
+from app.domain.dose_units import convert_value, format_clinical_decimal
 from app.domain.medication import Medication
 from app.domain.patient import Patient
 from app.domain.prescription import PrescriptionInput, PrescriptionResult
@@ -243,9 +243,10 @@ class RiskEngine:
                     code="CUMULATIVE_DOSE_EXCEEDED",
                     title="Dose acumulada acima do limite demonstrativo",
                     description=(
-                        f"Dose acumulada estimada: {cumulative_in_limit_unit.normalize()} "
+                        "Dose acumulada estimada: "
+                        f"{format_clinical_decimal(cumulative_in_limit_unit)} "
                         f"{cumulative_unit}. Limite demonstrativo: "
-                        f"{Decimal(str(cumulative_limit)).normalize()} {cumulative_unit}."
+                        f"{format_clinical_decimal(cumulative_limit)} {cumulative_unit}."
                     ),
                     severity=RiskLevel.HIGH,
                     recommendation="Revisar duração, dose diária e alternativa terapêutica.",

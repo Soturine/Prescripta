@@ -30,10 +30,19 @@ export function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
+// Dose exibida nunca é arredondada (o padrão de toLocaleString corta em 3 casas: 0,0005 → "0,001"),
+// mantém zero à esquerda, sem zeros à direita e sem separador de milhar (em pt-BR o ponto de milhar
+// é confundível com decimal). Ver alerta Anvisa 4614 sobre exibição de decimais em prescrição.
+const doseFormatOptions: Intl.NumberFormatOptions = {
+  maximumFractionDigits: 20,
+  minimumIntegerDigits: 1,
+  useGrouping: false,
+};
+
 export function formatDose(value: number | null | undefined) {
   return value === null || value === undefined
     ? (currentLocale() === "en-US" ? "Not calculable" : "Não calculável")
-    : `${value.toLocaleString(currentLocale())} mg`;
+    : `${value.toLocaleString(currentLocale(), doseFormatOptions)} mg`;
 }
 
 export function formatRole(role: UserRole | string | null | undefined) {

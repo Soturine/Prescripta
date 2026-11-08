@@ -235,3 +235,16 @@ def canonical_target(unit: str) -> str | None:
         UnitDimension.MASS_PER_SURFACE_RATE: "mg/m2/h",
     }
     return targets.get(definition.dimension)
+
+
+def format_clinical_decimal(value: Decimal | float | int | str) -> str:
+    """Texto de dose para leitura humana (pt-BR), sem ambiguidade decimal.
+
+    Sem notação científica (`Decimal.normalize()` produz `1.2E+3`), sem arredondar, sempre com
+    zero à esquerda, sem zeros à direita e sem separador de milhar (que em pt-BR seria um ponto
+    confundível com decimal). Ex.: 1200 -> "1200"; 0.0625 -> "0,0625"; 5.0 -> "5".
+    """
+    text = format(Decimal(str(value)).normalize(), "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text.replace(".", ",")

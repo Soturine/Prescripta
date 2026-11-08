@@ -29,3 +29,20 @@ describe("formatadores de domínio", () => {
     expect(formatDose(null)).toBe("Não calculável");
   });
 });
+
+describe("formatDose sem ambiguidade (NEW-14)", () => {
+  it("não arredonda doses pequenas e mantém zero à esquerda", async () => {
+    const i18n = (await import("../i18n")).default;
+    await i18n.changeLanguage("pt-BR");
+    const { formatDose } = await import("./formatters");
+    expect(formatDose(0.0625)).toBe("0,0625 mg");
+    expect(formatDose(0.0005)).toBe("0,0005 mg");
+    expect(formatDose(0.5)).toBe("0,5 mg");
+    expect(formatDose(5)).toBe("5 mg");
+    expect(formatDose(1200.5)).toBe("1200,5 mg");
+    await i18n.changeLanguage("en-US");
+    expect(formatDose(0.0625)).toBe("0.0625 mg");
+    expect(formatDose(1200.5)).toBe("1200.5 mg");
+    await i18n.changeLanguage("pt-BR");
+  });
+});
