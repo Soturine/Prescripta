@@ -7,10 +7,6 @@ from app.domain.patient import Patient
 from app.domain.prescription import PrescriptionInput
 
 
-def calculate_daily_dose(prescription: PrescriptionInput) -> float | None:
-    return prescription.daily_total_mg
-
-
 def check_max_daily_dose(medication: Medication, prescription: PrescriptionInput) -> list[Alert]:
     daily_total = prescription.daily_total_mg or prescription.daily_upper_mg
     if daily_total is None:

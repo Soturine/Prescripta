@@ -15,7 +15,8 @@ describe("cliente HTTP", () => {
   });
 
   it("mantém sessão em cookie e limpa bearer legado", async () => {
-    client.setAuthToken("token-demo");
+    // O app usa só cookie; o header Bearer pode existir apenas como resíduo legado.
+    client.api.defaults.headers.common.Authorization = "Bearer token-demo";
     expect(client.api.defaults.headers.common.Authorization).toBe("Bearer token-demo");
     client.clearAuthToken();
     expect(client.api.defaults.headers.common.Authorization).toBeUndefined();
