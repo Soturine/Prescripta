@@ -105,7 +105,15 @@ class ClinicalDecisionOrchestrator:
             missing=missing,
             rag_evidence=rag_evidence or [],
         )
-        for module in unevaluated_inputs or []:
+        unevaluated_inputs = list(unevaluated_inputs or [])
+        if include_dose and prescription.dose is not None and (
+            prescription.dose.concentration_value is not None
+        ):
+            # Não há regra de concentração máxima cadastrável (ex.: eletrólitos concentrados):
+            # a concentração informada não é comparada a limite algum, então não pode haver
+            # conclusão favorável silenciosa (NEW-15; classe do alerta Anvisa 5063).
+            unevaluated_inputs.append("concentration_limit")
+        for module in unevaluated_inputs:
             # Dado recebido mas não interpretado pelas regras (ex.: observações no CDS): fica
             # visível na cobertura e impede conclusão favorável (PRE-03b / NEW-12).
             coverage.not_evaluated.append({"module": module, "reason": "recebido e não avaliado"})
