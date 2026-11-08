@@ -26,3 +26,6 @@ playwright-report/
 .DS_Store
 Thumbs.db
 *.log
+
+# Claude Code personal settings
+.claude/settings.local.json

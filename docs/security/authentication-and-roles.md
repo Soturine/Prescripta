@@ -3,6 +3,10 @@
 ## Sessão
 
 `POST /api/auth/login` valida Argon2, contenção persistente de tentativas e MFA TOTP quando habilitado.
+A verificação TOTP (RFC 6238, SHA-1, 6 dígitos, janela de ±1 passo de 30 s) é testada contra os vetores
+do RFC; **não existe fluxo de cadastro de MFA** (endpoint, tela ou script): `mfa_enabled` e o segredo só
+podem ser definidos diretamente no banco. Também não há proteção contra reuso do mesmo código dentro
+da janela. Até haver cadastro, MFA não deve ser apresentado como recurso disponível.
 O browser recebe `prescripta_session` HttpOnly, SameSite Lax e com `Secure` fora do modo local.
 `GET /api/auth/me` restaura a sessão. Senha, token, segredo MFA e API key nunca entram em auditoria
 ou payload de leitura.
