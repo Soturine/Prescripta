@@ -72,14 +72,13 @@ class AuditRepository:
         }
         for column, expected in direct_filters.items():
             if expected:
-                statement = statement.where(column.ilike(f"%{expected}%"))
+                statement = statement.where(_icontains(column, expected))
         if user:
-            needle = f"%{user}%"
             statement = statement.where(
                 or_(
-                    AuditEventModel.user_name.ilike(needle),
-                    AuditEventModel.user_email.ilike(needle),
-                    cast(AuditEventModel.user_id, String).ilike(needle),
+                    _icontains(AuditEventModel.user_name, user),
+                    _icontains(AuditEventModel.user_email, user),
+                    _icontains(cast(AuditEventModel.user_id, String), user),
                 )
             )
         if date_from:
@@ -114,21 +113,20 @@ class AuditRepository:
         )
         for expected in detail_values:
             if expected:
-                statement = statement.where(details_text.ilike(f"%{expected}%"))
+                statement = statement.where(_icontains(details_text, expected))
         if fallback_used is not None:
             statement = statement.where(
                 AuditEventModel.details["fallback_used"].as_boolean() == fallback_used
             )
         if text:
-            needle = f"%{text}%"
             statement = statement.where(
                 or_(
-                    AuditEventModel.action.ilike(needle),
-                    AuditEventModel.resource_type.ilike(needle),
-                    AuditEventModel.resource_id.ilike(needle),
-                    AuditEventModel.user_name.ilike(needle),
-                    AuditEventModel.user_email.ilike(needle),
-                    details_text.ilike(needle),
+                    _icontains(AuditEventModel.action, text),
+                    _icontains(AuditEventModel.resource_type, text),
+                    _icontains(AuditEventModel.resource_id, text),
+                    _icontains(AuditEventModel.user_name, text),
+                    _icontains(AuditEventModel.user_email, text),
+                    _icontains(details_text, text),
                 )
             )
         order = (
@@ -223,3 +221,17 @@ class AuditRepository:
                 if severity in counters:
                     counters[severity] += 1
         return counters
+
+
+
+LIKE_ESCAPE = "\\"
+
+
+def _icontains(column: Any, value: str) -> Any:
+    """Busca por substring tratando `%`, `_` e a barra invertida do usuário como literais."""
+    escaped = (
+        value.replace(LIKE_ESCAPE, LIKE_ESCAPE * 2)
+        .replace("%", LIKE_ESCAPE + "%")
+        .replace("_", LIKE_ESCAPE + "_")
+    )
+    return column.ilike(f"%{escaped}%", escape=LIKE_ESCAPE)
