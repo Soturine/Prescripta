@@ -14,7 +14,7 @@ from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import Settings, settings
+from app.core.config import Settings, is_local_environment, settings
 from app.database.models import (
     AIConfigurationAuditLogModel,
     AIProviderCredentialModel,
@@ -119,7 +119,7 @@ class AISecretService:
 
     @property
     def requires_persistence_key(self) -> bool:
-        return self.settings.environment.lower() in {"prod", "production"}
+        return not is_local_environment(self.settings.environment)
 
     def encrypt(self, value: str) -> str:
         return self._fernet().encrypt(value.encode("utf-8")).decode("ascii")

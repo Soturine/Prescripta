@@ -4,7 +4,7 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.auth import BearerToken, CurrentUser
-from app.core.config import settings
+from app.core.config import is_local_environment, settings
 from app.core.security import (
     create_access_token,
     decode_access_token,
@@ -61,7 +61,7 @@ def login(payload: LoginRequest, db: DbSession, response: Response) -> TokenResp
         key="prescripta_session",
         value=token,
         httponly=True,
-        secure=settings.environment.lower() not in {"development", "dev", "local", "test"},
+        secure=not is_local_environment(settings.environment),
         samesite="lax",
         max_age=settings.access_token_expire_minutes * 60,
         path="/",

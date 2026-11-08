@@ -62,13 +62,34 @@ class UnsafeRuntimeConfiguration(RuntimeError):
     pass
 
 
+LOCAL_ENVIRONMENTS = frozenset({"development", "dev", "local", "test", "testing"})
+# HS256: segredo curto permite forjar JWT por força bruta offline (RFC 7518 §3.2 exige
+# chave >= tamanho do hash, 256 bits).
+MIN_SECRET_KEY_LENGTH = 32
+# Valores publicados no repositório (default e .env.example) nunca são segredos.
+PLACEHOLDER_SECRET_KEYS = frozenset(
+    {
+        "prescripta-local-demo-secret-change-before-production",
+        "change-this-demo-secret-before-production",
+    }
+)
+
+
+def is_local_environment(environment: str) -> bool:
+    """Única definição de ambiente local; tudo o mais é tratado como produção."""
+    return environment.strip().lower() in LOCAL_ENVIRONMENTS
+
+
 def validate_runtime_settings(app_settings: Settings) -> None:
-    environment = app_settings.environment.strip().lower()
-    if environment in {"development", "dev", "local", "test", "testing"}:
+    if is_local_environment(app_settings.environment):
         return
     errors: list[str] = []
-    if app_settings.secret_key == "prescripta-local-demo-secret-change-before-production":
+    if app_settings.secret_key in PLACEHOLDER_SECRET_KEYS:
         errors.append("PRESCRIPTA_SECRET_KEY usa o valor demonstrativo")
+    elif len(app_settings.secret_key.encode("utf-8")) < MIN_SECRET_KEY_LENGTH:
+        errors.append(
+            f"PRESCRIPTA_SECRET_KEY precisa de ao menos {MIN_SECRET_KEY_LENGTH} bytes"
+        )
     if app_settings.database_url.startswith("sqlite"):
         errors.append("SQLite não é permitido fora de ambiente local/teste")
     if app_settings.auto_seed:

@@ -4,7 +4,7 @@ from pathlib import Path
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
-from app.core.config import settings
+from app.core.config import is_local_environment, settings
 
 connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
 
@@ -51,14 +51,7 @@ def finish_denied_request(db: Session) -> bool:
 def init_db() -> None:
     from app.database import models  # noqa: F401
 
-    local_environment = settings.environment.lower() in {
-        "development",
-        "dev",
-        "local",
-        "test",
-        "testing",
-    }
-    if not local_environment:
+    if not is_local_environment(settings.environment):
         _verify_migration_head()
         return
     Base.metadata.create_all(bind=engine)
