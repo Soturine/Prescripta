@@ -22,7 +22,10 @@
   deferred or blocked with reasons in the audit triage;
 - images: expired CVE-2026-14456 exception removed after moving the distroless runtime to a
   digest with the Debian fix; nginx runtime 1.30.4 → 1.30.6 (34 HIGH/CRITICAL → 0); narrow
-  14-day zlib exception; weekly scheduled Container scan; separate Dependabot security groups.
+  14-day zlib exception; weekly scheduled Container scan; separate Dependabot security groups;
+- auth: access tokens carry `jti`; logout revokes the presented cookie/Bearer token server-side
+  until its `exp` (new `revoked_access_tokens` table, migration `b11a2c3d4e50`); tokens without
+  `jti` are rejected, so existing sessions must log in again after upgrading (PRE-05).
 
 ## [1.0.0] - 2026-08-24
 
