@@ -28,3 +28,17 @@ Além disso, **Dependabot alerts e security updates estão desabilitados** no re
 Alteração: grupos `*-security` (`applies-to: security-updates`) separados de `*-compatible`
 (`applies-to: version-updates`). Só têm efeito quando alerts/security updates forem habilitados —
 decisão de configuração do repositório, pendente do mantenedor.
+
+## PRs abertas após a integração (2026-11-08)
+
+O Dependabot fechou #65, #66 e #67 como superadas e abriu, sobre `54614c0`:
+
+| PR | Objeto | Recomendação | Evidência |
+|---:|---|---|---|
+| [#68](https://github.com/Soturine/Prescripta/pull/68) | codeql-action 4.39.1 → 4.39.3 | **MERGE** | SHA `33d7b85…` conferido contra a tag v4.39.3; CI da PR totalmente verde (incl. release-readiness). |
+| [#69](https://github.com/Soturine/Prescripta/pull/69) | 10 npm patch/minor (axios 1.21, i18next, react-router-dom 7.18.5, tailwind 4.3.4, eslint 10.14…) | **MERGE após rebase** | CI da PR verde nos jobs concluídos; construída antes de `5144d4e`. |
+| [#70](https://github.com/Soturine/Prescripta/pull/70) | 10 Python patch/minor (SQLAlchemy 2.1.8, Pydantic 2.14.3, psycopg 3.3.8…) | **MERGE após rebase** | CI da PR verde; Pydantic pode alterar o snapshot OpenAPI, por isso rebase antes do merge. |
+
+O merge destas PRs pelo agente foi **bloqueado pelo classificador de permissões** do ambiente
+("merge without review"); a decisão fica com o mantenedor. O fix do secret-scan em PRs (NEW-02) foi
+confirmado remotamente: `secret-scan=SUCCESS` nas três.

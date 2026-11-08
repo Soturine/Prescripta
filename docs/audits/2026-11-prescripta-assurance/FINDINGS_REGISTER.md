@@ -24,7 +24,7 @@ OBSERVED / REPRODUCED / VERIFIED / INFERRED / NOT_EXECUTED.
 | PRE-10b | false positive | — | FALSE_POSITIVE (VERIFIED) | Valores sintéticos `fhir-idempotency-1`, `test-test-test`, `break-uow-v088` (doc). | Gitleaks 8.24.3 histórico completo: 3 achados → 0 com 3 fingerprints exatos; controle sem eles: 3. | — |
 | PRE-10c | risk | alta | FIXED (local; CI pendente) | Exceção CVE-2026-14456 expirada em 2026-09-07; Trivy bloqueia o Container. Debian corrigiu (DSA-6465-1). | Base distroless antiga: `libssl3t64 3.5.6`; nova: `3.5.7-1~deb13u3`. Exceção **removida**, não renovada. | Trivy local sem exceção de OpenSSL: 0. Nova exceção estreita (zlib, 14 dias) documentada em `docs/security/accepted-risks.md`. |
 | PRE-11 | doc/gate drift | média | IN_PROGRESS | ver NEW-01. | — | — |
-| PRE-12 | hipóteses | — | IN_PROGRESS | ver itens individuais quando confirmados. | — | — |
+| PRE-12 | hipóteses | — | IN_PROGRESS | Config: confirmado e corrigido (NEW-10). Catálogo CDS: varredura completa confirmada, mantida (catálogo demo pequeno, ambiguidade agora falha fechada) — DEFERRED. Demais itens: pendentes. | — | — |
 
 ## Achados novos
 
@@ -36,9 +36,10 @@ OBSERVED / REPRODUCED / VERIFIED / INFERRED / NOT_EXECUTED.
 | NEW-07 | debt (gate frágil) | média | FIXED (incidental) | Job backend Windows instala no interpretador compartilhado do runner; o `pipx` da imagem passou a exigir `packaging>=26.3` e o `pip check` falhou (run `42499758271`). Resolvido pelo lock de #67; a fragilidade (sem venv no CI) permanece. | Log do job. |
 | NEW-08 | risk (gate cego) | alta | FIXED (local) | Workflow Container é filtrado por path: as bases pinadas envelheceram sem varredura. nginx 1.30.4-alpine tinha 34 HIGH/CRITICAL corrigíveis; distroless tinha zlib/OpenSSL. | Trivy local. Agora: nginx 1.30.6-alpine (0), distroless novo, varredura semanal agendada. |
 | NEW-09 | risk (config) | média | DEFERRED (decisão do mantenedor) | Dependabot alerts e security updates desabilitados no repositório; único canal era o lote semanal de versões. | API: 403 alerts disabled; `automated-security-fixes.enabled=false`. Config já separa grupos de segurança. |
-| NEW-04 | bug (latente) | baixa | NEW | `AlternativeService._candidates` usa `repository.list()` com `limit=50` padrão: alternativas ignoram cadastros além dos 50 primeiros por nome. | OBSERVED no código. |
+| NEW-04 | bug (latente) | baixa | VERIFIED (local) | `AlternativeService._candidates` usava `repository.list()` com `limit=50` padrão: alternativas ignoravam cadastros além dos 50 primeiros por nome. Agora `iter_all()` em lotes. | REPRODUCED: `[] == [62]`. `tests/test_alternative_catalog_scope.py` (falha no baseline). |
 | NEW-05 | debt (harness) | média | FIXED | A suíte backend só roda em SQLite; nenhum teste de autorização rodava em PostgreSQL. `PRESCRIPTA_TEST_DATABASE_URL` (opt-in) roda a suíte inteira em PostgreSQL. | PG: 279 passed / 2 failed / 3 skipped; as 2 falhas são do harness (view `research_aggregate_comparisons` só existe via Alembic). |
-| NEW-06 | debt | baixa | NEW | `audit_repository` usa `ilike(f"%{x}%")` sem escapar `%`/`_` do filtro do usuário (curinga, não injeção). | OBSERVED. |
+| NEW-06 | bug | baixa | VERIFIED (SQLite + PG) | Filtros da auditoria usavam `ilike(f"%{x}%")` sem escapar `%`/`_` (curinga, não injeção). | `tests/test_audit_search_literal.py` falha no baseline. |
+| NEW-10 | risk (config) | média | VERIFIED (local) | Quatro definições divergentes de "ambiente local" (strip, `testing`, `{prod, production}`); produção aceitava qualquer `PRESCRIPTA_SECRET_KEY` diferente do default, inclusive `changeme` e o placeholder do `.env.example`, para assinar JWT HS256. | `tests/test_runtime_environment_policy.py`: 6 casos falham no baseline. Agora `is_local_environment` único, mínimo de 32 bytes e placeholders publicados rejeitados. |
 
 ## Decisões que exigem revisão humana
 

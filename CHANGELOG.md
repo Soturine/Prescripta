@@ -26,6 +26,10 @@
 - auth: access tokens carry `jti`; logout revokes the presented cookie/Bearer token server-side
   until its `exp` (new `revoked_access_tokens` table, migration `b11a2c3d4e50`); tokens without
   `jti` are rejected, so existing sessions must log in again after upgrading (PRE-05).
+- config: one `is_local_environment` definition; non-local environments reject JWT secrets
+  shorter than 32 bytes and the placeholders published in the repository;
+- alternatives scan the whole catalog instead of the first 50 entries; audit search treats `%`
+  and `_` literally.
 
 ## [1.0.0] - 2026-08-24
 
