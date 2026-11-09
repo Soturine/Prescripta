@@ -1,6 +1,6 @@
 # Releases
 
-- [v1.1.0 — Assurance Audit Fixes](v1.1.0.md) (pre-release)
+- [v1.1.0 — Assurance Audit Fixes](v1.1.0.md)
 - [v1.0.0 — Stable Demo Workstation](v1.0.0.md)
 - [v0.10.0 — Interoperability, Operations & Stabilization](v0.10.0.md)
 - [v0.9.2 — Research Copilot v2 & Comparative RWE](v0.9.2.md)

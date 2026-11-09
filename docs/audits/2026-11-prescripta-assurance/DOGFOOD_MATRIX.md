@@ -47,9 +47,9 @@ worktree descartável, declarado como tal.
 | Orientação aplicada | Decisão concreta e efeito verificável |
 |---|---|
 | AUDIT §13: desafio materialmente distinto para achado de alto impacto | Sobreviventes de mutação não viraram achado direto: reexecução contra a suíte inteira e, depois, mutantes compostos que removem todos os caminhos de um bloqueio. Isso separou guardas redundantes (O1, O3: equivalentes) de lacunas reais (P1, O5). |
-| AUDIT §15: proposta ≠ implementado ≠ verificado | NEW-25 fica PROPOSED; ENG-02..06 e AS-03..06 ficam como propostas, sem alteração nas ferramentas. |
+| AUDIT §15: proposta ≠ implementado ≠ verificado | No momento da mutação, NEW-25 ficou PROPOSED; depois foi mitigado (ADR 012, teste que mata M5). ENG-02..06 e AS-03..06, AS-08..10 seguem propostas; só ENG-01, AS-02 e AS-07 foram alterados nas ferramentas. |
 | ADAPTIVE_TEST_ASSURANCE: descobertos ≠ executados ≠ sustentam a alegação | Evidência importada rotulada como importada; runs da Assertiva com runtime `dirty=True` declarados. |
 | Framework feedback depois do alvo | Feedback ao Framework escrito depois do registro de achados, sem envio upstream. |
-| CONTEXT/TEST: "coletor que falhou → BLOCKED, nunca PASS" | Playwright BLOCKED e backend BLOCKED não foram contados como verde; o E2E segue evidenciado pelo CI e pela execução local direta. |
+| CONTEXT/TEST: "coletor que falhou → BLOCKED, nunca PASS" | Playwright BLOCKED e backend BLOCKED (estado daqueles runs; o backend passou depois, run `e6e0bad61f71427f`) não foram contados como verde; o E2E segue evidenciado pelo CI e pela execução local direta. |
 
 Feedback detalhado às ferramentas: [dogfood/TOOL_FEEDBACK.md](dogfood/TOOL_FEEDBACK.md).

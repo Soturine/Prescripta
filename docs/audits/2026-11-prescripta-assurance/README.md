@@ -39,9 +39,26 @@ final) são acrescentados conforme cada checkpoint é concluído; ausência sign
 | CP-H | PRE-04 concorrência real em PG; NEW-05 harness PG completo; CI PG ampliado | SQLite 346/5 skipped; PostgreSQL suíte inteira 348/0/3; simulação do step de CI 28/28 | [`4bd77bb`](https://github.com/Soturine/Prescripta/commit/4bd77bb) | origin/main | CI `42508296009` (incl. novo step PG), Security `42508296098`, Container `42508295956`: verdes | — |
 | CP-I | NEW-18 índice, NEW-19 evidência de release, handoff | SQLite 350/5; Alembic round trip PG; EXPLAIN | [`5ae81d9`](https://github.com/Soturine/Prescripta/commit/5ae81d9) | origin/main | CI `42508809961`, Security `42508809873`, Container `42508810071`: verdes | — |
 | CP-J | NEW-20 alternativas absurdas (achado em navegador real); revisão UI/UX | backend 351/5; Vitest 98; E2E 19/2; i18n 877 | [`0d23f1e`](https://github.com/Soturine/Prescripta/commit/0d23f1e) | origin/main | CI `42509403848`, Security `42509403923`, Container `42509403958`: verdes | leitor de tela e demais perfis não revisados |
-| CP-K | Dogfood real (Engine, Assertiva, Framework), mutação agent-led (NEW-23/24/25, ADR 012), acessibilidade por perfil (NEW-27/28/29), MFA (NEW-21), código morto confirmado pelo Engine | Árvore final: SQLite 368 passed / 5 skipped (exit 0); PostgreSQL 17 370 passed / 3 skipped (exit 0, JUnit 373); Vitest 98/98; E2E 27 passed / 2 skipped; gates de repositório verdes; Gitleaks 0 | `75b19ea`, `14f9be1`, `129dd29`, `a18e081` + docs | origin/main (`e80ee70`) | CI `42533288573`, Security `42533288696`, Container `42533288543`: verdes | AS-03 bloqueia execução nativa do backend pela Assertiva; leitor de tela real não testado |
+| CP-K | Dogfood real (Engine, Assertiva, Framework), mutação agent-led (NEW-23/24/25, ADR 012), acessibilidade por perfil (NEW-27/28/29), MFA (NEW-21), código morto confirmado pelo Engine | Árvore final: SQLite 368 passed / 5 skipped (exit 0); PostgreSQL 17 370 passed / 3 skipped (exit 0, JUnit 373); Vitest 98/98; E2E 27 passed / 2 skipped; gates de repositório verdes; Gitleaks 0 | `75b19ea`, `14f9be1`, `129dd29`, `a18e081` + docs | origin/main (`e80ee70`) | CI `42533288573`, Security `42533288696`, Container `42533288543`: verdes | leitor de tela real não testado; mutação nativa da Assertiva não executada (execução nativa do backend resolvida depois, `45e80d5`, run `e6e0bad61f71427f`) |
 
 ## Bloqueios
 
 Ver [OPEN_BLOCKERS.md](OPEN_BLOCKERS.md). O bloqueio de instalação das ferramentas foi resolvido em
 2026-11-08 por regra de permissão escolhida pelo usuário; o dogfood foi executado.
+
+## Fechamento (CP-L): classificação das pendências
+
+Escopo congelado nos checkpoints A–K. Nada abaixo é corrigido nesta versão.
+
+| Classe | Item | Onde está declarado |
+|---|---|---|
+| Bloqueante para a v1.1.0 | Nenhum item de produto. Só os quatro gates (CI, Security, Container, Qualification) no SHA final. | release notes |
+| Limitação conhecida | Sem validação clínica profissional; teto de idade (ADR 010) e ausência de teto de concentração pendentes de especialista | release notes, ADR 010 |
+| Limitação conhecida | MFA verificado no login, sem fluxo de cadastro (NEW-21) | release notes, `docs/security/authentication-and-roles.md` |
+| Limitação conhecida | Acessibilidade verificada com axe e estrutura em Chromium; sem leitor de tela real nem zoom 200/400 % | release notes, UI/UX audit |
+| Limitação conhecida | Ferramentas rodaram em revisões da auditoria, não no SHA final; Assertiva sem PostgreSQL provisionado e sem mutação nativa (Cosmic Ray); mutação feita manualmente pelo agente | release notes, DOGFOOD_MATRIX |
+| Limitação conhecida | Exceção Trivy zlib com vencimento em 2026-11-22; Dependabot alerts desabilitados (admin) | release notes, `docs/security/accepted-risks.md` |
+| Limitação conhecida | Backend sozinho, fora do monorepo, depende de `VERSION` da raiz (NEW-22) | FINDINGS_REGISTER |
+| Backlog | PRs Dependabot #68–#70 (merge do mantenedor), majors #37, #39–#42 | DEPENDABOT_PR_TRIAGE |
+| Backlog | 28 candidatos sem referência textual; PRE-07 (arquivos grandes) | DUPLICATION_DEAD_CODE_AND_LEGACY |
+| Backlog (ferramentas) | Assertiva: PRs das branches AS-02 e AS-07; AS-03, 04, 05, 06, 08, 09, 10. Engine: ENG-02 a 06. Framework: DF-002, DF-003 | dogfood/TOOL_FEEDBACK, dogfood/DERIVANTA_FRAMEWORK_FEEDBACK |

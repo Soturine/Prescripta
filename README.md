@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Soturine/Prescripta/actions/workflows/ci.yml/badge.svg)](https://github.com/Soturine/Prescripta/actions/workflows/ci.yml)
 [![Security](https://github.com/Soturine/Prescripta/actions/workflows/security.yml/badge.svg)](https://github.com/Soturine/Prescripta/actions/workflows/security.yml)
-[![Release](https://img.shields.io/badge/release-v1.1.0%20candidate%20(unreleased)-64748b)](docs/releases/v1.1.0.md)
+[![Release](https://img.shields.io/badge/release-v1.1.0-0891b2)](docs/releases/v1.1.0.md)
 [![Licença](https://img.shields.io/badge/licença-Apache--2.0-f59e0b)](LICENSE)
 
 O Prescripta é uma plataforma demonstrativa e educacional organizada em três pilares: Medication

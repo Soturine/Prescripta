@@ -51,7 +51,5 @@ via Assertiva. Nunca contornar.
 1. Release (só depois do dogfood e da auditoria): qualificar o SHA final (CI, Security, Container,
    Qualification), conferir SBOM, checksums, provenance e exceções vigentes (zlib vence em
    2026-11-22), tag anotada e GitHub Release. Até lá a v1.1.0 é candidata não publicada.
-2. AS-03 (diretório de trabalho por runner na Assertiva) destrava `--execute` e `--mutate` no backend.
-3. NEW-21 (cadastro de MFA), NEW-22 (backend fora da raiz), 28 candidatos sem referência.
-4. Leitor de tela real e zoom 200/400 %; perfis em mobile/EN-US.
-5. Reconsultar PRs Dependabot (#68–#70 e majors) e Security agendado.
+2. Backlog depois da v1.1.0 (não bloqueia): ver a classificação de pendências no README da
+   auditoria (CP-L).
